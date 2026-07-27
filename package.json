@@ -1,0 +1,33 @@
+{
+	"name": "@notionhq/workers-template",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"build": "tsc",
+		"check": "tsc --noEmit",
+		"introspect": "tsx src/scripts/introspect.ts",
+		"sample": "tsx src/scripts/sample-usage.ts",
+		"targets": "tsx src/scripts/plan-targets.ts",
+		"fp": "tsx src/scripts/fp-search.ts",
+		"fp-deals": "tsx src/scripts/fp-deals.ts",
+		"ss": "tsx src/scripts/ss-search.ts",
+		"deals": "tsx src/scripts/deals.ts",
+		"start": "tsx src/github/main.ts",
+		"dry-run": "tsx src/github/main.ts --dry-run"
+	},
+	"engines": {
+		"node": ">=22.0.0",
+		"npm": ">=10.9.2"
+	},
+	"devDependencies": {
+		"@types/node": "^22.9.0",
+		"tsx": "^4.20.6",
+		"typescript": "^5.8.0"
+	},
+	"dependencies": {
+		"@notionhq/client": "^5.23.2",
+		"@notionhq/workers": ">=0.0.0",
+		"dotenv": "^17.4.2"
+	}
+}
