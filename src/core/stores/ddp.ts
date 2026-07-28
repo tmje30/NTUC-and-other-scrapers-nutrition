@@ -1,9 +1,14 @@
+import WebSocket from "ws";
+
 /**
  * Minimal Meteor DDP-over-WebSocket client. Sheng Siong (shengsiong.com.sg) is a
  * Meteor app behind Incapsula with no public HTTP/JSON API — data comes via DDP
- * methods. A plain WebSocket connects fine (no auth/token). Node 22+ has a global
- * WebSocket, so no dependency is needed. See LEARNINGS 2026-07-27.
+ * methods. Uses the `ws` library so we can send browser-like headers (some
+ * Incapsula setups reject header-less/datacenter clients). See LEARNINGS.
  */
+
+const UA =
+	"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
 
 interface Pending {
 	resolve: (v: any) => void;
@@ -21,14 +26,18 @@ export class DdpClient {
 	connect(timeoutMs = 20000): Promise<void> {
 		if (this.ready) return this.ready;
 		this.ready = new Promise<void>((resolve, reject) => {
-			const ws = new WebSocket(this.url);
+			const origin = new URL(this.url).origin.replace(/^wss/, "https").replace(/^ws/, "http");
+			const ws = new WebSocket(this.url, {
+				headers: { "User-Agent": UA, Origin: origin },
+			});
 			this.ws = ws;
 			const t = setTimeout(() => reject(new Error("DDP connect timeout")), timeoutMs);
-			ws.onopen = () => ws.send(JSON.stringify({ msg: "connect", version: "1", support: ["1"] }));
-			ws.onmessage = (e) => {
+
+			ws.on("open", () => ws.send(JSON.stringify({ msg: "connect", version: "1", support: ["1"] })));
+			ws.on("message", (raw: WebSocket.RawData) => {
 				let d: any;
 				try {
-					d = JSON.parse(String((e as MessageEvent).data));
+					d = JSON.parse(raw.toString());
 				} catch {
 					return;
 				}
@@ -46,13 +55,18 @@ export class DdpClient {
 							: p.resolve(d.result);
 					}
 				}
-			};
-			ws.onerror = () => reject(new Error("DDP websocket error"));
-			ws.onclose = () => {
-				const err = new Error("DDP connection closed");
+			});
+			ws.on("error", (err: Error) => {
+				clearTimeout(t);
+				reject(new Error(`DDP websocket: ${err.message}`));
+			});
+			ws.on("close", (code: number, reason: Buffer) => {
+				clearTimeout(t);
+				const msg = `DDP closed (${code}${reason?.length ? ` ${reason.toString()}` : ""})`;
+				const err = new Error(msg);
 				for (const p of this.pending.values()) p.reject(err);
 				this.pending.clear();
-			};
+			});
 		});
 		return this.ready;
 	}
