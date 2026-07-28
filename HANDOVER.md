@@ -70,7 +70,22 @@ other project (`C:\Users\newuser\Claude\Inventory Price upkeeper worker [Notion]
 `Price-Scout Template`) hits the same class of wall and solves it by driving the
 user's REAL local Chrome over CDP — i.e. it also runs locally/residential.
 
-## Agreed next phase: phone/laptop hybrid (DESIGNED, NOT YET BUILT)
+## Progress (2026-07-28)
+
+Phone/laptop hybrid is **partly built and proven**:
+- Built + on `main`: `src/scripts/push-shengsiong.ts` (`npm run push-ss`),
+  `public/targets.json` publishing in `build-site.ts`, `RunResult.searchTerms`,
+  and `phone-run.sh` (Termux wrapper).
+- **Proven:** an Android phone ran `npm run push-ss` from its residential IP and
+  pushed `data/shengsiong-latest.json` (44 terms, 308 products) — the
+  phone→cloud push path works end to end.
+- **Not done:** Termux *scheduling* (paused — `git pull` wasn't landing
+  `phone-run.sh` on the phone); the **cloud consumption side** (nothing reads
+  `data/shengsiong-latest.json` yet, so the page is still FairPrice-only); the
+  10:00 SGT schedule change.
+- User pivoted to setting up the **laptop (Windows Task Scheduler)** runner.
+
+## Agreed design: phone/laptop hybrid
 
 Keep FairPrice in the cloud; run Sheng Siong from a residential IP. User has an
 **Android phone** (always on them, 500 GB data) = primary runner; **laptop** =
