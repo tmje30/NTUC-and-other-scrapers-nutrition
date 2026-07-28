@@ -79,11 +79,16 @@ Phone/laptop hybrid is **partly built and proven**:
 - **Proven:** an Android phone ran `npm run push-ss` from its residential IP and
   pushed `data/shengsiong-latest.json` (44 terms, 308 products) — the
   phone→cloud push path works end to end.
-- **Not done:** Termux *scheduling* (paused — `git pull` wasn't landing
-  `phone-run.sh` on the phone); the **cloud consumption side** (nothing reads
-  `data/shengsiong-latest.json` yet, so the page is still FairPrice-only); the
-  10:00 SGT schedule change.
-- User pivoted to setting up the **laptop (Windows Task Scheduler)** runner.
+- **Laptop runner DONE:** dedicated clone `C:\Users\newuser\shengsiong-runner\repo`
+  + `run.cmd` (sets `RUNNER_SOURCE=laptop`, `git pull` then `npm run push-ss`,
+  logs to `..\push-ss.log`); Task Scheduler task **"ShengSiong Daily Scan"** at
+  05:30 SGT daily (StartWhenAvailable, runs on battery, InteractiveToken → GCM
+  auth, no PAT stored). Proven end to end.
+- **Still not done:** Termux *scheduling* (paused — `git pull` wasn't landing
+  `phone-run.sh` on the phone; the push path itself is proven); the **cloud
+  consumption side** (nothing reads `data/shengsiong-latest.json` yet, so the
+  page is still FairPrice-only — this is the remaining payoff); the 10:00 SGT
+  schedule change.
 
 ## Agreed design: phone/laptop hybrid
 
