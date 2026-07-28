@@ -166,6 +166,58 @@ const BEVERAGE_ITEM_RE = /\b(wine|juice|coffee|tea|drink|soda|kombucha|beer|cide
 
 const has = (re: RegExp, s: string) => re.test(s || "");
 
+// Mutually-exclusive VARIETY groups. If the item names one member of a group and
+// the candidate names a DIFFERENT member of the same group, it's the wrong
+// variety — "Onion (white)" must not match "Red Onion", "Chicken Breast" must not
+// match "Chicken Thigh/Wing", "White Pepper" not "Black Pepper", etc. The item's
+// variety comes from its FULL Notion name (e.g. "Onion (white)"), because the
+// bracketed part is stripped from the search term. Negation is supported in the
+// name: "Onion (not red)" means "any onion except red".
+const ATTRIBUTE_GROUPS: string[][] = [
+	// colour / variety
+	["white", "red", "yellow", "brown", "green", "purple", "black", "orange", "pink", "golden"],
+	// meat cut / part
+	[
+		"breast", "thigh", "thighs", "wing", "wings", "drumstick", "drumsticks", "whole", "mince",
+		"minced", "ground", "fillet", "filet", "tenderloin", "cutlet", "chop", "chops", "belly",
+		"shoulder", "loin", "rump", "sirloin", "brisket", "shank", "liver", "gizzard", "carcass",
+		"wingette", "midjoint", "keel",
+	],
+];
+const GROUPS = ATTRIBUTE_GROUPS.map((members) =>
+	members.map((m) => ({
+		m,
+		re: new RegExp(`\\b${m}\\b`, "i"),
+		notRe: new RegExp(`\\b(?:not|no|non[- ]?)\\s+${m}\\b`, "i"),
+	})),
+);
+
+/**
+ * Penalty for a wrong-variety candidate. `itemName` is the full Notion name (so
+ * a bracketed "(white)" / "(not red)" is seen); `title` is the product name+brand.
+ */
+function varietyPenalty(itemName: string, title: string): number {
+	let mult = 1;
+	for (const group of GROUPS) {
+		const negated = new Set<string>();
+		const itemHas = new Set<string>();
+		for (const { m, re, notRe } of group) {
+			if (notRe.test(itemName)) negated.add(m); // "not red" → red is forbidden, not required
+			else if (re.test(itemName)) itemHas.add(m);
+		}
+		const candHas = new Set<string>();
+		for (const { m, re } of group) if (re.test(title)) candHas.add(m);
+		if ([...negated].some((m) => candHas.has(m))) {
+			mult *= 0.2; // candidate is a forbidden variety
+			continue;
+		}
+		if (itemHas.size && [...candHas].some((m) => !itemHas.has(m))) {
+			mult *= 0.2; // candidate names a different variety than the item asked for
+		}
+	}
+	return mult;
+}
+
 /**
  * Multiplier in (0,1]. 1 = no concern. Mirrors the inventory project's
  * `matchPenalty`, adapted to grocery targets.
@@ -174,6 +226,9 @@ export function matchPenalty(target: PlanTarget, product: StoreProduct): number 
 	const title = `${product.name} ${product.brand ?? ""}`;
 	const itemText = `${target.search.searchTerm} ${target.search.mustMatch.join(" ")} ${target.name}`;
 	let mult = 1;
+
+	// Wrong variety (colour / cut) — "Onion (white)" ≠ red onion, breast ≠ thigh.
+	mult *= varietyPenalty(target.name, title);
 
 	// Oil product is only valid for an oil item.
 	if (has(OIL_RE, title) && !has(OIL_RE, itemText)) mult *= 0.2;
