@@ -13,21 +13,22 @@ import { config } from "../core/config.js";
 
 const dryRun = process.argv.includes("--dry-run") || process.env.DRY_RUN === "1";
 
-const { deals, targetsConsidered, errors } = await runOnce();
+const { planDeals, otherDeals, targetsConsidered, errors } = await runOnce();
+const total = planDeals.length + otherDeals.length;
 console.error(
-	`Plan '${config.activePlanNumber()}': ${targetsConsidered} targets → ${deals.length} deals` +
+	`Plan '${config.activePlanNumber()}': ${targetsConsidered} targets → ${planDeals.length} plan + ${otherDeals.length} other deals` +
 		(errors.length ? `, ${errors.length} store errors` : ""),
 );
 
 await mkdir("public", { recursive: true });
-await writeFile("public/index.html", renderDealsPage(deals), "utf8");
+await writeFile("public/index.html", renderDealsPage(planDeals, otherDeals), "utf8");
 console.error("Wrote public/index.html");
 
 if (dryRun) {
-	console.error(`DRY RUN — would send: "${deals.length} deals → ${config.siteUrl()}"`);
-} else if (deals.length) {
-	await sendSummary(deals.length, config.siteUrl());
-	console.error(`Sent summary: ${deals.length} deals → ${config.siteUrl()}`);
+	console.error(`DRY RUN — would send: "${total} deals → ${config.siteUrl()}"`);
+} else if (total) {
+	await sendSummary(total, config.siteUrl());
+	console.error(`Sent summary: ${total} deals → ${config.siteUrl()}`);
 } else {
 	console.error("No deals today — nothing sent.");
 }

@@ -38,10 +38,12 @@ export interface PlanTarget {
 	/** Baseline to beat. Exactly one is set depending on unitType. */
 	baselinePer100g: number | null;
 	baselinePerUnit: number | null;
-	/** Monthly consumption: grams (By Gram) or units (By Unit). */
+	/** Monthly consumption: grams (By Gram) or units (By Unit). 0 if not in the active plan. */
 	monthlyAmount: number;
 	monthlyPacks: number;
 	monthlyCostSgd: number;
+	/** Whether this ingredient is used in the active plan (has monthly usage). */
+	inActivePlan: boolean;
 }
 
 function titleText(p: any): string {
@@ -75,7 +77,12 @@ async function queryAll(client: Client, dataSourceId: string): Promise<any[]> {
 	return out;
 }
 
-export async function readPlanTargets(): Promise<PlanTarget[]> {
+/**
+ * All grocery ingredients with a comparable baseline — the whole inventory, not
+ * just the active plan. Each is flagged `inActivePlan` and carries monthly usage
+ * (0 when not in the plan). Callers split plan vs. other for the two page sections.
+ */
+export async function readGroceryTargets(): Promise<PlanTarget[]> {
 	const client = new Client({ auth: config.notionToken() });
 	const planKey = `Used '${config.activePlanNumber()}' Plan`;
 
@@ -86,10 +93,6 @@ export async function readPlanTargets(): Promise<PlanTarget[]> {
 		const p = row.properties;
 		const name = titleText(p["Name"]);
 		if (!name) continue;
-
-		// Plan membership + monthly usage from the Used 'N' Plan formula string.
-		const usage = parseMonthlyUsage(formulaString(p[planKey]));
-		if (!usage) continue; // not in the active plan (empty string)
 
 		const category = selectName(p["Catagory"]);
 		if (NON_GROCERY_CATEGORIES.has(category)) continue; // groceries only
@@ -103,6 +106,9 @@ export async function readPlanTargets(): Promise<PlanTarget[]> {
 		const baselinePer100g = unitType === "By Gram" ? per100 : null;
 		const baselinePerUnit = unitType === "By Unit" ? packPriceSgd / packSize : null;
 
+		// Monthly usage from the Used 'N' Plan formula — null when not in the plan.
+		const usage = parseMonthlyUsage(formulaString(p[planKey]));
+
 		targets.push({
 			ingredientId: row.id,
 			name,
@@ -113,9 +119,10 @@ export async function readPlanTargets(): Promise<PlanTarget[]> {
 			packSize,
 			baselinePer100g,
 			baselinePerUnit,
-			monthlyAmount: usage.amount,
-			monthlyPacks: usage.packs,
-			monthlyCostSgd: usage.costSgd,
+			monthlyAmount: usage?.amount ?? 0,
+			monthlyPacks: usage?.packs ?? 0,
+			monthlyCostSgd: usage?.costSgd ?? 0,
+			inActivePlan: !!usage,
 		});
 	}
 	return targets;

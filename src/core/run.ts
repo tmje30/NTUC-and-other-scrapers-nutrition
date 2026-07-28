@@ -1,21 +1,23 @@
-import { readPlanTargets, type PlanTarget } from "./notion.js";
+import { readGroceryTargets, type PlanTarget } from "./notion.js";
 import { fairprice } from "./stores/fairprice.js";
 import { shengsiong } from "./stores/shengsiong.js";
 import { findDeal, type Deal } from "./compare.js";
 import type { StoreModule, StoreProduct } from "./stores/types.js";
 
 /**
- * One full daily pass: read the active plan, search every store for each
- * comparable (By-Gram) target, and find the best cross-store per-100g deal.
- * Cross-store is the point — concatenating candidates lets findDeal pick the
- * single cheapest qualifying product across all stores.
+ * One full daily pass: read the whole grocery inventory, search every store for
+ * each comparable (By-Gram) target, find the best cross-store per-100g deal, and
+ * split results into active-plan deals vs. other-inventory deals.
  */
 
 const STORES: StoreModule[] = [fairprice, shengsiong];
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export interface RunResult {
-	deals: Deal[];
+	/** Deals on ingredients used in the active plan (sorted by monthly saving). */
+	planDeals: Deal[];
+	/** Deals on the rest of the inventory (sorted by % saving). */
+	otherDeals: Deal[];
 	targetsConsidered: number;
 	errors: { target: string; store: string; message: string }[];
 }
@@ -37,7 +39,7 @@ async function searchAllStores(
 }
 
 export async function runOnce(): Promise<RunResult> {
-	const targets = readPlanTargets ? await readPlanTargets() : [];
+	const targets = await readGroceryTargets();
 	const comparable = targets.filter((t) => t.baselinePer100g != null); // By-Gram in v1
 
 	const deals: Deal[] = [];
@@ -49,7 +51,12 @@ export async function runOnce(): Promise<RunResult> {
 	}
 
 	shengsiong.close();
-	// Best savings first.
-	deals.sort((a, b) => b.monthlySavingSgd - a.monthlySavingSgd);
-	return { deals, targetsConsidered: comparable.length, errors };
+	// Plan deals first (by monthly saving); other-inventory deals after (by % off).
+	const planDeals = deals
+		.filter((d) => d.target.inActivePlan)
+		.sort((a, b) => b.monthlySavingSgd - a.monthlySavingSgd);
+	const otherDeals = deals
+		.filter((d) => !d.target.inActivePlan)
+		.sort((a, b) => b.savingPct - a.savingPct);
+	return { planDeals, otherDeals, targetsConsidered: comparable.length, errors };
 }

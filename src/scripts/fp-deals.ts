@@ -1,4 +1,4 @@
-import { readPlanTargets } from "../core/notion.js";
+import { readGroceryTargets } from "../core/notion.js";
 import { fairprice } from "../core/stores/fairprice.js";
 import { findDeal } from "../core/compare.js";
 import { config } from "../core/config.js";
@@ -7,7 +7,7 @@ import { config } from "../core/config.js";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-const targets = await readPlanTargets();
+const targets = (await readGroceryTargets()).filter((t) => t.inActivePlan);
 const comparable = targets.filter((t) => t.baselinePer100g != null); // By-Gram in v1
 
 console.log(

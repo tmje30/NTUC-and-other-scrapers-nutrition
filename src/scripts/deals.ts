@@ -3,10 +3,12 @@ import { config } from "../core/config.js";
 
 /** Full cross-store deal scan (FairPrice + Sheng Siong). */
 
-const { deals, targetsConsidered, errors } = await runOnce();
+const { planDeals, otherDeals, targetsConsidered, errors } = await runOnce();
 
-console.log(`Plan '${config.activePlanNumber()}': ${targetsConsidered} comparable targets → ${deals.length} deals\n`);
-for (const d of deals) {
+console.log(
+	`Plan '${config.activePlanNumber()}': ${targetsConsidered} comparable targets → ${planDeals.length} plan + ${otherDeals.length} other deals\n`,
+);
+for (const d of [...planDeals, ...otherDeals]) {
 	console.log(
 		`✅ ${d.target.name}\n` +
 			`    ${d.product.store}: ${d.product.name} @ ${d.productPer100g.toFixed(3)}/100g ` +

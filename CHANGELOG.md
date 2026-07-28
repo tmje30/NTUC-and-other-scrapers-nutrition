@@ -41,6 +41,11 @@ All notable changes to this project are documented here. Format based on
   scripts; one Telegram summary message ("N deals today → link") replaces the
   per-deal messages.
 
+- Whole-inventory scan: `readGroceryTargets()` reads every grocery ingredient
+  (not just the active plan). The page now has two sections — "In your plan"
+  (with monthly usage) and "Other items on offer" (rest of the inventory).
+  Deal cards also show price per 100g/100ml beside the per-kg/L price.
+
 ### Changed
 - Telegram message cleaned up: item name is the link, shows pack size `[700g]`
   / `[640ml]`, price per kg (per L for volumetric), monthly usage; dropped the
