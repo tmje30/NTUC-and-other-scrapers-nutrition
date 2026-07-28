@@ -3,7 +3,7 @@ name: Daily grocery deal scan
 on:
   schedule:
     # 22:00 UTC = 06:00 Singapore time (UTC+8), once daily.
-    - cron: "0 22 * * *"
+    - cron: "0 2 * * *"
   workflow_dispatch: # allow manual runs from the Actions tab
 
 # Needed for the GitHub Pages deploy.
