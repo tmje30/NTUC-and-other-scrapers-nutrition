@@ -16,7 +16,8 @@
 		"start": "tsx src/github/main.ts",
 		"dry-run": "tsx src/github/main.ts --dry-run",
 		"build-site": "tsx src/scripts/build-site.ts",
-		"notify": "tsx src/scripts/notify.ts"
+		"notify": "tsx src/scripts/notify.ts",
+		"push-ss": "tsx src/scripts/push-shengsiong.ts"
 	},
 	"engines": {
 		"node": ">=22.0.0",

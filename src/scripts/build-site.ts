@@ -10,7 +10,7 @@ import { config } from "../core/config.js";
  * The workflow deploys public/ to Pages, then runs notify.ts.
  */
 
-const { planDeals, otherDeals, targetsConsidered, errors } = await runOnce();
+const { planDeals, otherDeals, targetsConsidered, searchTerms, errors } = await runOnce();
 const total = planDeals.length + otherDeals.length;
 console.error(
 	`Plan '${config.activePlanNumber()}': ${targetsConsidered} targets → ${planDeals.length} plan + ${otherDeals.length} other deals` +
@@ -35,3 +35,16 @@ await writeFile(
 	"utf8",
 );
 console.error(`Wrote public/index.html (${total} deals) and public/summary.json`);
+
+// Publish the search terms so residential runners (phone/laptop) can fetch them
+// without a Notion token. Wrapped so a failure here never breaks the page/notify.
+try {
+	await writeFile(
+		"public/targets.json",
+		JSON.stringify({ generatedAt: new Date().toISOString(), terms: searchTerms }),
+		"utf8",
+	);
+	console.error(`Wrote public/targets.json (${searchTerms.length} terms)`);
+} catch (e: any) {
+	console.error(`Warning: failed to write public/targets.json: ${e.message}`);
+}

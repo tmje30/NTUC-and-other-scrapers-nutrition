@@ -19,6 +19,8 @@ export interface RunResult {
 	/** Deals on the rest of the inventory (sorted by % saving). */
 	otherDeals: Deal[];
 	targetsConsidered: number;
+	/** Unique store search terms scanned (for publishing to runners). */
+	searchTerms: string[];
 	errors: { target: string; store: string; message: string }[];
 }
 
@@ -41,6 +43,9 @@ async function searchAllStores(
 export async function runOnce(): Promise<RunResult> {
 	const targets = await readGroceryTargets();
 	const comparable = targets.filter((t) => t.baselinePer100g != null); // By-Gram in v1
+	const searchTerms = [
+		...new Set(comparable.map((t) => t.search.searchTerm).filter(Boolean)),
+	];
 
 	const deals: Deal[] = [];
 	const errors: RunResult["errors"] = [];
@@ -58,5 +63,5 @@ export async function runOnce(): Promise<RunResult> {
 	const otherDeals = deals
 		.filter((d) => !d.target.inActivePlan)
 		.sort((a, b) => b.savingPct - a.savingPct);
-	return { planDeals, otherDeals, targetsConsidered: comparable.length, errors };
+	return { planDeals, otherDeals, targetsConsidered: comparable.length, searchTerms, errors };
 }
