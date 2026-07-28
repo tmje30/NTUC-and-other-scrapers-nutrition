@@ -27,6 +27,8 @@ const TARGETS_URL =
 const OUT = "data/shengsiong-latest.json";
 const FORCE = process.argv.includes("--force");
 const NO_PUSH = process.argv.includes("--no-push");
+/** Which runner produced this data (for the commit message + payload). */
+const SOURCE = process.env.RUNNER_SOURCE ?? "phone";
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /** Today's date in Singapore (UTC+8, no DST) as YYYY-MM-DD. */
@@ -61,7 +63,7 @@ function gitPush(today: string): void {
 	} catch {
 		/* staged changes present — continue */
 	}
-	execSync(`git commit -m "data: Sheng Siong scan ${today} (phone)"`, { stdio: "inherit" });
+	execSync(`git commit -m "data: Sheng Siong scan ${today} (${SOURCE})"`, { stdio: "inherit" });
 	execSync("git push", { stdio: "inherit" });
 	console.error("Pushed.");
 }
@@ -98,7 +100,7 @@ async function main(): Promise<void> {
 	const payload = {
 		date: today,
 		generatedAt: new Date().toISOString(),
-		source: "phone",
+		source: SOURCE,
 		terms: terms.length,
 		results,
 	};
