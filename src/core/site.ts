@@ -43,7 +43,8 @@ function dealCard(d: Deal): string {
       <div class="price"><b>$${(d.productPer100g * 10).toFixed(2)}/${u}</b>
         <span class="per100">· $${d.productPer100g.toFixed(2)}/${smallUnit(p.volumetric)}</span>
         <span class="was">vs $${(d.baselinePer100g * 10).toFixed(2)}/${u}</span></div>
-      <div class="meta"><span class="store">${esc(p.store)}</span> · ${esc(p.name)} · uses ~${usage}/month ${sale}</div>
+      <div class="meta"><span class="store">${esc(p.store)}</span> · ${esc(p.name)} ${sale}</div>
+      <div class="usage">uses ~${usage}/month</div>
     </a>`;
 }
 
@@ -87,12 +88,13 @@ export function renderDealsPage(deals: Deal[], generatedAt = new Date()): string
   .per100 { color: #6b7280; font-size: .9rem; }
   .was { color: #9ca3af; text-decoration: line-through; font-size: .9rem; margin-left: 4px; }
   .meta { color: #6b7280; font-size: .85rem; margin-top: 4px; }
+  .usage { color: #6b7280; font-size: .85rem; margin-top: 2px; }
   .store { color: #1a1d21; font-weight: 600; }
   .sale { color: #b42318; font-weight: 600; }
   .empty { text-align: center; color: #6b7280; padding: 40px 0; }
   @media (prefers-color-scheme: dark) {
     body { background: #0f1115; color: #e5e7eb; }
-    .sub, .pack, .meta, .per100 { color: #9aa1ab; }
+    .sub, .pack, .meta, .per100, .usage { color: #9aa1ab; }
     .card { background: #171a1f; border-color: #262b32; box-shadow: none; }
     .pct { color: #6ee7b7; background: #06251a; }
     .store { color: #e5e7eb; }
