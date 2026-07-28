@@ -11,6 +11,9 @@ function esc(s: string): string {
 function bigUnit(v: boolean) {
 	return v ? "L" : "kg";
 }
+function smallUnit(v: boolean) {
+	return v ? "100ml" : "100g";
+}
 function packLabel(n: number, v: boolean): string {
 	const big = v ? "L" : "kg";
 	const small = v ? "ml" : "g";
@@ -38,6 +41,7 @@ function dealCard(d: Deal): string {
         <span class="pct">−${d.savingPct.toFixed(0)}%</span>
       </div>
       <div class="price"><b>$${(d.productPer100g * 10).toFixed(2)}/${u}</b>
+        <span class="per100">· $${d.productPer100g.toFixed(2)}/${smallUnit(p.volumetric)}</span>
         <span class="was">vs $${(d.baselinePer100g * 10).toFixed(2)}/${u}</span></div>
       <div class="meta"><span class="store">${esc(p.store)}</span> · ${esc(p.name)} · uses ~${usage}/month ${sale}</div>
     </a>`;
@@ -80,6 +84,7 @@ export function renderDealsPage(deals: Deal[], generatedAt = new Date()): string
   .pct { color: #067647; font-weight: 700; background: #ecfdf3; border-radius: 8px; padding: 1px 8px; white-space: nowrap; }
   .price { margin-top: 3px; }
   .price b { font-size: 1.05rem; }
+  .per100 { color: #6b7280; font-size: .9rem; }
   .was { color: #9ca3af; text-decoration: line-through; font-size: .9rem; margin-left: 4px; }
   .meta { color: #6b7280; font-size: .85rem; margin-top: 4px; }
   .store { color: #1a1d21; font-weight: 600; }
@@ -87,7 +92,7 @@ export function renderDealsPage(deals: Deal[], generatedAt = new Date()): string
   .empty { text-align: center; color: #6b7280; padding: 40px 0; }
   @media (prefers-color-scheme: dark) {
     body { background: #0f1115; color: #e5e7eb; }
-    .sub, .pack, .meta { color: #9aa1ab; }
+    .sub, .pack, .meta, .per100 { color: #9aa1ab; }
     .card { background: #171a1f; border-color: #262b32; box-shadow: none; }
     .pct { color: #6ee7b7; background: #06251a; }
     .store { color: #e5e7eb; }
