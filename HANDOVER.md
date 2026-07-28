@@ -84,11 +84,15 @@ Phone/laptop hybrid is **partly built and proven**:
   logs to `..\push-ss.log`); Task Scheduler task **"ShengSiong Daily Scan"** at
   05:30 SGT daily (StartWhenAvailable, runs on battery, InteractiveToken → GCM
   auth, no PAT stored). Proven end to end.
-- **Still not done:** Termux *scheduling* (paused — `git pull` wasn't landing
-  `phone-run.sh` on the phone; the push path itself is proven); the **cloud
-  consumption side** (nothing reads `data/shengsiong-latest.json` yet, so the
-  page is still FairPrice-only — this is the remaining payoff); the 10:00 SGT
-  schedule change.
+- **Cloud consumption side DONE:** `src/core/stores/shengsiong-file.ts` reads
+  `data/shengsiong-latest.json` (only if dated today, SGT, else FairPrice-only,
+  never a live call); `run.ts` defaults to it, `SHENGSIONG_LIVE=1` forces live
+  (local). No workflow edit needed. `push-ss` strips `raw` (file ~96 KB). Verified
+  locally (SS wins cards with the file; clean fallback without). **Goes live on the
+  next cloud run** — the full hybrid is then working end to end.
+- **Still not done:** Termux *scheduling* (paused; push path proven, laptop already
+  covers the runner role so this is optional redundancy); the 10:00 SGT schedule
+  change (web-editor edit; token lacks `workflow` scope).
 
 ## Agreed design: phone/laptop hybrid
 
