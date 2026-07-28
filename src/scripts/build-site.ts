@@ -16,6 +16,16 @@ console.error(
 	`Plan '${config.activePlanNumber()}': ${targetsConsidered} targets → ${planDeals.length} plan + ${otherDeals.length} other deals` +
 		(errors.length ? `, ${errors.length} store errors` : ""),
 );
+if (errors.length) {
+	const byStore = new Map<string, { count: number; sample: string }>();
+	for (const e of errors) {
+		const cur = byStore.get(e.store) ?? { count: 0, sample: e.message };
+		byStore.set(e.store, { count: cur.count + 1, sample: cur.sample });
+	}
+	for (const [store, { count, sample }] of byStore) {
+		console.error(`  ${store}: ${count} errors — e.g. "${sample}"`);
+	}
+}
 
 await mkdir("public", { recursive: true });
 await writeFile("public/index.html", renderDealsPage(planDeals, otherDeals), "utf8");
