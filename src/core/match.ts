@@ -166,11 +166,6 @@ const BEVERAGE_ITEM_RE = /\b(wine|juice|coffee|tea|drink|soda|kombucha|beer|cide
 
 const has = (re: RegExp, s: string) => re.test(s || "");
 
-/** How wildly larger a candidate pack may be than the item's own before it looks
- * like a bulk/industrial/wrong format (the 25 kg "cinnamon", 6 L "apple"). Set
- * high so genuine bulk savings (e.g. 5 kg rice vs a 1 kg pack) are untouched. */
-const PACK_RATIO_MAX = 15;
-
 /**
  * Multiplier in (0,1]. 1 = no concern. Mirrors the inventory project's
  * `matchPenalty`, adapted to grocery targets.
@@ -199,16 +194,10 @@ export function matchPenalty(target: PlanTarget, product: StoreProduct): number 
 	// dish / non-food) the item didn't ask for.
 	if (has(GENERIC_FORM_RE, title) && !has(GENERIC_FORM_RE, itemText)) mult *= 0.2;
 
-	// Pack-size plausibility: an absurdly larger pack than the item's own is
-	// likely a bulk/industrial listing or a different format. Only extreme ratios.
-	if (
-		product.packWeightG != null &&
-		product.packWeightG > 0 &&
-		target.packSize > 0 &&
-		product.packWeightG > target.packSize * PACK_RATIO_MAX
-	) {
-		mult *= 0.4;
-	}
+	// NB: no pack-size guard — bulk/oversized packs are kept on purpose (a big
+	// cheap pack may still be worth it). Correct-product oversized listings (e.g.
+	// a 25 kg cinnamon) are allowed to win on price. Wrong-form products (a 6 L
+	// "sparkling apple") are already handled by the drink/form penalties above.
 
 	return mult;
 }
