@@ -29,22 +29,31 @@ function dealCard(d: Deal): string {
 	const t = d.target;
 	const p = d.product;
 	const u = bigUnit(p.volumetric);
-	const pack = p.packWeightG ? ` <span class="pack">[${packLabel(p.packWeightG, p.volumetric)}]</span>` : "";
+	const small = smallUnit(p.volumetric);
+	// The item's own pack next to the name; the recommended product's pack/vol
+	// next to the product (same bracket style), so both sizes are visible.
+	const itemPack = t.packSize > 0 ? ` <span class="pack">[${packLabel(t.packSize, p.volumetric)}]</span>` : "";
+	const prodPack = p.packWeightG ? ` <span class="pack">[${packLabel(p.packWeightG, p.volumetric)}]</span>` : "";
 	const usage = t.unitType === "By Gram" ? amount(t.monthlyAmount, p.volumetric) : `${t.monthlyAmount} units`;
+	const normally =
+		t.inActivePlan && t.monthlyCostSgd > 0
+			? ` · <span class="normally">normally $${t.monthlyCostSgd.toFixed(2)}/month</span>`
+			: "";
 	const sale = p.onSale
 		? `<span class="sale">🔻 on sale${p.listPriceSgd ? ` (was $${p.listPriceSgd.toFixed(2)})` : ""}</span>`
 		: "";
 	return `
     <a class="card" href="${esc(p.url)}" target="_blank" rel="noopener">
       <div class="row1">
-        <span class="name">${esc(t.name)}${pack}</span>
+        <span class="name">${esc(t.name)}${itemPack}</span>
         <span class="pct">−${d.savingPct.toFixed(0)}%</span>
       </div>
       <div class="price"><b>$${(d.productPer100g * 10).toFixed(2)}/${u}</b>
-        <span class="per100">· $${d.productPer100g.toFixed(2)}/${smallUnit(p.volumetric)}</span>
-        <span class="was">vs $${(d.baselinePer100g * 10).toFixed(2)}/${u}</span></div>
-      <div class="meta"><span class="store">${esc(p.store)}</span> · ${esc(p.name)} ${sale}</div>
-      ${t.inActivePlan ? `<div class="usage">uses ~${usage}/month</div>` : ""}
+        <span class="per100">$${d.productPer100g.toFixed(2)}/${small}</span>
+        <span class="now">$${p.priceSgd.toFixed(2)}</span>
+        <span class="was">vs $${(d.baselinePer100g * 10).toFixed(2)}/${u} $${d.baselinePer100g.toFixed(2)}/${small}</span></div>
+      <div class="meta"><span class="store">${esc(p.store)}</span> · ${esc(p.name)}${prodPack} ${sale}</div>
+      ${t.inActivePlan ? `<div class="usage">uses ~${usage}/month${normally}</div>` : ""}
     </a>`;
 }
 
@@ -120,9 +129,11 @@ export function renderDealsPage(
   .price { margin-top: 3px; }
   .price b { font-size: 1.05rem; }
   .per100 { color: #6b7280; font-size: .9rem; }
-  .was { color: #9ca3af; text-decoration: line-through; font-size: .9rem; margin-left: 4px; }
+  .now { color: #1d4ed8; font-weight: 700; font-size: .95rem; margin-left: 6px; }
+  .was { color: #9ca3af; text-decoration: line-through; font-size: .9rem; margin-left: 6px; }
   .meta { color: #6b7280; font-size: .85rem; margin-top: 4px; }
   .usage { color: #6b7280; font-size: .85rem; margin-top: 2px; }
+  .normally { color: #92400e; font-weight: 600; }
   .store { color: #1a1d21; font-weight: 600; }
   .sale { color: #b42318; font-weight: 600; }
   .empty { text-align: center; color: #6b7280; padding: 40px 0; }
@@ -133,6 +144,8 @@ export function renderDealsPage(
     .pct { color: #6ee7b7; background: #06251a; }
     .store { color: #e5e7eb; }
     .was { color: #6b7280; }
+    .now { color: #7da5ff; }
+    .normally { color: #e0a35a; }
   }
 </style>
 </head>
