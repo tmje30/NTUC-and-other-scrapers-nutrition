@@ -8,31 +8,96 @@ Read this first, then `LEARNINGS.md` (deep technical detail + gotchas) and
 A daily job reads the user's Notion **Ingredients** DB + active plan, scrapes
 **FairPrice** and **Sheng Siong** for cheaper prices per 100g/kg (per L for
 liquids), and posts **one Telegram message → a GitHub Pages page** listing the
-deals. **It is LIVE and self-running.** FairPrice works everywhere; Sheng Siong
-is blocked from the cloud (see blocker below) — the next phase fixes that with a
-phone/laptop hybrid.
+deals. **It is LIVE and self-running, including Sheng Siong.**
 
-## Live system (deployed, working)
+Sheng Siong is blocked from datacenter IPs, so it runs via a **residential-IP
+hybrid**: a runner (the user's **laptop**, daily) scans Sheng Siong and commits
+`data/shengsiong-latest.json`; the cloud reads that file. FairPrice runs in the
+cloud directly. If the file is missing/stale the page degrades to FairPrice-only.
+
+## Live system
 
 - **Repo:** https://github.com/tmje30/NTUC-and-other-scrapers-nutrition — **PUBLIC**
   (Pages needs public on the free plan; no secrets in repo), branch `main`.
 - **Live page:** https://tmje30.github.io/NTUC-and-other-scrapers-nutrition/
   (two sections: "In your plan" + "Other items on offer"; cards show
   `Item [packsize]  −%`, `$/kg · $/100g`, `store · product`, `uses ~X/month`).
-- **Schedule:** GitHub Actions `.github/workflows/daily.yml`. **Currently 06:00 SGT**
-  (`cron: "0 22 * * *"`). ⚠️ User wanted **10:00 SGT** (`"0 2 * * *"`) — NOT yet
-  applied (needs a one-line web-editor edit; see TODO).
+- **Cloud schedule:** GitHub Actions `.github/workflows/daily.yml`. **06:00 SGT**
+  (`cron: "0 22 * * *"`), plus manual `workflow_dispatch`. ⚠️ User wanted **10:00
+  SGT** (`"0 2 * * *"`) — not yet applied (web-editor edit; see Remaining work).
 - **Telegram:** reuses the user's Notion-Worker bot **@Big_Notion_Bot**, chat
   `7626546412`. Secrets `NOTION_TOKEN`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`
-  are set as GitHub Actions secrets. Locally they live in `.env` (gitignored).
+  are GitHub Actions secrets. Locally they live in `.env` (gitignored).
 - **Runtime:** portable Node/TS core (`src/core/`), run with `tsx`. Node 22+.
+
+## How the hybrid works
+
+```
+Laptop (Task Scheduler, 05:30 SGT)        Cloud (Actions, 06:00 SGT)
+  npm run push-ss:                           npm run build-site:
+   - fetch terms from public targets.json     - scan FairPrice live
+   - live Sheng Siong scan (residential IP)   - read data/shengsiong-latest.json
+   - write data/shengsiong-latest.json          (dated today? cross-store : FP-only)
+   - git commit + push  ──────────────────►   - deploy Pages page
+                                              - npm run notify → Telegram digest
+```
+
+- **Cloud reader:** `src/core/stores/shengsiong-file.ts` reads
+  `data/shengsiong-latest.json`, used **only if `date` == today (SGT)**, else Sheng
+  Siong contributes nothing (FairPrice-only). It **never makes a live SS call**, so
+  the datacenter-IP block is irrelevant in the cloud. `run.ts` defaults to this file
+  source; `SHENGSIONG_LIVE=1` forces the live DDP module (local testing only). The
+  runner script (`push-shengsiong.ts`) always uses live SS. **No workflow-file edit
+  was needed** to wire this up.
+- **Data file shape:** `{ date, generatedAt, source, terms, results: {searchTerm:
+  StoreProduct[]} }`. `raw` payloads are stripped before writing (file ~96 KB).
+  `source` is `phone` or `laptop` (from `RUNNER_SOURCE`).
+- **Fallback chain:** laptop → cloud FairPrice floor. (Phone is optional extra
+  redundancy — see below.)
+
+### Laptop runner (primary residential runner — DONE, running)
+
+- **Dedicated clone:** `C:\Users\newuser\shengsiong-runner\repo` (separate from the
+  dev repo so the daily job never collides with development).
+- **Wrapper:** `C:\Users\newuser\shengsiong-runner\run.cmd` — sets
+  `RUNNER_SOURCE=laptop`, adds node+git to PATH, does `git pull` then
+  `npm run push-ss`, logs to `..\push-ss.log`.
+- **Task:** Windows Task Scheduler **"ShengSiong Daily Scan"**, daily 05:30 SGT.
+  `StartWhenAvailable` (runs if the laptop was off/asleep at 05:30), runs on
+  battery, `InteractiveToken` (runs as the logged-in user → Git Credential Manager
+  auth works, **no PAT stored**). Registered from `..\task.xml`.
+- **Self-gating:** `push-ss` skips if today's SGT-dated file already exists, so
+  extra runs are instant no-ops. `--force` rescans; `--no-push` skips git.
+- To reconfigure the task: `schtasks /Query|/Run|/Change|/Delete /TN "ShengSiong
+  Daily Scan"`. Check it ran: `type C:\Users\newuser\shengsiong-runner\push-ss.log`.
+
+### Phone runner (optional redundancy — PAUSED)
+
+The phone→cloud **push path is proven** (an Android phone ran `npm run push-ss`
+from its residential IP and pushed a real scan). Only the **Termux scheduling** is
+unfinished — `git pull` on the phone wasn't landing `phone-run.sh`
+(`./phone-run.sh` → "no such file"), and the job wasn't registered. Since the
+laptop now covers the runner role, this is optional. To finish later:
+- On the phone, in `~/NTUC-and-other-scrapers-nutrition`: `git pull` (diagnose why
+  it didn't update — check `git log --oneline -1`, `git status`), `chmod +x
+  phone-run.sh`, `pkg install termux-api -y`.
+- Register: `termux-job-scheduler --script ~/NTUC-and-other-scrapers-nutrition/
+  phone-run.sh --period-ms 10800000 --network any --persisted true` (runs every 3h;
+  script self-gates). Confirm with `--pending`.
+- Android battery: set Termux + Termux:API to **Unrestricted**; on Xiaomi/MIUI also
+  enable **Autostart** and lock Termux in recents.
+- Phone auth = fine-grained PAT baked into the remote:
+  `git remote set-url origin https://tmje30:$T@github.com/tmje30/NTUC-and-other-scrapers-nutrition.git`
+  (see PAT gotchas below).
 
 ## Commands (run from repo root, needs `.env`)
 
-- `npm run build-site` — full scan → writes `public/index.html` + `summary.json`.
+- `npm run push-ss` — residential runner: fetch terms → SS scan → write
+  `data/shengsiong-latest.json` → git push. `--force` / `--no-push`.
+- `npm run build-site` — full scan → `public/index.html`, `summary.json`,
+  `targets.json`. (Uses the SS file by default; `SHENGSIONG_LIVE=1` for live SS.)
 - `npm run dry-run` / `npm start` — scan + (dry: print / real: send Telegram).
-- `npm run ss -- tofu milk` — test Sheng Siong module.
-- `npm run fp -- tofu` — test FairPrice module.
+- `npm run ss -- tofu milk` / `npm run fp -- tofu` — test a store module (live).
 - `npm run deals` — cross-store deal list to console.
 - `npm run targets` — resolved active-plan grocery targets.
 - `npm run check` — typecheck.
@@ -51,104 +116,40 @@ phone/laptop hybrid.
 - **Sheng Siong** = Meteor DDP over WebSocket (`wss://shengsiong.com.sg/websocket`,
   `ws` lib). Method `Products.getByAllSlugs(filters, misc, page, size)` — 4
   positional args; query in `filters.searchFilter.slug`. Weight from `packSize`.
+  **Incapsula blocks datacenter IPs** (DDP handshake gets a `200` challenge instead
+  of upgrading); works from residential IPs, no browser needed — hence the hybrid.
 - **Match quality** = `FORM_WORDS` negative filter in `compare.ts` (rejects
   "Banana"→"Banana Milk", "Butter"→"Peanut Butter", etc.). Soft matches fixed by
   renaming the ingredient in Notion.
 - **Price/units:** compare per 100g; display per kg (per L for volumetric ml/L
   items — `volumetric` flag on `StoreProduct`).
-- **Gotcha:** dotenv v17 prints a promo banner to stdout — load with
-  `config({ quiet: true })`. It once corrupted a piped GitHub secret.
+- **Adding items** is pure Notion: the runner has no hardcoded list — it fetches
+  terms live from the Pages `targets.json` (which the cloud rebuilds from Notion).
 
-## The blocker
+## Remaining work (all optional)
 
-**Sheng Siong's Incapsula blocks GitHub's datacenter IP** — the DDP WebSocket
-handshake gets a `200` challenge instead of upgrading ("DDP websocket:
-Unexpected server response: 200"). It works fine from a **residential IP**
-(local), with NO browser needed (plain Node DDP). FairPrice has no such wall.
-Confirmed it's IP-reputation based (browser headers didn't help). The user's
-other project (`C:\Users\newuser\Claude\Inventory Price upkeeper worker [Notion]`,
-`Price-Scout Template`) hits the same class of wall and solves it by driving the
-user's REAL local Chrome over CDP — i.e. it also runs locally/residential.
-
-## Progress (2026-07-28)
-
-Phone/laptop hybrid is **partly built and proven**:
-- Built + on `main`: `src/scripts/push-shengsiong.ts` (`npm run push-ss`),
-  `public/targets.json` publishing in `build-site.ts`, `RunResult.searchTerms`,
-  and `phone-run.sh` (Termux wrapper).
-- **Proven:** an Android phone ran `npm run push-ss` from its residential IP and
-  pushed `data/shengsiong-latest.json` (44 terms, 308 products) — the
-  phone→cloud push path works end to end.
-- **Laptop runner DONE:** dedicated clone `C:\Users\newuser\shengsiong-runner\repo`
-  + `run.cmd` (sets `RUNNER_SOURCE=laptop`, `git pull` then `npm run push-ss`,
-  logs to `..\push-ss.log`); Task Scheduler task **"ShengSiong Daily Scan"** at
-  05:30 SGT daily (StartWhenAvailable, runs on battery, InteractiveToken → GCM
-  auth, no PAT stored). Proven end to end.
-- **Cloud consumption side DONE:** `src/core/stores/shengsiong-file.ts` reads
-  `data/shengsiong-latest.json` (only if dated today, SGT, else FairPrice-only,
-  never a live call); `run.ts` defaults to it, `SHENGSIONG_LIVE=1` forces live
-  (local). No workflow edit needed. `push-ss` strips `raw` (file ~96 KB). Verified
-  locally (SS wins cards with the file; clean fallback without). **Goes live on the
-  next cloud run** — the full hybrid is then working end to end.
-- **Still not done:** Termux *scheduling* (paused; push path proven, laptop already
-  covers the runner role so this is optional redundancy); the 10:00 SGT schedule
-  change (web-editor edit; token lacks `workflow` scope).
-
-## Agreed design: phone/laptop hybrid
-
-Keep FairPrice in the cloud; run Sheng Siong from a residential IP. User has an
-**Android phone** (always on them, 500 GB data) = primary runner; **laptop** =
-fallback; cloud FairPrice = floor.
-
-**Design (approved by user):**
-1. **Cloud (daily cron):** `build-site` scans FairPrice live, and reads a small
-   `data/shengsiong-latest.json` for Sheng Siong. If that file's `date` == today
-   (SGT) → cross-store page; else → FairPrice-only. Also publish the search-terms
-   list to Pages (`public/targets.json`) so runners can read it without a token.
-   Deploy page + send Telegram (unchanged path).
-2. **Phone (primary, Termux/Android):** a tiny job shortly before the cron —
-   fetch terms from the public `targets.json` (no login), run the **Sheng Siong
-   scan only** (residential IP, no browser, KB-sized), and **push**
-   `data/shengsiong-latest.json` to the repo. Skip if today's file already exists.
-3. **Laptop (fallback, Task Scheduler):** the SAME script; runs only if the phone
-   didn't push today's file.
-4. **Fallback chain:** phone → laptop → cloud-FairPrice. One shared page.
-
-**Nice properties:** phone carries only ONE narrow secret — a fine-grained GitHub
-PAT (this repo, contents: write). No Notion/Telegram tokens on the phone. No Pages
-or workflow-file changes needed.
-
-**To build:**
-- `src/scripts/push-shengsiong.ts` (runs on phone + laptop): fetch terms → live
-  Sheng Siong scan → write `data/shengsiong-latest.json` {date, results:
-  {searchTerm: StoreProduct[]}} → git commit+push (skip if already fresh today).
-- Cloud: a file-backed Sheng Siong source that reads `data/shengsiong-latest.json`
-  (used by `run.ts` in place of the live SS module when in cloud); `build-site`
-  writes `public/targets.json`.
-- Setup guides: Termux (install node/git, clone, schedule via cron/termux-job-
-  scheduler + wake-lock + battery-optimization exemption) and Windows Task Scheduler.
-
-**User must do (with guidance):** create the fine-grained GitHub PAT; set up
-Termux on the phone (~10 min) + the laptop scheduled task.
-
-**Caveat:** Android may skip the phone job some days (Doze/battery) — the laptop +
-cloud-FairPrice fallback absorbs that.
-
-## TODO (priority order)
-
-1. **Build the phone/laptop hybrid** (above) — the main next task.
-2. **Schedule → 10:00 SGT:** edit `.github/workflows/daily.yml` line 6 to
+1. **Schedule → 10:00 SGT:** edit `.github/workflows/daily.yml` line 6 to
    `cron: "0 2 * * *"` (and the comment) via the GitHub **web editor**
    (https://github.com/tmje30/NTUC-and-other-scrapers-nutrition/edit/main/.github/workflows/daily.yml)
-   — a local push can't touch workflow files (token lacks `workflow` scope; the
-   non-interactive `gh auth refresh` device-flow does NOT work from the agent shell).
+   — a local push can't touch workflow files (token lacks `workflow` scope). 10:00
+   also gives the laptop more morning windows to push before the cloud reads.
+2. **Finish the phone runner** (Termux scheduling) — optional redundancy; see above.
 3. Optional: By-Unit items (eggs) comparison; bump GH Actions `actions/*` versions
    (Node 20 deprecation warning); more `FORM_WORDS` tuning as false matches appear.
 
 ## Gotchas for whoever continues
 
 - **Workflow files** can't be pushed with the current `gh` token (no `workflow`
-  scope) — the user edits them via the GitHub web editor. `gh secret set` and
-  normal file pushes DO work.
+  scope) — edit them via the GitHub web editor. `gh secret set` and normal file
+  pushes DO work.
+- **Fine-grained PAT (phone/laptop push):** Repository access must be **All** or
+  **Only select repositories** (NOT "Public repositories", which locks perms
+  read-only), and Repository permission **Contents: Read and write** (add via
+  "+ Add permissions" → search "Contents", then set the access dropdown — "Read
+  and write" is the *level*, not a searchable permission name). Most reliable auth
+  = bake the token into the remote URL (two slashes after `https:`!). The laptop
+  uses Credential Manager instead, so it needs no PAT.
 - **PowerShell** wraps native-command stderr as red `NativeCommandError` — not a
   real failure; check the actual message/exit code.
+- Don't paste tokens where they'll appear in screenshots/scrollback — two PATs were
+  burned that way during setup (both since deleted).
