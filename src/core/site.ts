@@ -36,30 +36,33 @@ function dealCard(d: Deal): string {
 	const prodPack = p.packWeightG ? ` <span class="pack">[${packLabel(p.packWeightG, p.volumetric)}]</span>` : "";
 
 	// Prices — build each piece once, then arrange them in the rows below.
-	const iPay = `$${t.packPriceSgd.toFixed(2)}`; // what you pay for your own pack
+	const myPrice = `$${t.packPriceSgd.toFixed(2)}`; // what you pay for your own pack
+	const prodPrice = `$${p.priceSgd.toFixed(2)}`; // the found product's current price
 	const baseKg = `$${(d.baselinePer100g * 10).toFixed(2)}/${u}`;
-	const base100 = `$${d.baselinePer100g.toFixed(2)}/${small}`;
 	const dealKg = `$${(d.productPer100g * 10).toFixed(2)}/${u}`;
-	const deal100 = `$${d.productPer100g.toFixed(2)}/${small}`;
-	const nowPrice = `$${p.priceSgd.toFixed(2)}`; // the product's current price
+
+	// Store sale as a % off its own list price (distinct from the green badge,
+	// which is the saving vs YOUR price).
+	const salePct =
+		p.onSale && p.listPriceSgd && p.listPriceSgd > 0
+			? Math.round(((p.listPriceSgd - p.priceSgd) / p.listPriceSgd) * 100)
+			: null;
+	const sale = salePct != null ? ` <span class="sale">🔻 on sale (−${salePct}%)</span>` : "";
 
 	const usage = t.unitType === "By Gram" ? amount(t.monthlyAmount, p.volumetric) : `${t.monthlyAmount} units`;
-	const sale = p.onSale
-		? `<span class="sale">🔻 on sale${p.listPriceSgd ? ` (was $${p.listPriceSgd.toFixed(2)})` : ""}</span>`
-		: "";
 
 	return `
     <a class="card" href="${esc(p.url)}" target="_blank" rel="noopener">
-      <!-- Row 1: your item [pack] + what you normally pay, with the % saving -->
+      <!-- Row 1: your item [pack] + the price you pay (yellow), with the % saving -->
       <div class="row1">
         <span class="name">${esc(t.name)}${itemPack}
-          <span class="mine">I pay ${iPay} · ${baseKg} ${base100}</span></span>
+          <span class="mine">Price ${myPrice}</span></span>
         <span class="pct">−${d.savingPct.toFixed(0)}%</span>
       </div>
-      <!-- Row 2: the cheaper product we found -->
-      <div class="meta"><span class="store">${esc(p.store)}</span> · ${esc(p.name)}${prodPack} ${sale}</div>
-      <!-- Row 3: that product's price (current price in blue) -->
-      <div class="price"><b>${dealKg}</b> <span class="per100">${deal100}</span> <span class="now">${nowPrice}</span></div>
+      <!-- Row 2: the cheaper product we found + its price + sale % (red) -->
+      <div class="meta"><span class="store">${esc(p.store)}</span> · ${esc(p.name)}${prodPack} <span class="prodprice">${prodPrice}</span>${sale}</div>
+      <!-- Row 3: product $/kg vs your $/kg (struck through) -->
+      <div class="price"><b>${dealKg}</b> <span class="was">vs ${baseKg}</span></div>
       <!-- Row 4: how much of it you use -->
       ${t.inActivePlan ? `<div class="usage">uses ~${usage}/month</div>` : ""}
     </a>`;
@@ -137,21 +140,23 @@ export function renderDealsPage(
   .price { margin-top: 3px; }
   .price b { font-size: 1.05rem; }
   .per100 { color: #6b7280; font-size: .9rem; }
-  .now { color: #1d4ed8; font-weight: 700; font-size: .95rem; margin-left: 6px; }
-  .mine { color: #6b7280; font-size: .85rem; font-weight: 500; margin-left: 4px; white-space: nowrap; }
+  .mine { color: #ca8a04; font-size: .9rem; font-weight: 700; margin-left: 4px; white-space: nowrap; }
+  .was { color: #9ca3af; text-decoration: line-through; font-size: .9rem; margin-left: 4px; }
   .meta { color: #6b7280; font-size: .85rem; margin-top: 4px; }
+  .prodprice { color: #4b5563; font-weight: 600; }
   .usage { color: #6b7280; font-size: .85rem; margin-top: 2px; }
   .store { color: #1a1d21; font-weight: 600; }
   .sale { color: #b42318; font-weight: 600; }
   .empty { text-align: center; color: #6b7280; padding: 40px 0; }
   @media (prefers-color-scheme: dark) {
     body { background: #0f1115; color: #e5e7eb; }
-    .sub, .pack, .meta, .per100, .usage, .section, .empty-sm, .mine { color: #9aa1ab; }
+    .sub, .pack, .meta, .per100, .usage, .section, .empty-sm { color: #9aa1ab; }
     .card { background: #171a1f; border-color: #262b32; box-shadow: none; }
     .pct { color: #6ee7b7; background: #06251a; }
     .store { color: #e5e7eb; }
     .was { color: #6b7280; }
-    .now { color: #7da5ff; }
+    .mine { color: #facc15; }
+    .prodprice { color: #cbd2dc; }
   }
 </style>
 </head>
