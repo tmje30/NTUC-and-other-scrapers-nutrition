@@ -1,4 +1,8 @@
-import "dotenv/config";
+import { config as loadEnv } from "dotenv";
+
+// quiet: dotenv v17 otherwise prints a promo banner to stdout, which can corrupt
+// piped output (it once got baked into a GitHub secret). Keep stdout clean.
+loadEnv({ quiet: true });
 
 /**
  * Central config, sourced from environment variables.
