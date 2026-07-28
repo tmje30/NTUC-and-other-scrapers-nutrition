@@ -14,7 +14,9 @@
 		"ss": "tsx src/scripts/ss-search.ts",
 		"deals": "tsx src/scripts/deals.ts",
 		"start": "tsx src/github/main.ts",
-		"dry-run": "tsx src/github/main.ts --dry-run"
+		"dry-run": "tsx src/github/main.ts --dry-run",
+		"build-site": "tsx src/scripts/build-site.ts",
+		"notify": "tsx src/scripts/notify.ts"
 	},
 	"engines": {
 		"node": ">=22.0.0",

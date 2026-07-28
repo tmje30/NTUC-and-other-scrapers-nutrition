@@ -24,4 +24,7 @@ export const config = {
 	activePlanNumber: () => optional("ACTIVE_PLAN_NUMBER", "1"),
 	telegramBotToken: () => required("TELEGRAM_BOT_TOKEN"),
 	telegramChatId: () => required("TELEGRAM_CHAT_ID"),
+	/** Public URL of the deployed GitHub Pages deals page. */
+	siteUrl: () =>
+		optional("SITE_URL", "https://tmje30.github.io/NTUC-and-other-scrapers-nutrition/"),
 };

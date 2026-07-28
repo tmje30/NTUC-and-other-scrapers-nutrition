@@ -34,8 +34,17 @@ All notable changes to this project are documented here. Format based on
   (item, store, per-100g saving, sale note, monthly usage, link).
 - `src/github/main.ts` — GitHub Actions entry (`npm start`), with `npm run
   dry-run` to preview messages without a Telegram token.
-- `.github/workflows/daily.yml` — daily scheduled run (08:00 SGT) + manual
-  dispatch; reads NOTION_TOKEN / TELEGRAM_* from repo secrets.
+- `.github/workflows/daily.yml` — daily scheduled run (06:00 SGT) + manual
+  dispatch; scans, deploys the deals page to GitHub Pages, then notifies.
+- `src/core/site.ts` — renders the daily deals as a styled, mobile/dark-aware
+  HTML page (each card links to the store product). `build-site` + `notify`
+  scripts; one Telegram summary message ("N deals today → link") replaces the
+  per-deal messages.
+
+### Changed
+- Telegram message cleaned up: item name is the link, shows pack size `[700g]`
+  / `[640ml]`, price per kg (per L for volumetric), monthly usage; dropped the
+  per-month savings figure; "month" spelled out.
 
 ### Changed
 - Added `@notionhq/client` (v5) + `dotenv`. Portable Notion access no longer

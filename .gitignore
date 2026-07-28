@@ -2,6 +2,7 @@
 .env.*
 !.env.example
 dist/
+public/
 node_modules/
 workers.*.json
 workers.json
