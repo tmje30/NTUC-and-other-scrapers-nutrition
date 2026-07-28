@@ -72,6 +72,33 @@ const FORM_WORDS = [
 	"cashew",
 	"hazelnut",
 	"cocoa",
+	// Milk: a plain "Milk" target means cow's milk. Every other milk names its
+	// kind (soy/almond/goat/oat/…) or its form (powder/flavour) — block those so
+	// they don't undercut plain milk.
+	"soya",
+	"goat",
+	"oat milk",
+	"coconut milk",
+	"rice milk",
+	"lactose",
+	"milk powder",
+	"condensed",
+	"evaporated",
+	"concentrate",
+	"malt",
+	"chocolate",
+	"vanilla",
+	"strawberry",
+	// Fruit: a plain fruit name means the fruit itself. A juice/soda/etc. always
+	// says so in its name — block those forms so drinks don't match a fruit.
+	"sparkling",
+	"cider",
+	"vinegar",
+	"puree",
+	"sauce",
+	"jam",
+	"sorbet",
+	"squash",
 ];
 
 function tokens(s: string): string[] {
