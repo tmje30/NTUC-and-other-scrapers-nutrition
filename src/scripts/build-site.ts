@@ -10,12 +10,18 @@ import { config } from "../core/config.js";
  * The workflow deploys public/ to Pages, then runs notify.ts.
  */
 
-const { planDeals, otherDeals, targetsConsidered, searchTerms, errors } = await runOnce();
+const { planDeals, otherDeals, targetsConsidered, searchTerms, reviews, errors } = await runOnce();
 const total = planDeals.length + otherDeals.length;
 console.error(
 	`Plan '${config.activePlanNumber()}': ${targetsConsidered} targets → ${planDeals.length} plan + ${otherDeals.length} other deals` +
 		(errors.length ? `, ${errors.length} store errors` : ""),
 );
+if (reviews.length) {
+	console.error(`${reviews.length} borderline (review-band) near-misses — not published:`);
+	for (const r of reviews.slice(0, 12)) {
+		console.error(`  ${r.target} ≈ ${r.store} · ${r.product} (${r.score.toFixed(2)})`);
+	}
+}
 if (errors.length) {
 	const byStore = new Map<string, { count: number; sample: string }>();
 	for (const e of errors) {

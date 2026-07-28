@@ -2,7 +2,7 @@ import { readGroceryTargets, type PlanTarget } from "./notion.js";
 import { fairprice } from "./stores/fairprice.js";
 import { shengsiong } from "./stores/shengsiong.js";
 import { shengsiongFile } from "./stores/shengsiong-file.js";
-import { findDeal, type Deal } from "./compare.js";
+import { findDeal, findReview, type Deal } from "./compare.js";
 import type { StoreModule, StoreProduct } from "./stores/types.js";
 
 /**
@@ -26,6 +26,8 @@ export interface RunResult {
 	targetsConsidered: number;
 	/** Unique store search terms scanned (for publishing to runners). */
 	searchTerms: string[];
+	/** Borderline (review-band) near-misses for targets with no confident deal. */
+	reviews: { target: string; store: string; product: string; score: number }[];
 	errors: { target: string; store: string; message: string }[];
 }
 
@@ -54,10 +56,23 @@ export async function runOnce(): Promise<RunResult> {
 
 	const deals: Deal[] = [];
 	const errors: RunResult["errors"] = [];
+	const reviews: RunResult["reviews"] = [];
 	for (const target of comparable) {
 		const products = await searchAllStores(target, errors);
 		const deal = findDeal(target, products);
-		if (deal) deals.push(deal);
+		if (deal) {
+			deals.push(deal);
+		} else {
+			const rev = findReview(target, products);
+			if (rev) {
+				reviews.push({
+					target: target.name,
+					store: rev.product.store,
+					product: rev.product.name,
+					score: rev.score,
+				});
+			}
+		}
 	}
 
 	ss.close();
@@ -68,5 +83,5 @@ export async function runOnce(): Promise<RunResult> {
 	const otherDeals = deals
 		.filter((d) => !d.target.inActivePlan)
 		.sort((a, b) => b.savingPct - a.savingPct);
-	return { planDeals, otherDeals, targetsConsidered: comparable.length, searchTerms, errors };
+	return { planDeals, otherDeals, targetsConsidered: comparable.length, searchTerms, reviews, errors };
 }

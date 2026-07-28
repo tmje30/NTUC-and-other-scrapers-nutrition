@@ -1,0 +1,21 @@
+[
+  { "from": "mælk", "to": "milk" },
+  { "from": "letmælk", "to": "low fat milk" },
+  { "from": "sødmælk", "to": "full cream milk" },
+  { "from": "skummetmælk", "to": "skim milk" },
+  { "from": "æble", "to": "apple" },
+  { "from": "kylling", "to": "chicken" },
+  { "from": "kyllingebryst", "to": "chicken breast" },
+  { "from": "ris", "to": "rice" },
+  { "from": "smør", "to": "butter" },
+  { "from": "løg", "to": "onion" },
+  { "from": "gulerod", "to": "carrot" },
+  { "from": "gulerødder", "to": "carrots" },
+  { "from": "havregryn", "to": "oatmeal" },
+  { "from": "kanel", "to": "cinnamon" },
+  { "from": "hvidløg", "to": "garlic" },
+  { "from": "banan", "to": "banana" },
+  { "from": "masoory", "to": "masoor" },
+  { "from": "dahl", "to": "dhall" },
+  { "from": "dhal", "to": "dhall" }
+]
