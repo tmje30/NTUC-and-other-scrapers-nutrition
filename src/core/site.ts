@@ -62,15 +62,35 @@ export function renderDealsPage(
 	});
 	const total = planDeals.length + otherDeals.length;
 
-	const planSection =
-		`<h2 class="section">In your plan</h2>` +
-		(planDeals.length
-			? planDeals.map(dealCard).join("")
-			: `<p class="empty-sm">Nothing in your plan is cheaper today. 🎉</p>`);
-	const otherSection = otherDeals.length
-		? `<h2 class="section">Other items on offer</h2>` + otherDeals.map(dealCard).join("")
+	// Store-discounted items float to the top as their own section, and are pulled
+	// out of the plan/other lists below so each deal appears exactly once.
+	const isSale = (d: Deal) => d.product.onSale;
+	const saleDeals = [...planDeals, ...otherDeals]
+		.filter(isSale)
+		.sort((a, b) => b.savingPct - a.savingPct);
+	const planRest = planDeals.filter((d) => !isSale(d));
+	const otherRest = otherDeals.filter((d) => !isSale(d));
+
+	const saleSection = saleDeals.length
+		? `<h2 class="section">🔻 On sale now</h2>` + saleDeals.map(dealCard).join("")
 		: "";
-	const cards = planSection + otherSection;
+
+	// Plan section: the non-sale plan deals. If there were no plan deals at all,
+	// show the celebratory note; if every plan deal is on sale (already shown
+	// above), omit the section rather than render an empty/misleading heading.
+	let planSection = "";
+	if (planRest.length) {
+		planSection = `<h2 class="section">In your plan</h2>` + planRest.map(dealCard).join("");
+	} else if (planDeals.length === 0) {
+		planSection =
+			`<h2 class="section">In your plan</h2>` +
+			`<p class="empty-sm">Nothing in your plan is cheaper today. 🎉</p>`;
+	}
+
+	const otherSection = otherRest.length
+		? `<h2 class="section">Other items on offer</h2>` + otherRest.map(dealCard).join("")
+		: "";
+	const cards = saleSection + planSection + otherSection;
 
 	return `<!doctype html>
 <html lang="en">
