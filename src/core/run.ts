@@ -1,6 +1,7 @@
 import { readGroceryTargets, type PlanTarget } from "./notion.js";
 import { fairprice } from "./stores/fairprice.js";
 import { shengsiong } from "./stores/shengsiong.js";
+import { shengsiongFile } from "./stores/shengsiong-file.js";
 import { findDeal, type Deal } from "./compare.js";
 import type { StoreModule, StoreProduct } from "./stores/types.js";
 
@@ -10,7 +11,11 @@ import type { StoreModule, StoreProduct } from "./stores/types.js";
  * split results into active-plan deals vs. other-inventory deals.
  */
 
-const STORES: StoreModule[] = [fairprice, shengsiong];
+// Sheng Siong is blocked from datacenter IPs, so the cloud reads a residential
+// runner's committed file. Set SHENGSIONG_LIVE=1 to hit the live DDP API instead
+// (local use only). The runner script itself (push-shengsiong.ts) always uses live.
+const ss = process.env.SHENGSIONG_LIVE === "1" ? shengsiong : shengsiongFile;
+const STORES: StoreModule[] = [fairprice, ss];
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export interface RunResult {
@@ -55,7 +60,7 @@ export async function runOnce(): Promise<RunResult> {
 		if (deal) deals.push(deal);
 	}
 
-	shengsiong.close();
+	ss.close();
 	// Plan deals first (by monthly saving); other-inventory deals after (by % off).
 	const planDeals = deals
 		.filter((d) => d.target.inActivePlan)

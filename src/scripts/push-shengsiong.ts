@@ -81,7 +81,9 @@ async function main(): Promise<void> {
 	let errors = 0;
 	for (const term of terms) {
 		try {
-			results[term] = await shengsiong.search(term);
+			// Drop the bulky `raw` debug payload — the cloud reader doesn't use it,
+			// and this file is committed daily (keep it lean).
+			results[term] = (await shengsiong.search(term)).map(({ raw, ...p }) => p);
 			console.error(`  ${term}: ${results[term].length}`);
 		} catch (e: any) {
 			errors++;
