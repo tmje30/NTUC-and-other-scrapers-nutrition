@@ -448,23 +448,22 @@ export interface MatchResult {
 	wrongBrand: boolean;
 }
 
-/** Are all meaningful tokens of `needle` present in the candidate's tokens? */
+/**
+ * Are all meaningful tokens of `needle` present in the candidate's tokens?
+ *
+ * EXACT tokens only — deliberately stricter than `score()`. The partial-prefix
+ * credit that helps a fuzzy score is wrong for a hard requirement: "bran" is a
+ * 4-char full prefix of "brand", so `Oil (Bran)` was satisfied by every "Knife
+ * Brand" / "Duck Brand" / "Cabbage Brand" cooking oil, and those cheaper wrong
+ * products beat the real "Rice Field 100% Pure Rice Bran Oil".
+ *
+ * Both sides are stemmed, so genuine variants still match ("Omega 3 Enriched" vs
+ * "Omega-3 Enriched", "unpasteurized" vs "Pasteurized").
+ */
 function tokensPresent(needle: string, hayTokens: Set<string>): boolean {
 	const nt = tokens(needle);
 	if (!nt.length) return true; // nothing checkable (e.g. a bare number)
-	for (const t of nt) {
-		if (hayTokens.has(t)) continue;
-		let ok = false;
-		for (const h of hayTokens) {
-			const p = sharedPrefix(t, h);
-			if (p >= 4 && (p === t.length || p === h.length)) {
-				ok = true;
-				break;
-			}
-		}
-		if (!ok) return false;
-	}
-	return true;
+	return nt.every((t) => hayTokens.has(t));
 }
 
 /**
