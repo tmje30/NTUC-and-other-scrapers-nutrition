@@ -1,0 +1,134 @@
+import { appendFile } from "node:fs/promises";
+import { Client } from "@notionhq/client";
+import { config } from "../core/config.js";
+import {
+	addToGroceryList,
+	groceryRowTitle,
+	parseAddPayload,
+	type AddPayload,
+} from "../core/grocery-list.js";
+import { planCooldown, withCooldown, type CooldownEntry } from "../core/cooldown.js";
+import { readCooldowns, writeCooldowns } from "../core/cooldown-file.js";
+import { sendAddConfirmation } from "../core/telegram.js";
+
+/**
+ * The other end of the page's Add button: put one deal on the Notion grocery
+ * list and start its cooldown.
+ *
+ * Run by `.github/workflows/add-to-list.yml`, which is triggered either by a
+ * pre-filled GitHub issue (the default path) or by a `repository_dispatch` from
+ * the Cloudflare Worker (the one-tap path). Both hand over the same payload.
+ *
+ *   npm run add -- --payload '{"v":1,"ingredient":"Garlic",...}'
+ *   ISSUE_BODY="$(cat issue.md)" npm run add
+ *   npm run add -- --dry-run --payload '…'     # print the plan, write nothing
+ */
+
+const args = process.argv.slice(2);
+const dryRun = args.includes("--dry-run");
+
+function argValue(flag: string): string | null {
+	const i = args.indexOf(flag);
+	return i >= 0 && args[i + 1] ? args[i + 1] : null;
+}
+
+/**
+ * The issue body is human-readable prose plus a fenced ```json block — the user
+ * can see exactly what they're submitting before they hit Submit. Take the JSON.
+ */
+function payloadFromIssueBody(body: string): unknown {
+	const fenced = body.match(/```json\s*([\s\S]*?)```/i);
+	const raw = fenced?.[1] ?? body.match(/\{[\s\S]*\}/)?.[0];
+	if (!raw) throw new Error("no JSON payload found in the issue body");
+	return JSON.parse(raw);
+}
+
+/**
+ * Both env vars are always set by the workflow — whichever trigger fired, the
+ * other one arrives as "null" or "" — so an empty value has to fall through
+ * rather than blow up.
+ */
+function nonEmptyObject(json: string | undefined): unknown | null {
+	if (!json || !json.trim()) return null;
+	const parsed = JSON.parse(json);
+	if (!parsed || typeof parsed !== "object" || !Object.keys(parsed).length) return null;
+	return parsed;
+}
+
+function readPayload(): AddPayload {
+	const inline = argValue("--payload");
+	if (inline) return parseAddPayload(JSON.parse(inline));
+	const dispatched = nonEmptyObject(process.env.ADD_PAYLOAD);
+	if (dispatched) return parseAddPayload(dispatched);
+	if (process.env.ISSUE_BODY?.trim()) {
+		return parseAddPayload(payloadFromIssueBody(process.env.ISSUE_BODY));
+	}
+	throw new Error("no payload: pass --payload, or set ADD_PAYLOAD or ISSUE_BODY");
+}
+
+/** Hand a one-line result back to the workflow, which posts it on the issue. */
+async function report(summary: string): Promise<void> {
+	console.log(summary);
+	const out = process.env.GITHUB_OUTPUT;
+	if (out) await appendFile(out, `summary<<EOF\n${summary}\nEOF\n`, "utf8");
+}
+
+const payload = readPayload();
+const now = new Date();
+
+// Cooldown first, so the numbers appear in the log even on a dry run.
+const cd = planCooldown(payload.packSizeG, payload.monthlyAmount, now, payload.volumetric);
+console.error(`Cooldown: ${cd.days} days (${cd.basis}) — key "${payload.key}"`);
+
+if (dryRun) {
+	await report(
+		`DRY RUN — would add "${groceryRowTitle(payload.store, payload.ingredient)}" at ` +
+			`$${payload.priceSgd.toFixed(2)} and snooze "${payload.key}" for ${cd.days} days.`,
+	);
+	process.exit(0);
+}
+
+const client = new Client({ auth: config.notionToken() });
+const added = await addToGroceryList(client, payload);
+
+const entry: CooldownEntry = {
+	key: payload.key,
+	ingredientId: payload.ingredientId,
+	ingredientName: payload.ingredient,
+	addedAt: now.toISOString(),
+	until: cd.until,
+	days: cd.days,
+	basis: cd.basis,
+	store: payload.store,
+	product: payload.product,
+	packSizeG: payload.packSizeG,
+	monthlyAmount: payload.monthlyAmount,
+};
+await writeCooldowns(withCooldown(await readCooldowns(), entry, now), undefined);
+
+// Ping the phone. Deliberately after the row and the cooldown are both safely
+// written, and deliberately non-fatal: a missing bot token must never turn a
+// successful add into a failed run.
+try {
+	await sendAddConfirmation({
+		title: added.title,
+		priceSgd: payload.priceSgd,
+		days: cd.days,
+		until: cd.until,
+		alreadyListed: added.alreadyListed,
+	});
+} catch (e: any) {
+	console.error(`Telegram confirmation not sent: ${e.message}`);
+}
+
+const back = new Date(cd.until).toLocaleDateString("en-SG", {
+	day: "numeric",
+	month: "short",
+	year: "numeric",
+	timeZone: "Asia/Singapore",
+});
+await report(
+	`${added.alreadyListed ? "Already on the list" : "Added"}: **${added.title}** — ` +
+		`$${payload.priceSgd.toFixed(2)}.\n` +
+		`Snoozed for **${cd.days} days** (back ${back}) — ${cd.basis}.`,
+);

@@ -1,0 +1,77 @@
+name: Add to grocery list
+
+# The deals page is static, so its "Add" button can't hold a Notion token. It
+# instead opens a pre-filled issue on this repo; this workflow is the privileged
+# half that actually writes to Notion and records the cooldown.
+#
+# repository_dispatch is the same job reached a different way — used by the
+# optional Cloudflare Worker (see cloudflare/) for a genuine one-tap flow.
+on:
+  issues:
+    types: [opened]
+  repository_dispatch:
+    types: [add-to-list]
+
+# Serialise: two adds at once would race on data/cooldowns.json.
+concurrency:
+  group: add-to-list
+  cancel-in-progress: false
+
+jobs:
+  add:
+    # The repo is public, so anyone can open an issue. Only the owner's "Add: …"
+    # issues (or an authenticated dispatch) may touch Notion.
+    if: >-
+      github.event_name == 'repository_dispatch' ||
+      (startsWith(github.event.issue.title, 'Add: ') &&
+       github.event.issue.user.login == github.repository_owner)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # commit data/cooldowns.json
+      issues: write # comment on and close the request
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - run: npm ci
+
+      - name: Write the Notion row and start the cooldown
+        id: add
+        run: npm run add
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ADD_PAYLOAD: ${{ toJSON(github.event.client_payload) }}
+          # Confirmation ping. Optional — the add succeeds without these.
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+
+      - name: Commit the cooldown
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/cooldowns.json
+          git diff --staged --quiet && echo "no cooldown change" && exit 0
+          git commit -m "cooldown: snooze after adding to the grocery list"
+          git pull --rebase --autostash origin ${{ github.ref_name }}
+          git push
+
+      - name: Close the request
+        if: always() && github.event_name == 'issues'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESULT: ${{ steps.add.outputs.summary }}
+          OK: ${{ steps.add.outcome }}
+        run: |
+          if [ "$OK" = "success" ]; then
+            gh issue comment "${{ github.event.issue.number }}" --body "$RESULT"
+            gh issue close "${{ github.event.issue.number }}"
+          else
+            gh issue comment "${{ github.event.issue.number }}" \
+              --body "❌ Failed to add this — see the [run log]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)."
+          fi

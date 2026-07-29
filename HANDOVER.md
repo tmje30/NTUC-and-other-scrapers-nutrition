@@ -90,6 +90,41 @@ laptop now covers the runner role, this is optional. To finish later:
   `git remote set-url origin https://tmje30:$T@github.com/tmje30/NTUC-and-other-scrapers-nutrition.git`
   (see PAT gotchas below).
 
+## Add to grocery list (+ cooldowns)
+
+Each deal card has an **Add** button on the left. The page is static, so it
+can't hold a Notion token: Add opens a **pre-filled GitHub issue** ("Add: [NTUC]
+Milk", payload in a ```json block), you tap Submit, and
+`.github/workflows/add-to-list.yml` does the privileged half —
+
+1. writes the row to the Notion **grocery List** DB: Name `[NTUC] Milk`, Price =
+   the discounted price, Vendor = the store, **Amount left empty**;
+2. records a **cooldown** in `data/cooldowns.json` and commits it;
+3. comments the result on the issue and closes it.
+
+**Cooldown = `pack size ÷ monthly usage × 0.75`** — the 25% haircut brings the
+item back before the cupboard is empty, leaving a window to catch a deal. 1 kg
+of garlic at 500 g/month → 2 months of cover → **46 days**. No monthly usage
+(anything outside the active plan) → flat **14 days**. Entries are keyed on the
+stemmed base noun (`onion`), so one entry covers "Onion (White)", "Onions" etc.
+— but deliberately NOT "Garlic Powder" when you bought "Garlic". `runOnce()`
+drops snoozed targets *before* collecting search terms, so neither the cloud nor
+the Sheng Siong runner looks for them; the page lists them under "Recently
+bought · not searched".
+
+⚠️ **`add-to-list.yml` must be created via the GitHub web editor** — the local
+token can't push workflow files (see Gotchas). The file exists in the working
+tree; copy it into
+https://github.com/tmje30/NTUC-and-other-scrapers-nutrition/new/main?filename=.github/workflows/add-to-list.yml
+
+⚠️ The Notion integration now needs **write** access: "Insert content"
+capability, and the **grocery List** DB shared with it. Reading alone is no
+longer enough.
+
+Optional one-tap upgrade (built, **not deployed**): the `addToGroceryList`
+webhook in `src/index.ts` relays a tap to the same workflow via
+`repository_dispatch`. Trade-offs and setup in `docs/one-tap-add.md`.
+
 ## Commands (run from repo root, needs `.env`)
 
 - `npm run push-ss` — residential runner: fetch terms → SS scan → write
@@ -100,6 +135,8 @@ laptop now covers the runner role, this is optional. To finish later:
 - `npm run ss -- tofu milk` / `npm run fp -- tofu` — test a store module (live).
 - `npm run deals` — cross-store deal list to console.
 - `npm run targets` — resolved active-plan grocery targets.
+- `npm run add -- --payload '<json>'` — add one item to the grocery list and set
+  its cooldown by hand. `--dry-run` prints the plan without writing anything.
 - `npm run check` — typecheck.
 
 ## Key technical facts (details in LEARNINGS.md)

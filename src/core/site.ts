@@ -1,9 +1,21 @@
 import type { Deal, ReviewMiss } from "./compare.js";
+import { cooldownKey } from "./cooldown.js";
+import { groceryRowTitle, type AddPayload } from "./grocery-list.js";
 
 /**
  * Renders the daily deals as a self-contained HTML page (deployed to GitHub
  * Pages). One Telegram message links here, keeping the chat to a single message.
  */
+
+/** Page-wide settings the cards need — how "Add" reaches Notion, and what's snoozed. */
+export interface PageOptions {
+	/** "owner/repo" for the Add button's pre-filled issue link. */
+	repo: string;
+	/** One-tap POST endpoint. Empty ⇒ fall back to the GitHub issue link. */
+	addEndpoint?: string;
+	/** Items being skipped because they were recently bought. */
+	snoozed?: { name: string; until: string }[];
+}
 
 function esc(s: string): string {
 	return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -25,7 +37,62 @@ function amount(n: number, v: boolean): string {
 	return n >= 1000 ? `${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 1)} ${big}` : `${Math.round(n)} ${small}`;
 }
 
-function dealCard(d: Deal): string {
+/** What the Add button ships to the workflow: enough to write the row AND set the cooldown. */
+function addPayload(d: Deal): AddPayload {
+	return {
+		v: 1,
+		ingredientId: d.target.ingredientId,
+		ingredient: d.target.name,
+		key: cooldownKey(d.target.search.searchTerm),
+		store: d.product.store,
+		product: d.product.name,
+		priceSgd: d.product.priceSgd,
+		// The pack actually being bought decides how long the cooldown runs; fall
+		// back to the user's usual pack when the store didn't publish a size.
+		packSizeG: d.product.packWeightG ?? (d.target.packSize || null),
+		volumetric: d.product.volumetric,
+		monthlyAmount: d.target.monthlyAmount,
+		url: d.product.url,
+	};
+}
+
+/**
+ * The Add button.
+ *
+ * Default path — a link to a pre-filled GitHub issue. The page is static, so it
+ * can hold no Notion token; GitHub is the one place the user is already
+ * authenticated that can run privileged code on their behalf. Tap Add → tap
+ * Submit → the `add-to-list` workflow writes the Notion row and the cooldown.
+ *
+ * One-tap path — when `addEndpoint` is configured, the button POSTs the same
+ * payload to that endpoint instead (see `cloudflare/`).
+ */
+function addButton(d: Deal, o: PageOptions): string {
+	const p = addPayload(d);
+	const label = groceryRowTitle(p.store, p.ingredient);
+
+	if (o.addEndpoint) {
+		return `<button class="add" type="button" data-add="${esc(JSON.stringify(p))}"
+        aria-label="Add ${esc(label)} to the grocery list">Add</button>`;
+	}
+
+	const body =
+		`Adding **${label}** to the grocery list from today's deals page.\n\n` +
+		`${p.product} · $${p.priceSgd.toFixed(2)} · ${p.url}\n\n` +
+		"```json\n" +
+		`${JSON.stringify(p, null, 2)}\n` +
+		"```\n";
+	const href =
+		`https://github.com/${o.repo}/issues/new` +
+		`?title=${encodeURIComponent(`Add: ${label}`)}` +
+		`&labels=grocery-add` +
+		`&body=${encodeURIComponent(body)}`;
+
+	return `<a class="add" href="${esc(href)}" target="_blank" rel="noopener"
+        aria-label="Add ${esc(label)} to the grocery list">Add</a>`;
+}
+
+function dealCard(d: Deal, o: PageOptions): string {
 	const t = d.target; // your ingredient (the "main item")
 	const p = d.product; // the cheaper store product we found
 	const u = bigUnit(p.volumetric); // "kg" (or "L" for liquids)
@@ -52,21 +119,27 @@ function dealCard(d: Deal): string {
 	const usage =
 		t.unitType === "By Unit" ? `${t.monthlyAmount} units` : amount(t.monthlyAmount, p.volumetric);
 
+	// The card is a flex row: the Add button on the left, the (clickable) deal on
+	// the right. The button has to sit OUTSIDE the product link — a control nested
+	// in an <a> is both invalid and untappable without swallowing the link.
 	return `
-    <a class="card" href="${esc(p.url)}" target="_blank" rel="noopener">
-      <!-- Row 1: your item [pack] + the price you pay (yellow), with the % saving -->
-      <div class="row1">
-        <span class="name">${esc(t.name)}${itemPack}
-          <span class="mine">Price ${myPrice}</span></span>
-        <span class="pct">−${d.savingPct.toFixed(0)}%</span>
-      </div>
-      <!-- Row 2: the cheaper product we found + its price + sale % (red) -->
-      <div class="meta"><span class="store">${esc(p.store)}</span> · ${esc(p.name)}${prodPack} <span class="prodprice">${prodPrice}</span>${sale}</div>
-      <!-- Row 3: product $/kg vs your $/kg (struck through) -->
-      <div class="price"><b>${dealKg}</b> <span class="was">vs ${baseKg}</span></div>
-      <!-- Row 4: how much of it you use -->
-      ${t.inActivePlan ? `<div class="usage">uses ~${usage}/month</div>` : ""}
-    </a>`;
+    <div class="card">
+      ${addButton(d, o)}
+      <a class="body" href="${esc(p.url)}" target="_blank" rel="noopener">
+        <!-- Row 1: your item [pack] + the price you pay (yellow), with the % saving -->
+        <div class="row1">
+          <span class="name">${esc(t.name)}${itemPack}
+            <span class="mine">Price ${myPrice}</span></span>
+          <span class="pct">−${d.savingPct.toFixed(0)}%</span>
+        </div>
+        <!-- Row 2: the cheaper product we found + its price + sale % (red) -->
+        <div class="meta"><span class="store">${esc(p.store)}</span> · ${esc(p.name)}${prodPack} <span class="prodprice">${prodPrice}</span>${sale}</div>
+        <!-- Row 3: product $/kg vs your $/kg (struck through) -->
+        <div class="price"><b>${dealKg}</b> <span class="was">vs ${baseKg}</span></div>
+        <!-- Row 4: how much of it you use -->
+        ${t.inActivePlan ? `<div class="usage">uses ~${usage}/month</div>` : ""}
+      </a>
+    </div>`;
 }
 
 /**
@@ -84,16 +157,93 @@ function recCard(r: ReviewMiss): string {
 		? `<div class="why">not <b>${esc(r.missing.join(", "))}</b> — check before buying</div>`
 		: `<div class="why">close match — check before buying</div>`;
 
+	// No Add button here on purpose: a recommendation is explicitly NOT the item
+	// you asked for, so one tap must never put it on the list — and, worse, start
+	// a cooldown that hides the real item.
 	return `
-    <a class="card rec" href="${esc(p.url)}" target="_blank" rel="noopener">
-      <div class="row1">
-        <span class="name">${esc(r.target.name)}</span>
-        <span class="tag">closest</span>
-      </div>
-      <div class="meta"><span class="store">${esc(p.store)}</span> · ${esc(p.name)}${prodPack} <span class="prodprice">$${p.priceSgd.toFixed(2)}</span></div>
-      <div class="price"><b>${prodBig}</b> <span class="was">vs ${baseBig}</span></div>
-      ${why}
-    </a>`;
+    <div class="card rec">
+      <a class="body" href="${esc(p.url)}" target="_blank" rel="noopener">
+        <div class="row1">
+          <span class="name">${esc(r.target.name)}</span>
+          <span class="tag">closest</span>
+        </div>
+        <div class="meta"><span class="store">${esc(p.store)}</span> · ${esc(p.name)}${prodPack} <span class="prodprice">$${p.priceSgd.toFixed(2)}</span></div>
+        <div class="price"><b>${prodBig}</b> <span class="was">vs ${baseBig}</span></div>
+        ${why}
+      </a>
+    </div>`;
+}
+
+/**
+ * Client-side half of the one-tap path. Only emitted when an endpoint is set —
+ * the default GitHub-issue button is a plain link and needs no JavaScript at all.
+ *
+ * Two constraints shape this, both from the Notion Worker webhook on the other
+ * end (see `docs/one-tap-add.md`):
+ *
+ *  • It returns no CORS headers, so the request must be a "simple" one — POST,
+ *    `text/plain`, no custom headers — to avoid a preflight the browser would
+ *    reject. `mode: "no-cors"` sends it; the response comes back opaque.
+ *  • Opaque means we cannot read the status. The tick therefore means "sent",
+ *    not "confirmed" — the row itself shows up in Notion a few seconds later.
+ *    That honesty is why this path is opt-in and the issue button is default.
+ *
+ * The endpoint lives in a public page, so it's gated by a token the user is
+ * asked for once and the browser then remembers.
+ */
+function addScript(o: PageOptions): string {
+	if (!o.addEndpoint) return "";
+	return `<script>
+(function () {
+  var endpoint = ${JSON.stringify(o.addEndpoint)};
+  var KEY = "grocery-add-token";
+
+  function token() {
+    var t = localStorage.getItem(KEY);
+    if (!t) {
+      t = (prompt("One-time setup: paste your Add token") || "").trim();
+      if (t) localStorage.setItem(KEY, t);
+    }
+    return t;
+  }
+
+  document.addEventListener("click", function (ev) {
+    var btn = ev.target.closest ? ev.target.closest(".add[data-add]") : null;
+    if (!btn || btn.dataset.state === "busy" || btn.dataset.state === "done") return;
+    ev.preventDefault();
+
+    var t = token();
+    if (!t) return;
+
+    var label = btn.textContent;
+    var body = JSON.parse(btn.dataset.add);
+    body.token = t;
+
+    btn.dataset.state = "busy";
+    btn.textContent = "…";
+    fetch(endpoint, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify(body),
+    })
+      .then(function () {
+        // Opaque response: delivered, not verified. Say "sent", not "added".
+        btn.dataset.state = "done";
+        btn.textContent = "sent";
+      })
+      .catch(function () {
+        btn.dataset.state = "failed";
+        btn.textContent = "retry";
+        setTimeout(function () {
+          btn.dataset.state = "";
+          btn.textContent = label;
+        }, 4000);
+      });
+  });
+})();
+</script>
+`;
 }
 
 export function renderDealsPage(
@@ -101,7 +251,10 @@ export function renderDealsPage(
 	otherDeals: Deal[],
 	generatedAt = new Date(),
 	recommendations: ReviewMiss[] = [],
+	options: PageOptions = { repo: "tmje30/NTUC-and-other-scrapers-nutrition" },
 ): string {
+	const o = options;
+	const card = (d: Deal) => dealCard(d, o);
 	const date = generatedAt.toLocaleDateString("en-SG", {
 		weekday: "short",
 		day: "numeric",
@@ -121,7 +274,7 @@ export function renderDealsPage(
 	const otherRest = otherDeals.filter((d) => !isSale(d));
 
 	const saleSection = saleDeals.length
-		? `<h2 class="section">🔻 On sale now</h2>` + saleDeals.map(dealCard).join("")
+		? `<h2 class="section">🔻 On sale now</h2>` + saleDeals.map(card).join("")
 		: "";
 
 	// Plan section: the non-sale plan deals. If there were no plan deals at all,
@@ -129,7 +282,7 @@ export function renderDealsPage(
 	// above), omit the section rather than render an empty/misleading heading.
 	let planSection = "";
 	if (planRest.length) {
-		planSection = `<h2 class="section">In your plan</h2>` + planRest.map(dealCard).join("");
+		planSection = `<h2 class="section">In your plan</h2>` + planRest.map(card).join("");
 	} else if (planDeals.length === 0) {
 		planSection =
 			`<h2 class="section">In your plan</h2>` +
@@ -137,7 +290,7 @@ export function renderDealsPage(
 	}
 
 	const otherSection = otherRest.length
-		? `<h2 class="section">Other items on offer</h2>` + otherRest.map(dealCard).join("")
+		? `<h2 class="section">Other items on offer</h2>` + otherRest.map(card).join("")
 		: "";
 	// Recommendations last: not what you asked for, so they must never sit above a
 	// real deal or be mistaken for one.
@@ -145,7 +298,28 @@ export function renderDealsPage(
 		? `<h2 class="section">Close matches · not exactly what you asked for</h2>` +
 			recommendations.map(recCard).join("")
 		: "";
-	const cards = saleSection + planSection + otherSection + recSection;
+	// Items you've just bought aren't searched at all, so they'd otherwise vanish
+	// with no explanation. Say so, and say when each one comes back.
+	const snoozed = o.snoozed ?? [];
+	const snoozeSection = snoozed.length
+		? `<h2 class="section">Recently bought · not searched</h2>` +
+			`<p class="empty-sm">` +
+			snoozed
+				.map(
+					(s) =>
+						`${esc(s.name)} <span class="pack">back ${esc(
+							new Date(s.until).toLocaleDateString("en-SG", {
+								day: "numeric",
+								month: "short",
+								timeZone: "Asia/Singapore",
+							}),
+						)}</span>`,
+				)
+				.join(" · ") +
+			`</p>`
+		: "";
+
+	const cards = saleSection + planSection + otherSection + recSection + snoozeSection;
 
 	return `<!doctype html>
 <html lang="en">
@@ -164,10 +338,23 @@ export function renderDealsPage(
   .sub { color: #6b7280; font-size: .85rem; margin: 0 2px 16px; }
   .section { font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; color: #6b7280; margin: 20px 2px 8px; }
   .empty-sm { color: #6b7280; font-size: .9rem; margin: 4px 2px 8px; }
-  .card { display: block; text-decoration: none; color: inherit; background: #fff;
+  .card { display: flex; align-items: stretch; gap: 10px; color: inherit; background: #fff;
     border: 1px solid #e5e7eb; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px;
-    box-shadow: 0 1px 2px rgba(0,0,0,.04); transition: transform .05s ease; }
-  .card:active { transform: scale(.995); }
+    box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+  .body { display: block; flex: 1; min-width: 0; text-decoration: none; color: inherit;
+    transition: transform .05s ease; }
+  .body:active { transform: scale(.995); }
+  /* Add: pushes the item onto the Notion grocery list. Deliberately chunky — it's
+     the one thing on this page you tap on purpose rather than to read more. */
+  .add { flex: 0 0 auto; align-self: flex-start; display: inline-flex; align-items: center;
+    justify-content: center; min-width: 52px; min-height: 34px; padding: 0 12px; font: inherit;
+    font-size: .85rem; font-weight: 700; text-decoration: none; cursor: pointer;
+    color: #067647; background: #ecfdf3; border: 1px solid #a6f4c5; border-radius: 9px;
+    -webkit-tap-highlight-color: transparent; transition: transform .05s ease; }
+  .add:active { transform: scale(.94); }
+  .add[data-state="busy"] { opacity: .6; }
+  .add[data-state="done"] { color: #fff; background: #067647; border-color: #067647; }
+  .add[data-state="failed"] { color: #b42318; background: #fef3f2; border-color: #fecdca; }
   .row1 { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
   .name { font-weight: 650; font-size: 1.05rem; }
   .pack { color: #6b7280; font-weight: 500; font-size: .9rem; }
@@ -199,6 +386,9 @@ export function renderDealsPage(
     .card.rec { background: #141619; }
     .tag { border-color: #2c323a; }
     .why { color: #fbbf24; }
+    .add { color: #6ee7b7; background: #06251a; border-color: #0b4a34; }
+    .add[data-state="done"] { color: #04140e; background: #6ee7b7; border-color: #6ee7b7; }
+    .add[data-state="failed"] { color: #fda29b; background: #2b1512; border-color: #5c2420; }
   }
 </style>
 </head>
@@ -208,6 +398,6 @@ export function renderDealsPage(
     <p class="sub">${date} · ${total} deal${total === 1 ? "" : "s"} beating your prices</p>
     ${cards}
   </div>
-</body>
+${addScript(o)}</body>
 </html>`;
 }

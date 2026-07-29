@@ -46,6 +46,24 @@ All notable changes to this project are documented here. Format based on
   (with monthly usage) and "Other items on offer" (rest of the inventory).
   Deal cards also show price per 100g/100ml beside the per-kg/L price.
 
+- **Add button** on every deal card (left of the item row) — pushes the item to
+  the Notion **grocery List** DB as `[NTUC] Milk`, at the discounted price, with
+  `Vendor` filled and `Amount` left empty. The page is static, so the button
+  opens a pre-filled GitHub issue and `.github/workflows/add-to-list.yml` does
+  the privileged half. `src/core/grocery-list.ts` writes the row (skipping a
+  duplicate un-ticked one); `src/scripts/add-to-list.ts` (`npm run add`) is the
+  entry point and takes `--dry-run`.
+- **Cooldowns** — an added item stops being searched for
+  `pack size ÷ monthly usage × 0.75` (1 kg garlic at 500 g/month → 46 days), or
+  a flat 14 days when there's no monthly usage. State lives in
+  `data/cooldowns.json`, committed by the same workflow and read by the scan.
+  Keyed on the stemmed base noun, so close relatives ("Onion (White)",
+  "Onions") are covered by one entry. The page lists what's snoozed and when it
+  returns. `src/core/cooldown.ts` (pure) + `cooldown-file.ts` (persistence).
+- Optional one-tap path, built but **not deployed**: `addToGroceryList` webhook
+  in `src/index.ts` relays a tap to the same workflow via `repository_dispatch`.
+  See `docs/one-tap-add.md` for the CORS trade-off and the setup.
+
 ### Changed
 - Telegram message cleaned up: item name is the link, shows pack size `[700g]`
   / `[640ml]`, price per kg (per L for volumetric), monthly usage; dropped the

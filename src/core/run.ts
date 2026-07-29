@@ -4,6 +4,8 @@ import { shengsiong } from "./stores/shengsiong.js";
 import { shengsiongFile } from "./stores/shengsiong-file.js";
 import { findDeal, findReview, type Deal, type ReviewMiss } from "./compare.js";
 import { normSynonyms } from "./match.js";
+import { cooldownKey, findCooldown } from "./cooldown.js";
+import { readCooldowns } from "./cooldown-file.js";
 import type { StoreModule, StoreProduct } from "./stores/types.js";
 
 /**
@@ -29,6 +31,12 @@ export interface RunResult {
 	searchTerms: string[];
 	/** Borderline (review-band) near-misses for targets with no confident deal. */
 	reviews: { target: string; store: string; product: string; score: number }[];
+	/**
+	 * Targets skipped because they were recently added to the grocery list — you
+	 * already have them in the cupboard. Shown on the page so they don't just
+	 * disappear without explanation.
+	 */
+	snoozed: { name: string; until: string; days: number }[];
 	/**
 	 * Close-but-not-exact matches, shown on the page as recommendations: the item's
 	 * defining property wasn't met, so it's never a deal, but it's worth seeing.
@@ -94,7 +102,22 @@ async function searchAllStores(
 
 export async function runOnce(): Promise<RunResult> {
 	const targets = await readGroceryTargets();
-	const comparable = targets.filter((t) => t.baselinePer100g != null); // By-Gram in v1
+	const withBaseline = targets.filter((t) => t.baselinePer100g != null); // By-Gram in v1
+
+	// Drop anything bought recently enough to still be in the cupboard. Done here,
+	// before search terms are collected, so a snoozed item costs nothing: neither
+	// the cloud nor the Sheng Siong runner goes looking for it.
+	const cooldowns = await readCooldowns();
+	const now = new Date();
+	const snoozed: RunResult["snoozed"] = [];
+	const comparable = withBaseline.filter((t) => {
+		const hit = findCooldown(cooldowns, cooldownKey(t.search.searchTerm), now);
+		if (!hit) return true;
+		snoozed.push({ name: t.name, until: hit.until, days: hit.days });
+		return false;
+	});
+	snoozed.sort((a, b) => a.until.localeCompare(b.until));
+
 	// Both spellings, so the Sheng Siong runner scrapes exactly what we search.
 	const searchTerms = [
 		...new Set(comparable.flatMap((t) => queryTerms(t.search.searchTerm, t.search.properties)).filter(Boolean)),
@@ -149,6 +172,7 @@ export async function runOnce(): Promise<RunResult> {
 		targetsConsidered: comparable.length,
 		searchTerms,
 		reviews,
+		snoozed,
 		recommendations,
 		errors,
 	};

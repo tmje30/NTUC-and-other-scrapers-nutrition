@@ -31,4 +31,14 @@ export const config = {
 	/** Public URL of the deployed GitHub Pages deals page. */
 	siteUrl: () =>
 		optional("SITE_URL", "https://tmje30.github.io/NTUC-and-other-scrapers-nutrition/"),
+	/**
+	 * "owner/repo" — where the Add button files its request. Actions sets
+	 * GITHUB_REPOSITORY for free; the default keeps local page builds working.
+	 */
+	repo: () => optional("GITHUB_REPOSITORY", "tmje30/NTUC-and-other-scrapers-nutrition"),
+	/**
+	 * Optional one-tap Add endpoint (the Cloudflare Worker in `cloudflare/`).
+	 * Unset — the normal case — makes Add open a pre-filled GitHub issue instead.
+	 */
+	addEndpoint: () => optional("ADD_ENDPOINT"),
 };

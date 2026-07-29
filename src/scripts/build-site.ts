@@ -10,13 +10,25 @@ import { config } from "../core/config.js";
  * The workflow deploys public/ to Pages, then runs notify.ts.
  */
 
-const { planDeals, otherDeals, targetsConsidered, searchTerms, reviews, recommendations, errors } =
-	await runOnce();
+const {
+	planDeals,
+	otherDeals,
+	targetsConsidered,
+	searchTerms,
+	reviews,
+	recommendations,
+	snoozed,
+	errors,
+} = await runOnce();
 const total = planDeals.length + otherDeals.length;
 console.error(
 	`Plan '${config.activePlanNumber()}': ${targetsConsidered} targets → ${planDeals.length} plan + ${otherDeals.length} other deals` +
 		(errors.length ? `, ${errors.length} store errors` : ""),
 );
+if (snoozed.length) {
+	console.error(`${snoozed.length} recently bought, not searched:`);
+	for (const s of snoozed) console.error(`  ${s.name} — back ${s.until.slice(0, 10)}`);
+}
 if (reviews.length) {
 	console.error(`${reviews.length} borderline (review-band) near-misses — not published:`);
 	for (const r of reviews.slice(0, 12)) {
@@ -37,7 +49,11 @@ if (errors.length) {
 await mkdir("public", { recursive: true });
 await writeFile(
 	"public/index.html",
-	renderDealsPage(planDeals, otherDeals, new Date(), recommendations),
+	renderDealsPage(planDeals, otherDeals, new Date(), recommendations, {
+		repo: config.repo(),
+		addEndpoint: config.addEndpoint(),
+		snoozed,
+	}),
 	"utf8",
 );
 await writeFile(
