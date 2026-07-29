@@ -2,6 +2,35 @@
 
 Running log of decisions, gotchas, and non-obvious facts. Newest on top.
 
+## 2026-07-29 — Two ways "the same word" failed to match
+
+**1. The must-match check bypassed normalisation.** Properties went through
+`tokensPresent()` (synonyms + stemming) but must-match keywords used a raw
+`hay.includes(kw)`. So `Milk (Skimmed)` rejected "FairPrice UHT Milk - **Skim**"
+even though the property test folded both to `skim`. Both now use the same test;
+that item became a −38% deal.
+
+**2. The stemmer left 23 of 32 equivalent word pairs unmatched.** Both sides are
+stemmed identically, so a mismatch only bites when the item uses one form and the
+title another — which is exactly the skim/skimmed case. Fixed:
+
+| Rule | Fixes |
+| --- | --- |
+| collapse doubled consonant after `-ed` (f/l/s/z excluded, so `stuffed`→`stuff` survives) | skim/skimmed, chop, can, trim |
+| require a ≥4-char stem before stripping `-ed` | shred/shredded (was becoming `shr`), breed, speed |
+| strip silent `-e` | slice, grate, smoke, pickle, glaze, mince |
+| `-ies`/`-y` → `-i` | berry/berries, cookie/cookies |
+| `-ise`→`-ize`, `-our`→`-or` (length floors keep `anise`, `cruise`, `flour` intact) | pasteurised/pasteurized, flavoured/flavored, colour/color |
+
+**8 pairs are deliberately left unmatched**: dice/diced and bake/baked (too short
+for the `-ed` floor), dry/dried, fry/fried, freeze/frozen, grind/ground,
+leaf/leaves, fibre/fiber. None matter here — the ones that do any work
+(`dried`, `frozen`, `ground`, `leaves`) are matched by **raw-text regexes**
+(`PRODUCE_PROCESSED_RE`, `ATTRIBUTE_GROUPS`, `PART_GROUPS`), not by tokens, so
+stemming never sees them. Don't chase the remainder: each extra rule risks
+mangling a real word, and `grind → ground` in particular must NOT be folded
+globally (see the context-dependence note above).
+
 ## 2026-07-29 — Synonyms are GLOBAL; context-dependent equivalences don't belong there
 
 A `synonyms.json` entry rewrites every item name and every product title, so it may

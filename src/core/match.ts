@@ -77,8 +77,32 @@ export function normSynonyms(s: string): string {
  * …). When Danish grocery stores are added, enable a Danish stem per-locale here.
  */
 export function stem(t: string): string {
+	// "-ies"/"-y" both fold to "-i", which unifies the plural pair AND the y→i past
+	// tense in one step: berry/berries → berri, cookie/cookies → cooki, dry/dried →
+	// dri. Must run before the plural strip, or "berries" becomes "berrie" first.
+	if (t.length >= 5 && t.endsWith("ies")) t = t.slice(0, -3) + "i";
+	// plural "-s"
 	if (t.length >= 4 && t.endsWith("s") && !t.endsWith("ss")) t = t.slice(0, -1);
-	if (t.length >= 5 && t.endsWith("ed")) t = t.slice(0, -2);
+	if (t.length >= 4 && t.endsWith("y")) t = t.slice(0, -1) + "i";
+	// British → American spellings. Length floors keep short lookalikes intact:
+	// "anise"/"cruise"/"wise" are never touched, and "flour" stays "flour" because
+	// the plural strip above already reduced "flours" to 5 characters.
+	if (t.length >= 8) t = t.replace(/is(e|ed|ing)$/, "iz$1"); // pasteurised → pasteurized
+	if (t.length >= 6) t = t.replace(/our(ed|ing)?$/, "or$1"); // flavoured → flavored, colour → color
+	// Adjectival "-ed", but only when a real stem of ≥4 chars is left. Without that
+	// floor, words that merely END in "ed" get shredded: "shred" → "shr",
+	// "breed" → "bre", "speed" → "spe" — and "shred" then no longer matched
+	// "shredded".
+	if (t.length >= 5 && t.endsWith("ed") && t.length - 2 >= 4) {
+		t = t.slice(0, -2);
+		// Undo the consonant doubling that "-ed" introduces: skimmed → skimm → skim.
+		// f/l/s/z are excluded because they double naturally at the end of a word,
+		// so "stuffed" → "stuff" must NOT become "stuf".
+		if (/([bdmnprt])\1$/.test(t)) t = t.slice(0, -1);
+	}
+	// silent "-e": folds the base and the "-ed" form onto one stem
+	// (slice/sliced → slic, grate/grated → grat, pickle/pickled → pickl).
+	if (t.length >= 5 && t.endsWith("e")) t = t.slice(0, -1);
 	return t;
 }
 
@@ -543,9 +567,12 @@ export function evaluate(target: PlanTarget, product: StoreProduct): MatchResult
 
 	// 2. Requirements: defining properties + must-match keywords. A keyword drawn
 	// from a property ("(Low Fat)" → "low fat") would otherwise be reported twice.
+	// Both go through the SAME normalized-token test. A raw substring test here used
+	// to bypass synonyms and stemming, so "Milk (Skimmed)" rejected "UHT Milk - Skim"
+	// even though the property check folded both to "skim".
 	const missingSet = new Set<string>();
 	for (const prop of s.properties) if (!tokensPresent(prop, hayTokens)) missingSet.add(prop);
-	for (const kw of s.mustMatch) if (!hay.includes(kw)) missingSet.add(kw);
+	for (const kw of s.mustMatch) if (!tokensPresent(kw, hayTokens)) missingSet.add(kw);
 	const missing = [...missingSet];
 
 	// Score the bare noun AND the noun+properties, taking the best — the sibling
