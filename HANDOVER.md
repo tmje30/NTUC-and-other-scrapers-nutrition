@@ -112,11 +112,6 @@ drops snoozed targets *before* collecting search terms, so neither the cloud nor
 the Sheng Siong runner looks for them; the page lists them under "Recently
 bought · not searched".
 
-⚠️ **`add-to-list.yml` must be created via the GitHub web editor** — the local
-token can't push workflow files (see Gotchas). The file exists in the working
-tree; copy it into
-https://github.com/tmje30/NTUC-and-other-scrapers-nutrition/new/main?filename=.github/workflows/add-to-list.yml
-
 ⚠️ The Notion integration now needs **write** access: "Insert content"
 capability, and the **grocery List** DB shared with it. Reading alone is no
 longer enough.
@@ -165,20 +160,23 @@ webhook in `src/index.ts` relays a tap to the same workflow via
 
 ## Remaining work (all optional)
 
-1. **Schedule → 10:00 SGT:** edit `.github/workflows/daily.yml` line 6 to
-   `cron: "0 2 * * *"` (and the comment) via the GitHub **web editor**
-   (https://github.com/tmje30/NTUC-and-other-scrapers-nutrition/edit/main/.github/workflows/daily.yml)
-   — a local push can't touch workflow files (token lacks `workflow` scope). 10:00
-   also gives the laptop more morning windows to push before the cloud reads.
+1. ~~Schedule → 10:00 SGT~~ **done** — `daily.yml` runs `cron: "0 2 * * *"`
+   (02:00 UTC = 10:00 SGT), which also gives the laptop more morning windows to
+   push before the cloud reads.
 2. **Finish the phone runner** (Termux scheduling) — optional redundancy; see above.
 3. Optional: By-Unit items (eggs) comparison; bump GH Actions `actions/*` versions
    (Node 20 deprecation warning); more `FORM_WORDS` tuning as false matches appear.
 
 ## Gotchas for whoever continues
 
-- **Workflow files** can't be pushed with the current `gh` token (no `workflow`
-  scope) — edit them via the GitHub web editor. `gh secret set` and normal file
-  pushes DO work.
+- **Workflow files push normally** (fixed 2026-07-29). The `gh` token previously
+  lacked the `workflow` scope, so `.github/workflows/*` had to go through the
+  GitHub web editor; `gh auth refresh -s workflow` settled that for good. If a
+  push is ever rejected with "refusing to allow an OAuth App to … workflow",
+  check `gh auth status` for the `workflow` scope and re-run that command.
+  (`gh auth refresh` reported "not logged in" from one PowerShell window while
+  working fine elsewhere on the same machine, same binary, same credential —
+  never explained. `gh auth login -s workflow` works from that state.)
 - **Fine-grained PAT (phone/laptop push):** Repository access must be **All** or
   **Only select repositories** (NOT "Public repositories", which locks perms
   read-only), and Repository permission **Contents: Read and write** (add via
