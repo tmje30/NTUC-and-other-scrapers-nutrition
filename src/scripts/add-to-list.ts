@@ -9,7 +9,6 @@ import {
 } from "../core/grocery-list.js";
 import { planCooldown, withCooldown, type CooldownEntry } from "../core/cooldown.js";
 import { readCooldowns, writeCooldowns } from "../core/cooldown-file.js";
-import { sendAddConfirmation } from "../core/telegram.js";
 
 /**
  * The other end of the page's Add button: put one deal on the Notion grocery
@@ -108,21 +107,8 @@ const entry: CooldownEntry = {
 };
 await writeCooldowns(withCooldown(await readCooldowns(), entry, now), undefined);
 
-// Ping the phone. Deliberately after the row and the cooldown are both safely
-// written, and deliberately non-fatal: a missing bot token must never turn a
-// successful add into a failed run.
-try {
-	await sendAddConfirmation({
-		title: added.title,
-		priceSgd: payload.priceSgd,
-		days: cd.days,
-		until: cd.until,
-		alreadyListed: added.alreadyListed,
-	});
-} catch (e: any) {
-	console.error(`Telegram confirmation not sent: ${e.message}`);
-}
-
+// No Telegram ping here by design — the user gets one daily digest and doesn't
+// want an add narrating itself. The issue comment below is the whole receipt.
 const back = new Date(cd.until).toLocaleDateString("en-SG", {
 	day: "numeric",
 	month: "short",

@@ -47,9 +47,6 @@ jobs:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           ISSUE_BODY: ${{ github.event.issue.body }}
           ADD_PAYLOAD: ${{ toJSON(github.event.client_payload) }}
-          # Confirmation ping. Optional — the add succeeds without these.
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
 
       - name: Commit the cooldown
         run: |

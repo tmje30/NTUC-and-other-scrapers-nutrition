@@ -83,33 +83,6 @@ export async function sendDeals(deals: Deal[]): Promise<number> {
 	return sent;
 }
 
-/**
- * Confirmation ping after the Add button puts an item on the grocery list.
- *
- * The page can't tell you whether the add landed — it hands off to a workflow
- * and the tab moves on. This closes the loop on whatever device you tapped from,
- * and states the cooldown so the item's disappearance from tomorrow's page is
- * never a surprise. Best-effort: the caller treats a failure here as harmless,
- * because by this point the Notion row already exists.
- */
-export async function sendAddConfirmation(o: {
-	title: string;
-	priceSgd: number;
-	days: number;
-	until: string;
-	alreadyListed: boolean;
-}): Promise<void> {
-	const back = new Date(o.until).toLocaleDateString("en-SG", {
-		day: "numeric",
-		month: "short",
-		timeZone: "Asia/Singapore",
-	});
-	const lead = o.alreadyListed
-		? `ℹ️ <b>${esc(o.title)}</b> was already on your list`
-		: `✅ <b>${esc(o.title)}</b> · $${o.priceSgd.toFixed(2)} added to your grocery list`;
-	await sendMessage(`${lead}\nNot searched for <b>${o.days} days</b> · back ${back}`);
-}
-
 /** Single daily message: "N deals today → tap to view", linking to the page. */
 export async function sendSummary(count: number, url: string): Promise<void> {
 	if (count <= 0) return; // nothing to say on a no-deal day

@@ -103,7 +103,8 @@ Milk", payload in a ```json block), you tap Submit, and
    resolved from the live schema, not hardcoded — they drift (see LEARNINGS
    2026-07-29);
 2. records a **cooldown** in `data/cooldowns.json` and commits it;
-3. comments the result on the issue and closes it.
+3. comments the result on the issue and closes it. **No Telegram ping** — the
+   user gets one daily digest and doesn't want adds narrating themselves.
 
 **Cooldown = `pack size ÷ monthly usage × 0.75`** — the 25% haircut brings the
 item back before the cupboard is empty, leaving a window to catch a deal. 1 kg
