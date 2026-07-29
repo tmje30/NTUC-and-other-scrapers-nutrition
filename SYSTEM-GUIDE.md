@@ -130,9 +130,20 @@ Three special property forms:
   bare `Milk` reject low-fat, skimmed, lactose-free, flavoured and plant milks.
   Writing a specific property (`Milk (Low Fat)`) instead **requires** it.
 
-The search term sent to a store is always the **base noun only** (`Milk`, not
-`Milk Low Fat`) — store keyword search returns nothing for unusual qualifiers like
-`Bentong` or `Tau Kwa`, so properties are enforced when scoring, not when querying.
+#### What actually gets searched — `queryTerms()`
+
+Properties are enforced when **scoring**, never by narrowing the query. But a broad
+query can fail to reach the product at all, so `queryTerms()` in `src/core/run.ts`
+searches up to **three forms** and unions the hits (de-duped by URL):
+
+1. the raw base noun — the spelling the shop most likely indexes (`Frozen Veg`)
+2. its synonym-normalized form (`Frozen vegetables`)
+3. base noun + properties (`Frozen vegetables mixed`)
+
+Form 1 always runs, so nothing that used to be found is lost; the extra forms can
+only find more. Measured: `Frozen Veg (Mixed)` went from **0 accepted to 5** —
+form 1 returns edamame and broccoli, form 3 returns the real mixed-veg products as
+top hits. `Szechuan pepper` went from 1 product to 5 (3 accepted).
 
 #### Synonym register — `synonyms.json`
 

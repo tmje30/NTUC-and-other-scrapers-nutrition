@@ -6,6 +6,19 @@
   { "from": "bean curd", "to": "tofu", "note": "Bean curd is tofu; SG stores use both names." },
   { "from": "beancurd", "to": "tofu", "note": "Unspaced spelling of bean curd." },
 
+  { "from": "veg", "to": "vegetables", "note": "'Veg' is only 3 chars so the >=4-char partial-prefix rule gives it no credit against 'Vegetables' — 'Frozen Veg' scored 0.41 against 'Churo Frozen Mixed Vegetables'. Also fixes the search query, which returned no mixed-veg products at all." },
+  { "from": "veggies", "to": "vegetables", "note": "Informal plural." },
+  { "from": "veggie", "to": "vegetables", "note": "Informal singular." },
+
+  { "from": "assorted", "to": "mixed", "note": "Same meaning as mixed; stores use both. NB 'mix' and 'mixed' ALREADY unify — the stemmer strips -ed — so this group is about the other words." },
+  { "from": "assortment", "to": "mixed", "note": "Noun form of assorted." },
+  { "from": "medley", "to": "mixed", "note": "'Vegetable medley' = mixed vegetables." },
+  { "from": "mixture", "to": "mixed", "note": "Noun form of mix." },
+  { "from": "combination", "to": "mixed", "note": "'Combination pack' = mixed." },
+  { "from": "combo", "to": "mixed", "note": "Short for combination." },
+  { "from": "variety pack", "to": "mixed", "note": "Phrase only — bare 'variety' is too common to remap safely ('variety of flavours')." },
+  { "from": "multipack", "to": "mixed", "note": "Multipack of several kinds." },
+
   { "from": "yoghurt", "to": "yogurt", "note": "FairPrice uses BOTH spellings in one result set ('Greek Style Yoghurt' vs 'Greek Yogurt'). Without this they tokenise differently and the Greek yogurt item misses two of three real products." },
   { "from": "yoghourt", "to": "yogurt", "note": "Rarer third spelling." },
 
