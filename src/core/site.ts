@@ -47,6 +47,7 @@ function addPayload(d: Deal): AddPayload {
 		store: d.product.store,
 		product: d.product.name,
 		priceSgd: d.product.priceSgd,
+		myPriceSgd: d.target.packPriceSgd,
 		// The pack actually being bought decides how long the cooldown runs; fall
 		// back to the user's usual pack when the store didn't publish a size.
 		packSizeG: d.product.packWeightG ?? (d.target.packSize || null),

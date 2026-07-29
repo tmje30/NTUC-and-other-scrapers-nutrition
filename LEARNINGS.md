@@ -2,6 +2,26 @@
 
 Running log of decisions, gotchas, and non-obvious facts. Newest on top.
 
+## 2026-07-29 — Never hardcode a grocery-list column name
+
+The first real Add failed with `Price  is not a property that exists.` — a
+column verified against the live schema **the same morning**. Between the check
+and the tap, `Price ` had been renamed `Price , To Buy ` and a `Current Price `
+column added. This DB is edited by hand and its names drift constantly
+(trailing spaces, commas, renames); the Ingredients DB is the same story.
+
+`grocery-list.ts` now resolves columns from the live schema at write time
+(`resolveListProps`): the title is whatever has type `title`, prices are the
+`number` columns matching "current" / "buy" / "price", vendor is the `rich_text`
+matching "vendor". Unresolved columns are **skipped, not sent** — Notion rejects
+the entire `pages.create` for one unknown property name, so a missing column
+must never become a failed add. Verified against the old schema, the current
+one, and a hypothetical future rename.
+
+Reading Ingredients still matches names exactly; that's a read, and a wrong name
+there surfaces as a missing value rather than a hard failure. Worth revisiting
+if it ever bites.
+
 ## 2026-07-29 — Two ways "the same word" failed to match
 
 **1. The must-match check bypassed normalisation.** Properties went through

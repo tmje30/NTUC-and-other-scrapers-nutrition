@@ -97,8 +97,11 @@ can't hold a Notion token: Add opens a **pre-filled GitHub issue** ("Add: [NTUC]
 Milk", payload in a ```json block), you tap Submit, and
 `.github/workflows/add-to-list.yml` does the privileged half —
 
-1. writes the row to the Notion **grocery List** DB: Name `[NTUC] Milk`, Price =
-   the discounted price, Vendor = the store, **Amount left empty**;
+1. writes the row to the Notion **grocery List** DB: Name `[NTUC] Milk`,
+   `Price , To Buy ` = the discounted price, `Current Price ` = what you pay for
+   your own pack, Vendor = the store, **Amount left empty**. Column names are
+   resolved from the live schema, not hardcoded — they drift (see LEARNINGS
+   2026-07-29);
 2. records a **cooldown** in `data/cooldowns.json` and commits it;
 3. comments the result on the issue and closes it.
 
