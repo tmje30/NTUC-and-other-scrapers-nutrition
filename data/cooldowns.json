@@ -1,5 +1,19 @@
 {
   "version": 1,
-  "updatedAt": "",
-  "entries": []
+  "updatedAt": "2026-07-29T13:29:56.736Z",
+  "entries": [
+    {
+      "key": "rice wine",
+      "ingredientId": "34c69a18-4fe7-8012-9dcf-cce78ff534fc",
+      "ingredientName": "Rice Wine(Cooking)",
+      "addedAt": "2026-07-29T13:29:56.736Z",
+      "until": "2026-08-12T13:29:56.736Z",
+      "days": 14,
+      "basis": "no monthly usage → flat 14 days",
+      "store": "Sheng Siong",
+      "product": "Gourmet Rice Cooking Wine - 16% Alcohol",
+      "packSizeG": 640,
+      "monthlyAmount": 0
+    }
+  ]
 }
