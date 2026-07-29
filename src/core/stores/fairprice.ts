@@ -1,5 +1,5 @@
 import type { StoreModule, StoreProduct } from "./types.js";
-import { parseWeight } from "./weight.js";
+import { parseWeight, parseUnitCount } from "./weight.js";
 
 /**
  * FairPrice store module (store #1, reference build).
@@ -41,10 +41,23 @@ function collectProducts(node: any, seen = new Set<any>(), out: any[] = []): any
 function mapProduct(p: any): StoreProduct {
 	const meta = p.metaData ?? {};
 	// DisplayUnit is the accurate human size ("1.89L", "830ml", "10 x 100ml").
-	// The `Weight` field is unreliable ("2 gm" for 2 L milk), so try it last.
-	const pw =
-		parseWeight(meta.DisplayUnit) ?? parseWeight(meta["Unit Of Weight"]) ?? parseWeight(meta.Weight);
-	const packWeightG = pw?.grams ?? null;
+	const pw = parseWeight(meta.DisplayUnit) ?? parseWeight(meta["Unit Of Weight"]);
+	// A count/loose pack ("1 per pack", "1S", "10s") has no meaningful weight.
+	const unitCount = parseUnitCount(meta.DisplayUnit) ?? parseUnitCount(meta["Unit Of Weight"]);
+
+	// The `Weight` field is an unreliable placeholder — "1 gm" for a 1-per-pack
+	// bunch of bananas, "2 gm" for 2 L milk — so only fall back to it when the
+	// reliable fields gave nothing AND this isn't a known count pack. That stops a
+	// count item from being priced as a bogus 1 g pack ($545/100g).
+	let packWeightG = pw?.grams ?? null;
+	let volumetric = pw?.volumetric ?? false;
+	if (packWeightG == null && unitCount == null) {
+		const w = parseWeight(meta.Weight);
+		if (w) {
+			packWeightG = w.grams;
+			volumetric = w.volumetric;
+		}
+	}
 
 	const price = Number(p.final_price);
 	const ssd = Array.isArray(p.storeSpecificData) ? p.storeSpecificData[0] : undefined;
@@ -57,8 +70,8 @@ function mapProduct(p: any): StoreProduct {
 		brand: p.brand?.name,
 		priceSgd: price,
 		packWeightG,
-		volumetric: pw?.volumetric ?? false,
-		unitCount: null,
+		volumetric,
+		unitCount,
 		pricePer100g: packWeightG && packWeightG > 0 ? (price / packWeightG) * 100 : null,
 		onSale,
 		listPriceSgd: onSale ? mrp : null,

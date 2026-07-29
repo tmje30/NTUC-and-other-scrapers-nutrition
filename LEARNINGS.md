@@ -96,15 +96,20 @@ formula they add (don't create schema for them). `src/core/notion.ts`.
 Ingredients data source id `34b69a18-4fe7-80e6-904e-000b208cf560`. 88 named rows.
 Property names have typos/trailing spaces — **must match exactly**:
 `Name` (title), `Price,SGD` (number), `Weight /Units of New Product ` (number),
-`Unit type ` (select: "By Gram" | "By Unit"), `Price per 100g ` (formula number),
+`Unit type ` (select: "By Gram" | "By ml" | "By Unit"), `Price per 100g ` (formula number),
 `Catagory` (select), `Used '1' Plan` / `Used '2' Plan` / `Used '3' Plan` (formula string).
 
 - **`Price,SGD` = whole-pack price**, pairs with Weight. Verified: Bread 3.8/16=0.2375/unit→23.75/100. (PRD open question resolved.)
 - **`Price per 100g ` is precomputed** — read it, don't recompute. BUT for `By Unit`
   items it's price-per-100-**units**, not per-100-g → NOT comparable to a store's
   per-100g. Real By-Unit grocery items: eggs, bread(slices), tea bags.
+- **`By ml`** (10 rows: milk ×3, soy sauce, oils, fish sauce, rice wine, vinegar, …)
+  is a **weight-based** type: the whole system treats ml ≈ g, so By-ml compares on
+  `Price per 100g ` exactly like By Gram (only the display unit differs, ml/L vs
+  g/kg via each product's `volumetric` flag). `isByWeight()` in `notion.ts` covers
+  both. Before 2026-07-29 By-ml rows got a null baseline and were silently dropped.
 - **Plan membership** = which `Used 'N' Plan` is non-empty (empty ⇒ not in plan N).
-- **`Used 'N' Plan` format** (3 `\n` lines; unit `g` for By Gram, `x` for By Unit):
+- **`Used 'N' Plan` format** (3 `\n` lines; unit `g` for By Gram, `ml` for By ml, `x` for By Unit):
   `<daily> u | Daily |  <cost> SGD` / `<wk> u / <p>Pk | Weekly[5] | <cost> SGD` /
   `<mo> u / <p>Pk | Monthly[20] |  <cost> SGD`. Monthly = line 3. Parsed by
   `MONTHLY_RE` in `src/core/parse.ts` (verified via `src/scripts/test-parse.ts`).

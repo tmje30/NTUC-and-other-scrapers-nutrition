@@ -34,7 +34,7 @@ export function formatDeal(deal: Deal): string {
 	const baseBig = deal.baselinePer100g * 10;
 
 	const usage =
-		t.unitType === "By Gram" ? formatAmount(t.monthlyAmount, p.volumetric) : `${t.monthlyAmount} units`;
+		t.unitType === "By Unit" ? `${t.monthlyAmount} units` : formatAmount(t.monthlyAmount, p.volumetric);
 	const sale = p.onSale
 		? p.listPriceSgd
 			? ` · 🔻 was $${p.listPriceSgd.toFixed(2)}`

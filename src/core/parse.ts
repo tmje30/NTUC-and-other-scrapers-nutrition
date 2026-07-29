@@ -66,7 +66,7 @@ export function parseName(raw: string): ParsedName {
 	return { searchTerm, mustMatch, original };
 }
 
-export type UsageUnit = "g" | "x";
+export type UsageUnit = "g" | "ml" | "x";
 
 export interface MonthlyUsage {
 	/** Monthly quantity in grams (unit "g") or units (unit "x"). */
@@ -79,7 +79,7 @@ export interface MonthlyUsage {
 }
 
 const MONTHLY_RE =
-	/([\d.]+)\s*(g|x)\s*\/\s*([\d.]+)\s*Pk\s*\|\s*Monthly[^|]*\|\s*([\d.]+)\s*SGD/i;
+	/([\d.]+)\s*(ml|g|x)\s*\/\s*([\d.]+)\s*Pk\s*\|\s*Monthly[^|]*\|\s*([\d.]+)\s*SGD/i;
 
 /**
  * Parse the monthly line of a "Used 'N' Plan" value. Returns null if the string

@@ -24,7 +24,17 @@ const INGREDIENTS_DS = "34b69a18-4fe7-80e6-904e-000b208cf560";
 // Categories that are NOT groceries (skip for v1; a supplement scraper is future).
 const NON_GROCERY_CATEGORIES = new Set(["Suppliments", "Filler"]);
 
-export type UnitType = "By Gram" | "By Unit";
+// "By ml" is a weight-based type: the whole system treats ml ≈ g (water
+// density), so By-ml items are compared on price-per-100 exactly like By-Gram —
+// only the display unit (ml/L vs g/kg) differs, driven by each product's
+// `volumetric` flag. Keeping it separate from By-Gram lets the display know the
+// baseline is a liquid even when a matched product's own unit is ambiguous.
+export type UnitType = "By Gram" | "By ml" | "By Unit";
+
+/** By-Gram and By-ml are both compared on price-per-100 (ml ≈ g). */
+export function isByWeight(u: UnitType): boolean {
+	return u === "By Gram" || u === "By ml";
+}
 
 export interface PlanTarget {
 	ingredientId: string;
@@ -103,7 +113,7 @@ export async function readGroceryTargets(): Promise<PlanTarget[]> {
 		if (packPriceSgd <= 0 || packSize <= 0) continue; // no comparable baseline
 
 		const per100 = numberOf(p["Price per 100g "]);
-		const baselinePer100g = unitType === "By Gram" ? per100 : null;
+		const baselinePer100g = isByWeight(unitType) ? per100 : null;
 		const baselinePerUnit = unitType === "By Unit" ? packPriceSgd / packSize : null;
 
 		// Monthly usage from the Used 'N' Plan formula — null when not in the plan.

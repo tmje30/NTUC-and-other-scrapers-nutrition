@@ -49,7 +49,8 @@ function dealCard(d: Deal): string {
 			: null;
 	const sale = salePct != null ? ` <span class="sale">🔻 on sale (−${salePct}%)</span>` : "";
 
-	const usage = t.unitType === "By Gram" ? amount(t.monthlyAmount, p.volumetric) : `${t.monthlyAmount} units`;
+	const usage =
+		t.unitType === "By Unit" ? `${t.monthlyAmount} units` : amount(t.monthlyAmount, p.volumetric);
 
 	return `
     <a class="card" href="${esc(p.url)}" target="_blank" rel="noopener">

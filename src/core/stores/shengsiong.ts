@@ -1,5 +1,5 @@
 import type { StoreModule, StoreProduct } from "./types.js";
-import { parseWeight } from "./weight.js";
+import { parseWeight, parseUnitCount } from "./weight.js";
 import { DdpClient } from "./ddp.js";
 
 /**
@@ -38,6 +38,7 @@ function mapProduct(p: any): StoreProduct {
 	// Search results carry `packSize` ("4 x 125 ml", "1 kg") but not netWeight.
 	const pw = parseWeight(p.packSize);
 	const packWeightG = pw?.grams ?? null;
+	const unitCount = parseUnitCount(p.packSize);
 	const price = Number(p.price);
 	const prev = p.prevPrice ? Number(p.prevPrice) : 0;
 	const onSale = prev > price + 1e-9;
@@ -49,7 +50,7 @@ function mapProduct(p: any): StoreProduct {
 		priceSgd: price,
 		packWeightG,
 		volumetric: pw?.volumetric ?? false,
-		unitCount: null,
+		unitCount,
 		pricePer100g: packWeightG && packWeightG > 0 ? (price / packWeightG) * 100 : null,
 		onSale,
 		listPriceSgd: onSale ? prev : null,

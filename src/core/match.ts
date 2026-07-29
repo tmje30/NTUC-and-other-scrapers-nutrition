@@ -159,7 +159,7 @@ const PROCESSED_RE = /\b(jam|puree|sauce|cider|vinegar|sorbet|concentrate|essenc
 // White Pepper→"White Pepper Chicken Vermicelli"). Covers snacks/bakery, nut
 // modifiers, prepared dishes, and non-food (cleaning/toiletry) products.
 const GENERIC_FORM_RE =
-	/\b(spread|seasoning|marinade|tea|cake|biscuits?|crackers?|yogh?urt|smoothie|cereal|sandwich|chips?|snack|pudding|jelly|candy|ice\s*cream|vermicelli|noodles?|peanut|almond|cashew|hazelnut|cocoa|dishwashing|detergent|cleaner|soap|shampoo|sanitiz\w*|bleach)\b/i;
+	/\b(spread|seasoning|marinade|tea|cake|biscuits?|crackers?|milk|milkshake|yogh?urt|smoothie|cereal|sandwich|chips?|snack|pudding|jelly|candy|ice\s*cream|vermicelli|noodles?|peanut|almond|cashew|hazelnut|cocoa|dishwashing|detergent|cleaner|soap|shampoo|sanitiz\w*|bleach)\b/i;
 
 // Beverage-like item? (its own name says it's a drink → drink candidates are fine)
 const BEVERAGE_ITEM_RE = /\b(wine|juice|coffee|tea|drink|soda|kombucha|beer|cider|cordial)\b/i;
