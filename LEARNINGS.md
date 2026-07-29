@@ -2,6 +2,35 @@
 
 Running log of decisions, gotchas, and non-obvious facts. Newest on top.
 
+## 2026-07-29 — Synonyms are GLOBAL; context-dependent equivalences don't belong there
+
+A `synonyms.json` entry rewrites every item name and every product title, so it may
+only hold equivalences that are true **everywhere**. Two worked examples:
+
+- ❌ `minced → ground` looks obviously right, but "ground" means *minced* for meat
+  and *powdered* for spice ("White Pepper - Ground"). It was removed from the
+  register and expressed instead as one member of the meat-cut variety group
+  (`"mince|minced|ground"`), which only fires when the ITEM itself names a cut — so
+  a spice item is untouched. **Context-dependent equivalence ⇒ scope it to the
+  guard that owns the context, not the global register.**
+- ✅ `sotong → squid`, `yoghurt → yogurt`, `veg → vegetables` are true everywhere.
+
+Also fixed while in there: variety-group members were listed singular AND plural as
+SEPARATE entries, so "Chicken thigh" read "Chicken Thighs" as a different cut and
+penalised it. Members are now alternations (`"thighs?"`, `"fillets?|filets?"`).
+
+## 2026-07-29 — "un-" in a property is a NEGATION, not a word to find
+
+`Squid Ring (unbreaded)` found 18 products and accepted **0**; `Apple Cider vinegar
+(Unpasteurized)` accepted 0 of 21. Both were requiring a word no store ever prints.
+`parseName` now reads `un<root>` (root ≥5 chars) as "must NOT contain root", the
+same treatment as `(not red)`.
+
+Word-boundary matching makes this safe in both directions: "Unsalted Butter" does
+**not** contain `\bsalted\b`, so it passes, while "Salted Butter" is rejected.
+Results: Squid Ring 0 → 5 (plain rings only; tempura and battered rejected via
+`battered|tempura|panko → breaded` in the register), vinegar 0 → 20.
+
 ## 2026-07-29 — The unit-type dimension guard is ASYMMETRIC (measured)
 
 A "By Gram" item is a solid sold by weight, so a candidate packed in ml/L is a

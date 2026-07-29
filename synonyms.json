@@ -195,6 +195,31 @@
     "note": "Italian/menu name for squid."
   },
   {
+    "from": "battered",
+    "to": "breaded",
+    "note": "Coating form. Folded so an '(unbreaded)' item excludes battered products too."
+  },
+  {
+    "from": "crumbed",
+    "to": "breaded",
+    "note": "Coating form."
+  },
+  {
+    "from": "tempura",
+    "to": "breaded",
+    "note": "Tempura is a batter coating — 'CB Tempura Natural Calamari Rings' slipped past an (unbreaded) item without this."
+  },
+  {
+    "from": "panko",
+    "to": "breaded",
+    "note": "Panko is breadcrumb coating."
+  },
+  {
+    "from": "crispy fried",
+    "to": "breaded",
+    "note": "Phrase used for coated products; bare 'fried' is left alone (stir-fried is not a coating)."
+  },
+  {
     "from": "shrimp",
     "to": "prawn",
     "note": "Same animal, both used in SG. Folded so a prawn item matches either."
@@ -343,26 +368,6 @@
     "from": "long beans",
     "to": "snake beans",
     "note": "Same vegetable, both names used."
-  },
-  {
-    "from": "minced",
-    "to": "ground",
-    "note": "Minced and ground meat are the same cut. Both are members of the meat-cut variety group, so without this an item saying 'minced' was flagged as a DIFFERENT cut from a title saying 'ground'."
-  },
-  {
-    "from": "mince",
-    "to": "ground",
-    "note": "Noun/verb form of minced."
-  },
-  {
-    "from": "fillet",
-    "to": "filet",
-    "note": "Spelling fold; both are meat-cut group members."
-  },
-  {
-    "from": "drumsticks",
-    "to": "drumstick",
-    "note": "Plural fold for a cut name."
   },
   {
     "from": "ayam",

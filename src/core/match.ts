@@ -273,22 +273,31 @@ const has = (re: RegExp, s: string) => re.test(s || "");
 // variety comes from its FULL Notion name (e.g. "Onion (white)"), because the
 // bracketed part is stripped from the search term. Negation is supported in the
 // name: "Onion (not red)" means "any onion except red".
+// Each entry is ONE member and may list equivalent spellings as an alternation —
+// singular/plural, or names for the same cut. Keeping them as separate members was
+// a bug: "Chicken thigh" read "Chicken Thighs" as a DIFFERENT cut and penalised it.
+//
+// "mince|minced|ground" belongs here rather than in synonyms.json because the
+// equivalence is context-dependent: for meat "ground" means minced, but for a spice
+// it means powdered ("White Pepper - Ground"). Scoping it to this group makes it
+// safe — the check only fires when the ITEM itself names a cut, so a spice item is
+// never affected.
 const ATTRIBUTE_GROUPS: string[][] = [
 	// colour / variety
 	["white", "red", "yellow", "brown", "green", "purple", "black", "orange", "pink", "golden"],
 	// meat cut / part
 	[
-		"breast", "thigh", "thighs", "wing", "wings", "drumstick", "drumsticks", "whole", "mince",
-		"minced", "ground", "fillet", "filet", "tenderloin", "cutlet", "chop", "chops", "belly",
-		"shoulder", "loin", "rump", "sirloin", "brisket", "shank", "liver", "gizzard", "carcass",
-		"wingette", "midjoint", "keel",
+		"breasts?", "thighs?", "wings?", "drumsticks?", "whole", "mince|minced|ground",
+		"fillets?|filets?", "tenderloins?", "cutlets?", "chops?", "belly", "shoulders?",
+		"loin", "rump", "sirloin", "brisket", "shanks?", "livers?", "gizzards?", "carcass",
+		"wingettes?", "midjoints?", "keel",
 	],
 ];
 const GROUPS = ATTRIBUTE_GROUPS.map((members) =>
 	members.map((m) => ({
 		m,
-		re: new RegExp(`\\b${m}\\b`, "i"),
-		notRe: new RegExp(`\\b(?:not|no|non[- ]?)\\s+${m}\\b`, "i"),
+		re: new RegExp(`\\b(?:${m})\\b`, "i"),
+		notRe: new RegExp(`\\b(?:not|no|non[- ]?)\\s+(?:${m})\\b`, "i"),
 	})),
 );
 

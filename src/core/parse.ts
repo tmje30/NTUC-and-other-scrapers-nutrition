@@ -119,8 +119,18 @@ export function parseName(raw: string): ParsedName {
 			const v = collapse(part).toLowerCase();
 			if (!v) continue;
 			const neg = v.match(/^(?:not|no|non[- ]?)\s+(.*)$/);
+			// "un-" is a negation too: "(unbreaded)" means NOT breaded, "(Unpasteurized)"
+			// means NOT pasteurized. No store prints these words, so requiring them
+			// literally matched nothing — Squid Ring found 18 products and accepted 0.
+			// Requiring the ABSENCE of the root works: word-boundary matching means
+			// "Unsalted Butter" does not contain "salted", so it passes, while
+			// "Salted Butter" is correctly rejected. Root must be ≥5 chars so ordinary
+			// words starting with "un" ("union") aren't torn apart.
+			const un = v.match(/^un([a-z]{5,})$/);
 			if (neg?.[1]) {
 				negatedProperties.push(collapse(neg[1]));
+			} else if (un?.[1]) {
+				negatedProperties.push(un[1]);
 			} else if (BASIC_MARKERS.has(v)) {
 				sawBasicMarker = true; // "(Normal)" ⇒ basic range, not a required word
 			} else if (PRODUCE_CATEGORIES.has(v)) {
