@@ -1,65 +1,627 @@
 [
-  { "from": "tau kwa", "to": "tofu", "note": "Tau kwa is a style of firm, pressed tofu. FairPrice sells 'Fortune Tau Kwa' with no mention of tofu, so without this the item scored 0 coverage against the right product." },
-  { "from": "taukwa", "to": "tofu", "note": "Unspaced spelling of tau kwa." },
-  { "from": "tau kua", "to": "tofu", "note": "Alternate romanisation of tau kwa." },
-  { "from": "toufu", "to": "tofu", "note": "Common misspelling of tofu." },
-  { "from": "bean curd", "to": "tofu", "note": "Bean curd is tofu; SG stores use both names." },
-  { "from": "beancurd", "to": "tofu", "note": "Unspaced spelling of bean curd." },
-
-  { "from": "veg", "to": "vegetables", "note": "'Veg' is only 3 chars so the >=4-char partial-prefix rule gives it no credit against 'Vegetables' — 'Frozen Veg' scored 0.41 against 'Churo Frozen Mixed Vegetables'. Also fixes the search query, which returned no mixed-veg products at all." },
-  { "from": "veggies", "to": "vegetables", "note": "Informal plural." },
-  { "from": "veggie", "to": "vegetables", "note": "Informal singular." },
-
-  { "from": "assorted", "to": "mixed", "note": "Same meaning as mixed; stores use both. NB 'mix' and 'mixed' ALREADY unify — the stemmer strips -ed — so this group is about the other words." },
-  { "from": "assortment", "to": "mixed", "note": "Noun form of assorted." },
-  { "from": "medley", "to": "mixed", "note": "'Vegetable medley' = mixed vegetables." },
-  { "from": "mixture", "to": "mixed", "note": "Noun form of mix." },
-  { "from": "combination", "to": "mixed", "note": "'Combination pack' = mixed." },
-  { "from": "combo", "to": "mixed", "note": "Short for combination." },
-  { "from": "variety pack", "to": "mixed", "note": "Phrase only — bare 'variety' is too common to remap safely ('variety of flavours')." },
-  { "from": "multipack", "to": "mixed", "note": "Multipack of several kinds." },
-
-  { "from": "yoghurt", "to": "yogurt", "note": "FairPrice uses BOTH spellings in one result set ('Greek Style Yoghurt' vs 'Greek Yogurt'). Without this they tokenise differently and the Greek yogurt item misses two of three real products." },
-  { "from": "yoghourt", "to": "yogurt", "note": "Rarer third spelling." },
-
-  { "from": "szechhuan", "to": "sze chuan", "note": "Double-h spelling used by the inventory item 'Szechhuan pepper'; no store spells it this way." },
-  { "from": "szechuan", "to": "sze chuan", "note": "Sichuan pepper is spelled several ways." },
-  { "from": "szechwan", "to": "sze chuan", "note": "Variant of szechuan." },
-  { "from": "sichuan", "to": "sze chuan", "note": "Pinyin spelling of the same pepper." },
-
-  { "from": "belacan", "to": "blachan", "note": "Malay spelling of the fermented shrimp paste; the inventory item is 'blachan'." },
-  { "from": "belachan", "to": "blachan", "note": "Variant of belacan." },
-  { "from": "blacan", "to": "blachan", "note": "Variant of belacan." },
-
-  { "from": "masoory", "to": "masoor", "note": "Red lentil (masoor dhall) — spelling used in the inventory name." },
-  { "from": "dahl", "to": "dhall", "note": "Lentil pulse/dish — dal / dahl / dhal all mean the same." },
-  { "from": "dhal", "to": "dhall", "note": "Variant of dahl." },
-  { "from": "daal", "to": "dhall", "note": "Variant of dahl." },
-
-  { "from": "gula melaka", "to": "palm sugar", "note": "Gula melaka is palm sugar; stores label it either way." },
-  { "from": "kecap manis", "to": "sweet soy sauce", "note": "Indonesian sweet soy sauce." },
-  { "from": "bee hoon", "to": "rice vermicelli", "note": "Bee hoon = rice vermicelli noodles." },
-  { "from": "kang kong", "to": "water spinach", "note": "Kang kong = water spinach / morning glory." },
-  { "from": "kangkong", "to": "water spinach", "note": "Unspaced spelling of kang kong." },
-  { "from": "brinjal", "to": "eggplant", "note": "Brinjal (SG/IN) = eggplant." },
-  { "from": "aubergine", "to": "eggplant", "note": "UK/FR name for eggplant." },
-  { "from": "ladies finger", "to": "okra", "note": "Lady's finger = okra." },
-  { "from": "capsicum", "to": "bell pepper", "note": "Capsicum (SG/AU) = bell pepper." },
-
-  { "from": "mælk", "to": "milk", "note": "Danish — staged for a future Danish store; harmless on SG titles." },
-  { "from": "letmælk", "to": "low fat milk", "note": "Danish." },
-  { "from": "sødmælk", "to": "full cream milk", "note": "Danish." },
-  { "from": "skummetmælk", "to": "skim milk", "note": "Danish." },
-  { "from": "æble", "to": "apple", "note": "Danish." },
-  { "from": "kylling", "to": "chicken", "note": "Danish." },
-  { "from": "kyllingebryst", "to": "chicken breast", "note": "Danish." },
-  { "from": "ris", "to": "rice", "note": "Danish." },
-  { "from": "smør", "to": "butter", "note": "Danish." },
-  { "from": "løg", "to": "onion", "note": "Danish." },
-  { "from": "gulerod", "to": "carrot", "note": "Danish." },
-  { "from": "gulerødder", "to": "carrots", "note": "Danish." },
-  { "from": "havregryn", "to": "oatmeal", "note": "Danish." },
-  { "from": "kanel", "to": "cinnamon", "note": "Danish." },
-  { "from": "hvidløg", "to": "garlic", "note": "Danish." },
-  { "from": "banan", "to": "banana", "note": "Danish." }
+  {
+    "from": "tau kwa",
+    "to": "tofu",
+    "note": "Tau kwa is a style of firm, pressed tofu. FairPrice sells 'Fortune Tau Kwa' with no mention of tofu, so without this the item scored 0 coverage against the right product."
+  },
+  {
+    "from": "taukwa",
+    "to": "tofu",
+    "note": "Unspaced spelling of tau kwa."
+  },
+  {
+    "from": "tau kua",
+    "to": "tofu",
+    "note": "Alternate romanisation of tau kwa."
+  },
+  {
+    "from": "toufu",
+    "to": "tofu",
+    "note": "Common misspelling of tofu."
+  },
+  {
+    "from": "bean curd",
+    "to": "tofu",
+    "note": "Bean curd is tofu; SG stores use both names. Listed BEFORE any bare-word rule so the phrase wins."
+  },
+  {
+    "from": "beancurd",
+    "to": "tofu",
+    "note": "Unspaced spelling of bean curd."
+  },
+  {
+    "from": "veg",
+    "to": "vegetables",
+    "note": "'Veg' is only 3 chars so the >=4-char partial-prefix rule gives it no credit against 'Vegetables' — 'Frozen Veg' scored 0.41 against 'Churo Frozen Mixed Vegetables'. Also fixes the search query, which returned no mixed-veg products at all."
+  },
+  {
+    "from": "veggies",
+    "to": "vegetables",
+    "note": "Informal plural."
+  },
+  {
+    "from": "veggie",
+    "to": "vegetables",
+    "note": "Informal singular."
+  },
+  {
+    "from": "vege",
+    "to": "vegetables",
+    "note": "Seen on FairPrice ('Del Monte Vege Plus')."
+  },
+  {
+    "from": "assorted",
+    "to": "mixed",
+    "note": "Same meaning as mixed; stores use both. NB 'mix' and 'mixed' ALREADY unify — the stemmer strips -ed — so this group is about the other words."
+  },
+  {
+    "from": "assortment",
+    "to": "mixed",
+    "note": "Noun form of assorted."
+  },
+  {
+    "from": "asstd",
+    "to": "mixed",
+    "note": "Abbreviation of assorted."
+  },
+  {
+    "from": "medley",
+    "to": "mixed",
+    "note": "'Vegetable medley' = mixed vegetables."
+  },
+  {
+    "from": "mixture",
+    "to": "mixed",
+    "note": "Noun form of mix."
+  },
+  {
+    "from": "combination",
+    "to": "mixed",
+    "note": "'Combination pack' = mixed."
+  },
+  {
+    "from": "combo",
+    "to": "mixed",
+    "note": "Short for combination."
+  },
+  {
+    "from": "variety pack",
+    "to": "mixed",
+    "note": "Phrase only — bare 'variety' is too common to remap safely ('variety of flavours')."
+  },
+  {
+    "from": "multipack",
+    "to": "mixed",
+    "note": "Multipack of several kinds."
+  },
+  {
+    "from": "pkt",
+    "to": "packet",
+    "note": "Abbreviation."
+  },
+  {
+    "from": "pkts",
+    "to": "packet",
+    "note": "Abbreviation, plural."
+  },
+  {
+    "from": "btl",
+    "to": "bottle",
+    "note": "Abbreviation."
+  },
+  {
+    "from": "choc",
+    "to": "chocolate",
+    "note": "Abbreviation. Matters because chocolate is a flavoured-milk variant word."
+  },
+  {
+    "from": "orig",
+    "to": "original",
+    "note": "Abbreviation."
+  },
+  {
+    "from": "org",
+    "to": "organic",
+    "note": "Abbreviation. 'Organic' is a must-match keyword, so the short form must fold onto it."
+  },
+  {
+    "from": "prem",
+    "to": "premium",
+    "note": "Abbreviation."
+  },
+  {
+    "from": "pwd",
+    "to": "powder",
+    "note": "Abbreviation."
+  },
+  {
+    "from": "pdr",
+    "to": "powder",
+    "note": "Abbreviation."
+  },
+  {
+    "from": "conc",
+    "to": "concentrate",
+    "note": "Abbreviation."
+  },
+  {
+    "from": "frzn",
+    "to": "frozen",
+    "note": "Abbreviation. 'Frozen' is a must-match keyword."
+  },
+  {
+    "from": "lge",
+    "to": "large",
+    "note": "Abbreviation."
+  },
+  {
+    "from": "sml",
+    "to": "small",
+    "note": "Abbreviation."
+  },
+  {
+    "from": "unswt",
+    "to": "unsweetened",
+    "note": "Abbreviation."
+  },
+  {
+    "from": "s'pore",
+    "to": "singapore",
+    "note": "Local abbreviation."
+  },
+  {
+    "from": "soya",
+    "to": "soy",
+    "note": "FairPrice writes both 'Soy Sauce' and 'Soya Sauce'; the inventory item is 'Soy Sauce (light)'."
+  },
+  {
+    "from": "shoyu",
+    "to": "soy sauce",
+    "note": "Japanese soy sauce."
+  },
+  {
+    "from": "kecap manis",
+    "to": "sweet soy sauce",
+    "note": "Indonesian sweet soy sauce."
+  },
+  {
+    "from": "sotong",
+    "to": "squid",
+    "note": "Malay for squid; the inventory item is 'Squid Ring (unbreaded)'."
+  },
+  {
+    "from": "calamari",
+    "to": "squid",
+    "note": "Italian/menu name for squid."
+  },
+  {
+    "from": "shrimp",
+    "to": "prawn",
+    "note": "Same animal, both used in SG. Folded so a prawn item matches either."
+  },
+  {
+    "from": "shrimps",
+    "to": "prawn",
+    "note": "Plural."
+  },
+  {
+    "from": "udang",
+    "to": "prawn",
+    "note": "Malay for prawn."
+  },
+  {
+    "from": "ikan bilis",
+    "to": "anchovies",
+    "note": "Malay for dried anchovies."
+  },
+  {
+    "from": "anchovy",
+    "to": "anchovies",
+    "note": "Singular/plural fold."
+  },
+  {
+    "from": "taugeh",
+    "to": "bean sprouts",
+    "note": "Local name for bean sprouts."
+  },
+  {
+    "from": "tauge",
+    "to": "bean sprouts",
+    "note": "Variant spelling."
+  },
+  {
+    "from": "chana",
+    "to": "chickpea",
+    "note": "Chana dhall is split chickpea; the inventory item is 'Lentil (Chana Dahl)'."
+  },
+  {
+    "from": "garbanzo",
+    "to": "chickpea",
+    "note": "Spanish/US name for chickpea."
+  },
+  {
+    "from": "kai lan",
+    "to": "chinese broccoli",
+    "note": "Kai lan = Chinese broccoli."
+  },
+  {
+    "from": "kailan",
+    "to": "chinese broccoli",
+    "note": "Unspaced spelling."
+  },
+  {
+    "from": "chye sim",
+    "to": "choy sum",
+    "note": "Spelling variant."
+  },
+  {
+    "from": "cai xin",
+    "to": "choy sum",
+    "note": "Pinyin spelling."
+  },
+  {
+    "from": "pak choi",
+    "to": "bok choy",
+    "note": "Spelling variant."
+  },
+  {
+    "from": "pok choi",
+    "to": "bok choy",
+    "note": "Spelling variant."
+  },
+  {
+    "from": "wong bok",
+    "to": "napa cabbage",
+    "note": "Wongbok is napa/Chinese cabbage — NOT the same as a round cabbage."
+  },
+  {
+    "from": "wongbok",
+    "to": "napa cabbage",
+    "note": "Unspaced spelling."
+  },
+  {
+    "from": "beetroot",
+    "to": "beet",
+    "note": "UK name."
+  },
+  {
+    "from": "coriander",
+    "to": "cilantro",
+    "note": "UK vs US name for the same herb."
+  },
+  {
+    "from": "courgette",
+    "to": "zucchini",
+    "note": "UK/FR name."
+  },
+  {
+    "from": "rocket",
+    "to": "arugula",
+    "note": "UK name for arugula."
+  },
+  {
+    "from": "brinjal",
+    "to": "eggplant",
+    "note": "Brinjal (SG/IN) = eggplant."
+  },
+  {
+    "from": "aubergine",
+    "to": "eggplant",
+    "note": "UK/FR name for eggplant."
+  },
+  {
+    "from": "ladies finger",
+    "to": "okra",
+    "note": "Lady's finger = okra."
+  },
+  {
+    "from": "lady finger",
+    "to": "okra",
+    "note": "Singular spelling."
+  },
+  {
+    "from": "bendi",
+    "to": "okra",
+    "note": "Malay for okra."
+  },
+  {
+    "from": "capsicum",
+    "to": "bell pepper",
+    "note": "Capsicum (SG/AU) = bell pepper."
+  },
+  {
+    "from": "kang kong",
+    "to": "water spinach",
+    "note": "Kang kong = water spinach / morning glory."
+  },
+  {
+    "from": "kangkong",
+    "to": "water spinach",
+    "note": "Unspaced spelling of kang kong."
+  },
+  {
+    "from": "long beans",
+    "to": "snake beans",
+    "note": "Same vegetable, both names used."
+  },
+  {
+    "from": "minced",
+    "to": "ground",
+    "note": "Minced and ground meat are the same cut. Both are members of the meat-cut variety group, so without this an item saying 'minced' was flagged as a DIFFERENT cut from a title saying 'ground'."
+  },
+  {
+    "from": "mince",
+    "to": "ground",
+    "note": "Noun/verb form of minced."
+  },
+  {
+    "from": "fillet",
+    "to": "filet",
+    "note": "Spelling fold; both are meat-cut group members."
+  },
+  {
+    "from": "drumsticks",
+    "to": "drumstick",
+    "note": "Plural fold for a cut name."
+  },
+  {
+    "from": "ayam",
+    "to": "chicken",
+    "note": "Malay for chicken."
+  },
+  {
+    "from": "daging",
+    "to": "beef",
+    "note": "Malay for beef."
+  },
+  {
+    "from": "telur",
+    "to": "egg",
+    "note": "Malay for egg."
+  },
+  {
+    "from": "albumen",
+    "to": "egg white",
+    "note": "Technical name for egg white."
+  },
+  {
+    "from": "kopi",
+    "to": "coffee",
+    "note": "Local name for coffee; the inventory has 'Instant Coffee'."
+  },
+  {
+    "from": "teh",
+    "to": "tea",
+    "note": "Local/Malay for tea."
+  },
+  {
+    "from": "pu-erh",
+    "to": "pu erh",
+    "note": "Hyphenated spelling; the inventory item is 'Pu Erh (Tea bags)'."
+  },
+  {
+    "from": "puerh",
+    "to": "pu erh",
+    "note": "Unspaced spelling."
+  },
+  {
+    "from": "puer",
+    "to": "pu erh",
+    "note": "Short spelling."
+  },
+  {
+    "from": "gingelly",
+    "to": "sesame",
+    "note": "Indian name for sesame (gingelly oil = sesame oil)."
+  },
+  {
+    "from": "gula melaka",
+    "to": "palm sugar",
+    "note": "Gula melaka is palm sugar; stores label it either way."
+  },
+  {
+    "from": "bee hoon",
+    "to": "rice vermicelli",
+    "note": "Bee hoon = rice vermicelli noodles."
+  },
+  {
+    "from": "beehoon",
+    "to": "rice vermicelli",
+    "note": "Unspaced spelling."
+  },
+  {
+    "from": "kway teow",
+    "to": "rice noodles",
+    "note": "Flat rice noodles."
+  },
+  {
+    "from": "cornflour",
+    "to": "cornstarch",
+    "note": "UK vs US name."
+  },
+  {
+    "from": "corn flour",
+    "to": "cornstarch",
+    "note": "Spaced spelling."
+  },
+  {
+    "from": "icing sugar",
+    "to": "powdered sugar",
+    "note": "UK vs US name."
+  },
+  {
+    "from": "castor sugar",
+    "to": "caster sugar",
+    "note": "Spelling fold."
+  },
+  {
+    "from": "bicarbonate of soda",
+    "to": "baking soda",
+    "note": "UK name."
+  },
+  {
+    "from": "bicarb",
+    "to": "baking soda",
+    "note": "Abbreviation."
+  },
+  {
+    "from": "plain flour",
+    "to": "all purpose flour",
+    "note": "UK vs US name."
+  },
+  {
+    "from": "yoghurt",
+    "to": "yogurt",
+    "note": "FairPrice uses BOTH spellings in one result set ('Greek Style Yoghurt' vs 'Greek Yogurt'). Without this they tokenise differently and the Greek yogurt item misses two of three real products."
+  },
+  {
+    "from": "yoghourt",
+    "to": "yogurt",
+    "note": "Rarer third spelling."
+  },
+  {
+    "from": "szechhuan",
+    "to": "sze chuan",
+    "note": "Double-h spelling once used by the inventory item; no store spells it this way."
+  },
+  {
+    "from": "szechuan",
+    "to": "sze chuan",
+    "note": "Sichuan pepper is spelled several ways."
+  },
+  {
+    "from": "szechwan",
+    "to": "sze chuan",
+    "note": "Variant of szechuan."
+  },
+  {
+    "from": "sichuan",
+    "to": "sze chuan",
+    "note": "Pinyin spelling of the same pepper."
+  },
+  {
+    "from": "peppercorns",
+    "to": "peppercorn",
+    "note": "Plural fold."
+  },
+  {
+    "from": "belacan",
+    "to": "blachan",
+    "note": "Malay spelling of the fermented shrimp paste; the inventory item is 'blachan'."
+  },
+  {
+    "from": "belachan",
+    "to": "blachan",
+    "note": "Variant of belacan."
+  },
+  {
+    "from": "blacan",
+    "to": "blachan",
+    "note": "Variant of belacan."
+  },
+  {
+    "from": "masoory",
+    "to": "masoor",
+    "note": "Red lentil (masoor dhall) — spelling used in the inventory name."
+  },
+  {
+    "from": "dahl",
+    "to": "dhall",
+    "note": "Lentil pulse/dish — dal / dahl / dhal all mean the same."
+  },
+  {
+    "from": "dhal",
+    "to": "dhall",
+    "note": "Variant of dahl."
+  },
+  {
+    "from": "daal",
+    "to": "dhall",
+    "note": "Variant of dahl."
+  },
+  {
+    "from": "dal",
+    "to": "dhall",
+    "note": "The most common store spelling ('Chana Dal', 'Toor Dal') — was the one variant missing."
+  },
+  {
+    "from": "mælk",
+    "to": "milk",
+    "note": "Danish — staged for a future Danish store; harmless on SG titles."
+  },
+  {
+    "from": "letmælk",
+    "to": "low fat milk",
+    "note": "Danish."
+  },
+  {
+    "from": "sødmælk",
+    "to": "full cream milk",
+    "note": "Danish."
+  },
+  {
+    "from": "skummetmælk",
+    "to": "skim milk",
+    "note": "Danish."
+  },
+  {
+    "from": "æble",
+    "to": "apple",
+    "note": "Danish."
+  },
+  {
+    "from": "kylling",
+    "to": "chicken",
+    "note": "Danish."
+  },
+  {
+    "from": "kyllingebryst",
+    "to": "chicken breast",
+    "note": "Danish."
+  },
+  {
+    "from": "ris",
+    "to": "rice",
+    "note": "Danish."
+  },
+  {
+    "from": "smør",
+    "to": "butter",
+    "note": "Danish."
+  },
+  {
+    "from": "løg",
+    "to": "onion",
+    "note": "Danish."
+  },
+  {
+    "from": "gulerod",
+    "to": "carrot",
+    "note": "Danish."
+  },
+  {
+    "from": "gulerødder",
+    "to": "carrots",
+    "note": "Danish."
+  },
+  {
+    "from": "havregryn",
+    "to": "oatmeal",
+    "note": "Danish."
+  },
+  {
+    "from": "kanel",
+    "to": "cinnamon",
+    "note": "Danish."
+  },
+  {
+    "from": "hvidløg",
+    "to": "garlic",
+    "note": "Danish."
+  },
+  {
+    "from": "banan",
+    "to": "banana",
+    "note": "Danish."
+  }
 ]

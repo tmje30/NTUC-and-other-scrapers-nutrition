@@ -383,7 +383,11 @@ export function matchPenalty(target: PlanTarget, product: StoreProduct): number 
 	if (target.unitType === "By Gram" && product.volumetric) mult *= 0.15;
 
 	// Wrong variety (colour / cut) — "Onion (white)" ≠ red onion, breast ≠ thigh.
-	mult *= varietyPenalty(target.name, title);
+	// Both sides are synonym-normalized first, so the register can fold equivalent
+	// cut names: "minced" and "ground" are separate members of the meat-cut group,
+	// so without this an item saying "minced" read as a DIFFERENT cut from a title
+	// saying "ground" and was penalised as the wrong variety.
+	mult *= varietyPenalty(normSynonyms(target.name), normSynonyms(title));
 
 	// Oil product is only valid for an oil item.
 	if (has(OIL_RE, title) && !has(OIL_RE, itemText)) mult *= 0.2;
