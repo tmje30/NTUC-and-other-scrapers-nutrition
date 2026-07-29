@@ -115,7 +115,9 @@ worker.webhook("addToGroceryList", {
 					"User-Agent": "grocery-deals-add",
 					"Content-Type": "application/json",
 				},
-				body: JSON.stringify({ event_type: "add-to-list", client_payload: payload }),
+				// Nested under `payload` deliberately: GitHub rejects a client_payload
+				// with more than 10 top-level properties, and an add carries 12.
+				body: JSON.stringify({ event_type: "add-to-list", client_payload: { payload } }),
 			});
 
 			if (!res.ok) {

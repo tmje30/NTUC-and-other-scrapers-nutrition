@@ -2,6 +2,22 @@
 
 Running log of decisions, gotchas, and non-obvious facts. Newest on top.
 
+## 2026-07-29 — `repository_dispatch` allows only 10 client_payload properties
+
+```
+422: No more than 10 properties are allowed; 12 were supplied.
+```
+
+An `AddPayload` has 12 fields, so the one-tap relay in `src/index.ts` would have
+failed on its first real tap — the limit is on **top-level** keys only, so
+senders nest it: `client_payload: { payload: {...} }`. `add-to-list.ts` accepts
+both shapes (`dispatched.payload ?? dispatched`).
+
+Also: **`gh run rerun` replays the original commit**, not current `main`. Fixing
+a bug and re-running a failed run therefore re-runs the bug. To retry against
+the fix, fire a fresh event (`gh api repos/OWNER/REPO/dispatches`) — that one
+does run at the default branch's HEAD.
+
 ## 2026-07-29 — Never hardcode a grocery-list column name
 
 The first real Add failed with `Price  is not a property that exists.` — a

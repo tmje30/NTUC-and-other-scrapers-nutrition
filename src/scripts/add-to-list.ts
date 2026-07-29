@@ -59,7 +59,9 @@ function readPayload(): AddPayload {
 	const inline = argValue("--payload");
 	if (inline) return parseAddPayload(JSON.parse(inline));
 	const dispatched = nonEmptyObject(process.env.ADD_PAYLOAD);
-	if (dispatched) return parseAddPayload(dispatched);
+	// repository_dispatch allows at most 10 top-level client_payload properties
+	// and an add has 12, so senders nest it under `payload`. Accept both shapes.
+	if (dispatched) return parseAddPayload((dispatched as any).payload ?? dispatched);
 	if (process.env.ISSUE_BODY?.trim()) {
 		return parseAddPayload(payloadFromIssueBody(process.env.ISSUE_BODY));
 	}
