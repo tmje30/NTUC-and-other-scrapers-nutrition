@@ -161,7 +161,7 @@ const OIL_RE = /\b(oils?|olie|olje|olja|huile|olio|aceite)\b|\wöl\b|\woel\b/i;
 // White Wine"). A genuinely beverage item (Rice Wine (Cooking)) is exempt via
 // BEVERAGE_ITEM_RE below, which also lists these words.
 const PREPARED_RE =
-	/\w*saft\b|\w*sirup\b|\b(juice|soda|sodavand|saftevand|lemonade|limonade|sparkling|cordial|squash|kombucha|drink|ade|wine|beer|ale|lager|cider|spirits?|liqueurs?|vodka|whisky|whiskey|rum|gin|sake|brandy)\b/i;
+	/\w*saft\b|\w*sirup\b|\b(juice|soda|sodavand|saftevand|lemonade|limonade|sparkling|cordial|squash|kombucha|drink|beverages?|ade|wine|beer|ale|lager|cider|spirits?|liqueurs?|vodka|whisky|whiskey|rum|gin|sake|brandy)\b/i;
 // Plant / flavoured / processed MILK qualifiers — block only for a plain milk item.
 const MILK_VARIANT_RE =
 	/\b(soy|soya|almond|oat|goat|coconut|rice|cashew|hazelnut|lactose|powder|powdered|condensed|evaporated|malt|malted|chocolate|vanilla|strawberry|cultured|buttermilk)\b/i;
@@ -180,6 +180,7 @@ const GENERIC_FORM_PATTERNS = [
 	"spread", "seasoning", "marinade", "tea", "cake", "biscuits?", "crackers?",
 	"milk", "milkshake", "yogh?urt", "smoothie", "cereal", "sandwich", "chips?",
 	"snack", "pudding", "jelly", "candy", "ice\\s*cream", "vermicelli", "noodles?",
+	"oatmeal", "porridge", "granola", "muesli", "oats",
 	"peanut", "almond", "cashew", "hazelnut", "cocoa", "dishwashing", "detergent",
 	"cleaner", "soap", "shampoo", "sanitiz\\w*", "bleach",
 ];
@@ -225,10 +226,19 @@ const DISTINCT_PRODUCE_PATTERNS = [
 	"shallots?", "onions?", "garlic", "leeks?", "scallions?", "chives?", "ginger",
 	"potatoes?", "potato", "carrots?", "cabbages?", "lettuce", "spinach", "tomato(?:es)?",
 	"cucumbers?", "mushrooms?", "peel", "skin", "bark", "sprouts?",
-	// …and food from an entirely different aisle that merely borrows the word
-	// ("Banana Prawns" is a prawn; "Baby Puffs - Banana" is a snack).
+	// …food from an entirely different aisle that merely borrows the word
+	// ("Banana Prawns" is a prawn; "Baby Puffs - Banana" is a snack)…
 	"prawns?", "shrimps?", "fish", "seafood", "chicken", "beef", "pork", "mutton",
 	"lamb", "meat", "puffs?",
+	// …and OTHER fruit. A single-ingredient produce item should not match a
+	// multi-fruit product ("Apple with Strawberries", "Strawberry & Banana").
+	// Listing every fruit is safe because each guard exempts words the ITEM itself
+	// uses — a Banana item is never penalised for the word "banana".
+	"strawberr(?:y|ies)", "blueberr(?:y|ies)", "raspberr(?:y|ies)", "blackberr(?:y|ies)",
+	"cranberr(?:y|ies)", "cherr(?:y|ies)", "apples?", "bananas?", "mangoe?s?", "oranges?",
+	"grapes?", "pears?", "peach(?:es)?", "plums?", "kiwis?", "melons?", "watermelons?",
+	"pineapples?", "papayas?", "guavas?", "lychees?", "longans?", "durians?", "avocados?",
+	"lemons?", "limes?", "apricots?", "figs?", "dates?", "coconuts?", "raisins?", "prunes?",
 ];
 const DISTINCT_PRODUCE_RES = DISTINCT_PRODUCE_PATTERNS.map((p) => new RegExp(`\\b${p}\\b`, "i"));
 
@@ -333,6 +343,17 @@ export function matchPenalty(target: PlanTarget, product: StoreProduct): number 
 		// Dried / pureed / canned — a keeping form, not the fresh item.
 		if (has(PRODUCE_PROCESSED_RE, title) && !has(PRODUCE_PROCESSED_RE, itemText)) mult *= 0.2;
 	}
+
+	// DIMENSION GUARD: a "By Gram" item is a SOLID, sold by weight. A candidate
+	// packed in ml/L is a liquid, i.e. a different product — an apple DRINK for a
+	// "Red Apple" item, a white WINE for a "Sze Chuan pepper" item. Measured across
+	// the whole inventory: of 260 candidates accepted for By-Gram targets, only 2
+	// were volumetric and BOTH were wrong matches.
+	//
+	// Deliberately NOT symmetric. By-ml items legitimately match gram-packed goods
+	// (FairPrice labels "Double A 100% Sesame Oil" and "Zarotti Anchovies Fish
+	// Sauce" by weight), so a reverse guard would drop real products — measured too.
+	if (target.unitType === "By Gram" && product.volumetric) mult *= 0.15;
 
 	// Wrong variety (colour / cut) — "Onion (white)" ≠ red onion, breast ≠ thigh.
 	mult *= varietyPenalty(target.name, title);

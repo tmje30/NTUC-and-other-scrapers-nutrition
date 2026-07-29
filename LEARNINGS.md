@@ -2,6 +2,42 @@
 
 Running log of decisions, gotchas, and non-obvious facts. Newest on top.
 
+## 2026-07-29 — The unit-type dimension guard is ASYMMETRIC (measured)
+
+A "By Gram" item is a solid sold by weight, so a candidate packed in ml/L is a
+different product. Measured over the whole inventory against live FairPrice:
+
+- **By Gram → reject volumetric: SAFE.** Of **260** candidates accepted for the 37
+  By-Gram targets, only **2** were volumetric — and both were wrong ("Aoren Drop of
+  Hope - Red Apple", an apple *drink*, matching the Red Apple fruit). Implemented.
+- **By ml → reject grams: NOT safe.** Of 61 accepted for By-ml targets, **5** were
+  gram-packed and several were genuine — FairPrice labels "Double A 100% Sesame
+  Oil" and "Zarotti Colatura Anchovies Fish Sauce" by weight. **Not implemented.**
+
+Physically sensible: a solid is never sold in ml, but a liquid is sometimes sold by
+weight. Don't "tidy this up" into a symmetric rule — it would drop real products.
+
+This is the guard the original port dropped with an "ml ≈ g, acceptable for v1"
+note; the sibling project has it as its `mlOnly` test. Note it only fires when the
+unit type is right, so it depends on rows being tagged correctly in Notion.
+
+## 2026-07-29 — Precision cannot separate brand noise from extra ingredients
+
+Tempting rule: "a single-ingredient item should reject titles with lots of extra
+words." It does not work, and here is the counter-example that kills it:
+
+| Title | precision | verdict |
+| --- | --- | --- |
+| `Sumifru Sweet Mountain Bananas` (correct) | **0.25** | must accept |
+| `…Szechuan Pepper 0.0 White Wine` (wrong) | **0.33** | must reject |
+
+The correct match has *lower* precision than the wrong one, because brand and
+marketing words ("Sumifru Sweet Mountain") are indistinguishable from ingredient
+words ("Beet Hop White Wine") by counting alone. Any precision floor high enough to
+catch the wine also rejects real produce. Extra words are therefore filtered by
+**vocabulary** (form words, other-fruit/veg names, drink forms) and by the
+**dimension guard**, never by a raw precision threshold.
+
 ## 2026-07-29 — The sibling project is the reference; check it before inventing
 
 `C:\Users\newuser\Claude\Inventory Price upkeeper worker [Notion]\src\match.js` is
