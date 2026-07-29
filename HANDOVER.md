@@ -119,9 +119,17 @@ bought · not searched".
 capability, and the **grocery List** DB shared with it. Reading alone is no
 longer enough.
 
-Optional one-tap upgrade (built, **not deployed**): the `addToGroceryList`
-webhook in `src/index.ts` relays a tap to the same workflow via
-`repository_dispatch`. Trade-offs and setup in `docs/one-tap-add.md`.
+**One-tap (no server, no cost):** tap **⚡ enable one-tap** at the foot of the
+page and paste a fine-grained PAT (this repo, Contents: read/write). The page
+then fires `repository_dispatch` at the same workflow straight from the browser
+— `api.github.com` allows cross-origin calls, so nothing sits in between. The
+token lives only in that browser's localStorage. Any failure (no token,
+revoked, JS off) falls back to the two-tap issue flow. See
+`docs/one-tap-add.md`.
+
+The `addToGroceryList` webhook in `src/index.ts` does the same relay from a
+Notion Worker. Kept, but **not deployed and not recommended** — it costs the
+Workers billing floor and can't read its own response.
 
 ## Commands (run from repo root, needs `.env`)
 

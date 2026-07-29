@@ -58,22 +58,24 @@ function addPayload(d: Deal): AddPayload {
 }
 
 /**
- * The Add button.
+ * The Add button — always a plain link to a pre-filled GitHub issue.
  *
- * Default path — a link to a pre-filled GitHub issue. The page is static, so it
- * can hold no Notion token; GitHub is the one place the user is already
- * authenticated that can run privileged code on their behalf. Tap Add → tap
- * Submit → the `add-to-list` workflow writes the Notion row and the cooldown.
+ * The page is static, so it can hold no credentials of its own. The link works
+ * with JavaScript off, in any browser, forever: tap Add → tap Submit → the
+ * `add-to-list` workflow writes the Notion row and the cooldown.
  *
- * One-tap path — when `addEndpoint` is configured, the button POSTs the same
- * payload to that endpoint instead (see `cloudflare/`).
+ * `data-add` carries the same payload as the issue body, which is what lets the
+ * one-tap script (see `addScript`) intercept the click and skip the GitHub
+ * screen entirely. The link is the floor; one-tap is an upgrade layered on top,
+ * so a missing or revoked token degrades to two taps rather than to nothing.
  */
 function addButton(d: Deal, o: PageOptions): string {
 	const p = addPayload(d);
 	const label = groceryRowTitle(p.store, p.ingredient);
+	const payload = esc(JSON.stringify(p));
 
 	if (o.addEndpoint) {
-		return `<button class="add" type="button" data-add="${esc(JSON.stringify(p))}"
+		return `<button class="add" type="button" data-add="${payload}"
         aria-label="Add ${esc(label)} to the grocery list">Add</button>`;
 	}
 
@@ -90,6 +92,7 @@ function addButton(d: Deal, o: PageOptions): string {
 		`&body=${encodeURIComponent(body)}`;
 
 	return `<a class="add" href="${esc(href)}" target="_blank" rel="noopener"
+        data-add="${payload}"
         aria-label="Add ${esc(label)} to the grocery list">Add</a>`;
 }
 
@@ -176,8 +179,114 @@ function recCard(r: ReviewMiss): string {
 }
 
 /**
- * Client-side half of the one-tap path. Only emitted when an endpoint is set —
- * the default GitHub-issue button is a plain link and needs no JavaScript at all.
+ * One tap, with no server anywhere.
+ *
+ * `api.github.com` answers cross-origin requests — a preflighted, authenticated
+ * POST from `tmje30.github.io` comes back with a readable status, verified
+ * 2026-07-29. So the page can fire `repository_dispatch` at the `add-to-list`
+ * workflow itself, using a fine-grained PAT the user pastes in once. The token
+ * lives only in that browser's localStorage: never in the repo, the page source,
+ * or a build artifact.
+ *
+ * Why this rather than a relay service: it's free, there's nothing to deploy,
+ * and — unlike a POST to a Notion webhook, which returns no CORS headers and so
+ * an opaque response — the button can read the real status and tell the truth
+ * about whether GitHub accepted the job.
+ *
+ * It is strictly an upgrade over the link underneath it. No token, a cancelled
+ * prompt, a revoked token, JavaScript disabled: every one of those falls back to
+ * the two-tap issue flow instead of failing.
+ */
+function githubOneTapScript(o: PageOptions): string {
+	return `<script>
+(function () {
+  var REPO = ${JSON.stringify(o.repo)};
+  var KEY = "grocery-add-pat";
+  var toggle;
+
+  var token = function () { return localStorage.getItem(KEY) || ""; };
+
+  function paint() {
+    if (!toggle) return;
+    toggle.textContent = token() ? "⚡ one-tap on · tap to remove token" : "⚡ enable one-tap";
+  }
+
+  function configure() {
+    if (token()) {
+      if (confirm("Remove the saved token? Add will go back to opening GitHub.")) {
+        localStorage.removeItem(KEY);
+      }
+    } else {
+      var t = (prompt(
+        "Paste a GitHub fine-grained token for this repo (Contents: read and write).\\n\\n" +
+        "It is stored only in this browser."
+      ) || "").trim();
+      if (t) localStorage.setItem(KEY, t);
+    }
+    paint();
+  }
+
+  function dispatch(btn) {
+    var label = btn.textContent;
+    btn.dataset.state = "busy";
+    btn.textContent = "…";
+    fetch("https://api.github.com/repos/" + REPO + "/dispatches", {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer " + token(),
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "Content-Type": "application/json"
+      },
+      // Nested: GitHub rejects a client_payload with over 10 top-level keys.
+      body: JSON.stringify({
+        event_type: "add-to-list",
+        client_payload: { payload: JSON.parse(btn.dataset.add) }
+      })
+    })
+      .then(function (r) {
+        if (r.status === 401 || r.status === 403) {
+          // Bad or revoked token: forget it, so the next tap opens the issue.
+          localStorage.removeItem(KEY);
+          paint();
+          throw new Error("auth");
+        }
+        if (!r.ok) throw new Error(r.status);
+        // 204 = GitHub accepted the job. The Notion row lands ~20s later, so
+        // "queued" is the honest word; claiming "added" would be a guess.
+        btn.dataset.state = "done";
+        btn.textContent = "queued";
+      })
+      .catch(function (e) {
+        btn.dataset.state = "failed";
+        btn.textContent = e.message === "auth" ? "token?" : "retry";
+        setTimeout(function () { btn.dataset.state = ""; btn.textContent = label; }, 4000);
+      });
+  }
+
+  document.addEventListener("click", function (ev) {
+    if (!ev.target.closest) return;
+    if (ev.target.closest("#onetap")) { ev.preventDefault(); configure(); return; }
+
+    var btn = ev.target.closest(".add[data-add]");
+    if (!btn || btn.dataset.state === "busy" || btn.dataset.state === "done") return;
+    // No token? Do nothing and let the link open the pre-filled issue.
+    if (!token()) return;
+    ev.preventDefault();
+    dispatch(btn);
+  });
+
+  toggle = document.getElementById("onetap");
+  paint();
+})();
+</script>
+`;
+}
+
+/**
+ * Client-side half of the relay one-tap path (a Notion Worker webhook). Only
+ * emitted when an endpoint is configured; otherwise the page uses the
+ * GitHub-direct script above, which needs no service at all.
  *
  * Two constraints shape this, both from the Notion Worker webhook on the other
  * end (see `docs/one-tap-add.md`):
@@ -193,7 +302,7 @@ function recCard(r: ReviewMiss): string {
  * asked for once and the browser then remembers.
  */
 function addScript(o: PageOptions): string {
-	if (!o.addEndpoint) return "";
+	if (!o.addEndpoint) return githubOneTapScript(o);
 	return `<script>
 (function () {
   var endpoint = ${JSON.stringify(o.addEndpoint)};
@@ -375,6 +484,10 @@ export function renderDealsPage(
   .tag { color: #6b7280; font-size: .72rem; text-transform: uppercase; letter-spacing: .04em;
     border: 1px solid #e5e7eb; border-radius: 8px; padding: 1px 7px; white-space: nowrap; }
   .why { color: #92400e; font-size: .82rem; margin-top: 4px; }
+  /* Deliberately quiet: setting a token is a once-per-device errand, not a
+     feature to advertise on every visit. */
+  .foot { margin: 22px 2px 8px; font-size: .8rem; }
+  .foot a { color: #9ca3af; text-decoration: none; }
   @media (prefers-color-scheme: dark) {
     body { background: #0f1115; color: #e5e7eb; }
     .sub, .pack, .meta, .per100, .usage, .section, .empty-sm { color: #9aa1ab; }
@@ -390,6 +503,7 @@ export function renderDealsPage(
     .add { color: #6ee7b7; background: #06251a; border-color: #0b4a34; }
     .add[data-state="done"] { color: #04140e; background: #6ee7b7; border-color: #6ee7b7; }
     .add[data-state="failed"] { color: #fda29b; background: #2b1512; border-color: #5c2420; }
+    .foot a { color: #6b7280; }
   }
 </style>
 </head>
@@ -398,6 +512,11 @@ export function renderDealsPage(
     <h1>🛒 Grocery deals</h1>
     <p class="sub">${date} · ${total} deal${total === 1 ? "" : "s"} beating your prices</p>
     ${cards}
+    ${
+			o.addEndpoint
+				? ""
+				: `<p class="foot"><a href="#" id="onetap">⚡ enable one-tap</a></p>`
+		}
   </div>
 ${addScript(o)}</body>
 </html>`;

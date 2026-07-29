@@ -2,6 +2,32 @@
 
 Running log of decisions, gotchas, and non-obvious facts. Newest on top.
 
+## 2026-07-29 — A static page CAN reach GitHub: api.github.com allows CORS
+
+Spent a while assuming one-tap Add required a relay service (Notion Worker or
+Cloudflare) purely to hold a credential. It doesn't. `api.github.com` answers
+cross-origin requests, so a GitHub Pages page can fire `repository_dispatch`
+itself with a token the user pastes into `localStorage`.
+
+Verified from the live page rather than assumed — a preflighted POST with an
+`Authorization` header from `https://tmje30.github.io`:
+
+```
+status 401, body {"message":"Bad credentials"}   ← reached GitHub, CORS fine
+```
+
+A CORS block would have thrown `TypeError` before any status existed. Note
+`headers.get("access-control-allow-origin")` returns `null` even so — that
+header isn't exposed to script; being able to *read the body at all* is the
+proof.
+
+This beats a relay on every axis: free, nothing to deploy, and the response is
+readable so the button can report the real outcome (a Notion webhook returns no
+CORS headers, forcing `mode: "no-cors"` and an opaque "sent"). Design rule that
+follows: the button stays an `<a href>` to the pre-filled issue and JS only
+upgrades the click — no token, revoked token or JS off degrades to two taps
+instead of breaking.
+
 ## 2026-07-29 — `Used 'N' Plan` omits the unit for By-ml rows
 
 `Soy Sauce (light)` is in Plan 1, yet the page filed it under "Other items on

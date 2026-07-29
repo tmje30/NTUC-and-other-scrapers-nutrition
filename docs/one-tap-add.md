@@ -1,94 +1,71 @@
-# One-tap Add (optional — built, not deployed)
+# One-tap Add
 
-## What ships today
+The deals page's **Add** button is always a plain link to a pre-filled GitHub
+issue: tap Add, tap Submit, and the `add-to-list` workflow writes the Notion row
+and records the cooldown. That path needs no credentials, no JavaScript and no
+service, and it is what you get if everything else here is switched off.
 
-The deals page's **Add** button needs no extra infrastructure. Tapping it opens
-a pre-filled GitHub issue on this repo; you tap *Submit*, and the `add-to-list`
-workflow writes the Notion grocery-list row and records the item's cooldown.
-Two taps, nothing running, no credentials anywhere near the browser.
-
-## What this is
-
-The upgrade to **one** tap: a webhook capability in `src/index.ts`
-(`addToGroceryList`) that the page can POST to directly.
-
-It is a thin relay, not a second implementation. It authenticates the tap and
-fires a `repository_dispatch` at the *same* workflow:
+**One-tap** removes the second tap. The page fires `repository_dispatch` at the
+same workflow itself:
 
 ```
-page ──POST──► Notion Worker webhook ──repository_dispatch──► add-to-list workflow
-                                                               ├─ Notion row
-                                                               └─ cooldowns.json
+tap Add ──POST──► api.github.com ──repository_dispatch──► add-to-list workflow
+                                                           ├─ Notion row
+                                                           └─ cooldowns.json
 ```
 
-**Why not have the worker write the Notion row itself?** The cooldown has to be
-committed to `data/cooldowns.json`, and a worker can't push to git. Splitting
-the two halves across two runtimes would let an add half-succeed — row created,
-cooldown lost — and the item would keep reappearing as a deal you already own.
-One workflow does both or neither.
+No server is involved. `api.github.com` answers cross-origin requests, so the
+page can call it directly — verified 2026-07-29 with a preflighted authenticated
+POST from `tmje30.github.io`, which returned a readable 401 rather than being
+blocked. Because the response is readable, the button reports what actually
+happened instead of guessing.
 
-## The trade-off, stated plainly
+## Turning it on
 
-A Notion webhook returns no CORS headers. The page therefore sends a "simple"
-request (`POST`, `text/plain`, no custom headers, `mode: "no-cors"`) so the
-browser doesn't preflight it. The request is delivered; **the response comes
-back opaque**. The button says `sent`, not `✓ added` — the row appears in Notion
-a few seconds later, and if something failed you'd find out from the run log
-rather than from the page. That's the honest cost of one tap, and it's why the
-issue button remains the default.
+1. Create a **fine-grained PAT** at
+   https://github.com/settings/personal-access-tokens — repository access
+   **Only select repositories** → this repo, permission **Contents: Read and
+   write** (that's what the dispatch endpoint requires). See HANDOVER's PAT
+   gotchas: "Public repositories" access silently locks permissions read-only.
+2. On the deals page, tap **⚡ enable one-tap** at the bottom and paste it.
 
-The same constraint is why the shared token travels in the request body: an
-`Authorization` header would trigger a preflight.
+That's it. The token is stored in that browser's `localStorage` and nowhere
+else — not in the repo, not in the page source, not in a build artifact. Tap the
+same footer link again to remove it.
 
-## Deploying it, when you want it
+Repeat step 2 once per device or browser you use the page from.
 
-1. **GitHub token** — a fine-grained PAT for this repo only, with
-   *Contents: Read and write* and *Metadata: Read*. (See HANDOVER's PAT gotchas:
-   repository access must be **All** or **Only select repositories**, never
-   "Public repositories".)
+## What the button says
 
-2. **Add token** — any long random string. This is what stops a stranger who
-   finds the webhook URL posting to your grocery list. The page asks for it once
-   and keeps it in the browser's localStorage.
+| state | meaning |
+|---|---|
+| `…` | request in flight |
+| `queued` | GitHub accepted the job (HTTP 204). The Notion row lands ~20s later |
+| `retry` | GitHub refused; the button restores itself after 4s |
+| `token?` | 401/403 — the saved token is bad or revoked, so it has been **forgotten**. The next tap opens the issue instead |
 
-   ```bash
-   openssl rand -hex 24
-   ```
+`queued`, not `added`: the dispatch is accepted before the workflow runs, so
+claiming the row exists would be a guess.
 
-3. Put both in `.env`, then push them to the deployed worker:
+## Trade-offs, stated plainly
 
-   ```bash
-   ntn workers env push
-   ```
+- **The token can write to this repo.** Anyone with your unlocked phone could
+  push to it. It's a public repo with no secrets in it, and the token is
+  revocable in one click, but that's the exposure.
+- **A failure *inside* the workflow is quiet.** With the issue path, a failed
+  add leaves a comment on the issue; with one-tap there's no issue to comment
+  on. You'd notice by the row not appearing. (There's no Telegram ping either —
+  that was removed by request.) If this ever bites, the fix is a step in
+  `add-to-list.yml` that opens an issue when the job fails.
+- **It degrades, never breaks.** No token, cancelled prompt, revoked token, or
+  JavaScript disabled all fall back to the two-tap issue flow.
 
-4. **Deploy and read back the URL:**
+## The relay alternative (built, not deployed)
 
-   ```bash
-   ntn workers deploy
-   ```
-
-   ```bash
-   ntn workers webhooks list
-   ```
-
-5. **Point the page at that URL** — set the repo variable `ADD_ENDPOINT`
-   (Settings → Secrets and variables → Actions → Variables) and add it to the
-   `build-site` step's `env:` in `.github/workflows/daily.yml`:
-
-   ```yaml
-   ADD_ENDPOINT: ${{ vars.ADD_ENDPOINT }}
-   ```
-
-   The next daily build renders real buttons instead of issue links. Clear the
-   variable to fall straight back to the issue path — nothing else changes.
-
-## Things worth knowing first
-
-- **Cost.** Deploying this repo's worker puts it on the Notion Workers billing
-  floor (~$10/month from Aug 2026, plus a fraction of a cent per run). The
-  default issue path costs nothing.
-- **Five strikes.** Five consecutive bad tokens short-circuit the webhook until
-  the worker is redeployed. Intended protection, but worth remembering if the
-  button goes quiet after you've been fiddling with the token.
-- **`env.GITHUB_TOKEN`, not `context.notion`.** The relay never touches Notion,
-  so it needs no `NOTION_API_TOKEN`.
+`src/index.ts` has an `addToGroceryList` webhook that does the same relay from a
+Notion Worker, kept for the case where you'd rather not put a GitHub token in a
+browser. It is **not** the recommended path: it carries the Notion Workers
+billing floor (~$10/month), needs deploying and keeping alive, and a Notion
+webhook returns no CORS headers — so the page must fire it blind (`mode:
+"no-cors"`) and can only ever say "sent". Set the `ADD_ENDPOINT` repo variable
+and add it to the `build-site` step's `env:` to switch the page over to it.
