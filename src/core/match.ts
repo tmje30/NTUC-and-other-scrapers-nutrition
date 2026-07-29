@@ -224,6 +224,9 @@ const CATEGORY_PART: Record<string, string> = {
 // is a leaf. Only applied when the item declared a produce category.
 const DISTINCT_PRODUCE_PATTERNS = [
 	"shallots?", "onions?", "garlic", "leeks?", "scallions?", "chives?", "ginger",
+	// spring/green onion is a different vegetable from a bulb onion; listed
+	// separately so a plain "Onion" item doesn't match it via the word "onion".
+	"spring\\s+onions?", "green\\s+onions?",
 	"potatoes?", "potato", "carrots?", "cabbages?", "lettuce", "spinach", "tomato(?:es)?",
 	"cucumbers?", "mushrooms?", "peel", "skin", "bark", "sprouts?",
 	// …food from an entirely different aisle that merely borrows the word
@@ -241,6 +244,16 @@ const DISTINCT_PRODUCE_PATTERNS = [
 	"lemons?", "limes?", "apricots?", "figs?", "dates?", "coconuts?", "raisins?", "prunes?",
 ];
 const DISTINCT_PRODUCE_RES = DISTINCT_PRODUCE_PATTERNS.map((p) => new RegExp(`\\b${p}\\b`, "i"));
+
+// The Notion `Catagory` select already records what KIND of thing an item is, so
+// the produce guards switch themselves on for every "[3] Fruits/Vegetables" row —
+// no per-row "(Fruit)" needed. Declaring one in the name still adds the stricter
+// plant-part guard on top.
+const PRODUCE_CATEGORY_RE = /fruits?|vegetables?|\bveg\b|produce/i;
+
+// Fermented/preserved BY DEFINITION — Kimchi and lacto ferments are pickled food,
+// so the "keeping form" guard below must not fire on them.
+const FERMENTED_ITEM_RE = /\b(kimchi|ferment\w*|sauerkraut|pickle[ds]?|preserved?)\b/i;
 
 // Fresh produce turned into a keeping/processed form — a "(Fruit)" item wants the
 // actual fruit, never a dried / freeze-dried / pureed / canned version of it.
@@ -323,25 +336,39 @@ export function matchPenalty(target: PlanTarget, product: StoreProduct): number 
 	// itself named no such variant.
 	if (s.basicRange && !has(ADJUSTED_RE, itemText) && has(ADJUSTED_RE, title)) mult *= 0.2;
 
-	// Declared category (e.g. "Banana (Fruit)") — the item is fresh produce.
-	if (s.categories.length) {
-		// Wrong plant part: the title names only parts other than the one asked for.
-		const itemParts = new Set(
-			s.categories.map((c) => CATEGORY_PART[c]).filter((p): p is string => !!p),
-		);
-		if (itemParts.size) {
+	// Fresh produce, either declared in the name ("Banana (Fruit)") or — for every
+	// row — inferred from the Notion `Catagory` select, so the guards work without
+	// each row needing a hand-written category.
+	const declaredParts = new Set(
+		s.categories.map((c) => CATEGORY_PART[c]).filter((p): p is string => !!p),
+	);
+	const isProduce = s.categories.length > 0 || PRODUCE_CATEGORY_RE.test(target.category);
+	if (isProduce) {
+		// Wrong plant part — ONLY when the name declared a specific part. The Notion
+		// category says "Fruits/Vegetables" without saying which, and assuming "fruit"
+		// would make "Lotus Root" reject every title containing "root".
+		if (declaredParts.size) {
 			const titleParts = partGroupsIn(title);
-			if (titleParts.size && ![...titleParts].some((g) => itemParts.has(g))) mult *= 0.2;
+			if (titleParts.size && ![...titleParts].some((g) => declaredParts.has(g))) mult *= 0.2;
 		}
-		// A different vegetable/plant part borrowing the item's word ("Banana Shallots").
+		// A different vegetable/fruit borrowing the item's word ("Banana Shallots",
+		// "Apple with Strawberries"). Safe for every produce row because each pattern
+		// is skipped when the item's OWN name uses it (so "Lotus Root" keeps "root").
 		for (const re of DISTINCT_PRODUCE_RES) {
 			if (has(re, title) && !has(re, itemText)) {
 				mult *= 0.2;
 				break;
 			}
 		}
-		// Dried / pureed / canned — a keeping form, not the fresh item.
-		if (has(PRODUCE_PROCESSED_RE, title) && !has(PRODUCE_PROCESSED_RE, itemText)) mult *= 0.2;
+		// Dried / pureed / canned — a keeping form, not the fresh item. Fermented
+		// items (Kimchi, Lacto ferment) ARE preserved by definition, so they're exempt.
+		if (
+			has(PRODUCE_PROCESSED_RE, title) &&
+			!has(PRODUCE_PROCESSED_RE, itemText) &&
+			!has(FERMENTED_ITEM_RE, itemText)
+		) {
+			mult *= 0.2;
+		}
 	}
 
 	// DIMENSION GUARD: a "By Gram" item is a SOLID, sold by weight. A candidate

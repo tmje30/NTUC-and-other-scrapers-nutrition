@@ -9,7 +9,8 @@
   { "from": "yoghurt", "to": "yogurt", "note": "FairPrice uses BOTH spellings in one result set ('Greek Style Yoghurt' vs 'Greek Yogurt'). Without this they tokenise differently and the Greek yogurt item misses two of three real products." },
   { "from": "yoghourt", "to": "yogurt", "note": "Rarer third spelling." },
 
-  { "from": "szechuan", "to": "sze chuan", "note": "Sichuan pepper is spelled several ways; the inventory item is 'Sze Chuan pepper'." },
+  { "from": "szechhuan", "to": "sze chuan", "note": "Double-h spelling used by the inventory item 'Szechhuan pepper'; no store spells it this way." },
+  { "from": "szechuan", "to": "sze chuan", "note": "Sichuan pepper is spelled several ways." },
   { "from": "szechwan", "to": "sze chuan", "note": "Variant of szechuan." },
   { "from": "sichuan", "to": "sze chuan", "note": "Pinyin spelling of the same pepper." },
 
