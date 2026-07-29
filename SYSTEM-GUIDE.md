@@ -114,8 +114,15 @@ The brackets in an ingredient `Name` are a deliberate, meaningful syntax:
 | `{ }` | **Ignore** — `Egg Whites, {cheap}` | A private note. Excluded from the search term *and* from every matching decision. |
 | `( )` | **Defining property** — `Onion (White)`, `egg (Omega 3 Enriched)` | The thing that makes the item the item. A product failing it is **never published as a deal**; a close one is surfaced as a *recommendation*. |
 
-Two special property forms:
+Three special property forms:
 
+- **Category** — `Banana (Fruit)` says what KIND of thing it is, not a word to find
+  on the label (no banana is labelled "fruit"; a *freeze-dried fruit snack* is).
+  Recognised: `Fruit`, `Vegetable`, `Produce`, `Leaf`, `Root`, `Seed`, `Herb`,
+  `Flower`. Declaring one means "the actual fresh item", which rejects a different
+  plant part (`Banana Leaves`), a different food borrowing the word (`Banana
+  Shallots`, `Banana Prawns`, `Baby Puffs - Banana`) and keeping forms
+  (`Freeze Dried Fruit`). Use it on any solo produce item.
 - **Negation** — `Onion (not red)` means "any onion *except* red": a hard exclusion.
 - **Basic range** — `Milk (Normal)` (also `Regular`/`Plain`/`Basic`) means the
   unadjusted product and is **identical to writing no property at all**. It is not

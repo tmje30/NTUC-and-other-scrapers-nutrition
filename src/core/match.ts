@@ -102,14 +102,22 @@ function sharedPrefix(a: string, b: string): number {
 	return i;
 }
 
+// Weighted the same way as the sibling inventory project's `score()`: mostly
+// coverage, with a real precision term. An earlier revision here dropped precision,
+// claiming it sank long titles like "Laobanniang Dried Sze Chuan Peppercorn" — that
+// was wrong: at these weights that title scores 0.81, well clear of ACCEPT (0.7).
+// Precision is what stops a bare item name matching a title that piles on extra
+// product words ("Banana" vs "…Cereal - Banana Nut Crunch").
+const COVERAGE_WEIGHT = 0.7;
+const PRECISION_WEIGHT = 0.3;
+
 /**
- * Coverage of the item's tokens by the candidate title, in [0,1]. Grocery shop
- * titles are long and full of brand/marketing noise, so — unlike the inventory
- * project — we do NOT use a precision term (it wrongly sank long-title matches
- * like "Laobanniang Dried Sze Chuan Peppercorn"). Instead: how many of the ITEM's
- * words are present. Partial credit (0.75) when the query token is a full ≥4-char
- * prefix of a candidate token (pepper ~ peppercorn, æble ~ æblejuice). Wrong-form
- * / wrong-product noise is handled by the penalties below, not by precision.
+ * Match strength of the candidate title against the item name, in [0,1]:
+ *   0.7 × coverage  — how many of the ITEM's words are present, plus
+ *   0.3 × precision — how focused the candidate is (few extra words).
+ * Partial credit (0.75) when the query token is a full ≥4-char prefix of a
+ * candidate token (pepper ~ peppercorn, æble ~ æblejuice). Wrong-form / wrong-
+ * product noise is handled by the penalties below as well.
  */
 export function score(query: string, candidate: string): number {
 	const q = tokens(query);
@@ -130,7 +138,9 @@ export function score(query: string, candidate: string): number {
 			}
 		}
 	}
-	return inter / new Set(q).size;
+	const coverage = inter / new Set(q).size; // how much of the item name is present
+	const precision = inter / cset.size; // how FOCUSED the candidate is
+	return COVERAGE_WEIGHT * coverage + PRECISION_WEIGHT * precision;
 }
 
 // Calibrated for SG grocery titles: ACCEPT requires ~all of a 1–2 word item's
@@ -177,6 +187,51 @@ const GENERIC_FORM_RES = GENERIC_FORM_PATTERNS.map((p) => new RegExp(`\\b${p}\\b
 // product (so "powder" is absent — whey protein is legitimately a powder).
 const ADJUSTED_RE =
 	/\b(low[\s-]?fat|lowfat|reduced[\s-]?fat|fat[\s-]?free|non[\s-]?fat|skim|skimmed|full[\s-]?cream|sugar[\s-]?free|no[\s-]?added[\s-]?sugar|reduced[\s-]?sugar|unsweetened|diet|zero|lactose[\s-]?free|decaf\w*|lite)\b/i;
+
+// PLANT-PART groups, ported from the sibling inventory project. An item declaring
+// a category names one part of the plant; a candidate naming ONLY a different part
+// is a different product — "Banana (Fruit)" vs "Banana Leaves".
+const PART_GROUPS: Record<string, RegExp> = {
+	fruit: /\bfruits?\b|\bberr(?:y|ies)\b/i,
+	leaf: /\bleaf\b|\bleaves\b/i,
+	root: /\broots?\b|\btubers?\b/i,
+	seed: /\bseeds?\b|\bkernels?\b|\bnuts?\b/i,
+	flower: /\bflowers?\b|\bblossoms?\b|\bbuds?\b/i,
+	stem: /\bstems?\b|\bstalks?\b|\bshoots?\b|\bsprouts?\b/i,
+};
+const partGroupsIn = (text: string): Set<string> => {
+	const s = new Set<string>();
+	for (const [g, re] of Object.entries(PART_GROUPS)) if (re.test(text)) s.add(g);
+	return s;
+};
+// Which part group does a declared category belong to? "(Fruit)" → fruit.
+const CATEGORY_PART: Record<string, string> = {
+	fruit: "fruit", fruits: "fruit", berry: "fruit",
+	leaf: "leaf", leaves: "leaf",
+	root: "root", roots: "root",
+	seed: "seed", seeds: "seed",
+	flower: "flower", flowers: "flower",
+};
+
+// A DIFFERENT produce item named in the title. Fresh produce is sold under its own
+// name, so a title naming another vegetable/plant part is a different product even
+// when it borrows the item's word: "Banana Shallots" is a shallot, "Banana Leaves"
+// is a leaf. Only applied when the item declared a produce category.
+const DISTINCT_PRODUCE_PATTERNS = [
+	"shallots?", "onions?", "garlic", "leeks?", "scallions?", "chives?", "ginger",
+	"potatoes?", "potato", "carrots?", "cabbages?", "lettuce", "spinach", "tomato(?:es)?",
+	"cucumbers?", "mushrooms?", "peel", "skin", "bark", "sprouts?",
+	// …and food from an entirely different aisle that merely borrows the word
+	// ("Banana Prawns" is a prawn; "Baby Puffs - Banana" is a snack).
+	"prawns?", "shrimps?", "fish", "seafood", "chicken", "beef", "pork", "mutton",
+	"lamb", "meat", "puffs?",
+];
+const DISTINCT_PRODUCE_RES = DISTINCT_PRODUCE_PATTERNS.map((p) => new RegExp(`\\b${p}\\b`, "i"));
+
+// Fresh produce turned into a keeping/processed form — a "(Fruit)" item wants the
+// actual fruit, never a dried / freeze-dried / pureed / canned version of it.
+const PRODUCE_PROCESSED_RE =
+	/\b(dried|drying|freeze|freeze[\s-]?dried|dehydrated|puree|pureed|canned|tinned|pickled|preserved|candied|crystalli[sz]ed|compote|marmalade|nectar|paste)\b/i;
 
 // Beverage-like item? (its own name says it's a drink → drink candidates are fine)
 const BEVERAGE_ITEM_RE = /\b(wine|juice|coffee|tea|drink|soda|kombucha|beer|cider|cordial)\b/i;
@@ -252,6 +307,27 @@ export function matchPenalty(target: PlanTarget, product: StoreProduct): number 
 	// skimmed, lactose-free or sugar-free versions. Only applies when the item
 	// itself named no such variant.
 	if (s.basicRange && !has(ADJUSTED_RE, itemText) && has(ADJUSTED_RE, title)) mult *= 0.2;
+
+	// Declared category (e.g. "Banana (Fruit)") — the item is fresh produce.
+	if (s.categories.length) {
+		// Wrong plant part: the title names only parts other than the one asked for.
+		const itemParts = new Set(
+			s.categories.map((c) => CATEGORY_PART[c]).filter((p): p is string => !!p),
+		);
+		if (itemParts.size) {
+			const titleParts = partGroupsIn(title);
+			if (titleParts.size && ![...titleParts].some((g) => itemParts.has(g))) mult *= 0.2;
+		}
+		// A different vegetable/plant part borrowing the item's word ("Banana Shallots").
+		for (const re of DISTINCT_PRODUCE_RES) {
+			if (has(re, title) && !has(re, itemText)) {
+				mult *= 0.2;
+				break;
+			}
+		}
+		// Dried / pureed / canned — a keeping form, not the fresh item.
+		if (has(PRODUCE_PROCESSED_RE, title) && !has(PRODUCE_PROCESSED_RE, itemText)) mult *= 0.2;
+	}
 
 	// Wrong variety (colour / cut) — "Onion (white)" ≠ red onion, breast ≠ thigh.
 	mult *= varietyPenalty(target.name, title);
@@ -357,7 +433,15 @@ export function evaluate(target: PlanTarget, product: StoreProduct): MatchResult
 	for (const kw of s.mustMatch) if (!hay.includes(kw)) missingSet.add(kw);
 	const missing = [...missingSet];
 
-	const raw = score(s.searchTerm, product.name + " " + (product.brand ?? ""));
+	// Score the bare noun AND the noun+properties, taking the best — the sibling
+	// project's `bestScore`. Some products are sold ONLY under the qualifier:
+	// "Tofu (Tau Kwa)" must still reach "Fortune Tau Kwa - Original", whose title
+	// never says "tofu" (bare-noun coverage 0).
+	const titleText = product.name + " " + (product.brand ?? "");
+	let raw = score(s.searchTerm, titleText);
+	if (s.properties.length) {
+		raw = Math.max(raw, score(`${s.searchTerm} ${s.properties.join(" ")}`, titleText));
+	}
 	let penalty = matchPenalty(target, product);
 
 	// An explicitly excluded property — "(not red)" — is a hard exclusion.

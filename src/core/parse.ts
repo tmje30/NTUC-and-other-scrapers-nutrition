@@ -54,6 +54,18 @@ export const MUST_MATCH_KEYWORDS = [
 /** Property words meaning "the basic, unadjusted product" (≡ no property). */
 const BASIC_MARKERS = new Set(["normal", "regular", "plain", "basic", "standard", "original"]);
 
+/**
+ * CATEGORY properties say what KIND of thing the product is, rather than naming a
+ * word that appears on its label. "Banana (Fruit)" means "the actual fruit" — no
+ * banana is ever labelled "fruit", while a *freeze-dried fruit snack* is. Matching
+ * these literally inverts the intent, so they're kept apart from `properties` and
+ * drive a form guard instead (see `NON_PRODUCE_RES` in match.ts).
+ */
+const PRODUCE_CATEGORIES = new Set([
+	"fruit", "fruits", "vegetable", "vegetables", "veg", "veggie", "veggies", "produce",
+	"leaf", "leaves", "root", "roots", "seed", "seeds", "herb", "herbs", "flower", "flowers",
+]);
+
 export interface ParsedName {
 	/** Cleaned keyword to search the store for (base noun only — broad on purpose). */
 	searchTerm: string;
@@ -61,6 +73,8 @@ export interface ParsedName {
 	mustMatch: string[];
 	/** Defining properties from ( ) that a candidate must satisfy. */
 	properties: string[];
+	/** Category declarations from ( ) — e.g. "produce" for "(Fruit)"/"(Vegetable)". */
+	categories: string[];
 	/** Properties from "(not X)" that a candidate must NOT have. */
 	negatedProperties: string[];
 	/** Brand from [ ], if any (lower-cased). */
@@ -96,6 +110,7 @@ export function parseName(raw: string): ParsedName {
 
 	// ( ) holds the defining properties.
 	const properties: string[] = [];
+	const categories: string[] = [];
 	const negatedProperties: string[] = [];
 	let sawBasicMarker = false;
 	work = work.replace(/\(([^)]*)\)/g, (_m, inner) => {
@@ -108,6 +123,8 @@ export function parseName(raw: string): ParsedName {
 				negatedProperties.push(collapse(neg[1]));
 			} else if (BASIC_MARKERS.has(v)) {
 				sawBasicMarker = true; // "(Normal)" ⇒ basic range, not a required word
+			} else if (PRODUCE_CATEGORIES.has(v)) {
+				categories.push(v); // "(Fruit)" ⇒ a KIND of product, not a word to find
 			} else {
 				properties.push(v);
 			}
@@ -136,6 +153,7 @@ export function parseName(raw: string): ParsedName {
 		searchTerm,
 		mustMatch,
 		properties,
+		categories,
 		negatedProperties,
 		brand,
 		basicRange,

@@ -2,6 +2,31 @@
 
 Running log of decisions, gotchas, and non-obvious facts. Newest on top.
 
+## 2026-07-29 — The sibling project is the reference; check it before inventing
+
+`C:\Users\newuser\Claude\Inventory Price upkeeper worker [Notion]\src\match.js` is
+where this matcher came from and it already solves most filtering problems. Three
+things were re-ported after being wrongly dropped or reinvented here:
+
+- **The precision term is back.** `score()` is now `0.7 × coverage + 0.3 ×
+  precision` as in the sibling. The old comment claimed precision "wrongly sank
+  long-title matches like Laobanniang Dried Sze Chuan Peppercorn" — **that was
+  false**: it scores **0.81**, well above ACCEPT (0.7). Without precision, a bare
+  "Banana" matched anything with the word in it.
+- **`( )` is the CATEGORY bracket** (sibling `CATEGORY_TOKENS` / `parenTokens`),
+  not a literal to find in the title. `Banana (Fruit)` matched *nothing* real and
+  accepted "Freeze Dried **Fruit** — Strawberry & Banana" when treated literally,
+  because no banana is ever labelled "fruit".
+- **`PART_GROUPS`** (fruit/leaf/root/seed/flower/stem): item names one part, title
+  names only another ⇒ wrong product. This is what rejects "Banana Leaves".
+
+Net effect on `Banana (Fruit)`: 5 real bananas accepted; leaves, shallots, prawns,
+baby puffs, cereal, banana milk and freeze-dried fruit all rejected.
+
+Also ported: the sibling's `bestScore` idea — score the bare noun *and* the
+noun+properties, take the max. Needed because some products are sold only under
+the qualifier ("Fortune Tau Kwa" never says "tofu", so bare coverage was 0).
+
 ## 2026-07-29 — Ingredient name syntax is the matching spec
 
 `[brand]` / `{ignored}` / `(defining property)` in an ingredient `Name` are load-
