@@ -156,8 +156,12 @@ export const REVIEW_THRESHOLD = 0.45;
 const OIL_RE = /\b(oils?|olie|olje|olja|huile|olio|aceite)\b|\wöl\b|\woel\b/i;
 // Prepared drink / syrup form — a plain fruit/food is not a juice/soda/cordial.
 // EN + DA (saft, sirup, sodavand, saftevand).
+// Alcoholic forms are included: a spice/food item must not match a WINE that merely
+// names the spice ("Sze Chuan pepper" vs "Feral No 1 - Beet Hop Szechuan Pepper 0.0
+// White Wine"). A genuinely beverage item (Rice Wine (Cooking)) is exempt via
+// BEVERAGE_ITEM_RE below, which also lists these words.
 const PREPARED_RE =
-	/\w*saft\b|\w*sirup\b|\b(juice|soda|sodavand|saftevand|lemonade|limonade|sparkling|cordial|squash|kombucha|drink|ade)\b/i;
+	/\w*saft\b|\w*sirup\b|\b(juice|soda|sodavand|saftevand|lemonade|limonade|sparkling|cordial|squash|kombucha|drink|ade|wine|beer|ale|lager|cider|spirits?|liqueurs?|vodka|whisky|whiskey|rum|gin|sake|brandy)\b/i;
 // Plant / flavoured / processed MILK qualifiers — block only for a plain milk item.
 const MILK_VARIANT_RE =
 	/\b(soy|soya|almond|oat|goat|coconut|rice|cashew|hazelnut|lactose|powder|powdered|condensed|evaporated|malt|malted|chocolate|vanilla|strawberry|cultured|buttermilk)\b/i;
@@ -234,7 +238,8 @@ const PRODUCE_PROCESSED_RE =
 	/\b(dried|drying|freeze|freeze[\s-]?dried|dehydrated|puree|pureed|canned|tinned|pickled|preserved|candied|crystalli[sz]ed|compote|marmalade|nectar|paste)\b/i;
 
 // Beverage-like item? (its own name says it's a drink → drink candidates are fine)
-const BEVERAGE_ITEM_RE = /\b(wine|juice|coffee|tea|drink|soda|kombucha|beer|cider|cordial)\b/i;
+const BEVERAGE_ITEM_RE =
+	/\b(wine|juice|coffee|tea|drink|soda|kombucha|beer|ale|lager|cider|cordial|spirits?|liqueurs?|vodka|whisky|whiskey|rum|gin|sake|brandy)\b/i;
 
 const has = (re: RegExp, s: string) => re.test(s || "");
 

@@ -133,6 +133,36 @@ Three special property forms:
 The search term sent to a store is always the **base noun only** (`Milk`, not
 `Milk Low Fat`) — store keyword search returns nothing for unusual qualifiers like
 `Bentong` or `Tau Kwa`, so properties are enforced when scoring, not when querying.
+
+#### Synonym register — `synonyms.json`
+
+A repo-root register of equivalent names, loaded by `loadUserSynonyms()` in
+`src/core/match.ts` and applied to **both** the item name and the product title
+before tokenizing. Edit it freely; no code change needed.
+
+```json
+{ "from": "tau kwa", "to": "tofu", "note": "why this entry exists" }
+```
+
+- `from` is matched as a whole word/phrase, case-insensitively; `to` replaces it.
+- `note` is documentation only — the loader ignores unknown keys.
+- Synonyms affect **scoring only, never the search query**. The store is still
+  asked for the raw spelling it actually indexes (FairPrice lists "Tau Kwa", so
+  querying the canonical "tofu" would find fewer of them).
+
+It earns its keep on three kinds of problem:
+
+| Problem | Example |
+| --- | --- |
+| Store uses a different name for the same thing | `Fortune Tau Kwa` never says "tofu" — coverage was 0 |
+| Store mixes spellings in ONE result set | FairPrice returns both `Greek Style Yoghurt` and `Greek Yogurt` |
+| Romanisation variants | `szechuan` / `szechwan` / `sichuan` → `sze chuan` |
+
+**Caution:** a synonym makes matching *more* permissive, so it can surface a wrong
+product that previously scored too low. Adding `szechuan → sze chuan` lifted a
+*white wine* ("Feral No 1 — Beet Hop Szechuan Pepper 0.0 White Wine") from 0.27 to
+0.80 for the pepper item; `PREPARED_RE` had to learn alcoholic forms to reject it.
+After adding an entry, re-run the affected item and check what else moved.
 - `parseMonthlyUsage(usedPlan)` → monthly `{ amount, unit, packs, costSgd }` by
   parsing the `Used 'N' Plan` formula string Notion already computed; returns
   `null` when the item isn't in that plan.
