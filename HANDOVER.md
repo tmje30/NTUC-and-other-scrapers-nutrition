@@ -22,9 +22,8 @@ cloud directly. If the file is missing/stale the page degrades to FairPrice-only
 - **Live page:** https://tmje30.github.io/NTUC-and-other-scrapers-nutrition/
   (two sections: "In your plan" + "Other items on offer"; cards show
   `Item [packsize]  −%`, `$/kg · $/100g`, `store · product`, `uses ~X/month`).
-- **Cloud schedule:** GitHub Actions `.github/workflows/daily.yml`. **06:00 SGT**
-  (`cron: "0 22 * * *"`), plus manual `workflow_dispatch`. ⚠️ User wanted **10:00
-  SGT** (`"0 2 * * *"`) — not yet applied (web-editor edit; see Remaining work).
+- **Cloud schedule:** GitHub Actions `.github/workflows/daily.yml`. **10:00 SGT**
+  (`cron: "0 2 * * *"` = 02:00 UTC), plus manual `workflow_dispatch`.
 - **Telegram:** reuses the user's Notion-Worker bot **@Big_Notion_Bot**, chat
   `7626546412`. Secrets `NOTION_TOKEN`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`
   are GitHub Actions secrets. Locally they live in `.env` (gitignored).
@@ -33,7 +32,7 @@ cloud directly. If the file is missing/stale the page degrades to FairPrice-only
 ## How the hybrid works
 
 ```
-Laptop (Task Scheduler, 05:30 SGT)        Cloud (Actions, 06:00 SGT)
+Laptop (Task Scheduler, 05:30 SGT)        Cloud (Actions, 10:00 SGT)
   npm run push-ss:                           npm run build-site:
    - fetch terms from public targets.json     - scan FairPrice live
    - live Sheng Siong scan (residential IP)   - read data/shengsiong-latest.json
