@@ -145,6 +145,23 @@ only find more. Measured: `Frozen Veg (Mixed)` went from **0 accepted to 5** —
 form 1 returns edamame and broccoli, form 3 returns the real mixed-veg products as
 top hits. `Szechuan pepper` went from 1 product to 5 (3 accepted).
 
+#### The `Select` tags (Notion multi-select)
+
+| Tag | Effect |
+| --- | --- |
+| `Not in Use ATM` | The ingredient is **skipped entirely** — never searched, never priced. Dropped in `readGroceryTargets()`. |
+| `Brand Specific` | Only the `[bracketed]` brand may match; any other brand is a hard miss. |
+| `Quality item` | Rejects a cheaper **grade**. A candidate whose **normal (undiscounted)** price per 100 is below `QUALITY_FLOOR` (75%) of what you pay at full price is a budget line, not a bargain. The **sale** price is ignored on purpose — a quality product may be discounted as deeply as it likes. Skipped when there's no baseline or no pack weight, so missing data never rejects. |
+| `Organic/animal welfare` | The product must be **store-certified organic** (structured `Dietary Attributes`) or name a welfare rearing method (free range, cage free, grass fed, pasture raised, barn laid, RSPCA). |
+| `Weekly Buy` | Not used by the matcher — user's own bookkeeping. |
+
+**Organic is read from structured data, never from the name.** FairPrice publishes
+`metaData["Dietary Attributes"]` (`Organic`, `Halal`, `Vegetarian`, `Healthier
+Choice`, `Gluten-Free`, …) on roughly two-thirds of products. Name-matching would
+be wrong: *"Chew's Fresh Eggs - Organic Selenium"* is a mineral additive, not an
+organic egg. **Sheng Siong's payload exposes no such labels**, so an
+`Organic/animal welfare` item can currently only be satisfied from FairPrice.
+
 #### Synonym register — `synonyms.json`
 
 A repo-root register of equivalent names, loaded by `loadUserSynonyms()` in

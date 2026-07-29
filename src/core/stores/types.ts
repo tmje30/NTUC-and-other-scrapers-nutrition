@@ -17,6 +17,13 @@ export interface StoreProduct {
 	unitCount: number | null;
 	/** Computed SGD per 100 g (null when weight unknown). */
 	pricePer100g: number | null;
+	/**
+	 * Store-declared dietary/certification labels ("Organic", "Halal", "Vegetarian",
+	 * "Healthier Choice", …). Structured data, so it's trustworthy in a way the
+	 * product name is not — "Chew's Fresh Eggs - Organic Selenium" is NOT an organic
+	 * product. Empty when the store publishes none.
+	 */
+	dietaryAttributes: string[];
 	/** True when the store flags this below its own list price. */
 	onSale: boolean;
 	/** List/normal price when on sale, SGD. */

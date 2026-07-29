@@ -467,6 +467,41 @@ function tokensPresent(needle: string, hayTokens: Set<string>): boolean {
 	return true;
 }
 
+/**
+ * A `Quality item` rejects candidates whose NORMAL price is below this share of
+ * what the user pays at full price — a product that is permanently far cheaper is
+ * a lower grade, not a saving.
+ */
+export const QUALITY_FLOOR = 0.75;
+
+/**
+ * Does the product clear the quality floor? Compares undiscounted price per 100
+ * against the item's own baseline. A sale price is deliberately ignored: the whole
+ * point is that a quality product may be discounted as deeply as it likes.
+ * Returns true when it can't be judged (no baseline or no pack weight) — never
+ * reject for missing data.
+ */
+function passesQualityFloor(target: PlanTarget, product: StoreProduct): boolean {
+	const baseline = target.baselinePer100g;
+	if (baseline == null || baseline <= 0) return true;
+	if (!product.packWeightG || product.packWeightG <= 0) return true;
+	const normalPrice = product.onSale && product.listPriceSgd ? product.listPriceSgd : product.priceSgd;
+	if (!normalPrice || normalPrice <= 0) return true;
+	const normalPer100 = (normalPrice / product.packWeightG) * 100;
+	return normalPer100 >= baseline * QUALITY_FLOOR;
+}
+
+// Rearing/production methods that count as animal welfare. These DO appear in
+// titles, unlike organic certification which we take from structured data.
+const WELFARE_RE =
+	/\b(free[\s-]?range|cage[\s-]?free|grass[\s-]?fed|pasture[\s-]?(?:raised|fed)|barn[\s-]?laid|rspca|animal welfare|humanely[\s-]?(?:raised|reared))\b/i;
+
+/** Store-certified organic, or a welfare rearing method named in the title. */
+function isOrganicOrWelfare(product: StoreProduct): boolean {
+	if (product.dietaryAttributes.some((a) => /^organic$/i.test(a.trim()))) return true;
+	return WELFARE_RE.test(`${product.name} ${product.brand ?? ""}`);
+}
+
 /** Demotion applied when a defining property is unmet: enough to bar the deal, */
 /** while leaving a strong name match inside the review band as a recommendation. */
 const REQUIREMENT_FAIL_MULT = 0.6;
@@ -490,6 +525,21 @@ export function evaluate(target: PlanTarget, product: StoreProduct): MatchResult
 	// 1. Brand Specific: only the named brand is allowed at all.
 	if (target.brandSpecific && s.brand && !hay.includes(s.brand)) {
 		return { score: 0, adjusted: 0, penalty: 1, verdict: "miss", missing: [], wrongBrand: true };
+	}
+
+	// 1b. Quality item: reject a cheaper GRADE of product. Judged on the normal
+	// (undiscounted) price only — a quality product on deep discount is exactly what
+	// we want, but one whose everyday price is far under yours is a budget line.
+	if (target.qualityItem && !passesQualityFloor(target, product)) {
+		return { score: 0, adjusted: 0, penalty: 1, verdict: "miss", missing: [], wrongBrand: false };
+	}
+
+	// 1c. Organic / animal welfare: the store must SAY SO in structured data, or the
+	// title must name a welfare rearing method. Never inferred from the word
+	// "organic" in a name alone — "Chew's Fresh Eggs - Organic Selenium" is a
+	// mineral additive, not an organic egg.
+	if (target.organicWelfare && !isOrganicOrWelfare(product)) {
+		return { score: 0, adjusted: 0, penalty: 1, verdict: "miss", missing: ["organic/welfare"], wrongBrand: false };
 	}
 
 	// 2. Requirements: defining properties + must-match keywords. A keyword drawn

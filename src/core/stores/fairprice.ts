@@ -72,6 +72,9 @@ function mapProduct(p: any): StoreProduct {
 		packWeightG,
 		volumetric,
 		unitCount,
+		dietaryAttributes: (Array.isArray(meta["Dietary Attributes"]) ? meta["Dietary Attributes"] : [])
+			.map((a: any) => String(a))
+			.filter(Boolean),
 		pricePer100g: packWeightG && packWeightG > 0 ? (price / packWeightG) * 100 : null,
 		onSale,
 		listPriceSgd: onSale ? mrp : null,

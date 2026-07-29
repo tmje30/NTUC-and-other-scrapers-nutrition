@@ -46,6 +46,15 @@ export interface PlanTarget {
 	tags: string[];
 	/** True when tagged `Brand Specific`: only the [bracketed] brand may match. */
 	brandSpecific: boolean;
+	/**
+	 * True when tagged `Quality item`: reject budget products. A candidate whose
+	 * NORMAL (non-sale) price per 100 is under 75% of what this item costs at full
+	 * price is treated as a cheaper grade, not a bargain. Its discounted price may
+	 * be as low as it likes — only the undiscounted price is judged.
+	 */
+	qualityItem: boolean;
+	/** True when tagged `Organic/animal welfare`: only certified/welfare products. */
+	organicWelfare: boolean;
 	/** Whole-pack price (SGD) and pack size (grams for By Gram, count for By Unit). */
 	packPriceSgd: number;
 	packSize: number;
@@ -126,6 +135,9 @@ export async function readGroceryTargets(): Promise<PlanTarget[]> {
 		// Monthly usage from the Used 'N' Plan formula — null when not in the plan.
 		const usage = parseMonthlyUsage(formulaString(p[planKey]));
 		const tags = multiSelectNames(p["Select"]);
+		const hasTag = (name: string) => tags.some((t) => t.toLowerCase() === name);
+		// "Not in Use ATM" — the user has parked this ingredient; don't search for it.
+		if (hasTag("not in use atm")) continue;
 
 		targets.push({
 			ingredientId: row.id,
@@ -134,7 +146,9 @@ export async function readGroceryTargets(): Promise<PlanTarget[]> {
 			category,
 			unitType,
 			tags,
-			brandSpecific: tags.some((t) => t.toLowerCase() === "brand specific"),
+			brandSpecific: hasTag("brand specific"),
+			qualityItem: hasTag("quality item"),
+			organicWelfare: hasTag("organic/animal welfare"),
 			packPriceSgd,
 			packSize,
 			baselinePer100g,

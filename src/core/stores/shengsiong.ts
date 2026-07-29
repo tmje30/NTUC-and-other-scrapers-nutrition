@@ -51,6 +51,9 @@ function mapProduct(p: any): StoreProduct {
 		packWeightG,
 		volumetric: pw?.volumetric ?? false,
 		unitCount,
+		// Sheng Siong's search payload exposes no dietary/certification labels, so an
+		// "Organic/animal welfare" item can only be satisfied from FairPrice for now.
+		dietaryAttributes: [],
 		pricePer100g: packWeightG && packWeightG > 0 ? (price / packWeightG) * 100 : null,
 		onSale,
 		listPriceSgd: onSale ? prev : null,
