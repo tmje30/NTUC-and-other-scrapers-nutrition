@@ -2,7 +2,7 @@ import { readGroceryTargets, type PlanTarget } from "./notion.js";
 import { fairprice } from "./stores/fairprice.js";
 import { shengsiong } from "./stores/shengsiong.js";
 import { shengsiongFile } from "./stores/shengsiong-file.js";
-import { findDeal, findReview, type Deal } from "./compare.js";
+import { findDeal, findReview, type Deal, type ReviewMiss } from "./compare.js";
 import type { StoreModule, StoreProduct } from "./stores/types.js";
 
 /**
@@ -28,6 +28,11 @@ export interface RunResult {
 	searchTerms: string[];
 	/** Borderline (review-band) near-misses for targets with no confident deal. */
 	reviews: { target: string; store: string; product: string; score: number }[];
+	/**
+	 * Close-but-not-exact matches, shown on the page as recommendations: the item's
+	 * defining property wasn't met, so it's never a deal, but it's worth seeing.
+	 */
+	recommendations: ReviewMiss[];
 	errors: { target: string; store: string; message: string }[];
 }
 
@@ -57,6 +62,7 @@ export async function runOnce(): Promise<RunResult> {
 	const deals: Deal[] = [];
 	const errors: RunResult["errors"] = [];
 	const reviews: RunResult["reviews"] = [];
+	const recommendations: ReviewMiss[] = [];
 	for (const target of comparable) {
 		const products = await searchAllStores(target, errors);
 		const deal = findDeal(target, products);
@@ -71,6 +77,15 @@ export async function runOnce(): Promise<RunResult> {
 					product: rev.product.name,
 					score: rev.score,
 				});
+				// Only recommend a close match that is actually cheaper than the item's
+				// own baseline — otherwise it's neither the right product nor a saving.
+				if (
+					rev.productPer100g != null &&
+					rev.baselinePer100g != null &&
+					rev.productPer100g < rev.baselinePer100g
+				) {
+					recommendations.push(rev);
+				}
 			}
 		}
 	}
@@ -83,5 +98,17 @@ export async function runOnce(): Promise<RunResult> {
 	const otherDeals = deals
 		.filter((d) => !d.target.inActivePlan)
 		.sort((a, b) => b.savingPct - a.savingPct);
-	return { planDeals, otherDeals, targetsConsidered: comparable.length, searchTerms, reviews, errors };
+	// Best (cheapest relative to its own baseline) recommendations first.
+	recommendations.sort(
+		(a, b) => a.productPer100g! / a.baselinePer100g! - b.productPer100g! / b.baselinePer100g!,
+	);
+	return {
+		planDeals,
+		otherDeals,
+		targetsConsidered: comparable.length,
+		searchTerms,
+		reviews,
+		recommendations,
+		errors,
+	};
 }

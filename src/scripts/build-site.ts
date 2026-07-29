@@ -10,7 +10,8 @@ import { config } from "../core/config.js";
  * The workflow deploys public/ to Pages, then runs notify.ts.
  */
 
-const { planDeals, otherDeals, targetsConsidered, searchTerms, reviews, errors } = await runOnce();
+const { planDeals, otherDeals, targetsConsidered, searchTerms, reviews, recommendations, errors } =
+	await runOnce();
 const total = planDeals.length + otherDeals.length;
 console.error(
 	`Plan '${config.activePlanNumber()}': ${targetsConsidered} targets → ${planDeals.length} plan + ${otherDeals.length} other deals` +
@@ -34,7 +35,11 @@ if (errors.length) {
 }
 
 await mkdir("public", { recursive: true });
-await writeFile("public/index.html", renderDealsPage(planDeals, otherDeals), "utf8");
+await writeFile(
+	"public/index.html",
+	renderDealsPage(planDeals, otherDeals, new Date(), recommendations),
+	"utf8",
+);
 await writeFile(
 	"public/summary.json",
 	JSON.stringify({ count: total, planCount: planDeals.length, otherCount: otherDeals.length, generatedAt: new Date().toISOString() }),

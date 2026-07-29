@@ -1,4 +1,4 @@
-import type { Deal } from "./compare.js";
+import type { Deal, ReviewMiss } from "./compare.js";
 
 /**
  * Renders the daily deals as a self-contained HTML page (deployed to GitHub
@@ -69,10 +69,38 @@ function dealCard(d: Deal): string {
     </a>`;
 }
 
+/**
+ * A close-but-not-exact match. Visually distinct from a deal card (dashed border,
+ * no green saving badge) and states exactly which defining property it failed, so
+ * a recommendation can never be mistaken for the thing you actually asked for.
+ */
+function recCard(r: ReviewMiss): string {
+	const p = r.product;
+	const u = bigUnit(p.volumetric);
+	const prodPack = p.packWeightG ? ` <span class="pack">[${packLabel(p.packWeightG, p.volumetric)}]</span>` : "";
+	const prodBig = r.productPer100g != null ? `$${(r.productPer100g * 10).toFixed(2)}/${u}` : "";
+	const baseBig = r.baselinePer100g != null ? `$${(r.baselinePer100g * 10).toFixed(2)}/${u}` : "";
+	const why = r.missing.length
+		? `<div class="why">not <b>${esc(r.missing.join(", "))}</b> — check before buying</div>`
+		: `<div class="why">close match — check before buying</div>`;
+
+	return `
+    <a class="card rec" href="${esc(p.url)}" target="_blank" rel="noopener">
+      <div class="row1">
+        <span class="name">${esc(r.target.name)}</span>
+        <span class="tag">closest</span>
+      </div>
+      <div class="meta"><span class="store">${esc(p.store)}</span> · ${esc(p.name)}${prodPack} <span class="prodprice">$${p.priceSgd.toFixed(2)}</span></div>
+      <div class="price"><b>${prodBig}</b> <span class="was">vs ${baseBig}</span></div>
+      ${why}
+    </a>`;
+}
+
 export function renderDealsPage(
 	planDeals: Deal[],
 	otherDeals: Deal[],
 	generatedAt = new Date(),
+	recommendations: ReviewMiss[] = [],
 ): string {
 	const date = generatedAt.toLocaleDateString("en-SG", {
 		weekday: "short",
@@ -111,7 +139,13 @@ export function renderDealsPage(
 	const otherSection = otherRest.length
 		? `<h2 class="section">Other items on offer</h2>` + otherRest.map(dealCard).join("")
 		: "";
-	const cards = saleSection + planSection + otherSection;
+	// Recommendations last: not what you asked for, so they must never sit above a
+	// real deal or be mistaken for one.
+	const recSection = recommendations.length
+		? `<h2 class="section">Close matches · not exactly what you asked for</h2>` +
+			recommendations.map(recCard).join("")
+		: "";
+	const cards = saleSection + planSection + otherSection + recSection;
 
 	return `<!doctype html>
 <html lang="en">
@@ -149,6 +183,10 @@ export function renderDealsPage(
   .store { color: #1a1d21; font-weight: 600; }
   .sale { color: #b42318; font-weight: 600; }
   .empty { text-align: center; color: #6b7280; padding: 40px 0; }
+  .card.rec { border-style: dashed; background: #fcfcfd; }
+  .tag { color: #6b7280; font-size: .72rem; text-transform: uppercase; letter-spacing: .04em;
+    border: 1px solid #e5e7eb; border-radius: 8px; padding: 1px 7px; white-space: nowrap; }
+  .why { color: #92400e; font-size: .82rem; margin-top: 4px; }
   @media (prefers-color-scheme: dark) {
     body { background: #0f1115; color: #e5e7eb; }
     .sub, .pack, .meta, .per100, .usage, .section, .empty-sm { color: #9aa1ab; }
@@ -158,6 +196,9 @@ export function renderDealsPage(
     .was { color: #6b7280; }
     .mine { color: #facc15; }
     .prodprice { color: #cbd2dc; }
+    .card.rec { background: #141619; }
+    .tag { border-color: #2c323a; }
+    .why { color: #fbbf24; }
   }
 </style>
 </head>

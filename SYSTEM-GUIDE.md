@@ -101,10 +101,31 @@ All commands run from the repo root and read secrets from `.env` (see Setup).
 ### Parsing — `parseName()`, `parseMonthlyUsage()`
 
 - **Where:** `src/core/parse.ts`. No AI; deterministic.
-- `parseName(raw)` → `{ searchTerm, mustMatch, original }`: cleans an ingredient
-  name into a store search term, strips bracketed qualifiers and everything after
-  the first comma, and extracts "must-match" keywords (e.g. `organic`, `frozen`,
-  `low fat`, `brown`) that a candidate product must also contain.
+- `parseName(raw)` → `{ searchTerm, mustMatch, properties, negatedProperties,
+  brand, basicRange, ignored, original }`.
+
+#### Ingredient naming convention (how a Name drives the search)
+
+The brackets in an ingredient `Name` are a deliberate, meaningful syntax:
+
+| Syntax | Means | Effect |
+| --- | --- | --- |
+| `[ ]` | **Brand** — `Chicken Breast [Betagro]` | Never searched. Becomes a hard brand filter **only** when the row is tagged `Brand Specific` in the `Select` property; otherwise any brand may match. |
+| `{ }` | **Ignore** — `Egg Whites, {cheap}` | A private note. Excluded from the search term *and* from every matching decision. |
+| `( )` | **Defining property** — `Onion (White)`, `egg (Omega 3 Enriched)` | The thing that makes the item the item. A product failing it is **never published as a deal**; a close one is surfaced as a *recommendation*. |
+
+Two special property forms:
+
+- **Negation** — `Onion (not red)` means "any onion *except* red": a hard exclusion.
+- **Basic range** — `Milk (Normal)` (also `Regular`/`Plain`/`Basic`) means the
+  unadjusted product and is **identical to writing no property at all**. It is not
+  a required word; it switches on *variant exclusion*, so both `Milk (Normal)` and
+  bare `Milk` reject low-fat, skimmed, lactose-free, flavoured and plant milks.
+  Writing a specific property (`Milk (Low Fat)`) instead **requires** it.
+
+The search term sent to a store is always the **base noun only** (`Milk`, not
+`Milk Low Fat`) — store keyword search returns nothing for unusual qualifiers like
+`Bentong` or `Tau Kwa`, so properties are enforced when scoring, not when querying.
 - `parseMonthlyUsage(usedPlan)` → monthly `{ amount, unit, packs, costSgd }` by
   parsing the `Used 'N' Plan` formula string Notion already computed; returns
   `null` when the item isn't in that plan.
@@ -159,8 +180,10 @@ vs grams), price-per-100 g, sale info, and URL. Defined in
 
 ### Page and message
 
-- `renderDealsPage(planDeals, otherDeals)` — `src/core/site.ts`: builds the
-  styled two-section HTML deals page.
+- `renderDealsPage(planDeals, otherDeals, generatedAt?, recommendations?)` —
+  `src/core/site.ts`: builds the styled HTML deals page. `recommendations` render
+  last, in a dashed-border "Close matches · not exactly what you asked for"
+  section that names the property each one failed.
 - `sendSummary(count, url)` — `src/core/telegram.ts`: sends the single Telegram
   message via the bot.
 

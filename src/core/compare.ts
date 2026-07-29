@@ -67,9 +67,16 @@ export function findDeal(target: PlanTarget, products: StoreProduct[]): Deal | n
 
 /** A review-band near-miss — a plausible-but-unconfirmed match, for visibility. */
 export interface ReviewMiss {
+	target: PlanTarget;
 	product: StoreProduct;
 	/** Adjusted (score × penalty) confidence, in [REVIEW, ACCEPT). */
 	score: number;
+	/** Defining properties the product failed — why it's only a recommendation. */
+	missing: string[];
+	/** Per-100 price, when known (so the page can show whether it's even cheaper). */
+	productPer100g: number | null;
+	/** The item's own per-100 baseline, for context. */
+	baselinePer100g: number | null;
 }
 
 /**
@@ -82,7 +89,14 @@ export function findReview(target: PlanTarget, products: StoreProduct[]): Review
 	for (const p of products) {
 		const m = evaluate(target, p);
 		if (m.verdict === "review" && (!best || m.adjusted > best.score)) {
-			best = { product: p, score: m.adjusted };
+			best = {
+				target,
+				product: p,
+				score: m.adjusted,
+				missing: m.missing,
+				productPer100g: p.pricePer100g ?? null,
+				baselinePer100g: target.baselinePer100g,
+			};
 		}
 	}
 	return best;

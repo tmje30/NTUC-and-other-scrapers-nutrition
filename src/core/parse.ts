@@ -31,39 +31,117 @@ export const MUST_MATCH_KEYWORDS = [
 	"brown",
 ] as const;
 
+/**
+ * Bracket conventions in an Ingredient `Name` (the user's naming standard):
+ *   [ ]  brand              — "Chicken Breast [Betagro]". Never part of the search
+ *                             text. Becomes a hard brand filter only when the row
+ *                             is tagged `Brand Specific` in the `Select` property.
+ *   { }  ignored            — "Egg Whites, {cheap}". A private note: excluded from
+ *                             the search term AND from every matching decision.
+ *   ( )  defining property  — "Onion (White)", "egg (Omega 3 Enriched)". The thing
+ *                             that makes this item the item. A candidate failing it
+ *                             is never published as a deal, but a close one is
+ *                             surfaced as a recommendation.
+ *
+ * Two special property forms:
+ *   • Negation — "(not red)" means "any onion EXCEPT red" (a hard exclusion).
+ *   • Basic range — "(Normal)"/"(Regular)"/"(Plain)" means the unadjusted product,
+ *     identical in meaning to writing no property at all. It is NOT a required
+ *     word; instead it switches on variant exclusion, so "Milk (Normal)" and plain
+ *     "Milk" both reject low-fat / skimmed / lactose-free / flavoured / plant milk.
+ */
+
+/** Property words meaning "the basic, unadjusted product" (≡ no property). */
+const BASIC_MARKERS = new Set(["normal", "regular", "plain", "basic", "standard", "original"]);
+
 export interface ParsedName {
-	/** Cleaned keyword to search the store for. */
+	/** Cleaned keyword to search the store for (base noun only — broad on purpose). */
 	searchTerm: string;
 	/** Lower-cased keywords the candidate product must also contain. */
 	mustMatch: string[];
+	/** Defining properties from ( ) that a candidate must satisfy. */
+	properties: string[];
+	/** Properties from "(not X)" that a candidate must NOT have. */
+	negatedProperties: string[];
+	/** Brand from [ ], if any (lower-cased). */
+	brand: string | null;
+	/** True when the name asks for the basic range (bare name, or "(Normal)"). */
+	basicRange: boolean;
+	/** Contents of { } — deliberately excluded from search and matching. */
+	ignored: string[];
 	/** The original name, untouched. */
 	original: string;
 }
 
+const collapse = (s: string) => s.replace(/\s+/g, " ").trim();
+
 export function parseName(raw: string): ParsedName {
 	const original = raw;
-	const lower = raw.toLowerCase();
 
+	// { } is a private note — remove it before anything else looks at the name.
+	const ignored: string[] = [];
+	let work = raw.replace(/\{([^}]*)\}/g, (_m, inner) => {
+		const v = collapse(inner);
+		if (v) ignored.push(v.toLowerCase());
+		return " ";
+	});
+
+	// [ ] is the brand. Last one wins (names carry at most one).
+	let brand: string | null = null;
+	work = work.replace(/\[([^\]]*)\]/g, (_m, inner) => {
+		const v = collapse(inner);
+		if (v) brand = v.toLowerCase();
+		return " ";
+	});
+
+	// ( ) holds the defining properties.
+	const properties: string[] = [];
+	const negatedProperties: string[] = [];
+	let sawBasicMarker = false;
+	work = work.replace(/\(([^)]*)\)/g, (_m, inner) => {
+		// "(peeled/Frozen)" and "(a,b)" describe several properties at once.
+		for (const part of String(inner).split(/[/,]/)) {
+			const v = collapse(part).toLowerCase();
+			if (!v) continue;
+			const neg = v.match(/^(?:not|no|non[- ]?)\s+(.*)$/);
+			if (neg?.[1]) {
+				negatedProperties.push(collapse(neg[1]));
+			} else if (BASIC_MARKERS.has(v)) {
+				sawBasicMarker = true; // "(Normal)" ⇒ basic range, not a required word
+			} else {
+				properties.push(v);
+			}
+		}
+		return " ";
+	});
+
+	// Must-match keywords are read from what's LEFT (brand and {notes} removed) plus
+	// the declared properties — never from an ignored note.
+	const keywordHay = `${work} ${properties.join(" ")}`.toLowerCase();
 	const mustMatch = MUST_MATCH_KEYWORDS.filter((kw) => {
-		// whole-word / phrase match
 		const re = new RegExp(`(^|[^a-z])${kw.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&")}([^a-z]|$)`, "i");
-		return re.test(lower);
+		return re.test(keywordHay);
 	}).map((k) => k.toLowerCase());
-
-	// Strip parenthetical/bracketed qualifiers: "(Seara)", "[california gold]".
-	let s = raw.replace(/\([^)]*\)/g, " ").replace(/\[[^\]]*\]/g, " ");
 
 	// Take the part before the first comma as the base noun
 	// ("Bread, Wholemeal, Sunshine" → "Bread"; keywords recovered separately).
-	s = s.split(",")[0];
+	const searchTerm = collapse(
+		work.split(",")[0].replace(/[^\p{L}\p{N}\s'-]/gu, " "),
+	);
 
-	// Collapse whitespace and stray punctuation.
-	const searchTerm = s
-		.replace(/[^\p{L}\p{N}\s'-]/gu, " ")
-		.replace(/\s+/g, " ")
-		.trim();
+	// No stated property (or an explicit "(Normal)") ⇒ the basic, unadjusted range.
+	const basicRange = sawBasicMarker || properties.length === 0;
 
-	return { searchTerm, mustMatch, original };
+	return {
+		searchTerm,
+		mustMatch,
+		properties,
+		negatedProperties,
+		brand,
+		basicRange,
+		ignored,
+		original,
+	};
 }
 
 export type UsageUnit = "g" | "ml" | "x";

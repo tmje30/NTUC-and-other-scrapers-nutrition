@@ -2,6 +2,32 @@
 
 Running log of decisions, gotchas, and non-obvious facts. Newest on top.
 
+## 2026-07-29 — Ingredient name syntax is the matching spec
+
+`[brand]` / `{ignored}` / `(defining property)` in an ingredient `Name` are load-
+bearing, not decoration. Parsed by `parseName()`; enforced in `evaluate()`. Full
+table in SYSTEM-GUIDE. The non-obvious decisions:
+
+- **Properties are enforced at scoring time, not in the search query.** Store
+  keyword search returns *zero* results for qualifiers like `Bentong`/`Tau Kwa`,
+  so the query is always the bare base noun and the property filters the results.
+- **"Basic range" is the absence of a property.** Bare `Milk` and `Milk (Normal)`
+  are the same thing and both *exclude* adjusted variants (`ADJUSTED_RE`: low fat,
+  skimmed, lactose free, sugar free, …). This generalises the old hardcoded
+  plain-milk rule. `(Normal|Regular|Plain|Basic|Standard|Original)` is a marker,
+  never a required word — requiring it literally would match no real product.
+- **Unmet property ⇒ REVIEW, not MISS.** It can never be published as a deal, but
+  it surfaces as a "close match" recommendation (only when it also beats the
+  item's own baseline — otherwise it's neither right nor cheaper).
+- **Wrong brand under `Brand Specific` ⇒ hard MISS**, never recommended.
+- **Form-word guards must be checked ONE WORD AT A TIME.** They compare the same
+  regex against item and candidate, so a single alternation lets an item whose own
+  name contains one word ("Milk", "Peanut Butter") switch the guard off for *all*
+  the others. That bug let `Milk (Low Fat)` accept "Low Fat High Protein Milk -
+  Green Tea". `GENERIC_FORM_RES` is now a list, tested individually.
+- `Brand Specific` already exists as a `Select` option; as of this date **no row
+  is tagged with it**, so the brand filter is inert until rows are tagged.
+
 ## 2026-07-27 — Platform: Notion Worker over GitHub Actions
 
 The PRD nominated GitHub Actions, but we're building this as a **Notion Worker**

@@ -42,6 +42,10 @@ export interface PlanTarget {
 	search: ParsedName;
 	category: string;
 	unitType: UnitType;
+	/** `Select` multi-select tags on the row (e.g. "Brand Specific", "Weekly Buy"). */
+	tags: string[];
+	/** True when tagged `Brand Specific`: only the [bracketed] brand may match. */
+	brandSpecific: boolean;
 	/** Whole-pack price (SGD) and pack size (grams for By Gram, count for By Unit). */
 	packPriceSgd: number;
 	packSize: number;
@@ -66,6 +70,9 @@ function numberOf(p: any): number | null {
 }
 function selectName(p: any): string {
 	return p?.select?.name ?? "";
+}
+function multiSelectNames(p: any): string[] {
+	return (p?.multi_select ?? []).map((o: any) => o.name).filter(Boolean);
 }
 function formulaString(p: any): string {
 	if (p?.type === "formula" && p.formula?.type === "string") return p.formula.string ?? "";
@@ -118,6 +125,7 @@ export async function readGroceryTargets(): Promise<PlanTarget[]> {
 
 		// Monthly usage from the Used 'N' Plan formula — null when not in the plan.
 		const usage = parseMonthlyUsage(formulaString(p[planKey]));
+		const tags = multiSelectNames(p["Select"]);
 
 		targets.push({
 			ingredientId: row.id,
@@ -125,6 +133,8 @@ export async function readGroceryTargets(): Promise<PlanTarget[]> {
 			search: parseName(name),
 			category,
 			unitType,
+			tags,
+			brandSpecific: tags.some((t) => t.toLowerCase() === "brand specific"),
 			packPriceSgd,
 			packSize,
 			baselinePer100g,

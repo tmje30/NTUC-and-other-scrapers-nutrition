@@ -158,8 +158,25 @@ const PROCESSED_RE = /\b(jam|puree|sauce|cider|vinegar|sorbet|concentrate|essenc
 // Cinnamon→"Fruit Spread … Cinnamon", Ginger→"Dishwashing Liquid - Ginger Tea",
 // White Pepper→"White Pepper Chicken Vermicelli"). Covers snacks/bakery, nut
 // modifiers, prepared dishes, and non-food (cleaning/toiletry) products.
-const GENERIC_FORM_RE =
-	/\b(spread|seasoning|marinade|tea|cake|biscuits?|crackers?|milk|milkshake|yogh?urt|smoothie|cereal|sandwich|chips?|snack|pudding|jelly|candy|ice\s*cream|vermicelli|noodles?|peanut|almond|cashew|hazelnut|cocoa|dishwashing|detergent|cleaner|soap|shampoo|sanitiz\w*|bleach)\b/i;
+// Checked ONE WORD AT A TIME, never as a single alternation. A shared regex would
+// let any item whose own name contains one of these words (a "Milk" item, a
+// "Peanut Butter" item) switch off the guard for ALL the others — which is how
+// "Milk (Low Fat)" once accepted "Low Fat High Protein Milk - Green Tea".
+const GENERIC_FORM_PATTERNS = [
+	"spread", "seasoning", "marinade", "tea", "cake", "biscuits?", "crackers?",
+	"milk", "milkshake", "yogh?urt", "smoothie", "cereal", "sandwich", "chips?",
+	"snack", "pudding", "jelly", "candy", "ice\\s*cream", "vermicelli", "noodles?",
+	"peanut", "almond", "cashew", "hazelnut", "cocoa", "dishwashing", "detergent",
+	"cleaner", "soap", "shampoo", "sanitiz\\w*", "bleach",
+];
+const GENERIC_FORM_RES = GENERIC_FORM_PATTERNS.map((p) => new RegExp(`\\b${p}\\b`, "i"));
+
+// "Adjusted" product markers — a version of the basic product altered along some
+// dietary axis. Asking for the basic range excludes all of these. Deliberately a
+// conservative list: only modifiers that are always a deviation from the plain
+// product (so "powder" is absent — whey protein is legitimately a powder).
+const ADJUSTED_RE =
+	/\b(low[\s-]?fat|lowfat|reduced[\s-]?fat|fat[\s-]?free|non[\s-]?fat|skim|skimmed|full[\s-]?cream|sugar[\s-]?free|no[\s-]?added[\s-]?sugar|reduced[\s-]?sugar|unsweetened|diet|zero|lactose[\s-]?free|decaf\w*|lite)\b/i;
 
 // Beverage-like item? (its own name says it's a drink → drink candidates are fine)
 const BEVERAGE_ITEM_RE = /\b(wine|juice|coffee|tea|drink|soda|kombucha|beer|cider|cordial)\b/i;
@@ -224,8 +241,17 @@ function varietyPenalty(itemName: string, title: string): number {
  */
 export function matchPenalty(target: PlanTarget, product: StoreProduct): number {
 	const title = `${product.name} ${product.brand ?? ""}`;
-	const itemText = `${target.search.searchTerm} ${target.search.mustMatch.join(" ")} ${target.name}`;
+	// NB: built from the parsed parts, never the raw name — so a {private note}
+	// can't leak into a matching decision.
+	const s = target.search;
+	const itemText = `${s.searchTerm} ${s.mustMatch.join(" ")} ${s.properties.join(" ")}`;
 	let mult = 1;
+
+	// "Basic range" (bare name, or "(Normal)") — reject adjusted variants. This is
+	// the general form of the plain-milk rule: plain "Milk" must not match low-fat,
+	// skimmed, lactose-free or sugar-free versions. Only applies when the item
+	// itself named no such variant.
+	if (s.basicRange && !has(ADJUSTED_RE, itemText) && has(ADJUSTED_RE, title)) mult *= 0.2;
 
 	// Wrong variety (colour / cut) — "Onion (white)" ≠ red onion, breast ≠ thigh.
 	mult *= varietyPenalty(target.name, title);
@@ -246,8 +272,14 @@ export function matchPenalty(target: PlanTarget, product: StoreProduct): number 
 	if (has(PROCESSED_RE, title) && !has(PROCESSED_RE, itemText)) mult *= 0.35;
 
 	// General "right word, wrong product" form (snack/bakery/nut-modifier/prepared
-	// dish / non-food) the item didn't ask for.
-	if (has(GENERIC_FORM_RE, title) && !has(GENERIC_FORM_RE, itemText)) mult *= 0.2;
+	// dish / non-food) the item didn't ask for. One penalty is enough — a title
+	// naming several of these is already firmly rejected.
+	for (const re of GENERIC_FORM_RES) {
+		if (has(re, title) && !has(re, itemText)) {
+			mult *= 0.2;
+			break;
+		}
+	}
 
 	// NB: no pack-size guard — bulk/oversized packs are kept on purpose (a big
 	// cheap pack may still be worth it). Correct-product oversized listings (e.g.
@@ -268,25 +300,76 @@ export interface MatchResult {
 	adjusted: number; // score × penalty
 	penalty: number;
 	verdict: Verdict;
+	/** Defining properties / keywords the candidate failed to satisfy. */
+	missing: string[];
+	/** True when the row is Brand Specific and this product is the wrong brand. */
+	wrongBrand: boolean;
 }
 
+/** Are all meaningful tokens of `needle` present in the candidate's tokens? */
+function tokensPresent(needle: string, hayTokens: Set<string>): boolean {
+	const nt = tokens(needle);
+	if (!nt.length) return true; // nothing checkable (e.g. a bare number)
+	for (const t of nt) {
+		if (hayTokens.has(t)) continue;
+		let ok = false;
+		for (const h of hayTokens) {
+			const p = sharedPrefix(t, h);
+			if (p >= 4 && (p === t.length || p === h.length)) {
+				ok = true;
+				break;
+			}
+		}
+		if (!ok) return false;
+	}
+	return true;
+}
+
+/** Demotion applied when a defining property is unmet: enough to bar the deal, */
+/** while leaving a strong name match inside the review band as a recommendation. */
+const REQUIREMENT_FAIL_MULT = 0.6;
+
 /**
- * Score a product against a target. Hard gate first: every must-match keyword
- * (organic / low fat / frozen / …) MUST be present — these are non-negotiable
- * product distinctions, not soft evidence. Then name score × form penalty →
- * accept / review / miss.
+ * Score a product against a target.
+ *
+ * Order matters:
+ *  1. Brand Specific — a wrong-brand product is a hard MISS, never recommended.
+ *  2. Defining properties (from "( )") and must-match keywords — a candidate that
+ *     fails one is barred from ACCEPT, so it can never be published as a deal, but
+ *     a strong name match still lands in REVIEW and is offered as a recommendation
+ *     ("close, but not what you asked for").
+ *  3. Name score × form/variety penalties → accept / review / miss.
  */
 export function evaluate(target: PlanTarget, product: StoreProduct): MatchResult {
+	const s = target.search;
 	const hay = `${product.name} ${product.brand ?? ""}`.toLowerCase();
-	for (const kw of target.search.mustMatch) {
-		if (!hay.includes(kw.toLowerCase())) {
-			return { score: 0, adjusted: 0, penalty: 1, verdict: "miss" };
-		}
+	const hayTokens = new Set(tokens(`${product.name} ${product.brand ?? ""}`));
+
+	// 1. Brand Specific: only the named brand is allowed at all.
+	if (target.brandSpecific && s.brand && !hay.includes(s.brand)) {
+		return { score: 0, adjusted: 0, penalty: 1, verdict: "miss", missing: [], wrongBrand: true };
 	}
-	const raw = score(target.search.searchTerm, product.name + " " + (product.brand ?? ""));
-	const penalty = matchPenalty(target, product);
+
+	// 2. Requirements: defining properties + must-match keywords. A keyword drawn
+	// from a property ("(Low Fat)" → "low fat") would otherwise be reported twice.
+	const missingSet = new Set<string>();
+	for (const prop of s.properties) if (!tokensPresent(prop, hayTokens)) missingSet.add(prop);
+	for (const kw of s.mustMatch) if (!hay.includes(kw)) missingSet.add(kw);
+	const missing = [...missingSet];
+
+	const raw = score(s.searchTerm, product.name + " " + (product.brand ?? ""));
+	let penalty = matchPenalty(target, product);
+
+	// An explicitly excluded property — "(not red)" — is a hard exclusion.
+	for (const neg of s.negatedProperties) if (tokensPresent(neg, hayTokens)) penalty *= 0.2;
+
+	if (missing.length) penalty *= REQUIREMENT_FAIL_MULT;
+
 	const adjusted = raw * penalty;
-	const verdict: Verdict =
+	let verdict: Verdict =
 		adjusted >= ACCEPT_THRESHOLD ? "accept" : adjusted >= REVIEW_THRESHOLD ? "review" : "miss";
-	return { score: raw, adjusted, penalty, verdict };
+	// Belt and braces: an unmet requirement must never reach ACCEPT, whatever the score.
+	if (missing.length && verdict === "accept") verdict = "review";
+
+	return { score: raw, adjusted, penalty, verdict, missing, wrongBrand: false };
 }
