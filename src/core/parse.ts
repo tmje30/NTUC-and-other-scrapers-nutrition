@@ -184,20 +184,35 @@ export interface MonthlyUsage {
 	costSgd: number;
 }
 
+/**
+ * The unit is OPTIONAL. By-Gram and By-Unit rows render it ("40 x / 0.4Pk"),
+ * but By-ml rows omit it entirely ("300 / 0.5Pk") — the formula doesn't emit a
+ * unit for that type. Requiring it silently dropped 7 of 27 plan ingredients
+ * (every liquid: soy sauce, fish sauce, milk, oils, vinegar): they showed up
+ * under "Other items on offer" with no monthly usage, and their cooldowns fell
+ * back to the flat no-usage default. See LEARNINGS 2026-07-29.
+ */
 const MONTHLY_RE =
-	/([\d.]+)\s*(ml|g|x)\s*\/\s*([\d.]+)\s*Pk\s*\|\s*Monthly[^|]*\|\s*([\d.]+)\s*SGD/i;
+	/([\d.]+)\s*(ml|g|x)?\s*\/\s*([\d.]+)\s*Pk\s*\|\s*Monthly[^|]*\|\s*([\d.]+)\s*SGD/i;
 
 /**
  * Parse the monthly line of a "Used 'N' Plan" value. Returns null if the string
  * is empty (ingredient not in this plan) or doesn't match the expected shape.
+ *
+ * `fallbackUnit` supplies the unit when the formula omitted it — pass the one
+ * implied by the row's `Unit type `, since that's the authority on what the
+ * number means.
  */
-export function parseMonthlyUsage(usedPlan: string | null | undefined): MonthlyUsage | null {
+export function parseMonthlyUsage(
+	usedPlan: string | null | undefined,
+	fallbackUnit: UsageUnit = "g",
+): MonthlyUsage | null {
 	if (!usedPlan) return null;
 	const m = usedPlan.match(MONTHLY_RE);
 	if (!m) return null;
 	return {
 		amount: Number(m[1]),
-		unit: m[2].toLowerCase() as UsageUnit,
+		unit: (m[2]?.toLowerCase() as UsageUnit) ?? fallbackUnit,
 		packs: Number(m[3]),
 		costSgd: Number(m[4]),
 	};

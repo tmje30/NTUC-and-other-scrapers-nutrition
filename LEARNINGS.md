@@ -2,6 +2,28 @@
 
 Running log of decisions, gotchas, and non-obvious facts. Newest on top.
 
+## 2026-07-29 — `Used 'N' Plan` omits the unit for By-ml rows
+
+`Soy Sauce (light)` is in Plan 1, yet the page filed it under "Other items on
+offer" with no monthly usage. Its formula reads:
+
+```
+300 / 0.5Pk | Monthly[20] |  1.85 SGD     ← By ml: no unit
+40 x / 0.4Pk | Monthly[20] |  2.5 SGD     ← By Unit: unit present
+```
+
+`MONTHLY_RE` required `(ml|g|x)`, so **every liquid silently failed to parse** —
+7 of the 27 grocery ingredients in Plan 1: soy sauce, fish sauce, sesame oil,
+bran oil, cider vinegar, cooking rice wine, low-fat milk. Consequences were
+quiet rather than loud: no `uses ~X/month` line, wrong page section, no
+monthly-saving sort, and cooldowns falling back to the flat no-usage default
+(the first real add, Rice Wine, got 14 days instead of 73).
+
+The unit is now optional, with the row's `Unit type ` supplying it. Lesson: a
+formula's rendering varies by unit type — never assume one shape from one
+sample. Worth re-running a "parses / fails" count over the whole DB after any
+change to that regex.
+
 ## 2026-07-29 — `repository_dispatch` allows only 10 client_payload properties
 
 ```

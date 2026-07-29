@@ -133,7 +133,10 @@ export async function readGroceryTargets(): Promise<PlanTarget[]> {
 		const baselinePerUnit = unitType === "By Unit" ? packPriceSgd / packSize : null;
 
 		// Monthly usage from the Used 'N' Plan formula — null when not in the plan.
-		const usage = parseMonthlyUsage(formulaString(p[planKey]));
+		// By-ml rows render the monthly line without a unit, so the row's own
+		// `Unit type ` supplies it (see parseMonthlyUsage).
+		const impliedUnit = unitType === "By Unit" ? "x" : unitType === "By ml" ? "ml" : "g";
+		const usage = parseMonthlyUsage(formulaString(p[planKey]), impliedUnit);
 		const tags = multiSelectNames(p["Select"]);
 		const hasTag = (name: string) => tags.some((t) => t.toLowerCase() === name);
 		// "Not in Use ATM" — the user has parked this ingredient; don't search for it.
