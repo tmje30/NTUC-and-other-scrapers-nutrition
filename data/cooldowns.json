@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-29T13:29:56.736Z",
+  "updatedAt": "2026-07-29T13:38:45.970Z",
   "entries": [
     {
       "key": "rice wine",
@@ -13,6 +13,19 @@
       "store": "Sheng Siong",
       "product": "Gourmet Rice Cooking Wine - 16% Alcohol",
       "packSizeG": 640,
+      "monthlyAmount": 0
+    },
+    {
+      "key": "squid ring",
+      "ingredientId": "37469a18-4fe7-8097-9ce4-f73ec48db149",
+      "ingredientName": "Squid Ring(unbreaded)",
+      "addedAt": "2026-07-29T13:38:45.970Z",
+      "until": "2026-08-12T13:38:45.970Z",
+      "days": 14,
+      "basis": "no monthly usage → flat 14 days",
+      "store": "FairPrice",
+      "product": "Catch Seafood Squid Ring 1Kg",
+      "packSizeG": 1000,
       "monthlyAmount": 0
     }
   ]
