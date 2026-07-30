@@ -35,6 +35,44 @@ same footer link again to remove it.
 
 Repeat step 2 once per device or browser you use the page from.
 
+## Setting up a second person (partner sharing the page)
+
+She needs **no GitHub account at all** — one-tap authenticates as your token, so
+she never sees GitHub. Two ways to get the token onto her phone:
+
+1. **Send her a setup link** (easiest). Append the token as a fragment:
+
+   ```
+   https://tmje30.github.io/NTUC-and-other-scrapers-nutrition/#add-token=YOUR_TOKEN
+   ```
+
+   She taps it once. The page stores the token and strips it from the address
+   bar; from then on Add is one press for her too. The fragment is never sent to
+   any server — **but it stays in whatever chat you sent it through**, so treat
+   that message as the secret it is, and delete it afterwards if that bothers you.
+
+2. **She pastes it**, same as you: ⚡ enable one-tap → paste.
+
+**Use a separate token per person** — two fine-grained PATs from your account,
+labelled per phone. Then losing one phone means revoking one token, and the
+other keeps working.
+
+If she'd rather use the two-tap issue path (she'd need her own GitHub account),
+add her login to the **`ADD_EXTRA_LOGINS`** repo variable — comma-separated, no
+spaces, under Settings → Secrets and variables → Actions → Variables. Without
+that, the workflow ignores issues from anyone but the repo owner, and her taps
+would do nothing at all with no error shown.
+
+### Both of you adding at once
+
+Safe. Two adds land as two workflow runs; each rebases and retries its
+`cooldowns.json` push if the other got there first. And if you both tap the same
+card, the second add finds the existing un-ticked row and leaves it alone rather
+than duplicating the line.
+
+There is deliberately **no `concurrency` group** on the workflow — see LEARNINGS
+2026-07-30 for why serialising would have silently dropped adds.
+
 ## What the button says
 
 | state | meaning |

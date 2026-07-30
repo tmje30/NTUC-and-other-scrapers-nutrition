@@ -2,6 +2,23 @@
 
 Running log of decisions, gotchas, and non-obvious facts. Newest on top.
 
+## 2026-07-30 — A `concurrency` group silently DELETES queued work
+
+`add-to-list.yml` originally had `concurrency: { group: add-to-list,
+cancel-in-progress: false }` to stop two runs racing on `cooldowns.json`. That
+setting does not queue indefinitely: when a new run enters the group, GitHub
+**cancels whatever was already pending**. With one person adding, invisible.
+With two people sharing the page, a third tap during a run deletes the second
+person's add — no error, no comment, nothing.
+
+Removed the group. The race it guarded is handled where it belongs, in the
+commit step: push, and on rejection `git pull --rebase --autostash` and retry,
+up to 5 times. Two single-entry appends to a JSON file rebase cleanly.
+
+General rule: `concurrency` is right for *deploys*, where only the newest state
+matters and superseding is the point. It is wrong for *queues of independent
+events*, where every item must be processed.
+
 ## 2026-07-29 — A static page CAN reach GitHub: api.github.com allows CORS
 
 Spent a while assuming one-tap Add required a relay service (Notion Worker or

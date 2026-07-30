@@ -127,6 +127,16 @@ token lives only in that browser's localStorage. Any failure (no token,
 revoked, JS off) falls back to the two-tap issue flow. See
 `docs/one-tap-add.md`.
 
+**Two people share this** (the user + partner: same Telegram chat, same grocery
+List DB, same page link). The partner needs **no GitHub account** — send her
+`…/#add-token=TOKEN` and one tap sets her up (the page stores it and strips the
+fragment). Use a separate PAT per phone so one can be revoked alone. Simultaneous
+adds are safe: the workflow has **no `concurrency` group** on purpose (it would
+cancel pending runs and lose adds — LEARNINGS 2026-07-30) and the cooldown push
+rebases and retries instead. For the two-tap fallback from a non-owner account,
+add the login to the `ADD_EXTRA_LOGINS` repo variable, or the workflow ignores it
+silently.
+
 The `addToGroceryList` webhook in `src/index.ts` does the same relay from a
 Notion Worker. Kept, but **not deployed and not recommended** — it costs the
 Workers billing floor and can't read its own response.

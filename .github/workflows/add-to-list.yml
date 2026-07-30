@@ -12,19 +12,26 @@ on:
   repository_dispatch:
     types: [add-to-list]
 
-# Serialise: two adds at once would race on data/cooldowns.json.
-concurrency:
-  group: add-to-list
-  cancel-in-progress: false
+# NO concurrency group here, deliberately. Serialising looks like the safe
+# choice, but GitHub cancels a PENDING run when a newer one queues in the same
+# group — so with two people adding, a third tap would silently delete the
+# second one's add. The race it was guarding (two runs pushing cooldowns.json)
+# is handled properly instead, by the rebase-and-retry loop in the commit step.
 
 jobs:
   add:
     # The repo is public, so anyone can open an issue. Only the owner's "Add: …"
-    # issues (or an authenticated dispatch) may touch Notion.
+    # issues are honoured, plus any logins listed in the ADD_EXTRA_LOGINS repo
+    # variable (comma-separated, no spaces) — that's how a partner sharing the
+    # page gets to use the two-tap fallback. The commas around both sides stop
+    # "sam" from matching "samantha".
     if: >-
       github.event_name == 'repository_dispatch' ||
       (startsWith(github.event.issue.title, 'Add: ') &&
-       github.event.issue.user.login == github.repository_owner)
+       contains(
+         format(',{0},{1},', github.repository_owner, vars.ADD_EXTRA_LOGINS),
+         format(',{0},', github.event.issue.user.login)
+       ))
     runs-on: ubuntu-latest
     permissions:
       contents: write # commit data/cooldowns.json
@@ -48,15 +55,28 @@ jobs:
           ISSUE_BODY: ${{ github.event.issue.body }}
           ADD_PAYLOAD: ${{ toJSON(github.event.client_payload) }}
 
+      # Two adds landing together both push to main. Rather than serialising the
+      # whole workflow (which loses adds — see above), let them collide and
+      # rebase: the loser replays its one-entry change on top and pushes again.
       - name: Commit the cooldown
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/cooldowns.json
-          git diff --staged --quiet && echo "no cooldown change" && exit 0
+          if git diff --staged --quiet; then
+            echo "no cooldown change"
+            exit 0
+          fi
           git commit -m "cooldown: snooze after adding to the grocery list"
-          git pull --rebase --autostash origin ${{ github.ref_name }}
-          git push
+          for attempt in 1 2 3 4 5; do
+            if git push; then
+              exit 0
+            fi
+            echo "push rejected — rebasing and retrying (attempt $attempt)"
+            git pull --rebase --autostash origin "${{ github.ref_name }}"
+          done
+          echo "::error::could not push the cooldown after 5 attempts"
+          exit 1
 
       - name: Close the request
         if: always() && github.event_name == 'issues'

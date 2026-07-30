@@ -276,6 +276,17 @@ function githubOneTapScript(o: PageOptions): string {
     dispatch(btn);
   });
 
+  // Shared setup link: opening ".../#add-token=XXX" stores the token and strips
+  // it back out of the address bar, so a second person (partner sharing the
+  // page) is set up by tapping one link instead of pasting a token on a phone.
+  // The fragment is never sent to the server — but it DOES persist in whatever
+  // chat you sent it through, so treat such a link as the secret it contains.
+  var shared = location.hash.match(/[#&]add-token=([^&]+)/);
+  if (shared) {
+    localStorage.setItem(KEY, decodeURIComponent(shared[1]));
+    history.replaceState(null, "", location.pathname + location.search);
+  }
+
   toggle = document.getElementById("onetap");
   paint();
 })();
