@@ -20,11 +20,37 @@ function sgtDate(): string {
 	return new Date(Date.now() + 8 * 3600_000).toISOString().slice(0, 10);
 }
 
+/**
+ * Whether this run actually had Sheng Siong prices, and how old they are.
+ *
+ * Reported rather than only logged because a runner that stops working is
+ * otherwise invisible: the scan carries on, the page still lists FairPrice deals,
+ * and nothing says half the shops fell out. That is exactly how a scan failure
+ * went unnoticed for a day.
+ */
+export interface ShengSiongStatus {
+	fresh: boolean;
+	/** Date stamped on the file (SGT), or null when there's no readable file. */
+	date: string | null;
+	/** Whole days between that date and today, null when there's no file. */
+	staleDays: number | null;
+	products: number;
+}
+
+/** Whole days between two YYYY-MM-DD strings. */
+function daysBetween(from: string, to: string): number | null {
+	const a = Date.parse(`${from}T00:00:00Z`);
+	const b = Date.parse(`${to}T00:00:00Z`);
+	if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
+	return Math.round((b - a) / 86_400_000);
+}
+
 class ShengSiongFile implements StoreModule {
 	readonly name = "Sheng Siong";
 	private results: Record<string, StoreProduct[]> = {};
 	private fresh = false;
 	private loaded = false;
+	private fileDate: string | null = null;
 
 	private load(): void {
 		if (this.loaded) return;
@@ -37,6 +63,7 @@ class ShengSiongFile implements StoreModule {
 			return;
 		}
 		const today = sgtDate();
+		this.fileDate = typeof raw?.date === "string" ? raw.date : null;
 		if (raw?.date === today && raw.results && typeof raw.results === "object") {
 			this.results = raw.results;
 			this.fresh = true;
@@ -53,6 +80,17 @@ class ShengSiongFile implements StoreModule {
 		this.load();
 		if (!this.fresh) return [];
 		return this.results[term] ?? [];
+	}
+
+	/** Freshness of the runner's file, for the page and the daily message. */
+	status(): ShengSiongStatus {
+		this.load();
+		return {
+			fresh: this.fresh,
+			date: this.fileDate,
+			staleDays: this.fileDate ? daysBetween(this.fileDate, sgtDate()) : null,
+			products: Object.values(this.results).reduce((s, a) => s + (a?.length ?? 0), 0),
+		};
 	}
 
 	close(): void {

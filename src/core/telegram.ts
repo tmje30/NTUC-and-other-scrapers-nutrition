@@ -94,11 +94,19 @@ export async function sendDeals(deals: Deal[]): Promise<number> {
 	return sent;
 }
 
-/** Single daily message: "N deals today → tap to view", linking to the page. */
-export async function sendSummary(count: number, url: string): Promise<void> {
-	if (count <= 0) return; // nothing to say on a no-deal day
-	const text =
-		`🛒 <b>${count} grocery deal${count === 1 ? "" : "s"}</b> beat your prices today.\n` +
-		`<a href="${url}">Tap to view →</a>`;
-	await sendMessage(text);
+/**
+ * Single daily message: "N deals today → tap to view", linking to the page.
+ *
+ * A `warning` (a shop missing from the scan) is worth a message on its own, even
+ * on a day with no deals: silence is what a broken runner looks like, and the
+ * whole point is that it should stop looking like a quiet day.
+ */
+export async function sendSummary(count: number, url: string, warning?: string): Promise<void> {
+	if (count <= 0 && !warning) return; // nothing to say on an ordinary no-deal day
+	const headline =
+		count > 0
+			? `🛒 <b>${count} grocery deal${count === 1 ? "" : "s"}</b> beat your prices today.`
+			: `🛒 No deals beat your prices today.`;
+	const warn = warning ? `\n⚠️ ${esc(warning)}` : "";
+	await sendMessage(`${headline}${warn}\n<a href="${url}">Tap to view →</a>`);
 }

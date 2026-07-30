@@ -1,7 +1,7 @@
 import { readGroceryTargets, type PlanTarget } from "./notion.js";
 import { fairprice } from "./stores/fairprice.js";
 import { shengsiong } from "./stores/shengsiong.js";
-import { shengsiongFile } from "./stores/shengsiong-file.js";
+import { shengsiongFile, type ShengSiongStatus } from "./stores/shengsiong-file.js";
 import { findDeal, findReview, type Deal, type ReviewMiss } from "./compare.js";
 import { normSynonyms } from "./match.js";
 import { cooldownKey, findCooldown } from "./cooldown.js";
@@ -49,6 +49,11 @@ export interface RunResult {
 	 * defining property wasn't met, so it's never a deal, but it's worth seeing.
 	 */
 	recommendations: ReviewMiss[];
+	/**
+	 * Whether this run had Sheng Siong prices at all. Null when the live module is
+	 * in use (local runs), where the question doesn't arise.
+	 */
+	shengsiong: ShengSiongStatus | null;
 	errors: { target: string; store: string; message: string }[];
 }
 
@@ -189,6 +194,9 @@ export async function runOnce(): Promise<RunResult> {
 		reviews,
 		snoozed,
 		recommendations,
+		// Only meaningful for the file-backed module the cloud uses; the live module
+		// either worked or threw.
+		shengsiong: ss === shengsiongFile ? shengsiongFile.status() : null,
 		errors,
 	};
 }

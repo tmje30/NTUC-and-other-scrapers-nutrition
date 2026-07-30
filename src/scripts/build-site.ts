@@ -18,8 +18,25 @@ const {
 	reviews,
 	recommendations,
 	snoozed,
+	shengsiong,
 	errors,
 } = await runOnce();
+
+/**
+ * A shop missing from today's scan. Says how old the data is rather than just
+ * "missing", because one stale day is a hiccup and four is a runner that has
+ * stopped — and the difference decides whether you go and look at it.
+ */
+const warning = (() => {
+	if (!shengsiong || shengsiong.fresh) return undefined;
+	const age =
+		shengsiong.staleDays == null
+			? "no data has ever arrived"
+			: shengsiong.staleDays === 1
+				? "yesterday's data is the latest"
+				: `the latest data is ${shengsiong.staleDays} days old`;
+	return `Sheng Siong is missing from this scan — ${age}. FairPrice prices only.`;
+})();
 const total = planDeals.length + otherDeals.length;
 console.error(
 	`Plan '${config.activePlanNumber()}': ${targetsConsidered} targets → ${planDeals.length} plan + ${otherDeals.length} other deals` +
@@ -53,14 +70,23 @@ await writeFile(
 		repo: config.repo(),
 		addEndpoint: config.addEndpoint(),
 		snoozed,
+		warning,
 	}),
 	"utf8",
 );
 await writeFile(
 	"public/summary.json",
-	JSON.stringify({ count: total, planCount: planDeals.length, otherCount: otherDeals.length, generatedAt: new Date().toISOString() }),
+	JSON.stringify({
+		count: total,
+		planCount: planDeals.length,
+		otherCount: otherDeals.length,
+		generatedAt: new Date().toISOString(),
+		warning,
+		shengsiong,
+	}),
 	"utf8",
 );
+if (warning) console.error(`Warning: ${warning}`);
 console.error(`Wrote public/index.html (${total} deals) and public/summary.json`);
 
 // Publish the search terms so residential runners (phone/laptop) can fetch them

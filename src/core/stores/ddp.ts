@@ -20,15 +20,26 @@ export class DdpClient {
 	private ready: Promise<void> | null = null;
 	private pending = new Map<string, Pending>();
 	private nextId = 1;
+	/** Incapsula session cookie, when one is needed to get past the WAF. */
+	private cookie: string | null = null;
 
 	constructor(private readonly url: string) {}
+
+	/** Set the cookie sent on the next handshake (see `incapsula.ts`). */
+	setCookie(cookie: string | null): void {
+		this.cookie = cookie;
+	}
 
 	connect(timeoutMs = 20000): Promise<void> {
 		if (this.ready) return this.ready;
 		this.ready = new Promise<void>((resolve, reject) => {
 			const origin = new URL(this.url).origin.replace(/^wss/, "https").replace(/^ws/, "http");
 			const ws = new WebSocket(this.url, {
-				headers: { "User-Agent": UA, Origin: origin },
+				headers: {
+					"User-Agent": UA,
+					Origin: origin,
+					...(this.cookie ? { Cookie: this.cookie } : {}),
+				},
 			});
 			this.ws = ws;
 			const t = setTimeout(() => reject(new Error("DDP connect timeout")), timeoutMs);
@@ -69,6 +80,11 @@ export class DdpClient {
 			});
 		});
 		return this.ready;
+	}
+
+	/** Drop the socket so the next `connect()` dials again (e.g. with a new cookie). */
+	reset(): void {
+		this.close();
 	}
 
 	async call<T = any>(method: string, params: unknown[], timeoutMs = 20000): Promise<T> {

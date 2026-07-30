@@ -23,6 +23,12 @@ export interface PageOptions {
 	 * them the item still lists, just without its buttons.
 	 */
 	snoozed?: { name: string; until: string; key?: string; ingredientId?: string }[];
+	/**
+	 * Set when a shop is missing from this scan — "Sheng Siong data is 1 day old".
+	 * Without it, a runner that has quietly stopped working looks exactly like a day
+	 * with no Sheng Siong bargains, and the page invites you to trust half a search.
+	 */
+	warning?: string;
 }
 
 function esc(s: string): string {
@@ -692,6 +698,10 @@ export function renderDealsPage(
   .store { color: #1a1d21; font-weight: 600; }
   .sale { color: #b42318; font-weight: 600; }
   .empty { text-align: center; color: #6b7280; padding: 40px 0; }
+  /* A shop missing from the scan. Loud enough to notice, quiet enough not to
+     look like an error page — the deals below are still real. */
+  .warn { color: #92400e; background: #fffaeb; border: 1px solid #fedf89; border-radius: 10px;
+    font-size: .85rem; margin: 0 2px 14px; padding: 8px 12px; }
   .card.rec { border-style: dashed; background: #fcfcfd; }
   /* Percentage on top, "closest" beneath it, both hugging the right edge. */
   .pctcol { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
@@ -714,6 +724,7 @@ export function renderDealsPage(
     .card.rec { background: #141619; }
     .tag { border-color: #2c323a; }
     .why { color: #fbbf24; }
+    .warn { color: #fbbf24; background: #241a06; border-color: #4a3410; }
     .add { color: #6ee7b7; background: #06251a; border-color: #0b4a34; }
     .add[data-state="done"] { color: #04140e; background: #6ee7b7; border-color: #6ee7b7; }
     .add[data-state="failed"], .act[data-state="failed"] { color: #fda29b; background: #2b1512; border-color: #5c2420; }
@@ -727,6 +738,7 @@ export function renderDealsPage(
   <div class="wrap">
     <h1>🛒 Grocery deals</h1>
     <p class="sub">${date} · ${total} deal${total === 1 ? "" : "s"} beating your prices</p>
+    ${o.warning ? `<p class="warn">⚠️ ${esc(o.warning)}</p>` : ""}
     ${cards}
     ${
 			o.addEndpoint

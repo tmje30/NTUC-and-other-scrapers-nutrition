@@ -6,3 +6,6 @@ public/
 node_modules/
 workers.*.json
 workers.json
+
+# Browser session cookies minted to get past a WAF (see stores/incapsula.ts).
+.sessions/

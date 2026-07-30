@@ -63,6 +63,23 @@ All notable changes to this project are documented here. Format based on
 - Optional one-tap path, built but **not deployed**: `addToGroceryList` webhook
   in `src/index.ts` relays a tap to the same workflow via `repository_dispatch`.
   See `docs/one-tap-add.md` for the CORS trade-off and the setup.
+- **Incapsula recovery for the Sheng Siong runner.** From 2026-07-30 the site
+  answered every plain-HTTP request — homepage included — with a JS challenge, so
+  all 62 searches failed and the scan went FairPrice-only. Measured in order:
+  browser-like headers don't clear it, replaying the challenge's own cookies
+  doesn't (the JS must run), `--headless=new` doesn't (headless is detected), a
+  headed Chrome does. `src/core/stores/incapsula.ts` therefore launches the
+  installed Chrome off-screen with a throwaway profile, lets it solve the
+  challenge as any visit would, and caches the session cookie to
+  `.sessions/shengsiong.json` (gitignored). The cookie is tried first and Chrome
+  only appears once it stops working, so an ordinary run launches no browser.
+  Uses `ws` + CDP — no Playwright, no new dependency.
+- **A missing shop is now visible.** `RunResult.shengsiong` reports freshness;
+  the page shows a warning banner and the daily Telegram message says so —
+  sending even on a zero-deal day, since silence is exactly what a broken runner
+  looks like. `laptop-run.cmd` (and the live wrapper) now return the real exit
+  code: Task Scheduler had logged "Last Run Result: 0" on a run where everything
+  failed, which is why the outage went unnoticed for a day.
 - **Counted items are compared too** (`By Unit` — eggs, slices, tea bags), in
   whichever dimension the shop published. Per piece where it gives a count:
   FairPrice lists eggs as 30s and 10s, and its cheapest carton per egg carries no

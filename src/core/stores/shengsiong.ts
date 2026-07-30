@@ -1,6 +1,7 @@
 import type { StoreModule, StoreProduct } from "./types.js";
 import { parseWeight, parseUnitCount } from "./weight.js";
 import { DdpClient } from "./ddp.js";
+import { cachedCookie, looksBlocked, mintCookie } from "./incapsula.js";
 
 /**
  * Sheng Siong store module (store #2). Uses the Meteor DDP method
@@ -66,8 +67,45 @@ function mapProduct(p: any): StoreProduct {
 export class ShengSiong implements StoreModule {
 	readonly name = "Sheng Siong";
 	private client = new DdpClient(WS_URL);
+	private cookieLoaded = false;
+	private minting: Promise<void> | null = null;
+
+	/**
+	 * Make sure the connection is up, minting an Incapsula cookie if the WAF turns
+	 * us away. The cached cookie is tried first, so an ordinary run launches no
+	 * browser: Chrome only comes out when the cookie has actually stopped working.
+	 *
+	 * Concurrent searches share one mint (`this.minting`) — 70 searches must not
+	 * each open a browser.
+	 */
+	private async ensureConnected(): Promise<void> {
+		if (!this.cookieLoaded) {
+			this.cookieLoaded = true;
+			this.client.setCookie(cachedCookie());
+		}
+		try {
+			await this.client.connect();
+			return;
+		} catch (e) {
+			if (!looksBlocked(e)) throw e;
+		}
+		// Blocked: one shared attempt to earn a new cookie, then reconnect.
+		this.minting ??= (async () => {
+			console.error("Sheng Siong: blocked by Incapsula — minting a session cookie.");
+			const cookie = await mintCookie();
+			this.client.reset();
+			this.client.setCookie(cookie);
+		})();
+		try {
+			await this.minting;
+		} finally {
+			this.minting = null;
+		}
+		await this.client.connect();
+	}
 
 	async search(term: string): Promise<StoreProduct[]> {
+		await this.ensureConnected();
 		const result = await this.client.call<any[]>("Products.getByAllSlugs", [
 			filters(term),
 			MISC_FILTERS,
