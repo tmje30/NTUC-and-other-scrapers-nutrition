@@ -252,10 +252,12 @@ function githubOneTapScript(o: PageOptions): string {
           throw new Error("auth");
         }
         if (!r.ok) throw new Error(r.status);
-        // 204 = GitHub accepted the job. The Notion row lands ~20s later, so
-        // "queued" is the honest word; claiming "added" would be a guess.
+        // 204 = GitHub accepted the job; the row appears ~15s later. This is the
+        // FINAL state — nothing polls afterwards — so the label has to read as
+        // finished. "queued" did not: it looks like a pending state, and you sit
+        // there waiting for it to change into something else.
         btn.dataset.state = "done";
-        btn.textContent = "queued";
+        btn.textContent = "✓ sent";
       })
       .catch(function (e) {
         btn.dataset.state = "failed";

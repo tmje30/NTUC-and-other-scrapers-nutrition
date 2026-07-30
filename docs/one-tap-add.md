@@ -78,12 +78,19 @@ There is deliberately **no `concurrency` group** on the workflow — see LEARNIN
 | state | meaning |
 |---|---|
 | `…` | request in flight |
-| `queued` | GitHub accepted the job (HTTP 204). The Notion row lands ~20s later |
+| `✓ sent` | **done** — GitHub accepted the job (HTTP 204). The row appears in Notion ~15s later |
 | `retry` | GitHub refused; the button restores itself after 4s |
 | `token?` | 401/403 — the saved token is bad or revoked, so it has been **forgotten**. The next tap opens the issue instead |
 
-`queued`, not `added`: the dispatch is accepted before the workflow runs, so
-claiming the row exists would be a guess.
+`✓ sent` is the final state; nothing polls afterwards, so the button never
+changes again. It says "sent" rather than "added" because the dispatch is
+accepted before the workflow runs — claiming the row exists would be a guess.
+(This label was originally `queued`, which read as a pending state and left you
+waiting for an update that was never coming.)
+
+Where the ~15s goes, measured: ~4s for GitHub to allocate a runner, ~5s of
+checkout/setup/`npm ci`, **~2s of actual Notion work**, then teardown. It's the
+cost of having no always-on server; it isn't Notion being slow.
 
 ## Trade-offs, stated plainly
 
