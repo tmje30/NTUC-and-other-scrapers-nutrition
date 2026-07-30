@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-30T02:02:14.797Z",
+  "updatedAt": "2026-07-30T03:09:00.698Z",
   "entries": [
     {
       "key": "squid ring",
@@ -27,19 +27,6 @@
       "product": "Seara Frozen Chicken Thigh",
       "packSizeG": 2000,
       "monthlyAmount": 0
-    },
-    {
-      "key": "rice wine",
-      "ingredientId": "34c69a18-4fe7-8012-9dcf-cce78ff534fc",
-      "ingredientName": "Rice Wine(Cooking)",
-      "addedAt": "2026-07-29T13:29:56.736Z",
-      "until": "2026-10-10T13:29:56.736Z",
-      "days": 73,
-      "basis": "640ml ÷ 200ml/month = 3.20 months × 0.75 = 2.40 months",
-      "store": "Sheng Siong",
-      "product": "Gourmet Rice Cooking Wine - 16% Alcohol",
-      "packSizeG": 640,
-      "monthlyAmount": 200
     }
   ]
 }
