@@ -6,9 +6,13 @@ on:
     - cron: "0 2 * * *"
   workflow_dispatch: # allow manual runs from the Actions tab
 
-# Needed for the GitHub Pages deploy.
+# Needed for the GitHub Pages deploy. `actions: read` is what deploy-pages needs
+# to resolve the uploaded artifact by id (documented from its v4); the run has
+# been getting away without it, so it's added here before a future version
+# starts enforcing what the docs already ask for.
 permissions:
   contents: read
+  actions: read
   pages: write
   id-token: write
 
@@ -24,9 +28,9 @@ jobs:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: "npm"
@@ -39,15 +43,15 @@ jobs:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           ACTIVE_PLAN_NUMBER: ${{ vars.ACTIVE_PLAN_NUMBER || '1' }}
 
-      - uses: actions/configure-pages@v5
+      - uses: actions/configure-pages@v6
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: public
 
       - name: Deploy to GitHub Pages
         id: deploy
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 
       - name: Send Telegram summary (links to the freshly deployed page)
         run: npm run notify
