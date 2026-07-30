@@ -18,6 +18,7 @@
 		"build-site": "tsx src/scripts/build-site.ts",
 		"notify": "tsx src/scripts/notify.ts",
 		"add": "tsx src/scripts/add-to-list.ts",
+		"item-action": "tsx src/scripts/item-action.ts",
 		"push-ss": "tsx src/scripts/push-shengsiong.ts"
 	},
 	"engines": {

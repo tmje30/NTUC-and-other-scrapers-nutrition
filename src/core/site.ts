@@ -1,6 +1,10 @@
 import type { Deal, ReviewMiss } from "./compare.js";
 import { cooldownKey } from "./cooldown.js";
 import { groceryRowTitle, type AddPayload } from "./grocery-list.js";
+import type { ActionPayload } from "./item-actions.js";
+import type { PlanTarget } from "./notion.js";
+import type { StoreProduct } from "./stores/types.js";
+import { parseWeight } from "./stores/weight.js";
 
 /**
  * Renders the daily deals as a self-contained HTML page (deployed to GitHub
@@ -13,8 +17,12 @@ export interface PageOptions {
 	repo: string;
 	/** One-tap POST endpoint. Empty ⇒ fall back to the GitHub issue link. */
 	addEndpoint?: string;
-	/** Items being skipped because they were recently bought. */
-	snoozed?: { name: string; until: string }[];
+	/**
+	 * Items being skipped because they were recently bought. `key` (the cooldown
+	 * being served) and `ingredientId` are what the Reset button needs; without
+	 * them the item still lists, just without its buttons.
+	 */
+	snoozed?: { name: string; until: string; key?: string; ingredientId?: string }[];
 }
 
 function esc(s: string): string {
@@ -37,23 +45,46 @@ function amount(n: number, v: boolean): string {
 	return n >= 1000 ? `${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 1)} ${big}` : `${Math.round(n)} ${small}`;
 }
 
-/** What the Add button ships to the workflow: enough to write the row AND set the cooldown. */
-function addPayload(d: Deal): AddPayload {
+/**
+ * The `[500g]` bracket — omitted when the name it follows already states that
+ * size, since "Captain Oats Instant 500g [500g]" is pure noise. Most store names
+ * carry their pack size, so this is the common case, not the exception.
+ *
+ * Only an exact match is suppressed. A name quoting some other number (a
+ * multipack's per-unit size, say) keeps its bracket, because the bracket is the
+ * size we actually priced against and the name isn't.
+ */
+function packTag(name: string, grams: number | null | undefined, volumetric: boolean): string {
+	if (!grams || grams <= 0) return "";
+	const inName = parseWeight(name)?.grams;
+	if (inName != null && Math.abs(inName - grams) < 1) return "";
+	return ` <span class="pack">[${packLabel(grams, volumetric)}]</span>`;
+}
+
+/**
+ * What the Add button ships to the workflow: enough to write the row AND set the
+ * cooldown.
+ *
+ * `ingredient` becomes the grocery-list row title, so it's a parameter rather
+ * than always `target.name`: a close match needs to say which product it actually
+ * is (see `recCard`), while a confident deal is simply the ingredient.
+ */
+function addPayload(t: PlanTarget, p: StoreProduct, ingredient = t.name): AddPayload {
 	return {
 		v: 1,
-		ingredientId: d.target.ingredientId,
-		ingredient: d.target.name,
-		key: cooldownKey(d.target.search.searchTerm),
-		store: d.product.store,
-		product: d.product.name,
-		priceSgd: d.product.priceSgd,
-		myPriceSgd: d.target.packPriceSgd,
+		ingredientId: t.ingredientId,
+		ingredient,
+		key: cooldownKey(t.search.searchTerm),
+		store: p.store,
+		product: p.name,
+		priceSgd: p.priceSgd,
+		myPriceSgd: t.packPriceSgd,
 		// The pack actually being bought decides how long the cooldown runs; fall
 		// back to the user's usual pack when the store didn't publish a size.
-		packSizeG: d.product.packWeightG ?? (d.target.packSize || null),
-		volumetric: d.product.volumetric,
-		monthlyAmount: d.target.monthlyAmount,
-		url: d.product.url,
+		packSizeG: p.packWeightG ?? (t.packSize || null),
+		volumetric: p.volumetric,
+		monthlyAmount: t.monthlyAmount,
+		url: p.url,
 	};
 }
 
@@ -64,18 +95,17 @@ function addPayload(d: Deal): AddPayload {
  * with JavaScript off, in any browser, forever: tap Add → tap Submit → the
  * `add-to-list` workflow writes the Notion row and the cooldown.
  *
- * `data-add` carries the same payload as the issue body, which is what lets the
- * one-tap script (see `addScript`) intercept the click and skip the GitHub
+ * `data-payload` carries the same payload as the issue body, which is what lets
+ * the one-tap script (see `addScript`) intercept the click and skip the GitHub
  * screen entirely. The link is the floor; one-tap is an upgrade layered on top,
  * so a missing or revoked token degrades to two taps rather than to nothing.
  */
-function addButton(d: Deal, o: PageOptions): string {
-	const p = addPayload(d);
+function addButton(p: AddPayload, o: PageOptions): string {
 	const label = groceryRowTitle(p.store, p.ingredient);
 	const payload = esc(JSON.stringify(p));
 
 	if (o.addEndpoint) {
-		return `<button class="add" type="button" data-add="${payload}"
+		return `<button class="add" type="button" data-payload="${payload}"
         aria-label="Add ${esc(label)} to the grocery list">Add</button>`;
 	}
 
@@ -92,8 +122,93 @@ function addButton(d: Deal, o: PageOptions): string {
 		`&body=${encodeURIComponent(body)}`;
 
 	return `<a class="add" href="${esc(href)}" target="_blank" rel="noopener"
-        data-add="${payload}"
+        data-payload="${payload}"
         aria-label="Add ${esc(label)} to the grocery list">Add</a>`;
+}
+
+/**
+ * The small buttons on a snoozed item. Always the GitHub-issue link, never the
+ * relay `addEndpoint`: that endpoint only knows how to add: an item action sent
+ * there would be silently dropped, and a button that lies is worse than a button
+ * that takes two taps.
+ *
+ * `data-event` routes the one-tap dispatch to the `item-actions` workflow instead
+ * of `add-to-list`; `data-done` is the label to settle on, since "✓ sent" says
+ * nothing useful here.
+ */
+function actionButton(
+	p: ActionPayload,
+	o: PageOptions,
+	ui: { label: string; done: string; aria: string; prose: string; confirm?: string },
+): string {
+	const body =
+		`${ui.prose}\n\n` +
+		"```json\n" +
+		`${JSON.stringify(p, null, 2)}\n` +
+		"```\n";
+	// "Item: " is what the workflow's allowlist gate matches on — a fixed prefix
+	// rather than the button's label, so renaming a button can't quietly stop the
+	// two-tap path from being honoured.
+	const href =
+		`https://github.com/${o.repo}/issues/new` +
+		`?title=${encodeURIComponent(`Item: ${ui.label} — ${p.name}`)}` +
+		`&labels=grocery-add` +
+		`&body=${encodeURIComponent(body)}`;
+
+	return `<a class="act" href="${esc(href)}" target="_blank" rel="noopener"
+        data-payload="${esc(JSON.stringify(p))}" data-event="item-action"
+        data-done="${esc(ui.done)}"${ui.confirm ? ` data-confirm="${esc(ui.confirm)}"` : ""}
+        aria-label="${esc(ui.aria)}">${esc(ui.label)}</a>`;
+}
+
+/** One line in "Recently bought · not searched": the item, when it's back, its buttons. */
+function snoozeRow(s: NonNullable<PageOptions["snoozed"]>[number], o: PageOptions): string {
+	const back = new Date(s.until).toLocaleDateString("en-SG", {
+		day: "numeric",
+		month: "short",
+		timeZone: "Asia/Singapore",
+	});
+
+	// No key means nothing can be acted on — list the item plainly rather than
+	// offering buttons that would post an unusable payload. "Not in use" also
+	// needs the ingredient row itself, so it's gated on the id as well.
+	const id = s.ingredientId ?? "";
+	const reset = s.key
+		? actionButton({ v: 1, action: "reset", key: s.key, ingredientId: id, name: s.name }, o, {
+				label: "Reset",
+				done: "✓ reset",
+				aria: `Reset ${s.name} — search for it again`,
+				prose:
+					`Resetting **${s.name}** from the deals page: clear its cooldown so the ` +
+					`next daily scan searches for it again.`,
+			})
+		: "";
+	// Confirmed, unlike Reset: this one edits the Notion inventory, and undoing it
+	// means finding the row and removing the tag by hand.
+	const park =
+		s.key && id
+			? actionButton({ v: 1, action: "park", key: s.key, ingredientId: id, name: s.name }, o, {
+					label: "Not in use",
+					done: "✓ tagged",
+					aria: `Tag ${s.name} as not in use — stop searching for it`,
+					// One line, deliberately: a newline here would sit raw inside an HTML
+					// attribute, and the dialog reads fine without it.
+					confirm:
+						`Tag "${s.name}" as Not in Use ATM? ` +
+						`It stops being searched until you remove the tag in Notion.`,
+					prose:
+						`Parking **${s.name}** from the deals page: tag the ingredient ` +
+						`\`Not in Use ATM\` so it is no longer searched, and clear its cooldown.`,
+				})
+			: "";
+	const buttons = reset + park;
+
+	return `
+    <div class="snooze">
+      <span class="sname">${esc(s.name)}</span>
+      <span class="pack">back ${esc(back)}</span>
+      <span class="acts">${buttons}</span>
+    </div>`;
 }
 
 function dealCard(d: Deal, o: PageOptions): string {
@@ -102,9 +217,9 @@ function dealCard(d: Deal, o: PageOptions): string {
 	const u = bigUnit(p.volumetric); // "kg" (or "L" for liquids)
 	const small = smallUnit(p.volumetric); // "100g" (or "100ml")
 
-	// Pack-size brackets — same style, one per line.
-	const itemPack = t.packSize > 0 ? ` <span class="pack">[${packLabel(t.packSize, p.volumetric)}]</span>` : "";
-	const prodPack = p.packWeightG ? ` <span class="pack">[${packLabel(p.packWeightG, p.volumetric)}]</span>` : "";
+	// Pack-size brackets — same style, one per line, dropped where the name already says it.
+	const itemPack = packTag(t.name, t.packSize, p.volumetric);
+	const prodPack = packTag(p.name, p.packWeightG, p.volumetric);
 
 	// Prices — build each piece once, then arrange them in the rows below.
 	const myPrice = `$${t.packPriceSgd.toFixed(2)}`; // what you pay for your own pack
@@ -128,7 +243,7 @@ function dealCard(d: Deal, o: PageOptions): string {
 	// in an <a> is both invalid and untappable without swallowing the link.
 	return `
     <div class="card">
-      ${addButton(d, o)}
+      ${addButton(addPayload(t, p), o)}
       <a class="body" href="${esc(p.url)}" target="_blank" rel="noopener">
         <!-- Row 1: your item [pack] + the price you pay (yellow), with the % saving -->
         <div class="row1">
@@ -146,33 +261,63 @@ function dealCard(d: Deal, o: PageOptions): string {
     </div>`;
 }
 
+/** Is this near-miss actually cheaper per 100 than the item's own baseline? */
+function recIsCheaper(r: ReviewMiss): boolean {
+	return (
+		r.productPer100g != null &&
+		r.baselinePer100g != null &&
+		r.baselinePer100g > 0 &&
+		r.productPer100g < r.baselinePer100g
+	);
+}
+
 /**
- * A close-but-not-exact match. Visually distinct from a deal card (dashed border,
- * no green saving badge) and states exactly which defining property it failed, so
- * a recommendation can never be mistaken for the thing you actually asked for.
+ * A close-but-not-exact match. Laid out exactly like a deal card — same rows in
+ * the same order, same Add button, same green saving badge — so the two read as
+ * one list and nothing has to be re-learned. Only three things mark it out: the
+ * dashed border, the "closest" label under the percentage, and the line naming
+ * the defining property it failed.
+ *
+ * Only ever called with a cheaper match (see `recIsCheaper`), so the percentage
+ * is always a saving.
  */
-function recCard(r: ReviewMiss): string {
+function recCard(r: ReviewMiss, o: PageOptions): string {
+	const t = r.target;
 	const p = r.product;
 	const u = bigUnit(p.volumetric);
-	const prodPack = p.packWeightG ? ` <span class="pack">[${packLabel(p.packWeightG, p.volumetric)}]</span>` : "";
-	const prodBig = r.productPer100g != null ? `$${(r.productPer100g * 10).toFixed(2)}/${u}` : "";
-	const baseBig = r.baselinePer100g != null ? `$${(r.baselinePer100g * 10).toFixed(2)}/${u}` : "";
+
+	const itemPack = packTag(t.name, t.packSize, p.volumetric);
+	const prodPack = packTag(p.name, p.packWeightG, p.volumetric);
+
+	const myPrice = t.packPriceSgd > 0 ? ` <span class="mine">Price $${t.packPriceSgd.toFixed(2)}</span>` : "";
+	const prodBig = `$${(r.productPer100g! * 10).toFixed(2)}/${u}`;
+	const baseBig = `$${(r.baselinePer100g! * 10).toFixed(2)}/${u}`;
+	const savingPct = ((r.baselinePer100g! - r.productPer100g!) / r.baselinePer100g!) * 100;
+
+	const usage =
+		t.unitType === "By Unit" ? `${t.monthlyAmount} units` : amount(t.monthlyAmount, p.volumetric);
+
 	const why = r.missing.length
 		? `<div class="why">not <b>${esc(r.missing.join(", "))}</b> — check before buying</div>`
 		: `<div class="why">close match — check before buying</div>`;
 
-	// No Add button here on purpose: a recommendation is explicitly NOT the item
-	// you asked for, so one tap must never put it on the list — and, worse, start
-	// a cooldown that hides the real item.
+	// The row title names the product, not just the ingredient: this is explicitly
+	// NOT the thing you asked for, so a bare "[NTUC] Organic Rolled Oats" would
+	// send you hunting at the shop for something the store doesn't stock at that
+	// price. Adding it still snoozes the ingredient — you came home with oats.
+	const payload = addPayload(t, p, `${t.name} ≈ ${p.name}`);
+
 	return `
     <div class="card rec">
+      ${addButton(payload, o)}
       <a class="body" href="${esc(p.url)}" target="_blank" rel="noopener">
         <div class="row1">
-          <span class="name">${esc(r.target.name)}</span>
-          <span class="tag">closest</span>
+          <span class="name">${esc(t.name)}${itemPack}${myPrice}</span>
+          <span class="pctcol"><span class="pct">−${savingPct.toFixed(0)}%</span><span class="tag">closest</span></span>
         </div>
         <div class="meta"><span class="store">${esc(p.store)}</span> · ${esc(p.name)}${prodPack} <span class="prodprice">$${p.priceSgd.toFixed(2)}</span></div>
         <div class="price"><b>${prodBig}</b> <span class="was">vs ${baseBig}</span></div>
+        ${t.inActivePlan ? `<div class="usage">uses ~${usage}/month</div>` : ""}
         ${why}
       </a>
     </div>`;
@@ -240,8 +385,8 @@ function githubOneTapScript(o: PageOptions): string {
       },
       // Nested: GitHub rejects a client_payload with over 10 top-level keys.
       body: JSON.stringify({
-        event_type: "add-to-list",
-        client_payload: { payload: JSON.parse(btn.dataset.add) }
+        event_type: btn.dataset.event || "add-to-list",
+        client_payload: { payload: JSON.parse(btn.dataset.payload) }
       })
     })
       .then(function (r) {
@@ -257,7 +402,7 @@ function githubOneTapScript(o: PageOptions): string {
         // finished. "queued" did not: it looks like a pending state, and you sit
         // there waiting for it to change into something else.
         btn.dataset.state = "done";
-        btn.textContent = "✓ sent";
+        btn.textContent = btn.dataset.done || "✓ sent";
       })
       .catch(function (e) {
         btn.dataset.state = "failed";
@@ -270,10 +415,18 @@ function githubOneTapScript(o: PageOptions): string {
     if (!ev.target.closest) return;
     if (ev.target.closest("#onetap")) { ev.preventDefault(); configure(); return; }
 
-    var btn = ev.target.closest(".add[data-add]");
+    // Every button on the page carries its payload the same way — Add, and the
+    // Reset/park buttons on a snoozed item. data-event picks the workflow.
+    var btn = ev.target.closest("[data-payload]");
     if (!btn || btn.dataset.state === "busy" || btn.dataset.state === "done") return;
     // No token? Do nothing and let the link open the pre-filled issue.
     if (!token()) return;
+    // Only the destructive buttons set data-confirm. Cancelling must not fall
+    // through to the link, or "no" would open the issue form instead.
+    if (btn.dataset.confirm && !confirm(btn.dataset.confirm)) {
+      ev.preventDefault();
+      return;
+    }
     ev.preventDefault();
     dispatch(btn);
   });
@@ -331,7 +484,8 @@ function addScript(o: PageOptions): string {
   }
 
   document.addEventListener("click", function (ev) {
-    var btn = ev.target.closest ? ev.target.closest(".add[data-add]") : null;
+    // Relay path: adds only. The item-action buttons keep their issue links.
+    var btn = ev.target.closest ? ev.target.closest(".add[data-payload]") : null;
     if (!btn || btn.dataset.state === "busy" || btn.dataset.state === "done") return;
     ev.preventDefault();
 
@@ -339,7 +493,7 @@ function addScript(o: PageOptions): string {
     if (!t) return;
 
     var label = btn.textContent;
-    var body = JSON.parse(btn.dataset.add);
+    var body = JSON.parse(btn.dataset.payload);
     body.token = t;
 
     btn.dataset.state = "busy";
@@ -416,30 +570,21 @@ export function renderDealsPage(
 		? `<h2 class="section">Other items on offer</h2>` + otherRest.map(card).join("")
 		: "";
 	// Recommendations last: not what you asked for, so they must never sit above a
-	// real deal or be mistaken for one.
-	const recSection = recommendations.length
+	// real deal or be mistaken for one. A near-miss that isn't cheaper is worth
+	// nothing here — it's neither the right product NOR a saving — so it's dropped
+	// rather than shown with a badge pointing the wrong way. (`runOnce` already
+	// filters on this; enforced here too so any caller gets the same page.)
+	const recs = recommendations.filter(recIsCheaper);
+	const recSection = recs.length
 		? `<h2 class="section">Close matches · not exactly what you asked for</h2>` +
-			recommendations.map(recCard).join("")
+			recs.map((r) => recCard(r, o)).join("")
 		: "";
 	// Items you've just bought aren't searched at all, so they'd otherwise vanish
 	// with no explanation. Say so, and say when each one comes back.
 	const snoozed = o.snoozed ?? [];
 	const snoozeSection = snoozed.length
 		? `<h2 class="section">Recently bought · not searched</h2>` +
-			`<p class="empty-sm">` +
-			snoozed
-				.map(
-					(s) =>
-						`${esc(s.name)} <span class="pack">back ${esc(
-							new Date(s.until).toLocaleDateString("en-SG", {
-								day: "numeric",
-								month: "short",
-								timeZone: "Asia/Singapore",
-							}),
-						)}</span>`,
-				)
-				.join(" · ") +
-			`</p>`
+			snoozed.map((s) => snoozeRow(s, o)).join("")
 		: "";
 
 	const cards = saleSection + planSection + otherSection + recSection + snoozeSection;
@@ -475,9 +620,21 @@ export function renderDealsPage(
     color: #067647; background: #ecfdf3; border: 1px solid #a6f4c5; border-radius: 9px;
     -webkit-tap-highlight-color: transparent; transition: transform .05s ease; }
   .add:active { transform: scale(.94); }
-  .add[data-state="busy"] { opacity: .6; }
+  .add[data-state="busy"], .act[data-state="busy"] { opacity: .6; }
   .add[data-state="done"] { color: #fff; background: #067647; border-color: #067647; }
-  .add[data-state="failed"] { color: #b42318; background: #fef3f2; border-color: #fecdca; }
+  .add[data-state="failed"], .act[data-state="failed"] { color: #b42318; background: #fef3f2; border-color: #fecdca; }
+  /* Recently-bought rows: quieter than a card, but the buttons still need a
+     thumb-sized target, so the row is taller than the old one-line paragraph. */
+  .snooze { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 5px 2px; }
+  .sname { font-weight: 600; font-size: .95rem; }
+  .acts { margin-left: auto; display: flex; gap: 6px; }
+  .act { display: inline-flex; align-items: center; justify-content: center; min-height: 32px;
+    padding: 0 10px; font: inherit; font-size: .78rem; font-weight: 600; text-decoration: none;
+    cursor: pointer; color: #4b5563; background: #f3f4f6; border: 1px solid #e5e7eb;
+    border-radius: 8px; white-space: nowrap; -webkit-tap-highlight-color: transparent;
+    transition: transform .05s ease; }
+  .act:active { transform: scale(.94); }
+  .act[data-state="done"] { color: #067647; background: #ecfdf3; border-color: #a6f4c5; }
   .row1 { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
   .name { font-weight: 650; font-size: 1.05rem; }
   .pack { color: #6b7280; font-weight: 500; font-size: .9rem; }
@@ -494,6 +651,8 @@ export function renderDealsPage(
   .sale { color: #b42318; font-weight: 600; }
   .empty { text-align: center; color: #6b7280; padding: 40px 0; }
   .card.rec { border-style: dashed; background: #fcfcfd; }
+  /* Percentage on top, "closest" beneath it, both hugging the right edge. */
+  .pctcol { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
   .tag { color: #6b7280; font-size: .72rem; text-transform: uppercase; letter-spacing: .04em;
     border: 1px solid #e5e7eb; border-radius: 8px; padding: 1px 7px; white-space: nowrap; }
   .why { color: #92400e; font-size: .82rem; margin-top: 4px; }
@@ -515,7 +674,9 @@ export function renderDealsPage(
     .why { color: #fbbf24; }
     .add { color: #6ee7b7; background: #06251a; border-color: #0b4a34; }
     .add[data-state="done"] { color: #04140e; background: #6ee7b7; border-color: #6ee7b7; }
-    .add[data-state="failed"] { color: #fda29b; background: #2b1512; border-color: #5c2420; }
+    .add[data-state="failed"], .act[data-state="failed"] { color: #fda29b; background: #2b1512; border-color: #5c2420; }
+    .act { color: #cbd2dc; background: #1c2026; border-color: #2c323a; }
+    .act[data-state="done"] { color: #6ee7b7; background: #06251a; border-color: #0b4a34; }
     .foot a { color: #6b7280; }
   }
 </style>

@@ -63,6 +63,17 @@ All notable changes to this project are documented here. Format based on
 - Optional one-tap path, built but **not deployed**: `addToGroceryList` webhook
   in `src/index.ts` relays a tap to the same workflow via `repository_dispatch`.
   See `docs/one-tap-add.md` for the CORS trade-off and the setup.
+- **Item actions** — two buttons on each row of "Recently bought · not
+  searched". *Reset* clears the item's cooldown so the next daily run searches
+  it again. *Not in use* tags the Notion ingredient `Not in Use ATM` (appended
+  to its existing tags, never assigned over them) and clears the cooldown, so a
+  parked item leaves the page too; it asks for confirmation first, since undoing
+  it means removing the tag by hand. `src/core/item-actions.ts` (payload),
+  `src/core/park.ts` (the Notion write — verifies the tag option exists rather
+  than letting Notion invent one), `src/scripts/item-action.ts`
+  (`npm run item-action`, takes `--dry-run`) and
+  `.github/workflows/item-actions.yml`, deliberately separate from
+  `add-to-list.yml`.
 
 ### Changed
 - Telegram message cleaned up: item name is the link, shows pack size `[700g]`

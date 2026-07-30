@@ -19,7 +19,16 @@ import { parseName, parseMonthlyUsage, type ParsedName } from "./parse.js";
  */
 
 // Stable data-source id (discovered via introspect; see LEARNINGS).
-const INGREDIENTS_DS = "34b69a18-4fe7-80e6-904e-000b208cf560";
+export const INGREDIENTS_DS = "34b69a18-4fe7-80e6-904e-000b208cf560";
+
+/**
+ * The multi-select carrying an ingredient's search flags, and the one tag that
+ * takes it out of the scan entirely. Named here rather than at each use site so
+ * the reader (`readGroceryTargets`) and the writer (the page's "Not in use"
+ * button) can never drift apart on the exact spelling Notion stores.
+ */
+export const TAGS_PROPERTY = "Select";
+export const PARKED_TAG = "Not in Use ATM";
 
 // Categories that are NOT groceries (skip for v1; a supplement scraper is future).
 const NON_GROCERY_CATEGORIES = new Set(["Suppliments", "Filler"]);
@@ -137,10 +146,10 @@ export async function readGroceryTargets(): Promise<PlanTarget[]> {
 		// `Unit type ` supplies it (see parseMonthlyUsage).
 		const impliedUnit = unitType === "By Unit" ? "x" : unitType === "By ml" ? "ml" : "g";
 		const usage = parseMonthlyUsage(formulaString(p[planKey]), impliedUnit);
-		const tags = multiSelectNames(p["Select"]);
+		const tags = multiSelectNames(p[TAGS_PROPERTY]);
 		const hasTag = (name: string) => tags.some((t) => t.toLowerCase() === name);
 		// "Not in Use ATM" — the user has parked this ingredient; don't search for it.
-		if (hasTag("not in use atm")) continue;
+		if (hasTag(PARKED_TAG.toLowerCase())) continue;
 
 		targets.push({
 			ingredientId: row.id,

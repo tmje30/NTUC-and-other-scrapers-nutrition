@@ -36,7 +36,14 @@ export interface RunResult {
 	 * already have them in the cupboard. Shown on the page so they don't just
 	 * disappear without explanation.
 	 */
-	snoozed: { name: string; until: string; days: number }[];
+	snoozed: {
+		name: string;
+		until: string;
+		days: number;
+		/** Cooldown key and ingredient, so the page's Reset/park buttons can act on it. */
+		key: string;
+		ingredientId: string;
+	}[];
 	/**
 	 * Close-but-not-exact matches, shown on the page as recommendations: the item's
 	 * defining property wasn't met, so it's never a deal, but it's worth seeing.
@@ -111,9 +118,18 @@ export async function runOnce(): Promise<RunResult> {
 	const now = new Date();
 	const snoozed: RunResult["snoozed"] = [];
 	const comparable = withBaseline.filter((t) => {
-		const hit = findCooldown(cooldowns, cooldownKey(t.search.searchTerm), now);
+		const key = cooldownKey(t.search.searchTerm);
+		const hit = findCooldown(cooldowns, key, now);
 		if (!hit) return true;
-		snoozed.push({ name: t.name, until: hit.until, days: hit.days });
+		snoozed.push({
+			name: t.name,
+			until: hit.until,
+			days: hit.days,
+			key,
+			// The live ingredient row, not the id recorded in the cooldown — the
+			// cooldown may have been written for a related item sharing this key.
+			ingredientId: t.ingredientId,
+		});
 		return false;
 	});
 	snoozed.sort((a, b) => a.until.localeCompare(b.until));

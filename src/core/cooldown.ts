@@ -150,6 +150,31 @@ export function findCooldown(
 }
 
 /**
+ * Drop every cooldown on a key — the "Reset" button on the page, for when you
+ * didn't actually buy it, or ate it faster than the sum assumed. Expired entries
+ * go at the same time, since they're already inert.
+ *
+ * Returns the file plus the entries removed, so the caller can report exactly
+ * what it un-snoozed rather than guessing.
+ */
+export function withoutCooldown(
+	file: CooldownFile,
+	key: string,
+	now: Date = new Date(),
+): { file: CooldownFile; removed: CooldownEntry[] } {
+	const active = activeEntries(file, now);
+	const removed = active.filter((e) => e.key === key);
+	return {
+		file: {
+			version: 1,
+			updatedAt: now.toISOString(),
+			entries: active.filter((e) => e.key !== key),
+		},
+		removed,
+	};
+}
+
+/**
  * Record a new cooldown, dropping expired entries and any earlier cooldown on the
  * same key (re-buying an item restarts its clock rather than stacking two).
  */
