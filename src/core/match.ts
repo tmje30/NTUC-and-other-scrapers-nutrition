@@ -189,6 +189,9 @@ const PREPARED_RE =
 // Plant / flavoured / processed MILK qualifiers — block only for a plain milk item.
 const MILK_VARIANT_RE =
 	/\b(soy|soya|almond|oat|goat|coconut|rice|cashew|hazelnut|lactose|powder|powdered|condensed|evaporated|malt|malted|chocolate|vanilla|strawberry|cultured|buttermilk)\b/i;
+// Another bird's egg, a preserved one, or a cooked one — block for a plain egg item.
+const EGG_VARIANT_RE =
+	/\b(quail|duck|goose|century|salted|preserved|pidan|balut|cooked|boiled|braised|marinated|pickled|scotch|liquid|powdered?)\b/i;
 // A plain fruit/food turned into a processed form (block when the item lacks it).
 const PROCESSED_RE = /\b(jam|puree|sauce|cider|vinegar|sorbet|concentrate|essence|flavou?red)\b/i;
 // General "right word, wrong PRODUCT" forms — a candidate naming one of these,
@@ -439,6 +442,15 @@ export function matchPenalty(target: PlanTarget, product: StoreProduct): number 
 	const itemIsMilk = /\bmilk\b|\bmælk\b/i.test(itemText);
 	const itemIsPlainMilk = itemIsMilk && !has(MILK_VARIANT_RE, itemText);
 	if (itemIsPlainMilk && has(MILK_VARIANT_RE, title)) mult *= 0.2;
+
+	// Plain "egg" item must be a hen's egg, raw — block another bird's, a preserved
+	// egg, or a cooked one. Same shape as the milk guard above, and it matters more
+	// now that eggs are priced per PIECE: counting hides size, so a quail egg reads
+	// as a bargain against a hen's egg while weighing a sixth as much. Measured —
+	// "Eggs, Whole, small" accepted "Dasoon Cooked Quail Eggs" at 24% off.
+	const itemIsEgg = /\beggs?\b/i.test(itemText);
+	const itemIsPlainEgg = itemIsEgg && !has(EGG_VARIANT_RE, itemText);
+	if (itemIsPlainEgg && has(EGG_VARIANT_RE, title)) mult *= 0.2;
 
 	// Plain food vs a processed form the item didn't ask for.
 	if (has(PROCESSED_RE, title) && !has(PROCESSED_RE, itemText)) mult *= 0.35;

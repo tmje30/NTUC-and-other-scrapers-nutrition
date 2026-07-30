@@ -63,6 +63,19 @@ All notable changes to this project are documented here. Format based on
 - Optional one-tap path, built but **not deployed**: `addToGroceryList` webhook
   in `src/index.ts` relays a tap to the same workflow via `repository_dispatch`.
   See `docs/one-tap-add.md` for the CORS trade-off and the setup.
+- **Counted items are compared too** (`By Unit` — eggs, slices, tea bags), in
+  whichever dimension the shop published. Per piece where it gives a count:
+  FairPrice lists eggs as 30s and 10s, and its cheapest carton per egg carries no
+  weight at all, so a weight-only comparison could never see it. Per 100g where
+  it gives only weight, against a size written into the item's own name
+  ("Bread, Wholemeal (600g)") — every bread FairPrice returns is weight-only,
+  which is why that convention exists. `Deal`/`ReviewMiss` now carry a
+  `dimension` with `baseline`/`productPrice`, replacing the per-100g-only fields,
+  and the page/Telegram print "$0.222 each" or "$3.60/kg" accordingly.
+  Guardrails, because counting hides size where weight does not: pieces are only
+  compared when both stated sizes are within 2.5×, and a plain "egg" item now
+  rejects another bird's, preserved or cooked eggs (a quail egg read as 24% off
+  against a hen's egg while weighing a sixth as much).
 - **Item actions** — two buttons on each row of "Recently bought · not
   searched". *Reset* clears the item's cooldown so the next daily run searches
   it again. *Not in use* tags the Notion ingredient `Not in Use ATM` (appended

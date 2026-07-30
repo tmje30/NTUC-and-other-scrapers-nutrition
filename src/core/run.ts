@@ -109,7 +109,10 @@ async function searchAllStores(
 
 export async function runOnce(): Promise<RunResult> {
 	const targets = await readGroceryTargets();
-	const withBaseline = targets.filter((t) => t.baselinePer100g != null); // By-Gram in v1
+	// Comparable = has a baseline in at least one dimension: a per-100 price (any
+	// weight-based row, plus a counted row with a weight in its name) or a per-piece
+	// price (every counted row). See the note in compare.ts.
+	const withBaseline = targets.filter((t) => t.baselinePer100g != null || t.baselinePerUnit != null);
 
 	// Drop anything bought recently enough to still be in the cupboard. Done here,
 	// before search terms are collected, so a snoozed item costs nothing: neither
@@ -159,11 +162,8 @@ export async function runOnce(): Promise<RunResult> {
 				});
 				// Only recommend a close match that is actually cheaper than the item's
 				// own baseline — otherwise it's neither the right product nor a saving.
-				if (
-					rev.productPer100g != null &&
-					rev.baselinePer100g != null &&
-					rev.productPer100g < rev.baselinePer100g
-				) {
+				// Whichever dimension it was priced in; unpriceable misses are dropped.
+				if (rev.baseline != null && rev.productPrice != null && rev.productPrice < rev.baseline) {
 					recommendations.push(rev);
 				}
 			}
@@ -178,10 +178,9 @@ export async function runOnce(): Promise<RunResult> {
 	const otherDeals = deals
 		.filter((d) => !d.target.inActivePlan)
 		.sort((a, b) => b.savingPct - a.savingPct);
-	// Best (cheapest relative to its own baseline) recommendations first.
-	recommendations.sort(
-		(a, b) => a.productPer100g! / a.baselinePer100g! - b.productPer100g! / b.baselinePer100g!,
-	);
+	// Best (cheapest relative to its own baseline) recommendations first. A ratio, so
+	// it ranks per-piece and per-100g misses against each other meaningfully.
+	recommendations.sort((a, b) => a.productPrice! / a.baseline! - b.productPrice! / b.baseline!);
 	return {
 		planDeals,
 		otherDeals,

@@ -11,8 +11,8 @@ console.log(
 for (const d of [...planDeals, ...otherDeals]) {
 	console.log(
 		`✅ ${d.target.name}\n` +
-			`    ${d.product.store}: ${d.product.name} @ ${d.productPer100g.toFixed(3)}/100g ` +
-			`vs ${d.baselinePer100g.toFixed(3)} (−${d.savingPct.toFixed(0)}%)${d.product.onSale ? " [SALE]" : ""}\n` +
+			`    ${d.product.store}: ${d.product.name} @ ${d.productPrice.toFixed(3)}/${d.dimension === "unit" ? "each" : "100g"} ` +
+			`vs ${d.baseline.toFixed(3)} (−${d.savingPct.toFixed(0)}%)${d.product.onSale ? " [SALE]" : ""}\n` +
 			`    save ~$${d.monthlySavingSgd.toFixed(2)}/mo  ·  ${d.product.url}`,
 	);
 }

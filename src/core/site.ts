@@ -4,7 +4,7 @@ import { groceryRowTitle, type AddPayload } from "./grocery-list.js";
 import type { ActionPayload } from "./item-actions.js";
 import type { PlanTarget } from "./notion.js";
 import type { StoreProduct } from "./stores/types.js";
-import { parseWeight } from "./stores/weight.js";
+import { parseUnitCount, parseWeight } from "./stores/weight.js";
 
 /**
  * Renders the daily deals as a self-contained HTML page (deployed to GitHub
@@ -62,6 +62,18 @@ function packTag(name: string, grams: number | null | undefined, volumetric: boo
 }
 
 /**
+ * The `[30 pcs]` bracket, for a deal priced by the piece. The count is the whole
+ * basis of the comparison there, so it has to be on the card — and for the
+ * cheapest egg carton FairPrice sells, the count is the ONLY size it publishes.
+ * Suppressed when the name already says it ("Eggs 30s").
+ */
+function countTag(name: string, count: number | null | undefined): string {
+	if (!count || count <= 0) return "";
+	if (parseUnitCount(name) === count) return "";
+	return ` <span class="pack">[${count} pcs]</span>`;
+}
+
+/**
  * What the Add button ships to the workflow: enough to write the row AND set the
  * cooldown.
  *
@@ -70,6 +82,15 @@ function packTag(name: string, grams: number | null | undefined, volumetric: boo
  * is (see `recCard`), while a confident deal is simply the ingredient.
  */
 function addPayload(t: PlanTarget, p: StoreProduct, ingredient = t.name): AddPayload {
+	// How much was actually bought, in grams — the cooldown's whole input. A pack
+	// the shop priced by the piece has no weight of its own, so it's converted at
+	// the item's own grams-per-piece: 30 eggs against a 550g/10 carton is 1650g,
+	// not the 550g the item's own pack weighs. Falls back to the item's pack when
+	// the shop gave neither, and to null (flat 14 days) when nothing is known.
+	const gramsPerUnit = t.packWeightG && t.packSize > 0 ? t.packWeightG / t.packSize : null;
+	const boughtG =
+		p.packWeightG ?? (p.unitCount && gramsPerUnit ? p.unitCount * gramsPerUnit : t.packWeightG);
+
 	return {
 		v: 1,
 		ingredientId: t.ingredientId,
@@ -79,11 +100,9 @@ function addPayload(t: PlanTarget, p: StoreProduct, ingredient = t.name): AddPay
 		product: p.name,
 		priceSgd: p.priceSgd,
 		myPriceSgd: t.packPriceSgd,
-		// The pack actually being bought decides how long the cooldown runs; fall
-		// back to the user's usual pack when the store didn't publish a size. Both
-		// figures are grams — `packWeightG`/`monthlyAmountG`, never `packSize`/
-		// `monthlyAmount`, which are piece counts on a By-Unit item.
-		packSizeG: p.packWeightG ?? t.packWeightG,
+		// Both figures are grams — never `packSize`/`monthlyAmount`, which are piece
+		// counts on a By-Unit item.
+		packSizeG: boughtG,
 		volumetric: p.volumetric,
 		monthlyAmount: t.monthlyAmountG,
 		url: p.url,
@@ -219,15 +238,27 @@ function dealCard(d: Deal, o: PageOptions): string {
 	const u = bigUnit(p.volumetric); // "kg" (or "L" for liquids)
 	const small = smallUnit(p.volumetric); // "100g" (or "100ml")
 
-	// Pack-size brackets — same style, one per line, dropped where the name already says it.
-	const itemPack = packTag(t.name, t.packWeightG, p.volumetric);
-	const prodPack = packTag(p.name, p.packWeightG, p.volumetric);
+	// Pack-size brackets — same style, one per line, dropped where the name already
+	// says it. A per-piece deal brackets the COUNT instead: that's what was compared,
+	// and a count-only carton has no weight to show anyway.
+	const byPiece = d.dimension === "unit";
+	const itemPack = byPiece
+		? countTag(t.name, t.packSize)
+		: packTag(t.name, t.packWeightG, p.volumetric);
+	const prodPack = byPiece
+		? countTag(p.name, p.unitCount)
+		: packTag(p.name, p.packWeightG, p.volumetric);
 
 	// Prices — build each piece once, then arrange them in the rows below.
 	const myPrice = `$${t.packPriceSgd.toFixed(2)}`; // what you pay for your own pack
 	const prodPrice = `$${p.priceSgd.toFixed(2)}`; // the found product's current price
-	const baseKg = `$${(d.baselinePer100g * 10).toFixed(2)}/${u}`;
-	const dealKg = `$${(d.productPer100g * 10).toFixed(2)}/${u}`;
+	// Row 3 is always "what one of these costs, versus what you pay for one" — per
+	// kg/L when compared by weight, per piece when compared by the piece. Pieces are
+	// cheap enough to need 3 decimals: eggs differ by fractions of a cent.
+	const baseKg = byPiece ? `$${d.baseline.toFixed(3)} each` : `$${(d.baseline * 10).toFixed(2)}/${u}`;
+	const dealKg = byPiece
+		? `$${d.productPrice.toFixed(3)} each`
+		: `$${(d.productPrice * 10).toFixed(2)}/${u}`;
 
 	// Store sale as a % off its own list price (distinct from the green badge,
 	// which is the saving vs YOUR price).
@@ -263,13 +294,14 @@ function dealCard(d: Deal, o: PageOptions): string {
     </div>`;
 }
 
-/** Is this near-miss actually cheaper per 100 than the item's own baseline? */
+/** Is this near-miss priced at all, and cheaper than the item's own baseline? */
 function recIsCheaper(r: ReviewMiss): boolean {
 	return (
-		r.productPer100g != null &&
-		r.baselinePer100g != null &&
-		r.baselinePer100g > 0 &&
-		r.productPer100g < r.baselinePer100g
+		r.dimension != null &&
+		r.productPrice != null &&
+		r.baseline != null &&
+		r.baseline > 0 &&
+		r.productPrice < r.baseline
 	);
 }
 
@@ -288,13 +320,21 @@ function recCard(r: ReviewMiss, o: PageOptions): string {
 	const p = r.product;
 	const u = bigUnit(p.volumetric);
 
-	const itemPack = packTag(t.name, t.packWeightG, p.volumetric);
-	const prodPack = packTag(p.name, p.packWeightG, p.volumetric);
+	// Same two-dimension rules as a deal card — see `dealCard`.
+	const byPiece = r.dimension === "unit";
+	const itemPack = byPiece
+		? countTag(t.name, t.packSize)
+		: packTag(t.name, t.packWeightG, p.volumetric);
+	const prodPack = byPiece
+		? countTag(p.name, p.unitCount)
+		: packTag(p.name, p.packWeightG, p.volumetric);
 
 	const myPrice = t.packPriceSgd > 0 ? ` <span class="mine">Price $${t.packPriceSgd.toFixed(2)}</span>` : "";
-	const prodBig = `$${(r.productPer100g! * 10).toFixed(2)}/${u}`;
-	const baseBig = `$${(r.baselinePer100g! * 10).toFixed(2)}/${u}`;
-	const savingPct = ((r.baselinePer100g! - r.productPer100g!) / r.baselinePer100g!) * 100;
+	const prodBig = byPiece
+		? `$${r.productPrice!.toFixed(3)} each`
+		: `$${(r.productPrice! * 10).toFixed(2)}/${u}`;
+	const baseBig = byPiece ? `$${r.baseline!.toFixed(3)} each` : `$${(r.baseline! * 10).toFixed(2)}/${u}`;
+	const savingPct = ((r.baseline! - r.productPrice!) / r.baseline!) * 100;
 
 	const usage =
 		t.unitType === "By Unit" ? `${t.monthlyAmount} units` : amount(t.monthlyAmount, p.volumetric);

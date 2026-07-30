@@ -28,10 +28,15 @@ function packLabel(n: number, volumetric: boolean): string {
 export function formatDeal(deal: Deal): string {
 	const t = deal.target;
 	const p = deal.product;
-	// Price per kg, or per L for volumetric (liquid) items. per-100 × 10.
-	const bigUnit = p.volumetric ? "L" : "kg";
-	const prodBig = deal.productPer100g * 10;
-	const baseBig = deal.baselinePer100g * 10;
+	// Price per kg, or per L for volumetric (liquid) items. per-100 × 10. A deal
+	// compared by the piece prices "each" instead — see the note in compare.ts.
+	const byPiece = deal.dimension === "unit";
+	const prodPrice = byPiece
+		? `$${deal.productPrice.toFixed(3)} each`
+		: `$${(deal.productPrice * 10).toFixed(2)}/${p.volumetric ? "L" : "kg"}`;
+	const basePrice = byPiece
+		? `$${deal.baseline.toFixed(3)}`
+		: `$${(deal.baseline * 10).toFixed(2)}`;
 
 	const usage =
 		t.unitType === "By Unit" ? `${t.monthlyAmount} units` : formatAmount(t.monthlyAmount, p.volumetric);
@@ -41,12 +46,18 @@ export function formatDeal(deal: Deal): string {
 			: " · 🔻 on sale"
 		: "";
 
-	const pack = p.packWeightG ? ` [${packLabel(p.packWeightG, p.volumetric)}]` : "";
+	const pack = byPiece
+		? p.unitCount
+			? ` [${p.unitCount} pcs]`
+			: ""
+		: p.packWeightG
+			? ` [${packLabel(p.packWeightG, p.volumetric)}]`
+			: "";
 
 	// The ingredient name is the link to the store product.
 	return (
 		`🛒 <a href="${p.url}"><b>${esc(t.name)}</b></a>${pack}  −${deal.savingPct.toFixed(0)}% at <b>${esc(p.store)}</b>\n` +
-		`<b>$${prodBig.toFixed(2)}/${bigUnit}</b> vs $${baseBig.toFixed(2)} · uses ~${usage}/month\n` +
+		`<b>${prodPrice}</b> vs ${basePrice} · uses ~${usage}/month\n` +
 		`<i>${esc(p.name)}</i>${sale}`
 	);
 }
