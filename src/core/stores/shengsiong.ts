@@ -69,16 +69,22 @@ export class ShengSiong implements StoreModule {
 	private client = new DdpClient(WS_URL);
 	private cookieLoaded = false;
 	private minting: Promise<void> | null = null;
+	/** Set once minting has failed; the rest of the run fails fast on this. */
+	private mintFailure: Error | null = null;
 
 	/**
 	 * Make sure the connection is up, minting an Incapsula cookie if the WAF turns
 	 * us away. The cached cookie is tried first, so an ordinary run launches no
 	 * browser: Chrome only comes out when the cookie has actually stopped working.
 	 *
-	 * Concurrent searches share one mint (`this.minting`) — 70 searches must not
-	 * each open a browser.
+	 * Minting happens AT MOST ONCE per process, whether it works or not.
+	 * Concurrent searches share the one attempt, and a failure is remembered and
+	 * rethrown rather than retried — without that, a mint that can't succeed made
+	 * every one of 70 searches launch its own browser. Observed: 42 stray Chrome
+	 * processes and a run that had to be killed by hand.
 	 */
 	private async ensureConnected(): Promise<void> {
+		if (this.mintFailure) throw this.mintFailure;
 		if (!this.cookieLoaded) {
 			this.cookieLoaded = true;
 			this.client.setCookie(cachedCookie());
@@ -92,15 +98,16 @@ export class ShengSiong implements StoreModule {
 		// Blocked: one shared attempt to earn a new cookie, then reconnect.
 		this.minting ??= (async () => {
 			console.error("Sheng Siong: blocked by Incapsula — minting a session cookie.");
-			const cookie = await mintCookie();
-			this.client.reset();
-			this.client.setCookie(cookie);
+			try {
+				const cookie = await mintCookie();
+				this.client.reset();
+				this.client.setCookie(cookie);
+			} catch (e: any) {
+				this.mintFailure = e instanceof Error ? e : new Error(String(e));
+				throw this.mintFailure;
+			}
 		})();
-		try {
-			await this.minting;
-		} finally {
-			this.minting = null;
-		}
+		await this.minting;
 		await this.client.connect();
 	}
 
