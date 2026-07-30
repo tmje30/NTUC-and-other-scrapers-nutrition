@@ -80,10 +80,12 @@ function addPayload(t: PlanTarget, p: StoreProduct, ingredient = t.name): AddPay
 		priceSgd: p.priceSgd,
 		myPriceSgd: t.packPriceSgd,
 		// The pack actually being bought decides how long the cooldown runs; fall
-		// back to the user's usual pack when the store didn't publish a size.
-		packSizeG: p.packWeightG ?? (t.packSize || null),
+		// back to the user's usual pack when the store didn't publish a size. Both
+		// figures are grams — `packWeightG`/`monthlyAmountG`, never `packSize`/
+		// `monthlyAmount`, which are piece counts on a By-Unit item.
+		packSizeG: p.packWeightG ?? t.packWeightG,
 		volumetric: p.volumetric,
-		monthlyAmount: t.monthlyAmount,
+		monthlyAmount: t.monthlyAmountG,
 		url: p.url,
 	};
 }
@@ -218,7 +220,7 @@ function dealCard(d: Deal, o: PageOptions): string {
 	const small = smallUnit(p.volumetric); // "100g" (or "100ml")
 
 	// Pack-size brackets — same style, one per line, dropped where the name already says it.
-	const itemPack = packTag(t.name, t.packSize, p.volumetric);
+	const itemPack = packTag(t.name, t.packWeightG, p.volumetric);
 	const prodPack = packTag(p.name, p.packWeightG, p.volumetric);
 
 	// Prices — build each piece once, then arrange them in the rows below.
@@ -286,7 +288,7 @@ function recCard(r: ReviewMiss, o: PageOptions): string {
 	const p = r.product;
 	const u = bigUnit(p.volumetric);
 
-	const itemPack = packTag(t.name, t.packSize, p.volumetric);
+	const itemPack = packTag(t.name, t.packWeightG, p.volumetric);
 	const prodPack = packTag(p.name, p.packWeightG, p.volumetric);
 
 	const myPrice = t.packPriceSgd > 0 ? ` <span class="mine">Price $${t.packPriceSgd.toFixed(2)}</span>` : "";

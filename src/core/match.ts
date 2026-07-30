@@ -410,10 +410,16 @@ export function matchPenalty(target: PlanTarget, product: StoreProduct): number 
 	// the whole inventory: of 260 candidates accepted for By-Gram targets, only 2
 	// were volumetric and BOTH were wrong matches.
 	//
+	// A By-Unit item is a solid too — it's COUNTED (tea bags, eggs, slices, stock
+	// cubes), which nothing poured from a bottle ever is. Before this covered
+	// By-Unit, "Green Tea (50 x 2g)" accepted "Yeo's Bottle Drink - Green Tea No
+	// Sugar" at 98% off: same words, wrong dimension, and the per-100g comparison
+	// between loose leaf and a ready-to-drink bottle is meaningless.
+	//
 	// Deliberately NOT symmetric. By-ml items legitimately match gram-packed goods
 	// (FairPrice labels "Double A 100% Sesame Oil" and "Zarotti Anchovies Fish
 	// Sauce" by weight), so a reverse guard would drop real products — measured too.
-	if (target.unitType === "By Gram" && product.volumetric) mult *= 0.15;
+	if (target.unitType !== "By ml" && product.volumetric) mult *= 0.15;
 
 	// Wrong variety (colour / cut) — "Onion (white)" ≠ red onion, breast ≠ thigh.
 	// Both sides are synonym-normalized first, so the register can fold equivalent

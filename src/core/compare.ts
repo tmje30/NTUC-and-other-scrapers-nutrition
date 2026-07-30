@@ -60,8 +60,9 @@ export function findDeal(target: PlanTarget, products: StoreProduct[]): Deal | n
 		productPer100g,
 		savingPer100g,
 		savingPct,
-		// monthlyAmount is grams for By-Gram targets.
-		monthlySavingSgd: (savingPer100g * target.monthlyAmount) / 100,
+		// Per-100 saving × monthly grams. `monthlyAmountG`, not `monthlyAmount`: on a
+		// By-Unit row the latter is a piece count, and 20 slices is not 20 grams.
+		monthlySavingSgd: (savingPer100g * target.monthlyAmountG) / 100,
 	};
 }
 

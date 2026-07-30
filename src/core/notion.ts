@@ -67,11 +67,28 @@ export interface PlanTarget {
 	/** Whole-pack price (SGD) and pack size (grams for By Gram, count for By Unit). */
 	packPriceSgd: number;
 	packSize: number;
+	/**
+	 * The pack's weight in grams/ml, whatever the row is counted in. Same as
+	 * `packSize` for By-Gram and By-ml rows; for a By-Unit row it comes from a size
+	 * written into the name — "Bread, Wholemeal (600g)" is bought in 20 slices but
+	 * sold by the shop by weight. Null when the row is counted and says no weight.
+	 *
+	 * This is the figure to use for anything measured in grams: the per-100
+	 * baseline, the pack label, the cooldown. `packSize` may be a piece count.
+	 */
+	packWeightG: number | null;
 	/** Baseline to beat. Exactly one is set depending on unitType. */
 	baselinePer100g: number | null;
 	baselinePerUnit: number | null;
 	/** Monthly consumption: grams (By Gram) or units (By Unit). 0 if not in the active plan. */
 	monthlyAmount: number;
+	/**
+	 * Monthly consumption in grams/ml — `monthlyAmount` for weight-based rows, and
+	 * `units × grams-per-unit` for a By-Unit row with a known pack weight. 0 when
+	 * it can't be expressed in grams. Use this, never `monthlyAmount`, for sums
+	 * that mix with a product's weight (monthly saving, cooldown length).
+	 */
+	monthlyAmountG: number;
 	monthlyPacks: number;
 	monthlyCostSgd: number;
 	/** Whether this ingredient is used in the active plan (has monthly usage). */
@@ -137,8 +154,25 @@ export async function readGroceryTargets(): Promise<PlanTarget[]> {
 		const packSize = numberOf(p["Weight /Units of New Product "]) ?? 0;
 		if (packPriceSgd <= 0 || packSize <= 0) continue; // no comparable baseline
 
+		const search = parseName(name);
+
+		// What the pack WEIGHS, as opposed to how many of it there are. A By-Unit row
+		// counts pieces, so its weight can only come from the name — "(600g)" on a
+		// 20-slice loaf. Written by hand for exactly the items the shop prices by
+		// weight and not by the piece.
+		const packWeightG = isByWeight(unitType) ? packSize : (search.size?.grams ?? null);
+
+		// Notion's "Price per 100g" is per 100 UNITS on a By-Unit row (a $2.40 loaf
+		// of 20 slices reads 12, i.e. per 100 slices), so it can't be used as a
+		// weight baseline. Where the name gave a weight, the baseline is computed
+		// from it instead — which is what lets these rows be compared against
+		// weight-priced products at all.
 		const per100 = numberOf(p["Price per 100g "]);
-		const baselinePer100g = isByWeight(unitType) ? per100 : null;
+		const baselinePer100g = isByWeight(unitType)
+			? per100
+			: packWeightG
+				? (packPriceSgd / packWeightG) * 100
+				: null;
 		const baselinePerUnit = unitType === "By Unit" ? packPriceSgd / packSize : null;
 
 		// Monthly usage from the Used 'N' Plan formula — null when not in the plan.
@@ -146,6 +180,17 @@ export async function readGroceryTargets(): Promise<PlanTarget[]> {
 		// `Unit type ` supplies it (see parseMonthlyUsage).
 		const impliedUnit = unitType === "By Unit" ? "x" : unitType === "By ml" ? "ml" : "g";
 		const usage = parseMonthlyUsage(formulaString(p[planKey]), impliedUnit);
+
+		// Usage in grams: a By-Unit row's plan figure is a piece count, so it's
+		// converted at the pack's own grams-per-piece (600g ÷ 20 slices = 30g each).
+		// Without this, "40 slices a month" would be read as 40 GRAMS a month by the
+		// monthly-saving and cooldown sums — one loaf would buy a year of silence.
+		const monthlyAmount = usage?.amount ?? 0;
+		const monthlyAmountG = isByWeight(unitType)
+			? monthlyAmount
+			: packWeightG && packSize > 0
+				? monthlyAmount * (packWeightG / packSize)
+				: 0;
 		const tags = multiSelectNames(p[TAGS_PROPERTY]);
 		const hasTag = (name: string) => tags.some((t) => t.toLowerCase() === name);
 		// "Not in Use ATM" — the user has parked this ingredient; don't search for it.
@@ -154,7 +199,7 @@ export async function readGroceryTargets(): Promise<PlanTarget[]> {
 		targets.push({
 			ingredientId: row.id,
 			name,
-			search: parseName(name),
+			search,
 			category,
 			unitType,
 			tags,
@@ -163,9 +208,11 @@ export async function readGroceryTargets(): Promise<PlanTarget[]> {
 			organicWelfare: hasTag("organic/animal welfare"),
 			packPriceSgd,
 			packSize,
+			packWeightG,
 			baselinePer100g,
 			baselinePerUnit,
-			monthlyAmount: usage?.amount ?? 0,
+			monthlyAmount,
+			monthlyAmountG,
 			monthlyPacks: usage?.packs ?? 0,
 			monthlyCostSgd: usage?.costSgd ?? 0,
 			inActivePlan: !!usage,

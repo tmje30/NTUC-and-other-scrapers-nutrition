@@ -1,3 +1,5 @@
+import { parseWeight, type ParsedWeight } from "./stores/weight.js";
+
 /**
  * Deterministic parsers — no LLM. Two jobs:
  *  1. Ingredient Name  → search term + must-match keyword constraints.
@@ -55,6 +57,20 @@ export const MUST_MATCH_KEYWORDS = [
 const BASIC_MARKERS = new Set(["normal", "regular", "plain", "basic", "standard", "original"]);
 
 /**
+ * A parenthetical that is NOTHING BUT a pack size — "(600g)", "(550g)", "(1.5kg)",
+ * "(6 x 250ml)" — states how much is in the pack, not what makes the item the
+ * item. It has to be kept out of `properties`, because a property is a hard
+ * requirement on the product's title and no shop writes your pack size in its
+ * name: "Bread, Wholemeal, [FairPrice] (600g)" would demand the word "600g" and
+ * so match nothing at all.
+ *
+ * This is how a By-Unit item (counted in slices or eggs) gets a weight the price
+ * comparison can use — see `readGroceryTargets`.
+ */
+const SIZE_ONLY_RE =
+	/^\d+(?:\.\d+)?\s*(?:kg|kgs|gm|gms|grams?|g|ml|ltr|litre|liter|lt|l)$|^\d+\s*[x×]\s*\d+(?:\.\d+)?\s*(?:kg|kgs|gm|gms|grams?|g|ml|ltr|litre|liter|lt|l)$/i;
+
+/**
  * CATEGORY properties say what KIND of thing the product is, rather than naming a
  * word that appears on its label. "Banana (Fruit)" means "the actual fruit" — no
  * banana is ever labelled "fruit", while a *freeze-dried fruit snack* is. Matching
@@ -77,6 +93,11 @@ export interface ParsedName {
 	categories: string[];
 	/** Properties from "(not X)" that a candidate must NOT have. */
 	negatedProperties: string[];
+	/**
+	 * Pack size stated in the name — "(600g)" on an item counted in slices. Null
+	 * when the name says nothing about weight. Never a matching constraint.
+	 */
+	size: ParsedWeight | null;
 	/** Brand from [ ], if any (lower-cased). */
 	brand: string | null;
 	/** True when the name asks for the basic range (bare name, or "(Normal)"). */
@@ -112,12 +133,18 @@ export function parseName(raw: string): ParsedName {
 	const properties: string[] = [];
 	const categories: string[] = [];
 	const negatedProperties: string[] = [];
+	let size: ParsedWeight | null = null;
 	let sawBasicMarker = false;
 	work = work.replace(/\(([^)]*)\)/g, (_m, inner) => {
 		// "(peeled/Frozen)" and "(a,b)" describe several properties at once.
 		for (const part of String(inner).split(/[/,]/)) {
 			const v = collapse(part).toLowerCase();
 			if (!v) continue;
+			// Tested per part, so "(600g, organic)" yields a size AND a property.
+			if (SIZE_ONLY_RE.test(v)) {
+				size = parseWeight(v) ?? size;
+				continue;
+			}
 			const neg = v.match(/^(?:not|no|non[- ]?)\s+(.*)$/);
 			// "un-" is a negation too: "(unbreaded)" means NOT breaded, "(Unpasteurized)"
 			// means NOT pasteurized. No store prints these words, so requiring them
@@ -165,6 +192,7 @@ export function parseName(raw: string): ParsedName {
 		properties,
 		categories,
 		negatedProperties,
+		size,
 		brand,
 		basicRange,
 		ignored,
