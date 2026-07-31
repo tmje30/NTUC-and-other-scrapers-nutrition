@@ -1,4 +1,5 @@
 import { parseWeight, type ParsedWeight } from "./stores/weight.js";
+import { normSynonyms } from "./match.js";
 
 /**
  * Deterministic parsers — no LLM. Two jobs:
@@ -24,6 +25,7 @@ export const MUST_MATCH_KEYWORDS = [
 	"whole meal",
 	"skinless",
 	"skimmed",
+	"skim", // synonym form of "skimmed" — the hay is synonym-normalised below
 	"low fat",
 	"low gi",
 	"raw",
@@ -171,7 +173,15 @@ export function parseName(raw: string): ParsedName {
 
 	// Must-match keywords are read from what's LEFT (brand and {notes} removed) plus
 	// the declared properties — never from an ignored note.
-	const keywordHay = `${work} ${properties.join(" ")}`.toLowerCase();
+	//
+	// Run through the synonym register FIRST, so a phrase rule can retire a keyword
+	// that no shop actually prints. "Omega 3 Enriched" folds to "omega3", which drops
+	// `enriched` — a word FairPrice uses on BREAD and on one unrelated vitamin egg,
+	// never on the omega-3 eggs the item is asking for. Without this the three egg
+	// items demanded a word no candidate could ever satisfy, so they matched nothing.
+	// Keywords whose synonym form differs (skimmed→skim, wholemeal→wholegrain) are
+	// listed in MUST_MATCH_KEYWORDS in BOTH forms, so nothing else changes.
+	const keywordHay = normSynonyms(`${work} ${properties.join(" ")}`).toLowerCase();
 	const mustMatch = MUST_MATCH_KEYWORDS.filter((kw) => {
 		const re = new RegExp(`(^|[^a-z])${kw.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&")}([^a-z]|$)`, "i");
 		return re.test(keywordHay);

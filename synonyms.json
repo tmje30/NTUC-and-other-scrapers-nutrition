@@ -417,7 +417,22 @@
   {
     "from": "puer",
     "to": "pu erh",
-    "note": "Short spelling."
+    "note": "Short spelling. Safe despite being a prefix of other words — the \\b anchors mean 'La Puerta' and 'Puerperal' are untouched (both are real FairPrice hits for a bare 'puer' query)."
+  },
+  {
+    "from": "pu'er",
+    "to": "pu erh",
+    "note": "Apostrophe spelling — FairPrice's own title is \"Osk New Family Japan Roast Tea - Pu'Er\". Needed as its own entry because synonyms run on the RAW string, before punctuation is stripped, so no other pu-erh rule sees it."
+  },
+  {
+    "from": "pu'erh",
+    "to": "pu erh",
+    "note": "Apostrophe + h spelling."
+  },
+  {
+    "from": "pu er",
+    "to": "pu erh",
+    "note": "Spaced two-word spelling (FairPrice: 'RedMan Mooncake Paste Pu Er Tea'). Does not touch the item's own 'Pu Erh' — \\bpu er\\b cannot match when an 'h' follows."
   },
   {
     "from": "gingelly",
@@ -563,6 +578,41 @@
     "from": "dal",
     "to": "dhall",
     "note": "The most common store spelling ('Chana Dal', 'Toor Dal') — was the one variant missing."
+  },
+  {
+    "from": "omega 3 enriched",
+    "to": "omega3",
+    "note": "MUST be listed before the bare 'omega 3' rule, or that one fires first and this phrase never matches. Drops 'enriched', which no SG shop prints on an omega-3 egg — FairPrice uses the word on BREAD ('Gardenia Enriched White Bread') and on exactly one unrelated egg ('Nuyolk Vitamins Enriched Eggs'). Requiring it excluded the very products the item wants (Chew's / Pasar 'Fresh Eggs - Omega 3')."
+  },
+  {
+    "from": "omega-3 enriched",
+    "to": "omega3",
+    "note": "Hyphenated form of the phrase above."
+  },
+  {
+    "from": "omega 3",
+    "to": "omega3",
+    "note": "Collapses to ONE token on purpose. tokens() drops any token starting with a digit, so 'omega 3' and 'omega 6' both reduced to just ['omega'] and the matcher could not tell Chew's Omega 3 eggs from Chew's Omega 6. 'omega3' survives tokenisation and stemming intact."
+  },
+  {
+    "from": "omega-3",
+    "to": "omega3",
+    "note": "Hyphenated spelling."
+  },
+  {
+    "from": "omega 6",
+    "to": "omega6",
+    "note": "Same collapse for omega-6, so it stays DISTINCT from omega3 rather than folding onto a bare 'omega'."
+  },
+  {
+    "from": "omega-6",
+    "to": "omega6",
+    "note": "Hyphenated spelling."
+  },
+  {
+    "from": "muscovado",
+    "to": "brown muscovado",
+    "note": "Muscovado is by definition an unrefined BROWN sugar, but every shop titles it 'Dark Muscovado Sugar' — never 'brown'. The item 'Muscovado Sugar (Brown)' therefore failed its own (Brown) requirement on all three FairPrice products. Adding the word rather than removing the requirement keeps the item's intent intact."
   },
   {
     "from": "mælk",

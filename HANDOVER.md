@@ -308,11 +308,16 @@ allowlist matches, so renaming a button can't break the two-tap path.
    promoted products. Both passes now merge; 437 → 1166 products, 19 → 25 deals.
 7. ~~Lentils returning nothing~~ **done** 2026-07-31 — see "Naming an item so the
    shops can find it" below.
-8. Optional: more `GENERIC_FORM_PATTERNS` / variety tuning as false matches
-   appear. Still-empty searches are genuine naming problems, not pricing ones:
-   `Whey`, `Muscovado Sugar`, `Pu Erh`, and the `omega 3 enriched` egg variants.
-   Each is fixed the same way lentils were — find the word the shop actually
-   indexes, then rename in Notion and/or add a synonym.
+8. ~~Pu Erh / Muscovado / omega-3 eggs finding nothing~~ **done** 2026-07-31 —
+   all three were naming problems, none was a scraping problem. See below.
+9. Optional: more `GENERIC_FORM_PATTERNS` / variety tuning as false matches
+   appear. `Whey` is the last search still returning nothing from both shops —
+   worth checking whether it should be named "protein powder".
+10. **`Egg White (…)` can match "White Egg".** Sheng Siong sells "Omega 3 White
+    Egg", i.e. a white-SHELLED egg, and the matcher is bag-of-words, so
+    `{egg, white}` is identical either way. Today it is harmless — the candidate
+    costs more per 100 g than the item's baseline, so it never publishes — but a
+    price move would surface it. Word order is the only thing separating them.
 
 ## Naming an item so the shops can find it (worked example, 2026-07-31)
 
@@ -347,6 +352,42 @@ Three things this taught, worth reusing:
 - **A short synonym can collide with a brand.** `dal` looks like the obvious
   entry and is the worst one: it returns ten DALEE duck products. It is safe
   only because it folds to `dhall` before it is ever used as a query.
+
+### Three more, measured the same day — none was a scraping fault
+
+**Pu Erh.** Sheng Siong does not stock it at all (0 for every spelling).
+FairPrice does, under **`Pu'Er`**, **`Puer`** and **`Pu Er`** — three spellings,
+none of them the item's own "Pu Erh". Added as synonyms. The apostrophe form
+needs its own entry because synonyms run on the RAW string, before punctuation
+is stripped, so no other rule can see it. Note the one real product
+("Imperial Glutinious Rice Puer Tea Bags") publishes no pack weight, so it still
+cannot be priced — matching it was only half the battle.
+
+**Muscovado.** Never a search problem: FairPrice returns three products for
+`muscovado`. Two separate things were wrong.
+- The item is `Muscovado Sugar (Brown)`, and every shop titles it *Dark*
+  Muscovado Sugar — never "brown" — so it failed its own `(Brown)` requirement.
+  Fixed with `muscovado` → `brown muscovado`: muscovado IS unrefined brown
+  sugar, so **adding the word is truer than deleting the requirement**.
+- Even matched, **there is no deal.** The baseline is 0.468/100g and the
+  cheapest muscovado at FairPrice is 0.767. Nothing beats what the user already
+  pays. "Returns nothing" and "is not cheaper" look identical on the page — check
+  which one you have before changing code.
+
+**Omega-3 eggs.** Two faults, one of them a latent bug worth remembering:
+- `tokens()` drops any token starting with a digit, so `Omega 3` and `Omega 6`
+  both reduced to `["omega"]` — **the matcher could not tell them apart**, and
+  both shops sell both. Fixed by folding them to the single tokens `omega3` /
+  `omega6`, which survive tokenisation and stemming intact.
+- The item demands `Enriched`, a word no shop prints on an omega-3 egg.
+  FairPrice uses it on **bread** ("Gardenia Enriched White Bread") and on one
+  unrelated "Nuyolk Vitamins Enriched Eggs", so it could not simply be deleted
+  from `MUST_MATCH_KEYWORDS`. Instead `parseName()` now runs its keyword hay
+  through `normSynonyms()` first, so the phrase rule `omega 3 enriched` →
+  `omega3` retires the word for these items only. Verified against all 53
+  targets: the only other changes are cosmetic (`wholemeal`→`wholegrain`,
+  `skimmed`→`skim`, both of which already folded together downstream — `skim`
+  was added to the keyword list to keep parity).
 
 ⚠️ **A synonym change takes TWO runs to reach Sheng Siong.** The runner does not
 compute search terms — it fetches them from the deployed

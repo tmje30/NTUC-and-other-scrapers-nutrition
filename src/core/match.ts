@@ -208,6 +208,12 @@ const GENERIC_FORM_PATTERNS = [
 	"milk", "milkshake", "yogh?urt", "smoothie", "cereal", "sandwich", "chips?",
 	"snack", "pudding", "jelly", "candy", "ice\\s*cream", "vermicelli", "noodles?",
 	"oatmeal", "porridge", "granola", "muesli", "oats",
+	// Egg tofu is tofu, not egg. "Fortune Silken Egg Tofu - Extra Smooth with
+	// Omega 3" is cheaper per 100 g than real omega-3 eggs, so it beat them on
+	// price the moment the omega-3 items could match anything at all. Safe for the
+	// genuine tofu rows: the guard is skipped whenever the ITEM names the word, and
+	// "Tau Kwa (Tofu)" carries "tofu" as its declared property.
+	"tofu", "beancurd", "bean\\s*curd",
 	// Bakery. A butter/cinnamon/garlic item wants the ingredient, not a loaf baked
 	// with it — "Sunshine Shokupan Gold Butter Loaf" was published as a 43%-off
 	// "Butter" deal, and "Butter Cookies" reached the live page the same way.

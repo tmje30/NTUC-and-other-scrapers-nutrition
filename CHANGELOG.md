@@ -131,6 +131,19 @@ All notable changes to this project are documented here. Format based on
   10 for "dhall"), and `channa` → `chickpea` so "Channa Dhall" satisfies a
   "(Chana Dahl)" item. The Notion rows were renamed `Lentil (…)` → `Dahl (…)`
   to match. Sheng Siong now offers Masoor Dhall Split at 0.382/100g.
+- Pu Erh now matches FairPrice's own spellings (`Pu'Er`, `Puer`, `Pu Er`);
+  Sheng Siong does not stock it under any spelling.
+- **Omega-3 and omega-6 were indistinguishable.** `tokens()` drops tokens
+  starting with a digit, so both collapsed to `["omega"]`. They now fold to the
+  single tokens `omega3` / `omega6`. Also, `parseName()` runs its must-match
+  keyword hay through `normSynonyms()`, letting `omega 3 enriched` → `omega3`
+  retire "enriched" — a word FairPrice prints on bread, never on omega-3 eggs,
+  so the three egg items previously matched nothing at all. `skim` added to
+  `MUST_MATCH_KEYWORDS` to keep parity under normalisation.
+- `muscovado` → `brown muscovado`, so `Muscovado Sugar (Brown)` stops failing
+  its own requirement against titles that all say "Dark Muscovado Sugar".
+- `tofu` / `bean curd` added to `GENERIC_FORM_PATTERNS` — egg tofu undercuts
+  real eggs per 100 g and would have published as an omega-3 egg deal.
 - Matcher gaps that the wider candidate pool exposed: added bakery
   (`loaf`, `bread`, `cookies`, `buns`, …), household paper / scented non-food
   (`tissue`, `bathroom`, `scent`, …) and `\d in \d` premix patterns to
