@@ -126,6 +126,11 @@ All notable changes to this project are documented here. Format based on
   vinegar`, `old garlic`) and the rest saw only their promoted subset.
   `search()` now runs both passes and merges on `slug`, and `PAGE_SIZE` goes
   20 → 50. 437 → 1166 products, 28 → 22 empty terms, 19 → 25 deals.
+- Lentils returned nothing from either shop. `synonyms.json` folds `lentil` /
+  `lentils` → `dhall` (the spelling Sheng Siong indexes: 0 hits for "lentil",
+  10 for "dhall"), and `channa` → `chickpea` so "Channa Dhall" satisfies a
+  "(Chana Dahl)" item. The Notion rows were renamed `Lentil (…)` → `Dahl (…)`
+  to match. Sheng Siong now offers Masoor Dhall Split at 0.382/100g.
 - Matcher gaps that the wider candidate pool exposed: added bakery
   (`loaf`, `bread`, `cookies`, `buns`, …), household paper / scented non-food
   (`tissue`, `bathroom`, `scent`, …) and `\d in \d` premix patterns to

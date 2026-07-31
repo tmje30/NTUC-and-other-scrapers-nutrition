@@ -306,11 +306,55 @@ allowlist matches, so renaming a button can't break the two-tap path.
 6. ~~Sheng Siong returning 0 for terms it clearly stocks~~ **done** 2026-07-31 —
    it was `ecommPromotionFilter.active: true` restricting every search to
    promoted products. Both passes now merge; 437 → 1166 products, 19 → 25 deals.
-7. Optional: more `GENERIC_FORM_PATTERNS` / variety tuning as false matches
-   appear. Still-empty searches after the fix are genuine term problems, not
-   pricing ones: `Whey`, `Lentil`, `Muscovado Sugar`, `Pu Erh`, and the
-   `omega 3 enriched` egg variants. Sheng Siong likely names these differently
-   (lentils as *dhall*), so the fix is renaming the ingredient in Notion.
+7. ~~Lentils returning nothing~~ **done** 2026-07-31 — see "Naming an item so the
+   shops can find it" below.
+8. Optional: more `GENERIC_FORM_PATTERNS` / variety tuning as false matches
+   appear. Still-empty searches are genuine naming problems, not pricing ones:
+   `Whey`, `Muscovado Sugar`, `Pu Erh`, and the `omega 3 enriched` egg variants.
+   Each is fixed the same way lentils were — find the word the shop actually
+   indexes, then rename in Notion and/or add a synonym.
+
+## Naming an item so the shops can find it (worked example, 2026-07-31)
+
+When a search returns 0 from a shop, the usual cause is that **the item is named
+after a word the shop does not index** — not a pricing or blocking problem.
+Measure before changing anything; `npm run ss -- <term>` and
+`npm run fp -- <term>` answer it in seconds. For lentils:
+
+| query | Sheng Siong |
+| --- | --- |
+| `lentil` | **0** |
+| `dhall` | **10** — Masoor Dhall Split, Toor Dhall, Channa Dhall … |
+| `masoor` | 3 |
+| `dal` | 10, but **every one is DALEE frozen duck** |
+
+Two fixes, and both were needed:
+
+1. **Notion**: the ingredient was renamed `Lentil (…)` → **`Dahl (…)`**, so the
+   base noun folds onto the shop's spelling. This is the user's call, not the
+   code's — renaming in Notion is the intended fix for a bad search term.
+2. **`synonyms.json`**: `lentil` / `lentils` → `dhall`, plus `channa` →
+   `chickpea`.
+
+Three things this taught, worth reusing:
+
+- **Direction matters.** Synonyms fold both the query and the candidate, but
+  only one direction puts a *findable* word into the search. `dhall → lentil`
+  would have kept querying a word neither shop indexes.
+- **Add the plural explicitly.** Synonyms are applied BEFORE stemming, so
+  `\blentil\b` never matches "Lentils" — which is exactly how FairPrice titles it
+  ("Shahi Golden Masoor Dhal Split - Red Lentils").
+- **A short synonym can collide with a brand.** `dal` looks like the obvious
+  entry and is the worst one: it returns ten DALEE duck products. It is safe
+  only because it folds to `dhall` before it is ever used as a query.
+
+⚠️ **A synonym change takes TWO runs to reach Sheng Siong.** The runner does not
+compute search terms — it fetches them from the deployed
+`targets.json`, which only the cloud rebuilds. So: push → **cloud run**
+(regenerates `targets.json`) → **runner scan** (uses the new terms) → cloud run
+(uses the new data). Left alone this resolves itself in about a day; to do it
+now, trigger `daily.yml`, then `npm run push-ss -- --force`. Verify with
+`curl -s <pages-url>/targets.json`.
 
 ## Gotchas for whoever continues
 
