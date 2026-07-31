@@ -252,6 +252,13 @@ allowlist matches, so renaming a button can't break the two-tap path.
 - **Sheng Siong** = Meteor DDP over WebSocket (`wss://shengsiong.com.sg/websocket`,
   `ws` lib). Method `Products.getByAllSlugs(filters, misc, page, size)` — 4
   positional args; query in `filters.searchFilter.slug`. Weight from `packSize`.
+  ⚠️ **`ecommPromotionFilter.active` is not inert scaffolding** — `true` returns
+  ONLY promoted products, which silently hid the rest of the catalogue until
+  2026-07-31 (28 of 70 terms returned nothing). `search()` now runs the term
+  **twice**, `true` then `false`, and merges on `slug`; both are needed because
+  the server truncates by relevance at `PAGE_SIZE` (50) and promoted items can
+  fall past the cut. `page` is cumulative, not an offset — ask for a bigger page
+  rather than paginating. See LEARNINGS 2026-07-31.
   **Incapsula** answers the DDP handshake with a `200` challenge instead of
   upgrading — always from datacenter IPs, and since 2026-07-30 intermittently from
   residential ones too, which is why the runner now needs Chrome (see above).
@@ -296,9 +303,14 @@ allowlist matches, so renaming a button can't break the two-tap path.
    not silence. If Chrome stops clearing it, the next rung is a real browsing
    profile or an anti-detection browser — *not* a solving service.
 5. **Phone runner** — blocked by the above (no Chrome on Termux); optional anyway.
-6. Optional: more `FORM_WORDS` / variety tuning as false matches appear. Current
-   known-weak searches: `Pu Erh` returns only 4 candidates and `Muscovado Sugar`
-   returns 0 from Sheng Siong — likely a search-term problem, not a pricing one.
+6. ~~Sheng Siong returning 0 for terms it clearly stocks~~ **done** 2026-07-31 —
+   it was `ecommPromotionFilter.active: true` restricting every search to
+   promoted products. Both passes now merge; 437 → 1166 products, 19 → 25 deals.
+7. Optional: more `GENERIC_FORM_PATTERNS` / variety tuning as false matches
+   appear. Still-empty searches after the fix are genuine term problems, not
+   pricing ones: `Whey`, `Lentil`, `Muscovado Sugar`, `Pu Erh`, and the
+   `omega 3 enriched` egg variants. Sheng Siong likely names these differently
+   (lentils as *dhall*), so the fix is renaming the ingredient in Notion.
 
 ## Gotchas for whoever continues
 

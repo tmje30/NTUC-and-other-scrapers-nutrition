@@ -2,6 +2,60 @@
 
 Running log of decisions, gotchas, and non-obvious facts. Newest on top.
 
+## 2026-07-31 — Sheng Siong was only ever showing us PROMOTED products
+
+`ecommPromotionFilter: { active: true }` sat in the `Products.getByAllSlugs`
+filter scaffolding from the day the DDP call was reverse-engineered. It was
+copied over as inert scaffolding like the other empty filter blocks. It is not:
+with `active: true` the server returns **only products currently in an
+e-commerce promotion**.
+
+So for a year the Sheng Siong half of every comparison saw a promo-only slice of
+the catalogue. **28 of the 70 daily search terms came back completely empty** —
+`cinnamon`, `lotus root`, `apple cider vinegar`, `old garlic` — not because the
+shop doesn't stock them but because it wasn't promoting them that day. The
+terms that *did* return results returned only their promoted subset, so a
+cheaper everyday-priced product could never win.
+
+Measured against the live site:
+
+| term | `active: true` | `active: false` |
+| --- | --- | --- |
+| cinnamon | 0 | 4 |
+| lotus root | 0 | 2 |
+| garlic | 22 | 50 (53 total) |
+
+**Both passes are needed, not just `false`.** The server truncates by relevance
+at `pageSize`, and the promoted items — the actual deals — can fall past the
+cut: for `garlic`, one promoted product was absent from the top 50 of the full
+catalogue. So `search()` now runs both passes and merges on `slug`.
+`PAGE_SIZE` went 20 → 50. Result: 437 → 1166 products, 28 → 22 empty terms
+(the rest are genuine search-term gaps: `whey`, `lentil`, `muscovado sugar`),
+19 → 25 deals. Scan takes ~2 min and the data file grew 96 KB → 378 KB.
+
+Two API notes found while measuring, both worth knowing:
+- `pageSize` is honoured well past 20 — asking 100 for `garlic` returned all 53.
+- `page` is **cumulative, not offset-based**: `page 2, size 20` returns the
+  first **40** items, not items 21–40. Don't paginate it like a normal API;
+  just ask for a bigger page.
+
+### The corollary: a wider net catches more rubbish
+
+Tripling the candidate pool immediately published three false matches, because
+Sheng Siong titles a household good's scent exactly like a food:
+- `Green Tea` → *Softess Premium Bathroom Tissue 3 Ply - **Green Tea Scent***, 94% off.
+- `Butter` → *Sunshine Shokupan Gold **Butter** Loaf* — bread, 43% off.
+- `Instant Coffee (plain)` → *Ye Ye **3in1** Instant Coffee Mix*.
+
+`GENERIC_FORM_PATTERNS` had `soap`/`shampoo`/`bleach` but no household paper,
+and `cake`/`biscuit` but no `loaf`/`bread`/`cookie`. Added both groups plus
+`scent`/`fragrance` and a `\d\s*in\s*\d` pattern. Note this also removed a
+pre-existing bad match that was live on the page today (*Butter Cookies* under
+"Butter"), so the gap predated this change — the wider net just made it obvious.
+
+General rule: **widening a search and tightening the matcher are one change,
+not two.** Ship them together or the first one regresses the output.
+
 ## 2026-07-30 — A `concurrency` group silently DELETES queued work
 
 `add-to-list.yml` originally had `concurrency: { group: add-to-list,

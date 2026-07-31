@@ -12,17 +12,17 @@ import { cachedCookie, looksBlocked, mintCookie } from "./incapsula.js";
 
 const WS_URL = "wss://shengsiong.com.sg/websocket";
 const BASE = "https://shengsiong.com.sg";
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 50;
 
-// Empty filter scaffolding; only searchFilter.slug varies per query.
-function filters(term: string) {
+// Empty filter scaffolding; only searchFilter.slug and the promotion flag vary.
+function filters(term: string, promoOnly: boolean) {
 	return {
 		categoryFilter: { slugs: [] },
 		campaignPageFilter: { slug: "", category: { slug: "" } },
 		shoppingListFilter: { slug: "", category: { slug: "" }, search: { slug: "" }, showKeptForLater: false },
 		searchFilter: { slug: term, category: { slug: "" } },
 		preOrderCampaignFilter: { slug: "", category: { slug: "" } },
-		ecommPromotionFilter: { active: true, category: { slug: "" } },
+		ecommPromotionFilter: { active: promoOnly, category: { slug: "" } },
 	};
 }
 const MISC_FILTERS = {
@@ -111,16 +111,39 @@ export class ShengSiong implements StoreModule {
 		await this.client.connect();
 	}
 
-	async search(term: string): Promise<StoreProduct[]> {
-		await this.ensureConnected();
+	private async query(term: string, promoOnly: boolean): Promise<any[]> {
 		const result = await this.client.call<any[]>("Products.getByAllSlugs", [
-			filters(term),
+			filters(term, promoOnly),
 			MISC_FILTERS,
 			1,
 			PAGE_SIZE,
 		]);
-		const list = Array.isArray(result) ? result : [];
-		return list.map(mapProduct);
+		return Array.isArray(result) ? result : [];
+	}
+
+	/**
+	 * Search, merging two passes over the same term.
+	 *
+	 * `ecommPromotionFilter.active` is not a display toggle: with `true` the server
+	 * returns ONLY products in a current e-commerce promotion. That was the one
+	 * filter we had, so anything Sheng Siong wasn't promoting that day was
+	 * invisible — 28 of the 70 daily terms came back empty, "cinnamon" and "lotus
+	 * root" among them, even though the shop stocks both.
+	 *
+	 * Neither pass alone is enough. `false` is the whole catalogue but the server
+	 * truncates it by relevance at PAGE_SIZE, which can push the promoted items —
+	 * the actual deals — off the end. `true` is a subset that guarantees those are
+	 * present. So both run and the results are merged, deduped on `slug`.
+	 */
+	async search(term: string): Promise<StoreProduct[]> {
+		await this.ensureConnected();
+		const bySlug = new Map<string, any>();
+		for (const promoOnly of [true, false]) {
+			for (const p of await this.query(term, promoOnly)) {
+				if (!bySlug.has(p.slug)) bySlug.set(p.slug, p);
+			}
+		}
+		return [...bySlug.values()].map(mapProduct);
 	}
 
 	close(): void {

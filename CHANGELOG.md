@@ -119,6 +119,19 @@ All notable changes to this project are documented here. Format based on
 - Daily schedule moved to **06:00 SGT** (`cron: "0 22 * * *"`).
 
 ### Fixed
+- **Sheng Siong only ever returned promoted products.**
+  `Products.getByAllSlugs` was called with `ecommPromotionFilter.active: true`,
+  which restricts results to items in a current promotion — so 28 of the 70
+  daily search terms came back empty (`cinnamon`, `lotus root`, `apple cider
+  vinegar`, `old garlic`) and the rest saw only their promoted subset.
+  `search()` now runs both passes and merges on `slug`, and `PAGE_SIZE` goes
+  20 → 50. 437 → 1166 products, 28 → 22 empty terms, 19 → 25 deals.
+- Matcher gaps that the wider candidate pool exposed: added bakery
+  (`loaf`, `bread`, `cookies`, `buns`, …), household paper / scented non-food
+  (`tissue`, `bathroom`, `scent`, …) and `\d in \d` premix patterns to
+  `GENERIC_FORM_PATTERNS`, and `light` to the plain-milk variant guard. Stops
+  bathroom tissue matching "Green Tea", a butter loaf matching "Butter", and a
+  3in1 mix matching "Instant Coffee (plain)".
 
 ### Pending
 - Read Ingredients DB + active meal plan (default: Plan 1.8k) via Notion.

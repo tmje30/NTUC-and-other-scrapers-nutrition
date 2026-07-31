@@ -188,7 +188,7 @@ const PREPARED_RE =
 	/\w*saft\b|\w*sirup\b|\b(juice|soda|sodavand|saftevand|lemonade|limonade|sparkling|cordial|squash|kombucha|drink|beverages?|ade|wine|beer|ale|lager|cider|spirits?|liqueurs?|vodka|whisky|whiskey|rum|gin|sake|brandy)\b/i;
 // Plant / flavoured / processed MILK qualifiers — block only for a plain milk item.
 const MILK_VARIANT_RE =
-	/\b(soy|soya|almond|oat|goat|coconut|rice|cashew|hazelnut|lactose|powder|powdered|condensed|evaporated|malt|malted|chocolate|vanilla|strawberry|cultured|buttermilk)\b/i;
+	/\b(soy|soya|almond|oat|goat|coconut|rice|cashew|hazelnut|lactose|powder|powdered|condensed|evaporated|malt|malted|chocolate|vanilla|strawberry|cultured|buttermilk|light)\b/i;
 // Another bird's egg, a preserved one, or a cooked one — block for a plain egg item.
 const EGG_VARIANT_RE =
 	/\b(quail|duck|goose|century|salted|preserved|pidan|balut|cooked|boiled|braised|marinated|pickled|scotch|liquid|powdered?)\b/i;
@@ -208,8 +208,22 @@ const GENERIC_FORM_PATTERNS = [
 	"milk", "milkshake", "yogh?urt", "smoothie", "cereal", "sandwich", "chips?",
 	"snack", "pudding", "jelly", "candy", "ice\\s*cream", "vermicelli", "noodles?",
 	"oatmeal", "porridge", "granola", "muesli", "oats",
+	// Bakery. A butter/cinnamon/garlic item wants the ingredient, not a loaf baked
+	// with it — "Sunshine Shokupan Gold Butter Loaf" was published as a 43%-off
+	// "Butter" deal, and "Butter Cookies" reached the live page the same way.
+	"bread", "loaf|loaves", "buns?", "toast", "rolls?", "pastr(?:y|ies)",
+	"croissants?", "waffles?", "pancakes?", "muffins?", "doughnuts?|donuts?",
+	"pies?", "tarts?", "cookies?", "wafers?",
 	"peanut", "almond", "cashew", "hazelnut", "cocoa", "dishwashing", "detergent",
 	"cleaner", "soap", "shampoo", "sanitiz\\w*", "bleach",
+	// Household paper / scented non-food. Sheng Siong titles the flavour of a
+	// household good exactly like a food one, so "Softess Premium Bathroom Tissue
+	// 3 Ply - Green Tea Scent" scored as a 94%-off "Green Tea".
+	"tissues?", "toilet", "bathroom", "napkins?", "wipes?", "towels?", "paper",
+	"scent(?:ed)?", "fragrances?", "perfumed?", "freshener",
+	// "3in1" / "2 in 1" instant drink mixes — coffee premixed with sugar and
+	// creamer is not the plain coffee the item asked for.
+	"\\d\\s*in\\s*\\d",
 ];
 const GENERIC_FORM_RES = GENERIC_FORM_PATTERNS.map((p) => new RegExp(`\\b${p}\\b`, "i"));
 
