@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-30T03:32:53.839Z",
+  "updatedAt": "2026-07-31T02:15:48.170Z",
   "entries": [
     {
       "key": "chicken thigh",
@@ -13,6 +13,19 @@
       "store": "FairPrice",
       "product": "Seara Frozen Chicken Thigh",
       "packSizeG": 2000,
+      "monthlyAmount": 0
+    },
+    {
+      "key": "peanut butter",
+      "ingredientId": "37769a18-4fe7-80d2-941c-f245c5336646",
+      "ingredientName": "Peanut butter [Fair Price]",
+      "addedAt": "2026-07-31T02:15:48.170Z",
+      "until": "2026-08-14T02:15:48.170Z",
+      "days": 14,
+      "basis": "no monthly usage → flat 14 days",
+      "store": "Sheng Siong",
+      "product": "Peanut Butter - Crunchy",
+      "packSizeG": 510,
       "monthlyAmount": 0
     }
   ]
