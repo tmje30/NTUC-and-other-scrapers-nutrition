@@ -221,6 +221,35 @@ exists on the property — this tool never invents Notion schema.
 Issue titles use a fixed **`Item: `** prefix, which is what the workflow's
 allowlist matches, so renaming a button can't break the two-tap path.
 
+### `Don't Search` — the permanent version (added 2026-07-31)
+
+A second `Select` option the **user** sets by hand in Notion. Same effect as
+`Not in Use ATM` — `readGroceryTargets()` drops the row, so it is never
+searched, never compared, and appears in no section of the page — but the two
+must not be conflated:
+
+| | who writes it | undone by |
+| --- | --- | --- |
+| `Not in Use ATM` | this tool (the page's "Not in use" button) | meant to be undone |
+| `Don't Search` | the user, in Notion | **nothing here.** Permanent |
+
+**Nothing in this repo may ever write, clear, or offer a button that undoes
+`Don't Search`.** `park.ts` is already safe: it only ever *appends* to the tag
+list, so a hand-set tag survives every write.
+
+Both tags are dropped in one place — `readGroceryTargets()` in
+`src/core/notion.ts` — which is why a tagged row cannot leak into the page via
+some other path. Currently 5 rows carry it (53 → 48 targets), including the two
+omega-3 `Egg Yolk` / `Egg White` rows; the whole-`egg` row is *not* tagged and
+is still searched.
+
+⚠️ **Compare tags through `normTag()`, never with `===`.** The option was first
+created as `Don'r Search` (an `r`) and renamed by hand the same day. Both
+spellings are listed in `DONT_SEARCH_TAGS`, and `normTag` folds case, curly
+apostrophes and stray spacing. A suppression tag that silently stops matching is
+the worst kind of bug: everything keeps "working" and the user gets back items
+they asked never to see again.
+
 ## Commands (run from repo root, needs `.env`)
 
 - `npm run push-ss` — residential runner: fetch terms → SS scan → write
@@ -245,7 +274,9 @@ allowlist matches, so renaming a button can't break the two-tap path.
   typos/trailing spaces — match exactly (`Price,SGD`, `Catagory`, `Unit type `,
   `Weight /Units of New Product `, `Used '1'/'2'/'3' Plan`).
 - **Active plan** = read `Used 'N' Plan` formula (N from `ACTIVE_PLAN_NUMBER`,
-  default 1). `readGroceryTargets()` reads the WHOLE grocery inventory (excludes
+  default 1). Rows tagged `Not in Use ATM` or `Don't Search` are dropped here —
+  see "Don't Search" above.
+  `readGroceryTargets()` reads the WHOLE grocery inventory (excludes
   `Suppliments`/`Filler` categories) and flags `inActivePlan`.
 - **FairPrice** = SSR-scrape `GET /search?query=`, parse `__NEXT_DATA__`; weight
   from `metaData.DisplayUnit` (the `Weight` field is wrong).

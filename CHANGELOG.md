@@ -118,6 +118,16 @@ All notable changes to this project are documented here. Format based on
   tracks `volumetric`; `StoreProduct` gains a `volumetric` flag.
 - Daily schedule moved to **06:00 SGT** (`cron: "0 22 * * *"`).
 
+### Added
+- **`Don't Search` tag.** A `Select` option the user sets by hand in Notion to
+  take an ingredient out of the scan permanently. Same exclusion point as
+  `Not in Use ATM` (`readGroceryTargets`), so a tagged row is never searched,
+  never compared and reaches no section of the page — but unlike the parked tag
+  it is never written or cleared by this tool. Tag comparison now goes through
+  `normTag()` (folds case, curly apostrophes, stray spacing) and accepts the
+  original `Don'r Search` spelling too, so a hand-edit in Notion cannot silently
+  switch the suppression off. 53 → 48 targets; no deals lost.
+
 ### Fixed
 - **Sheng Siong only ever returned promoted products.**
   `Products.getByAllSlugs` was called with `ecommPromotionFilter.active: true`,

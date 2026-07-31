@@ -30,6 +30,36 @@ export const INGREDIENTS_DS = "34b69a18-4fe7-80e6-904e-000b208cf560";
 export const TAGS_PROPERTY = "Select";
 export const PARKED_TAG = "Not in Use ATM";
 
+/**
+ * Permanently excluded from the scan by the user. Same effect as `PARKED_TAG` —
+ * the row is never searched and never reaches the page — but the two are NOT
+ * interchangeable:
+ *
+ *   `Not in Use ATM`  is written BY this tool (the page's "Not in use" button)
+ *                     and is meant to be undone.
+ *   `Don't Search`    is set by hand in Notion and is permanent. Nothing here
+ *                     may ever write it, clear it, or offer a button that
+ *                     undoes it — see `park.ts`.
+ *
+ * The option was briefly spelled "Don'r Search" (an `r`, not a `t`) and was
+ * renamed in Notion on 2026-07-31. The old spelling is kept here deliberately:
+ * it costs nothing, and a select option renamed by hand can just as easily be
+ * mistyped again. Comparison also folds case, curly apostrophes and stray
+ * spacing (see `normTag`), so a cosmetic edit in Notion cannot silently switch
+ * the exclusion off — which, for a tag whose whole job is to suppress items,
+ * would fail in the direction the user would notice last.
+ */
+export const DONT_SEARCH_TAGS = ["Don't Search", "Don'r Search"];
+
+/** Fold case, apostrophe style and stray whitespace before comparing tag names. */
+export function normTag(s: string): string {
+	return s
+		.toLowerCase()
+		.replace(/[‘’ʼ´`]/g, "'")
+		.replace(/\s+/g, " ")
+		.trim();
+}
+
 // Categories that are NOT groceries (skip for v1; a supplement scraper is future).
 const NON_GROCERY_CATEGORIES = new Set(["Suppliments", "Filler"]);
 
@@ -192,9 +222,12 @@ export async function readGroceryTargets(): Promise<PlanTarget[]> {
 				? monthlyAmount * (packWeightG / packSize)
 				: 0;
 		const tags = multiSelectNames(p[TAGS_PROPERTY]);
-		const hasTag = (name: string) => tags.some((t) => t.toLowerCase() === name);
-		// "Not in Use ATM" — the user has parked this ingredient; don't search for it.
-		if (hasTag(PARKED_TAG.toLowerCase())) continue;
+		const hasTag = (name: string) => tags.some((t) => normTag(t) === normTag(name));
+		// Out of the scan entirely: "Not in Use ATM" (parked by this tool, undoable)
+		// or "Don't Search" (set by hand in Notion, permanent). Dropping them HERE
+		// means they never become targets at all — so they are not searched, not
+		// compared, and never appear on the page in any section.
+		if (hasTag(PARKED_TAG) || DONT_SEARCH_TAGS.some(hasTag)) continue;
 
 		targets.push({
 			ingredientId: row.id,
