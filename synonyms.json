@@ -260,6 +260,11 @@
     "note": "Chana dhall is split chickpea; the inventory item is 'Lentil (Chana Dahl)'."
   },
   {
+    "from": "channa",
+    "to": "chickpea",
+    "note": "Double-n spelling — Sheng Siong titles it 'Channa Dhall [Happy Family]', which \\bchana\\b does not match, so the item's '(Chana Dahl)' requirement failed on the one product that satisfies it."
+  },
+  {
     "from": "garbanzo",
     "to": "chickpea",
     "note": "Spanish/US name for chickpea."
@@ -528,6 +533,16 @@
     "from": "masoory",
     "to": "masoor",
     "note": "Red lentil (masoor dhall) — spelling used in the inventory name."
+  },
+  {
+    "from": "lentil",
+    "to": "dhall",
+    "note": "Measured 2026-07-31: Sheng Siong returns 0 for 'lentil' and 10 real products for 'dhall' (Masoor Dhall Split, Toor Dhall, Channa Dhall). Folding this way puts 'dhall' into the search query, which is what the shop actually indexes; the bare 'Lentil' term is still searched too, so the FairPrice match is unaffected. Direction matters — mapping dhall->lentil would keep querying a word neither shop uses."
+  },
+  {
+    "from": "lentils",
+    "to": "dhall",
+    "note": "Plural. Needed explicitly because synonyms are applied BEFORE stemming, so \\blentil\\b never matches 'Lentils' — and 'Red Lentils' is how FairPrice titles it."
   },
   {
     "from": "dahl",
