@@ -90,14 +90,39 @@ function fromNextData() {
 /**
  * Parse a JSON-LD block, tolerating a MALFORMED one.
  *
- * FairPrice's product JSON-LD ships with an extra closing brace on the end, so `JSON.parse` throws on it —
- * which silently cost us the price on every page where __NEXT_DATA__ was stale (see below). Rather than
- * give up, scan for the first BALANCED top-level object (string-aware, so a brace inside a product
- * description doesn't confuse the count) and parse that.
+ * FairPrice's product JSON-LD is invalid JSON in at least TWO different ways, and each one silently cost us
+ * the price on every page where __NEXT_DATA__ had gone stale:
+ *
+ *   1. a stray closing brace on the end        (Meiji Low Fat Yoghurt)
+ *   2. RAW newlines inside a string value      (Tamar Valley — the `description` carries the importer's
+ *      postal address across several lines: "Kaiser Foods Singapore Pte Ltd, ⏎103 Kallang Avenue …")
+ *
+ * So the parse is a repair ladder rather than a single attempt. Both repairs are string-aware, and neither
+ * touches an already-valid block: a plain `JSON.parse` is always tried first.
  */
-function parseLooseJson(text) {
-  const s = String(text || "");
-  try { return JSON.parse(s); } catch { /* fall through to the balanced scan */ }
+
+/** Escape control characters that appear INSIDE a string literal — illegal in JSON, common in the wild. */
+function escapeControlsInStrings(s) {
+  let out = "", inStr = false, esc = false;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (inStr) {
+      if (esc) { out += c; esc = false; continue; }
+      if (c === "\\") { out += c; esc = true; continue; }
+      if (c === '"') { out += c; inStr = false; continue; }
+      const code = c.charCodeAt(0);
+      if (code < 32) { out += code === 10 ? "\\n" : code === 13 ? "\\r" : code === 9 ? "\\t" : " "; continue; }
+      out += c;
+      continue;
+    }
+    if (c === '"') inStr = true;
+    out += c;
+  }
+  return out;
+}
+
+/** The first BALANCED top-level object. String-aware, so a brace inside a description can't miscount. */
+function firstBalancedObject(s) {
   const start = s.indexOf("{");
   if (start < 0) return null;
   let depth = 0, inStr = false, esc = false;
@@ -114,6 +139,16 @@ function parseLooseJson(text) {
     else if (c === "}" && --depth === 0) {
       try { return JSON.parse(s.slice(start, i + 1)); } catch { return null; }
     }
+  }
+  return null;
+}
+
+function parseLooseJson(text) {
+  const raw = String(text || "");
+  for (const s of [raw, escapeControlsInStrings(raw)]) {
+    try { return JSON.parse(s); } catch { /* try the next repair */ }
+    const obj = firstBalancedObject(s);
+    if (obj) return obj;
   }
   return null;
 }
