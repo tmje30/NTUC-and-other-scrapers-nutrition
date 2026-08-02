@@ -5,6 +5,13 @@ on:
     # 02:00 UTC = 10:00 Singapore time (UTC+8), once daily.
     - cron: "0 2 * * *"
   workflow_dispatch: # allow manual runs from the Actions tab
+  # The page's "Rescan" button, shown only when a shop is missing from the scan.
+  # The usual cause is the laptop being shut at 05:30: Task Scheduler runs the
+  # missed Sheng Siong scan when the laptop next wakes, so by mid-morning fresh
+  # prices ARE in the repo — but nothing rebuilds the 10:00 page, which sits
+  # there FairPrice-only all day. This lets that page rebuild itself on request.
+  repository_dispatch:
+    types: [rescan]
 
 # Needed for the GitHub Pages deploy. `actions: read` is what deploy-pages needs
 # to resolve the uploaded artifact by id (documented from its v4); the run has

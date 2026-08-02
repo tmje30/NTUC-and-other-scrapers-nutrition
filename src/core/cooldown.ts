@@ -36,12 +36,22 @@ export const NO_USAGE_COOLDOWN_DAYS = 14;
 const MIN_DAYS = 1;
 const MAX_DAYS = 365;
 
+/**
+ * Why an item is being skipped. `bought` is the original meaning — it's in the
+ * cupboard. `ignored` is the page's "Ignore 1× week" button: nothing was bought,
+ * the user just doesn't want to be shown it again this week. The page says which,
+ * because "Recently bought" is a lie about an item you merely dismissed.
+ */
+export type CooldownReason = "bought" | "ignored";
+
 export interface CooldownEntry {
 	/** Base-noun key this cooldown suppresses (see `cooldownKey`). */
 	key: string;
 	/** The ingredient that was added, for display and for un-snoozing by hand. */
 	ingredientId: string;
 	ingredientName: string;
+	/** Absent on entries written before this existed — read as "bought". */
+	reason?: CooldownReason;
 	/** When it was pushed to the grocery list, and when it comes back into the scan. */
 	addedAt: string;
 	until: string;
@@ -88,6 +98,40 @@ export interface CooldownPlan {
 	days: number;
 	until: string;
 	basis: string;
+}
+
+/** Singapore is UTC+8 all year — no DST, so one constant is the whole conversion. */
+const SGT_OFFSET_MS = 8 * 3_600_000;
+
+/**
+ * An ignore has to outlive at least one daily scan, or it did nothing at all.
+ * Tapped on a Sunday evening, "the start of next week" is seven hours away and
+ * the item is back on the very next morning's page — which is not what anyone
+ * dismissing something means. Under a day of cover rolls to the Monday after.
+ */
+const MIN_IGNORE_MS = 86_400_000;
+
+/**
+ * Midnight at the start of next week, Singapore time, as a UTC instant.
+ *
+ * The week starts on MONDAY, so "ignore this for a week" from a Friday is quiet
+ * over the weekend and back on Monday's scan — rather than a rolling seven days
+ * that returns the item mid-week. Asked for on a Monday it means the FOLLOWING
+ * Monday: a button labelled "1× week" that expired in a few hours would be a
+ * button that did nothing.
+ *
+ * The date maths is done on a shifted clock (UTC getters reading SGT) because
+ * the runner is a UTC machine, and "next Monday" there is the wrong Monday for
+ * eight hours of every day.
+ */
+export function startOfNextWeek(from: Date = new Date()): Date {
+	const sgt = new Date(from.getTime() + SGT_OFFSET_MS);
+	const daysAhead = (8 - sgt.getUTCDay()) % 7 || 7; // 0=Sun … 1=Mon; today-Monday ⇒ 7
+	const midnight = (extra: number) =>
+		Date.UTC(sgt.getUTCFullYear(), sgt.getUTCMonth(), sgt.getUTCDate() + daysAhead + extra) -
+		SGT_OFFSET_MS;
+	const soonest = midnight(0);
+	return new Date(soonest - from.getTime() >= MIN_IGNORE_MS ? soonest : midnight(7));
 }
 
 function packLabel(g: number, volumetric: boolean): string {

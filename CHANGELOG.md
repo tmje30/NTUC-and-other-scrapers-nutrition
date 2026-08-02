@@ -104,8 +104,45 @@ All notable changes to this project are documented here. Format based on
   (`npm run item-action`, takes `--dry-run`) and
   `.github/workflows/item-actions.yml`, deliberately separate from
   `add-to-list.yml`.
+- **Correction menu on every card** — a `⋯` button under the percentage (and
+  under the *closest* label on a close match), holding three actions that teach
+  the matcher instead of just hiding today's card:
+  - *Ignore 1× week* — a cooldown until Monday 00:00 SGT (`startOfNextWeek`),
+    tagged `reason: "ignored"` so the page lists it under "Ignored this week"
+    rather than lying about it being recently bought. Under a day of cover rolls
+    to the Monday after, or the item would be back on the next morning's scan.
+    Never shortens a longer cooldown already in place.
+  - *Mismatch item* — bans words for that item permanently. The page suggests
+    the title's words the item never asked for (`suggestExclusionTerms`; "3 in 1"
+    and "indocafe" from *Indocafe 3 in 1 Instant Coffee*), and the user edits the
+    list before anything is saved, because "extra" honestly includes the brand.
+  - *Almost, but no* — blocks one product for one item, for a near-miss whose
+    defining property can't be confirmed (the item wants unpasteurized; the shop
+    doesn't say). No word to ban, so the product itself is the exclusion.
+  New `src/core/exclusions.ts` (pure) + `exclusions-file.ts` →
+  `data/exclusions.json`, applied in `findDeal`/`findReview` and keyed by
+  `cooldownKey`, so a correction on "Onion (White)" covers "Onion (not red)".
+  A single-word term folds through the matcher's own tokenizer ("tissue" catches
+  "Tissues"); a phrase uses a separator-tolerant regex, since stemming "3 in 1"
+  yields "in" and would exclude the whole shop.
+
+- **Rescan button** in the missing-shop warning banner (and only there — it does
+  nothing useful otherwise). The two halves of the hybrid heal at different
+  times: a laptop shut at 05:30 runs its missed Sheng Siong scan when it next
+  wakes (`StartWhenAvailable`), so fresh prices reach the repo by mid-morning,
+  but the 10:00 page was already built and nothing looks again — leaving a
+  FairPrice-only page all day with the data sitting right there. The button
+  fires `repository_dispatch: rescan` at `daily.yml` (new trigger), which
+  rescans, redeploys Pages and re-sends the Telegram digest. Without a token it
+  falls back to that workflow's own page, where *Run workflow* does the same.
 
 ### Changed
+- Deal/close-match cards restructured: the percentage column is now a `float`
+  inside a `.main` block, a sibling of the product link rather than nested in it
+  — a control inside an `<a>` is invalid and untappable. Floating (rather than a
+  third flex column) is what keeps the change free: the lines below the float
+  reclaim the full card width, so a long product name stays at two lines instead
+  of three.
 - Telegram message cleaned up: item name is the link, shows pack size `[700g]`
   / `[640ml]`, price per kg (per L for volumetric), monthly usage; dropped the
   per-month savings figure; "month" spelled out.
@@ -119,6 +156,25 @@ All notable changes to this project are documented here. Format based on
 - Daily schedule moved to **06:00 SGT** (`cron: "0 22 * * *"`).
 
 ### Added
+- **Chrome extension — "Add to Ingredients"** (`extension/`). Captures a grocery
+  product page into the Notion Ingredients DB. Modelled on the sibling Inventory
+  Price Upkeeper extension, minus ABV, SKU and the Unverified/verified review
+  workflow, with Supplier renamed to Vendor. Two writes, neither automatic:
+  **Add to Ingredients** creates a row, and **Replace With This** appears beside
+  each similar existing row and repoints it at this product (confirms first,
+  showing before → after). Writes `Name` (generic) and `Items Exact Name` (the
+  shop's full title + brand) separately — "Malaysia Round Cabbage" → `Name`
+  "Round Cabbage" — plus `Price,SGD`, `Weight /Units of New Product `,
+  `Unit type `, `Catagory`, `Vendor, Current ` and `Vendor 1 URL`.
+- `src/core/generic-name.ts` — deterministic full-name → generic-name stripper
+  (a known brand, a country of origin, a pack size; nothing else). Origin words
+  are country NOUNS only, so `China Chinese Cabbage` → `Chinese Cabbage`.
+- `src/core/categorize.ts` — keyword → `Catagory`, and pack size → `Unit type `.
+- `src/core/ingredients-schema.ts` — the data-source id and the exact (typo'd,
+  trailing-spaced) Ingredients property names, re-exported by `notion.ts` so the
+  scraper and the extension share one source of truth.
+- `npm run ext:build` (esbuild) — bundles the extension, resolving NodeNext
+  `.js` specifiers to `.ts` and baking `synonyms.json` in.
 - **`Don't Search` tag.** A `Select` option the user sets by hand in Notion to
   take an ingredient out of the scan permanently. Same exclusion point as
   `Not in Use ATM` (`readGroceryTargets`), so a tagged row is never searched,

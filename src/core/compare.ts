@@ -1,6 +1,8 @@
 import type { PlanTarget } from "./notion.js";
 import type { StoreProduct } from "./stores/types.js";
 import { evaluate } from "./match.js";
+import { cooldownKey } from "./cooldown.js";
+import { EMPTY_EXCLUSIONS, exclusionReason, type ExclusionFile } from "./exclusions.js";
 
 /**
  * Match store products to a plan target and find genuine savings.
@@ -137,10 +139,18 @@ function monthlySaving(target: PlanTarget, dimension: DealDimension, saving: num
  * meaningless across a per-egg and a per-100g figure, while "how much cheaper than
  * what you pay" is the same question either way.
  */
-export function findDeal(target: PlanTarget, products: StoreProduct[]): Deal | null {
+export function findDeal(
+	target: PlanTarget,
+	products: StoreProduct[],
+	exclusions: ExclusionFile = EMPTY_EXCLUSIONS,
+): Deal | null {
 	let best: Deal | null = null;
+	const key = cooldownKey(target.search.searchTerm);
 
 	for (const product of products) {
+		// User corrections come first: a product the user has told us is wrong for
+		// this item is not a deal however well it scores. See `exclusions.ts`.
+		if (exclusionReason(exclusions, key, product)) continue;
 		if (evaluate(target, product).verdict !== "accept") continue;
 		const priced = priceCandidate(target, product);
 		if (!priced) continue;
@@ -189,9 +199,18 @@ export interface ReviewMiss {
  * no confident deal was found — so borderline matches are visible, not silently
  * dropped). Returns null if nothing reached the review band.
  */
-export function findReview(target: PlanTarget, products: StoreProduct[]): ReviewMiss | null {
+export function findReview(
+	target: PlanTarget,
+	products: StoreProduct[],
+	exclusions: ExclusionFile = EMPTY_EXCLUSIONS,
+): ReviewMiss | null {
 	let best: ReviewMiss | null = null;
+	const key = cooldownKey(target.search.searchTerm);
 	for (const p of products) {
+		// Excluded here too, and for the stronger reason: this is the list the
+		// "Mismatch"/"Almost, but no" buttons live on, so a correction that left the
+		// product sitting on tomorrow's page would look like the button did nothing.
+		if (exclusionReason(exclusions, key, p)) continue;
 		const m = evaluate(target, p);
 		if (m.verdict === "review" && (!best || m.adjusted > best.score)) {
 			const priced = priceCandidate(target, p);

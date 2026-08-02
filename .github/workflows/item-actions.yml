@@ -55,16 +55,19 @@ jobs:
           ISSUE_BODY: ${{ github.event.issue.body }}
           ACTION_PAYLOAD: ${{ toJSON(github.event.client_payload) }}
 
-      - name: Commit the cooldown change
+      - name: Commit the data change
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/cooldowns.json
+          # cooldowns.json — reset / not in use / ignore for the week.
+          # exclusions.json — mismatch / almost-but-no. One action writes one file,
+          # but staging both keeps this step honest as actions are added.
+          git add data/cooldowns.json data/exclusions.json
           if git diff --staged --quiet; then
-            echo "no cooldown change"
+            echo "no data change"
             exit 0
           fi
-          git commit -m "cooldown: cleared by an item action from the deals page"
+          git commit -m "item action: applied from the deals page"
           for attempt in 1 2 3 4 5; do
             if git push; then
               exit 0
@@ -72,7 +75,7 @@ jobs:
             echo "push rejected — rebasing and retrying (attempt $attempt)"
             git pull --rebase --autostash origin "${{ github.ref_name }}"
           done
-          echo "::error::could not push the cooldown change after 5 attempts"
+          echo "::error::could not push the data change after 5 attempts"
           exit 1
 
       - name: Close the request

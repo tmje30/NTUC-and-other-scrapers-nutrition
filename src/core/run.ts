@@ -4,8 +4,9 @@ import { shengsiong } from "./stores/shengsiong.js";
 import { shengsiongFile, type ShengSiongStatus } from "./stores/shengsiong-file.js";
 import { findDeal, findReview, type Deal, type ReviewMiss } from "./compare.js";
 import { normSynonyms } from "./match.js";
-import { cooldownKey, findCooldown } from "./cooldown.js";
+import { cooldownKey, findCooldown, type CooldownReason } from "./cooldown.js";
 import { readCooldowns } from "./cooldown-file.js";
+import { readExclusions } from "./exclusions-file.js";
 import type { StoreModule, StoreProduct } from "./stores/types.js";
 
 /**
@@ -43,6 +44,8 @@ export interface RunResult {
 		/** Cooldown key and ingredient, so the page's Reset/park buttons can act on it. */
 		key: string;
 		ingredientId: string;
+		/** Bought, or dismissed for the week from the page. The two are listed apart. */
+		reason: CooldownReason;
 	}[];
 	/**
 	 * Close-but-not-exact matches, shown on the page as recommendations: the item's
@@ -137,6 +140,7 @@ export async function runOnce(): Promise<RunResult> {
 			// The live ingredient row, not the id recorded in the cooldown — the
 			// cooldown may have been written for a related item sharing this key.
 			ingredientId: t.ingredientId,
+			reason: hit.reason ?? "bought",
 		});
 		return false;
 	});
@@ -147,17 +151,21 @@ export async function runOnce(): Promise<RunResult> {
 		...new Set(comparable.flatMap((t) => queryTerms(t.search.searchTerm, t.search.properties)).filter(Boolean)),
 	];
 
+	// Corrections the user made from the page — words that must never match this
+	// item again, and products blocked outright. Read once for the whole pass.
+	const exclusions = await readExclusions();
+
 	const deals: Deal[] = [];
 	const errors: RunResult["errors"] = [];
 	const reviews: RunResult["reviews"] = [];
 	const recommendations: ReviewMiss[] = [];
 	for (const target of comparable) {
 		const products = await searchAllStores(target, errors);
-		const deal = findDeal(target, products);
+		const deal = findDeal(target, products, exclusions);
 		if (deal) {
 			deals.push(deal);
 		} else {
-			const rev = findReview(target, products);
+			const rev = findReview(target, products, exclusions);
 			if (rev) {
 				reviews.push({
 					target: target.name,

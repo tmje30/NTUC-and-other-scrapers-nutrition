@@ -1,5 +1,6 @@
 import type { Deal, ReviewMiss } from "./compare.js";
-import { cooldownKey } from "./cooldown.js";
+import { cooldownKey, type CooldownReason } from "./cooldown.js";
+import { suggestExclusionTerms } from "./exclusions.js";
 import { groceryRowTitle, type AddPayload } from "./grocery-list.js";
 import type { ActionPayload } from "./item-actions.js";
 import type { PlanTarget } from "./notion.js";
@@ -22,7 +23,14 @@ export interface PageOptions {
 	 * being served) and `ingredientId` are what the Reset button needs; without
 	 * them the item still lists, just without its buttons.
 	 */
-	snoozed?: { name: string; until: string; key?: string; ingredientId?: string }[];
+	snoozed?: {
+		name: string;
+		until: string;
+		key?: string;
+		ingredientId?: string;
+		/** Bought (the default) or dismissed from the page — they list separately. */
+		reason?: CooldownReason;
+	}[];
 	/**
 	 * Set when a shop is missing from this scan — "Sheng Siong data is 1 day old".
 	 * Without it, a runner that has quietly stopped working looks exactly like a day
@@ -166,7 +174,15 @@ function addButton(p: AddPayload, o: PageOptions): string {
 function actionButton(
 	p: ActionPayload,
 	o: PageOptions,
-	ui: { label: string; done: string; aria: string; prose: string; confirm?: string },
+	ui: {
+		label: string;
+		done: string;
+		aria: string;
+		prose: string;
+		confirm?: string;
+		/** Question to ask before dispatching, pre-filled with `p.terms`. One-tap only. */
+		prompt?: string;
+	},
 ): string {
 	const body =
 		`${ui.prose}\n\n` +
@@ -184,8 +200,115 @@ function actionButton(
 
 	return `<a class="act" href="${esc(href)}" target="_blank" rel="noopener"
         data-payload="${esc(JSON.stringify(p))}" data-event="item-action"
-        data-done="${esc(ui.done)}"${ui.confirm ? ` data-confirm="${esc(ui.confirm)}"` : ""}
+        data-done="${esc(ui.done)}"${ui.confirm ? ` data-confirm="${esc(ui.confirm)}"` : ""}${
+					ui.prompt
+						? ` data-prompt="${esc(ui.prompt)}" data-terms="${esc((p.terms ?? []).join(", "))}"`
+						: ""
+				}
         aria-label="${esc(ui.aria)}">${esc(ui.label)}</a>`;
+}
+
+/**
+ * The menu under a card's percentage: "this match was wrong, and here is how".
+ *
+ * Three corrections, in order of how much they change:
+ *
+ *  • Ignore 1× week — nothing is wrong with the match, you just don't want to be
+ *    asked again this week. Reversible from the list at the bottom of the page.
+ *  • Mismatch item — the product carries words this item never asked for
+ *    ("Instant Coffee" → "Indocafe 3 in 1"). Those words are banned for the item
+ *    from the next scan on, so the SEARCH improves rather than just today's page.
+ *  • Almost, but no — the right kind of product, but a defining property can't be
+ *    confirmed (the item wants unpasteurized; the shop doesn't say). There is no
+ *    word to ban, so this one product is blocked and the rest of the shop is not.
+ *
+ * All three go the same way as the Reset/park buttons — a pre-filled GitHub issue,
+ * upgraded to one tap where a token is set — because they write to the repo, not
+ * to Notion, and the page holds no credentials of its own.
+ *
+ * `<details>` rather than a scripted popover: it opens, closes and is keyboard-
+ * reachable with no JavaScript at all, which is the same floor the buttons inside
+ * it stand on.
+ */
+function actionMenu(t: PlanTarget, p: StoreProduct, o: PageOptions, missing: string[] = []): string {
+	const base = {
+		v: 1 as const,
+		key: cooldownKey(t.search.searchTerm),
+		ingredientId: t.ingredientId,
+		name: t.name,
+		store: p.store,
+		product: p.name,
+		url: p.url,
+	};
+	// What the item itself asks for, so its own words are never offered as
+	// "extra" — built from the parsed parts, never the raw name, so a {private
+	// note} stays out of it exactly as it does in matching.
+	const s = t.search;
+	const itemText = `${s.searchTerm} ${s.mustMatch.join(" ")} ${s.properties.join(" ")}`;
+	const terms = suggestExclusionTerms(itemText, `${p.name} ${p.brand ?? ""}`);
+	const note = missing.length ? `not ${missing.join(", ")}` : "close, but not confirmed";
+
+	const ignore = actionButton({ ...base, action: "ignore-week" }, o, {
+		label: "Ignore 1× week",
+		done: "✓ ignored",
+		aria: `Ignore ${t.name} until the start of next week`,
+		prose:
+			`Ignoring **${t.name}** from the deals page: don't search for it again ` +
+			`until the start of next week.`,
+	});
+
+	// Suggested words only — the user edits them before anything is saved. "Extra"
+	// honestly includes the brand, and whether to ban a brand for an item is their
+	// call, not a guess this page should make for them.
+	const mismatch = actionButton({ ...base, action: "mismatch", terms }, o, {
+		label: "Mismatch item",
+		done: "✓ excluded",
+		aria: `Exclude the wrong words in ${p.name} from future ${t.name} searches`,
+		prompt:
+			`Words to stop matching for "${t.name}" (comma-separated) — ` +
+			`edit or delete any that belong.`,
+		prose:
+			`Mismatch on **${t.name}**: \`${p.name}\` is not this item. Stop matching ` +
+			`the words listed in \`terms\` below for it. **Edit that list before ` +
+			`submitting** — remove anything the item legitimately uses.`,
+	});
+
+	const almost = actionButton({ ...base, action: "almost", note }, o, {
+		label: "Almost, but no",
+		done: "✓ blocked",
+		aria: `Block ${p.name} for ${t.name} — similar but missing a property`,
+		prose:
+			`Almost, but no, on **${t.name}**: \`${p.name}\` is close but ` +
+			`${note}. Block this one product for this item; leave everything else alone.`,
+	});
+
+	return `
+        <details class="menu">
+          <summary aria-label="Correct the match for ${esc(t.name)}">⋯</summary>
+          <div class="panel">${ignore}${mismatch}${almost}</div>
+        </details>`;
+}
+
+/**
+ * "Rescan" — rebuild this page from scratch. Only ever rendered inside the
+ * missing-shop warning, because that is the only time it does anything useful.
+ *
+ * It exists because the two halves of the hybrid heal at different times. If the
+ * laptop is shut at 05:30, Task Scheduler runs the missed Sheng Siong scan when
+ * it next wakes (`StartWhenAvailable`), so fresh prices land in the repo by
+ * mid-morning — but the cloud already built the page at 10:00 and nothing looks
+ * again. The laptop half fixes itself; this is the button for the other half.
+ *
+ * One tap fires `repository_dispatch: rescan` at the daily workflow. Without a
+ * token it falls back to that workflow's own page, where "Run workflow" does the
+ * same job in one more tap — the same floor as every other button here.
+ */
+function rescanButton(o: PageOptions): string {
+	const payload = esc(JSON.stringify({ v: 1, reason: "rescan requested from the deals page" }));
+	const href = `https://github.com/${o.repo}/actions/workflows/daily.yml`;
+	return `<a class="act rescan" href="${esc(href)}" target="_blank" rel="noopener"
+        data-payload="${payload}" data-event="rescan" data-done="✓ rescanning"
+        aria-label="Rescan the shops and rebuild this page">↻ Rescan</a>`;
 }
 
 /** One line in "Recently bought · not searched": the item, when it's back, its buttons. */
@@ -277,26 +400,35 @@ function dealCard(d: Deal, o: PageOptions): string {
 	const usage =
 		t.unitType === "By Unit" ? `${t.monthlyAmount} units` : amount(t.monthlyAmount, p.volumetric);
 
-	// The card is a flex row: the Add button on the left, the (clickable) deal on
-	// the right. The button has to sit OUTSIDE the product link — a control nested
-	// in an <a> is both invalid and untappable without swallowing the link.
+	// The Add button, then everything else. Inside `.main` the percentage column is
+	// FLOATED past the product link rather than nested in it: a control inside an
+	// <a> is both invalid and untappable without swallowing the link, but a right
+	// column would have cost every card ~60px of text width — enough to push a real
+	// product name onto a third line. Floating reserves space beside the top rows
+	// only, and the lines below reclaim the full width. See the CSS.
 	return `
     <div class="card">
       ${addButton(addPayload(t, p), o)}
-      <a class="body" href="${esc(p.url)}" target="_blank" rel="noopener">
-        <!-- Row 1: your item [pack] + the price you pay (yellow), with the % saving -->
-        <div class="row1">
-          <span class="name">${esc(t.name)}${itemPack}
-            <span class="mine">Price ${myPrice}</span></span>
+      <div class="main">
+        <!-- The % saving, and the menu for telling us the match was wrong -->
+        <div class="pctcol">
           <span class="pct">−${d.savingPct.toFixed(0)}%</span>
+          ${actionMenu(t, p, o)}
         </div>
-        <!-- Row 2: the cheaper product we found + its price + sale % (red) -->
-        <div class="meta"><span class="store">${esc(p.store)}</span> · ${esc(p.name)}${prodPack} <span class="prodprice">${prodPrice}</span>${sale}</div>
-        <!-- Row 3: product $/kg vs your $/kg (struck through) -->
-        <div class="price"><b>${dealKg}</b> <span class="was">vs ${baseKg}</span></div>
-        <!-- Row 4: how much of it you use -->
-        ${t.inActivePlan ? `<div class="usage">uses ~${usage}/month</div>` : ""}
-      </a>
+        <a class="body" href="${esc(p.url)}" target="_blank" rel="noopener">
+          <!-- Row 1: your item [pack] + the price you pay (yellow) -->
+          <div class="row1">
+            <span class="name">${esc(t.name)}${itemPack}
+              <span class="mine">Price ${myPrice}</span></span>
+          </div>
+          <!-- Row 2: the cheaper product we found + its price + sale % (red) -->
+          <div class="meta"><span class="store">${esc(p.store)}</span> · ${esc(p.name)}${prodPack} <span class="prodprice">${prodPrice}</span>${sale}</div>
+          <!-- Row 3: product $/kg vs your $/kg (struck through) -->
+          <div class="price"><b>${dealKg}</b> <span class="was">vs ${baseKg}</span></div>
+          <!-- Row 4: how much of it you use -->
+          ${t.inActivePlan ? `<div class="usage">uses ~${usage}/month</div>` : ""}
+        </a>
+      </div>
     </div>`;
 }
 
@@ -358,17 +490,49 @@ function recCard(r: ReviewMiss, o: PageOptions): string {
 	return `
     <div class="card rec">
       ${addButton(payload, o)}
-      <a class="body" href="${esc(p.url)}" target="_blank" rel="noopener">
-        <div class="row1">
-          <span class="name">${esc(t.name)}${itemPack}${myPrice}</span>
-          <span class="pctcol"><span class="pct">−${savingPct.toFixed(0)}%</span><span class="tag">closest</span></span>
+      <div class="main">
+        <!-- Percentage, the "closest" label, then the menu — this is the section
+             where a wrong match is most likely, so the correction sits right under
+             the label that says the match is only close. -->
+        <div class="pctcol">
+          <span class="pct">−${savingPct.toFixed(0)}%</span>
+          <span class="tag">closest</span>
+          ${actionMenu(t, p, o, r.missing)}
         </div>
-        <div class="meta"><span class="store">${esc(p.store)}</span> · ${esc(p.name)}${prodPack} <span class="prodprice">$${p.priceSgd.toFixed(2)}</span></div>
-        <div class="price"><b>${prodBig}</b> <span class="was">vs ${baseBig}</span></div>
-        ${t.inActivePlan ? `<div class="usage">uses ~${usage}/month</div>` : ""}
-        ${why}
-      </a>
+        <a class="body" href="${esc(p.url)}" target="_blank" rel="noopener">
+          <div class="row1">
+            <span class="name">${esc(t.name)}${itemPack}${myPrice}</span>
+          </div>
+          <div class="meta"><span class="store">${esc(p.store)}</span> · ${esc(p.name)}${prodPack} <span class="prodprice">$${p.priceSgd.toFixed(2)}</span></div>
+          <div class="price"><b>${prodBig}</b> <span class="was">vs ${baseBig}</span></div>
+          ${t.inActivePlan ? `<div class="usage">uses ~${usage}/month</div>` : ""}
+          ${why}
+        </a>
+      </div>
     </div>`;
+}
+
+/**
+ * The only behaviour the correction menu needs beyond what `<details>` already
+ * does: a tap anywhere else closes it. Without this an open menu stays open until
+ * you find its own ⋯ again, and on a phone that reads as a stuck page.
+ *
+ * Emitted on both paths (one-tap and relay), because the menus are rendered
+ * either way — everything else about them works with JavaScript off.
+ */
+function menuScript(): string {
+	return `<script>
+(function () {
+  document.addEventListener("click", function (ev) {
+    var open = document.querySelector("details.menu[open]");
+    // Capture phase, so this runs before the action handler below and a tap on a
+    // menu item still reaches it. A tap INSIDE the open menu is left alone —
+    // <summary> does its own toggling.
+    if (open && !open.contains(ev.target)) open.open = false;
+  }, true);
+})();
+</script>
+`;
 }
 
 /**
@@ -451,6 +615,16 @@ function githubOneTapScript(o: PageOptions): string {
         // there waiting for it to change into something else.
         btn.dataset.state = "done";
         btn.textContent = btn.dataset.done || "✓ sent";
+        // A menu item's new label is inside a panel that is about to close, so the
+        // menu itself has to carry the result — otherwise the only feedback for a
+        // correction is a popup vanishing.
+        var menu = btn.closest && btn.closest("details.menu");
+        if (menu) {
+          menu.open = false;
+          menu.dataset.state = "done";
+          var sum = menu.querySelector("summary");
+          if (sum) sum.textContent = "✓";
+        }
       })
       .catch(function (e) {
         btn.dataset.state = "failed";
@@ -473,6 +647,24 @@ function githubOneTapScript(o: PageOptions): string {
     // through to the link, or "no" would open the issue form instead.
     if (btn.dataset.confirm && !confirm(btn.dataset.confirm)) {
       ev.preventDefault();
+      return;
+    }
+    // "Mismatch item" ships a list of words the page GUESSED at, so it is shown
+    // for editing before anything is banned — the guess includes the brand, and
+    // banning a brand for an item is the user's call. Cancelling, or clearing the
+    // box, sends nothing: an empty exclusion is not a correction. (Without a token
+    // the same list travels in the issue body, which is editable there instead.)
+    if (btn.dataset.prompt) {
+      var edited = prompt(btn.dataset.prompt, btn.dataset.terms || "");
+      ev.preventDefault();
+      if (edited === null) return;
+      var terms = edited.split(",").map(function (s) { return s.trim(); }).filter(Boolean);
+      if (!terms.length) return;
+      var body = JSON.parse(btn.dataset.payload);
+      body.terms = terms;
+      btn.dataset.payload = JSON.stringify(body);
+      btn.dataset.terms = terms.join(", ");
+      dispatch(btn);
       return;
     }
     ev.preventDefault();
@@ -628,12 +820,22 @@ export function renderDealsPage(
 			recs.map((r) => recCard(r, o)).join("")
 		: "";
 	// Items you've just bought aren't searched at all, so they'd otherwise vanish
-	// with no explanation. Say so, and say when each one comes back.
+	// with no explanation. Say so, and say when each one comes back. Items you
+	// merely dismissed for the week are listed apart: calling those "recently
+	// bought" would be a straight lie about what happened, and the two are undone
+	// for completely different reasons.
 	const snoozed = o.snoozed ?? [];
-	const snoozeSection = snoozed.length
-		? `<h2 class="section">Recently bought · not searched</h2>` +
-			snoozed.map((s) => snoozeRow(s, o)).join("")
-		: "";
+	const bought = snoozed.filter((s) => (s.reason ?? "bought") === "bought");
+	const ignored = snoozed.filter((s) => s.reason === "ignored");
+	const snoozeSection =
+		(bought.length
+			? `<h2 class="section">Recently bought · not searched</h2>` +
+				bought.map((s) => snoozeRow(s, o)).join("")
+			: "") +
+		(ignored.length
+			? `<h2 class="section">Ignored this week</h2>` +
+				ignored.map((s) => snoozeRow(s, o)).join("")
+			: "");
 
 	const cards = saleSection + planSection + otherSection + recSection + snoozeSection;
 
@@ -657,7 +859,14 @@ export function renderDealsPage(
   .card { display: flex; align-items: stretch; gap: 10px; color: inherit; background: #fff;
     border: 1px solid #e5e7eb; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px;
     box-shadow: 0 1px 2px rgba(0,0,0,.04); }
-  .body { display: block; flex: 1; min-width: 0; text-decoration: none; color: inherit;
+  /* Everything but the Add button. A block (not a flex item) so the percentage
+     column inside it can float — see .pctcol. The clearfix keeps the card tall
+     enough when that column is taller than the text beside it. */
+  .main { flex: 1; min-width: 0; }
+  .main::after { content: ""; display: block; clear: both; }
+  /* Must NOT establish a block formatting context (no overflow/contain here), or
+     its text would stop flowing around the floated column and sit underneath it. */
+  .body { display: block; text-decoration: none; color: inherit;
     transition: transform .05s ease; }
   .body:active { transform: scale(.995); }
   /* Add: pushes the item onto the Notion grocery list. Deliberately chunky — it's
@@ -702,11 +911,37 @@ export function renderDealsPage(
      look like an error page — the deals below are still real. */
   .warn { color: #92400e; background: #fffaeb; border: 1px solid #fedf89; border-radius: 10px;
     font-size: .85rem; margin: 0 2px 14px; padding: 8px 12px; }
+  /* Wraps on a phone so the hint drops under the button rather than squeezing it. */
+  .warnrow { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 10px; margin-top: 8px; }
+  .warnhint { flex: 1 1 220px; font-size: .78rem; opacity: .85; }
+  .act.rescan { color: #92400e; background: #fff; border-color: #fedf89; font-weight: 700; }
   .card.rec { border-style: dashed; background: #fcfcfd; }
-  /* Percentage on top, "closest" beneath it, both hugging the right edge. */
-  .pctcol { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+  /* Percentage on top, "closest" beneath it, then the ⋯ menu — all hugging the
+     right edge. A sibling of the product link, never inside it, so the menu is
+     tappable without opening the store page.
+     Floated rather than sat in a column of its own: the card's lines wrap around
+     it while it lasts and then run the full width, which is what keeps a long
+     product name at two lines instead of three. */
+  .pctcol { float: right; margin: 0 0 4px 8px; display: flex; flex-direction: column;
+    align-items: flex-end; gap: 3px; }
   .tag { color: #6b7280; font-size: .72rem; text-transform: uppercase; letter-spacing: .04em;
     border: 1px solid #e5e7eb; border-radius: 8px; padding: 1px 7px; white-space: nowrap; }
+  /* The correction menu. <details> gives open/close and keyboard access for free;
+     the panel is absolute so opening it overlays the cards below instead of
+     shoving the whole page down. */
+  .menu { position: relative; margin-top: 1px; }
+  .menu > summary { display: inline-flex; align-items: center; justify-content: center;
+    min-width: 34px; min-height: 26px; padding: 0 8px; font-size: .8rem; line-height: 1;
+    color: #6b7280; background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 8px;
+    cursor: pointer; list-style: none; -webkit-tap-highlight-color: transparent; }
+  .menu > summary::-webkit-details-marker { display: none; }
+  .menu[open] > summary { color: #1a1d21; background: #e5e7eb; }
+  .menu[data-state="done"] > summary { color: #067647; background: #ecfdf3; border-color: #a6f4c5; }
+  .panel { position: absolute; right: 0; top: calc(100% + 4px); z-index: 10;
+    display: flex; flex-direction: column; gap: 5px; min-width: 190px; padding: 6px;
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.14); }
+  .panel .act { width: 100%; justify-content: flex-start; min-height: 34px; }
   .why { color: #92400e; font-size: .82rem; margin-top: 4px; }
   /* Deliberately quiet: setting a token is a once-per-device errand, not a
      feature to advertise on every visit. */
@@ -723,8 +958,13 @@ export function renderDealsPage(
     .prodprice { color: #cbd2dc; }
     .card.rec { background: #141619; }
     .tag { border-color: #2c323a; }
+    .menu > summary { color: #cbd2dc; background: #1c2026; border-color: #2c323a; }
+    .menu[open] > summary { color: #e5e7eb; background: #262b32; }
+    .menu[data-state="done"] > summary { color: #6ee7b7; background: #06251a; border-color: #0b4a34; }
+    .panel { background: #171a1f; border-color: #2c323a; box-shadow: 0 8px 24px rgba(0,0,0,.5); }
     .why { color: #fbbf24; }
     .warn { color: #fbbf24; background: #241a06; border-color: #4a3410; }
+    .act.rescan { color: #fbbf24; background: #1c1403; border-color: #4a3410; }
     .add { color: #6ee7b7; background: #06251a; border-color: #0b4a34; }
     .add[data-state="done"] { color: #04140e; background: #6ee7b7; border-color: #6ee7b7; }
     .add[data-state="failed"], .act[data-state="failed"] { color: #fda29b; background: #2b1512; border-color: #5c2420; }
@@ -738,7 +978,16 @@ export function renderDealsPage(
   <div class="wrap">
     <h1>🛒 Grocery deals</h1>
     <p class="sub">${date} · ${total} deal${total === 1 ? "" : "s"} beating your prices</p>
-    ${o.warning ? `<p class="warn">⚠️ ${esc(o.warning)}</p>` : ""}
+    ${
+			o.warning
+				? `<div class="warn">⚠️ ${esc(o.warning)}
+      <div class="warnrow">${rescanButton(o)}
+        <span class="warnhint">Open your laptop first — it scans Sheng Siong by itself once
+          it wakes. Rescan then rebuilds this page (~3 min).</span>
+      </div>
+    </div>`
+				: ""
+		}
     ${cards}
     ${
 			o.addEndpoint
@@ -746,6 +995,6 @@ export function renderDealsPage(
 				: `<p class="foot"><a href="#" id="onetap">⚡ enable one-tap</a></p>`
 		}
   </div>
-${addScript(o)}</body>
+${menuScript()}${addScript(o)}</body>
 </html>`;
 }

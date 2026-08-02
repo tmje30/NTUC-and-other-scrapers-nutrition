@@ -66,6 +66,14 @@ Laptop (Task Scheduler, 05:30 SGT)        Cloud (Actions, 10:00 SGT)
   `source` is `phone` or `laptop` (from `RUNNER_SOURCE`).
 - **Fallback chain:** laptop → cloud FairPrice floor. (Phone is optional extra
   redundancy — see below.)
+- **Catching up after a missed run:** the two halves heal at different times. A
+  laptop shut at 05:30 runs the missed scan when it wakes (`StartWhenAvailable`),
+  so Sheng Siong prices land in the repo by mid-morning — but the 10:00 page was
+  already built FairPrice-only and nothing looks again. The **Rescan** button in
+  the page's ⚠️ banner closes that gap: it fires `repository_dispatch: rescan` at
+  `daily.yml`, which rescans, redeploys Pages and re-sends the Telegram digest.
+  Open the laptop first (it scans by itself), then press Rescan. No token ⇒ the
+  button links to the workflow page, where *Run workflow* does the same job.
 
 ### Laptop runner (primary residential runner — DONE, running)
 
