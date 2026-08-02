@@ -29,6 +29,16 @@
 // at all, while the address bar shows the product. Verified in a real browser. That is why the slug check
 // below exists and why JSON-LD is a first-class fallback rather than a nicety — on a page reached by
 // clicking, JSON-LD is the only current structured data there is.
+/**
+ * Money to 2 dp. Needed on EVERY price path, not just arithmetic we do ourselves: FairPrice's own
+ * `final_price` field ships binary-float artefacts straight out of the API ("7.949999999999999",
+ * "5.869999999999999"), which used to land in the form verbatim.
+ */
+function money(n) {
+  const v = Number(n);
+  return Number.isFinite(v) ? Math.round(v * 100) / 100 : null;
+}
+
 function readNextProduct(v) {
   if (!v || !v.name) return null;
   const ssd = (v.storeSpecificData || [])[0] || {};
@@ -36,12 +46,12 @@ function readNextProduct(v) {
   const discount = Number(ssd.discount || 0);
   const listed = v.final_price ?? v.finalPrice;
   let price = null;
-  if (listed != null && listed !== "") price = Number(listed);
-  else if (Number.isFinite(mrp)) price = Number.isFinite(discount) && discount > 0 ? Math.round((mrp - discount) * 100) / 100 : mrp;
+  if (listed != null && listed !== "") price = money(listed);
+  else if (Number.isFinite(mrp)) price = money(Number.isFinite(discount) && discount > 0 ? mrp - discount : mrp);
   return {
     name: String(v.name),
     brand: String(v.brand?.name || v.brand || ""),
-    priceText: price != null && Number.isFinite(price) ? String(price) : "",
+    priceText: price != null ? String(price) : "",
     sizeText: String(v.metaData?.DisplayUnit || ""),
     slug: String(v.slug || ""),
   };
@@ -125,7 +135,7 @@ function jsonLdProduct() {
       const t = n["@type"];
       if (!(t === "Product" || (Array.isArray(t) && t.includes("Product")))) continue;
       const offer = Array.isArray(n.offers) ? n.offers[0] : n.offers;
-      const price = offer?.price ?? offer?.lowPrice ?? null;
+      const price = money(offer?.price ?? offer?.lowPrice ?? null);
       // Identity check, for the same reason the __NEXT_DATA__ reader has one: after an in-site navigation a
       // page can still be carrying the PREVIOUS product's structured data. When the block names a URL, it
       // must be this page's. Blocks that name no URL are accepted — most shops' JSON-LD omits it.

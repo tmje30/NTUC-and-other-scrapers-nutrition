@@ -20,14 +20,19 @@ function priceOf(priceText) {
   const norm = s.includes(".") ? s.replace(/,/g, "") : s.replace(",", ".");
   const n = Number.parseFloat(norm);
   if (Number.isNaN(n) || n < 0) throw new Error(`Could not read "${priceText}" as a price — fix it or clear the field.`);
-  return n;
+  // Round HERE as well as at extraction: this is the last gate before Notion, and it also catches a value
+  // typed or pasted by hand. A price is money — two decimals, never 7.949999999999999.
+  return Math.round(n * 100) / 100;
 }
 
-/** Size field → a positive number, or null. Tolerates "500", "500 g", "1,5". */
+/**
+ * Size field → a positive number, or null. Tolerates "500", "500 g", "1,5".
+ * Rounded to 3 dp so a unit conversion (1.5 kg → 1500) can't arrive as 1499.9999999999998.
+ */
 function sizeOf(text) {
   if (text == null || String(text).trim() === "") return null;
   const n = Number.parseFloat(String(text).replace(",", ".").replace(/[^\d.]/g, ""));
-  return !Number.isNaN(n) && n > 0 ? n : null;
+  return !Number.isNaN(n) && n > 0 ? Math.round(n * 1000) / 1000 : null;
 }
 
 // Fields shared by both writes, read straight off the form.
