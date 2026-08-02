@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Add to Ingredients",
+  "name": "Nutrition Plan Extension",
   "description": "Capture a grocery product page into the Notion Ingredients DB — add it as a new row, or replace an existing one. Internal tool.",
   "version": "0.1.0",
   "action": { "default_popup": "popup.html", "default_title": "Add to Ingredients" },

@@ -250,7 +250,7 @@ apostrophes and stray spacing. A suppression tag that silently stops matching is
 the worst kind of bug: everything keeps "working" and the user gets back items
 they asked never to see again.
 
-## Chrome extension — "Add to Ingredients" (added 2026-08-02)
+## Chrome extension — "Nutrition Plan Extension" (added 2026-08-02)
 
 `extension/` — capture a grocery product page straight into the Notion **Ingredients** DB. Modelled on the
 sibling *Inventory Price Upkeeper* extension (`C:\Users\newuser\Claude\Inventory Price upkeeper worker

@@ -1,4 +1,4 @@
-# Add to Ingredients — Chrome extension
+# Nutrition Plan Extension — Chrome extension
 
 Capture a grocery product page into the Notion **Ingredients** DB. Internal tool (unpacked install, no Web
 Store). Modelled on the sibling *Inventory Price Upkeeper* extension, with its verification workflow removed.
