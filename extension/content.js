@@ -23,6 +23,12 @@
 // The page's own product also prices differently from a search result: it has no `final_price`, and its
 // selling price is storeSpecificData[0] `mrp` MINUS `discount` (measured: Simply Organic Cinnamon,
 // mrp 11.9 − discount 0.59 = the $11.31 on the page).
+//
+// ⚠️ __NEXT_DATA__ GOES STALE. It reflects the page Next.js first loaded, and an in-site navigation does not
+// rewrite it. Browsing Yoghurt → a product leaves the CATEGORY page's blob in the DOM with no `product` key
+// at all, while the address bar shows the product. Verified in a real browser. That is why the slug check
+// below exists and why JSON-LD is a first-class fallback rather than a nicety — on a page reached by
+// clicking, JSON-LD is the only current structured data there is.
 function readNextProduct(v) {
   if (!v || !v.name) return null;
   const ssd = (v.storeSpecificData || [])[0] || {};
@@ -71,11 +77,42 @@ function fromNextData() {
 // Generic readers
 // ---------------------------------------------------------------------------
 
+/**
+ * Parse a JSON-LD block, tolerating a MALFORMED one.
+ *
+ * FairPrice's product JSON-LD ships with an extra closing brace on the end, so `JSON.parse` throws on it —
+ * which silently cost us the price on every page where __NEXT_DATA__ was stale (see below). Rather than
+ * give up, scan for the first BALANCED top-level object (string-aware, so a brace inside a product
+ * description doesn't confuse the count) and parse that.
+ */
+function parseLooseJson(text) {
+  const s = String(text || "");
+  try { return JSON.parse(s); } catch { /* fall through to the balanced scan */ }
+  const start = s.indexOf("{");
+  if (start < 0) return null;
+  let depth = 0, inStr = false, esc = false;
+  for (let i = start; i < s.length; i++) {
+    const c = s[i];
+    if (inStr) {
+      if (esc) esc = false;
+      else if (c === "\\") esc = true;
+      else if (c === '"') inStr = false;
+      continue;
+    }
+    if (c === '"') { inStr = true; continue; }
+    if (c === "{") depth++;
+    else if (c === "}" && --depth === 0) {
+      try { return JSON.parse(s.slice(start, i + 1)); } catch { return null; }
+    }
+  }
+  return null;
+}
+
 /** JSON-LD `Product` structured data — emitted by most modern shop themes. */
 function jsonLdProduct() {
   for (const s of document.querySelectorAll('script[type="application/ld+json"]')) {
-    let data;
-    try { data = JSON.parse(s.textContent); } catch { continue; }
+    const data = parseLooseJson(s.textContent);
+    if (!data) continue;
     const nodes = [];
     const walk = (n) => {
       if (!n || typeof n !== "object") return;
@@ -89,6 +126,11 @@ function jsonLdProduct() {
       if (!(t === "Product" || (Array.isArray(t) && t.includes("Product")))) continue;
       const offer = Array.isArray(n.offers) ? n.offers[0] : n.offers;
       const price = offer?.price ?? offer?.lowPrice ?? null;
+      // Identity check, for the same reason the __NEXT_DATA__ reader has one: after an in-site navigation a
+      // page can still be carrying the PREVIOUS product's structured data. When the block names a URL, it
+      // must be this page's. Blocks that name no URL are accepted — most shops' JSON-LD omits it.
+      const declared = offer?.url || n["@id"] || n.url || "";
+      if (declared && !sameProductUrl(declared, location.href)) continue;
       return {
         name: n.name || "",
         brand: typeof n.brand === "string" ? n.brand : n.brand?.name || "",
@@ -98,6 +140,15 @@ function jsonLdProduct() {
     }
   }
   return null;
+}
+
+/** Same product page? Compares host + path only, ignoring query, hash and a trailing slash. */
+function sameProductUrl(a, b) {
+  try {
+    const ua = new URL(a, location.href), ub = new URL(b, location.href);
+    const norm = (u) => `${u.host.replace(/^www\./, "")}${u.pathname.replace(/\/+$/, "")}`.toLowerCase();
+    return norm(ua) === norm(ub);
+  } catch { return false; }
 }
 
 /**
@@ -126,12 +177,31 @@ function productContentText() {
 /** A pack size from the product NAME first (most SG grocers put it there), else the scoped content. */
 const SIZE_TEXT_RE = /(\d+(?:[.,]\d+)?)\s*(?:x\s*\d+(?:[.,]\d+)?\s*)?(kg|kgs|g|gm|gms|gram|grams|ml|cl|dl|l|ltr|litre|liter)\b/i;
 const COUNT_TEXT_RE = /\(\s*\d+\s*(?:s|pc|pcs|piece|pieces)?\s*\)|\b\d+\s*(?:pcs|pieces)\b/i;
+
+/**
+ * A leaf element whose ENTIRE text is a size ("135g", "1.5 kg", "200 G").
+ *
+ * This is how FairPrice prints the pack size next to the product title, and it is the only size reading
+ * available once __NEXT_DATA__ has gone stale. Requiring the element to contain nothing BUT the size is
+ * what makes it safe: a "$60 min. spend" banner or a "500g" in a description paragraph never matches,
+ * because those elements carry other words too. Measured on the Meiji yoghurt page: exactly one hit.
+ */
+const SIZE_ONLY_RE = /^\d+(?:[.,]\d+)?\s*(?:kg|kgs|g|gm|gms|gram|grams|ml|cl|dl|l|ltr|litre|liter)$/i;
+function leafSize() {
+  for (const el of document.querySelectorAll("span,div,p,li,td,dd,strong,em,small")) {
+    if (el.children.length) continue; // leaf nodes only
+    const t = (el.textContent || "").replace(/\s+/g, " ").trim();
+    if (t.length <= 12 && SIZE_ONLY_RE.test(t)) return t;
+  }
+  return "";
+}
+
 function pageSize(name) {
   for (const hay of [name || "", productContentText()]) {
     const m = hay.match(SIZE_TEXT_RE) || hay.match(COUNT_TEXT_RE);
     if (m) return m[0].trim();
   }
-  return "";
+  return leafSize();
 }
 
 /** Product heading — the first sane <h1>, then og:title, then the cleaned <title>. */
