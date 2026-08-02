@@ -18,8 +18,12 @@ import { parseName, parseMonthlyUsage, type ParsedName } from "./parse.js";
  * Notion SDK v5: query via dataSources.query (see LEARNINGS 2026-07-27).
  */
 
-// Stable data-source id (discovered via introspect; see LEARNINGS).
-export const INGREDIENTS_DS = "34b69a18-4fe7-80e6-904e-000b208cf560";
+// Stable data-source id (discovered via introspect; see LEARNINGS). Defined in
+// `ingredients-schema.ts` and re-exported here so the scraper and the Chrome
+// extension share one source of truth — the extension can't import this module
+// (it would pull @notionhq/client into the browser bundle).
+export { INGREDIENTS_DS } from "./ingredients-schema.js";
+import { INGREDIENTS_DS } from "./ingredients-schema.js";
 
 /**
  * The multi-select carrying an ingredient's search flags, and the one tag that

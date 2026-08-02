@@ -250,6 +250,38 @@ apostrophes and stray spacing. A suppression tag that silently stops matching is
 the worst kind of bug: everything keeps "working" and the user gets back items
 they asked never to see again.
 
+## Chrome extension — "Add to Ingredients" (added 2026-08-02)
+
+`extension/` — capture a grocery product page straight into the Notion **Ingredients** DB. Modelled on the
+sibling *Inventory Price Upkeeper* extension (`C:\Users\newuser\Claude\Inventory Price upkeeper worker
+[Notion]\extension`), with its Unverified/verified review workflow, ABV and SKU removed, and Supplier
+renamed to Vendor. Full detail in `extension/README.md`; the essentials:
+
+- **Two writes, never automatic.** *Add to Ingredients* creates a row; *Replace With This* appears beside
+  **each** similar existing row and repoints it at this product (asks first, showing before → after).
+- **The naming split:** `Name` gets the generic title, `Items Exact Name` the shop's full title + brand —
+  "Malaysia Round Cabbage" → `Name` "Round Cabbage". Done by `src/core/generic-name.ts`, deterministically.
+- Also writes `Price,SGD`, `Weight /Units of New Product `, `Unit type `, `Catagory`, `Vendor, Current `
+  and `Vendor 1 URL`.
+- `npm run ext:build` regenerates `extension/dist/` — **required after editing `synonyms.json`**, which is
+  baked into the bundle at build time.
+
+⚠️ **Three things that will bite whoever edits it:**
+
+1. **API version 2025-09-03, not 2022-06-28.** This project's Notion dialect queries **data sources**
+   (`/v1/data_sources/{id}/query`) and creates pages with `parent.data_source_id`. The reference extension
+   speaks the old dialect — copying an endpoint across from it will 404.
+2. **Property names are copied verbatim, typos and all** — `Catagory`, `Unit type `,
+   `Weight /Units of New Product `, `Vendor, Current `. They live in `src/core/ingredients-schema.ts`, which
+   `notion.ts` re-exports from so the scraper and the extension can't drift. "Correcting" a name silently
+   breaks the write.
+3. **It must never create Notion schema.** Both selects are validated against the live options before every
+   write; a value Notion doesn't already have is refused, not sent. A stray select value becomes a permanent
+   schema option, which is exactly what the global Notion rule forbids.
+
+The extension imports `src/core/` (match, generic-name, categorize, ingredients-schema) — shared, not
+copied. Nothing under `src/` imports from `extension/`; the sharing goes one way only.
+
 ## Commands (run from repo root, needs `.env`)
 
 - `npm run push-ss` — residential runner: fetch terms → SS scan → write
@@ -265,6 +297,7 @@ they asked never to see again.
 - `npm run item-action -- --payload '<json>'` — the Reset / Not in use half.
   `{"v":1,"action":"reset"|"park","key":"…","ingredientId":"…","name":"…"}`.
   `--dry-run` reads Notion but writes nothing.
+- `npm run ext:build` — rebuild the Chrome extension's `dist/` (see above).
 - `npm run check` — typecheck.
 
 ## Key technical facts (details in LEARNINGS.md)

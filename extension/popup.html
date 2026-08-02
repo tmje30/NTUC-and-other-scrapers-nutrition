@@ -1,0 +1,29 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="shared.css">
+</head>
+<body>
+  <h1>Add to Ingredients</h1>
+  <div id="status" class="muted">Checking…</div>
+  <button id="open-sidepanel" type="button" class="link" title="Keep a panel open that auto-updates as you browse">Open as side panel →</button>
+
+  <div id="existing" class="card" hidden></div>
+  <div id="similar" class="card" hidden></div>
+
+  <form id="form" hidden>
+    <label>Name (generic) <input id="f-name" required placeholder="e.g. Round Cabbage"></label>
+    <label>Items Exact Name <input id="f-exact" placeholder="e.g. Malaysia Round Cabbage"></label>
+    <label>Price, SGD <input id="f-price" placeholder="e.g. 2.35"></label>
+    <label>Weight / Units <input id="f-size" placeholder="grams, ml, or a piece count"></label>
+    <label>Unit type <select id="f-unit"><option value="">— none —</option></select></label>
+    <label>Category <select id="f-category"><option value="">— none —</option></select></label>
+    <label>Vendor, Current <input id="f-vendor" placeholder="e.g. NTUC"></label>
+    <button id="add" type="submit">Add to Ingredients</button>
+  </form>
+
+  <div id="result" class="card" hidden></div>
+  <script type="module" src="dist/popup.js"></script>
+</body>
+</html>

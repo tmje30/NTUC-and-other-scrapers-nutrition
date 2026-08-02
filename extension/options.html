@@ -1,0 +1,26 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  :root { color-scheme: light dark; }
+  body { font: 14px/1.5 system-ui, sans-serif; max-width: 520px; margin: 24px auto; padding: 0 16px; }
+  input { width: 100%; box-sizing: border-box; padding: 8px; border-radius: 6px; border: 1px solid color-mix(in srgb, currentColor 30%, transparent); background: transparent; color: inherit; }
+  button { margin-top: 12px; padding: 8px 16px; border-radius: 6px; border: none; background: #2f6fed; color: #fff; font-weight: 600; cursor: pointer; }
+  #msg { margin-top: 12px; white-space: pre-wrap; }
+  .ok { color: #1e8e3e; } .error { color: #c0392b; }
+  .muted { opacity: .7; font-size: 13px; }
+</style>
+</head>
+<body>
+  <h1>Add to Ingredients — setup</h1>
+  <p class="muted">Paste the Notion integration token — the same value as <code>NOTION_TOKEN</code> in the
+  project's <code>.env</code>. Stored only in this browser's extension storage.</p>
+  <p class="muted">The integration needs <strong>Insert content</strong> and <strong>Update content</strong>
+  capability on the <strong>Ingredients</strong> database, since this writes rows and can replace one.</p>
+  <label>Notion token <input id="token" type="password" autocomplete="off"></label>
+  <button id="save">Save &amp; test</button>
+  <div id="msg"></div>
+  <script type="module" src="dist/options.js"></script>
+</body>
+</html>

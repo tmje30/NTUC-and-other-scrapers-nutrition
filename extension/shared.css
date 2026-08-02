@@ -1,0 +1,25 @@
+/* Shared by popup.html and sidepanel.html — they render the SAME body ids (flow.js drives either), so
+   they must look the same. Kept as one stylesheet rather than duplicated <style> blocks. */
+:root { color-scheme: light dark; }
+body { font: 13px/1.45 system-ui, sans-serif; width: 360px; margin: 0; padding: 12px; }
+body.panel { width: auto; }
+h1 { font-size: 14px; margin: 0 0 8px; }
+.muted { opacity: .7; }
+.card { border: 1px solid color-mix(in srgb, currentColor 20%, transparent); border-radius: 8px; padding: 10px; margin-top: 8px; }
+.error { color: #c0392b; white-space: pre-wrap; }
+.ok { color: #1e8e3e; }
+label { display: block; margin-top: 8px; font-weight: 600; }
+input, select { width: 100%; box-sizing: border-box; padding: 6px; margin-top: 2px; border-radius: 6px; border: 1px solid color-mix(in srgb, currentColor 30%, transparent); background: transparent; color: inherit; }
+/* Force the OPEN dropdown list dark-on-white — otherwise the options inherit the page's light text colour
+   and render white-on-white on the system's white list background (invisible except the hover row). */
+select option { color: #111; background: #fff; }
+button { margin-top: 12px; width: 100%; padding: 8px; border-radius: 6px; border: none; background: #2f6fed; color: #fff; font-weight: 600; cursor: pointer; }
+button:disabled { opacity: .5; cursor: default; }
+/* "Replace With This" overwrites an existing row, so it is styled as the deliberate, non-default action. */
+button.secondary { margin-top: 6px; background: transparent; color: #b9770e; border: 1px solid #b9770e; }
+button.link { margin-top: 4px; width: auto; padding: 0; background: none; color: #2f6fed; font-weight: 400; text-align: left; }
+a { color: #2f6fed; display: inline-block; margin-top: 4px; }
+#existing strong, #similar strong { display: block; margin: 4px 0 2px; }
+/* One similar-row card, separated so several "Replace With This" buttons never read as one list. */
+.sim { border-top: 1px solid color-mix(in srgb, currentColor 15%, transparent); margin-top: 10px; padding-top: 8px; }
+#banner { background: color-mix(in srgb, #2f6fed 12%, transparent); border-radius: 8px; padding: 8px; margin-bottom: 8px; }

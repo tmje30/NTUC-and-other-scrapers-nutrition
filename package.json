@@ -19,7 +19,8 @@
 		"notify": "tsx src/scripts/notify.ts",
 		"add": "tsx src/scripts/add-to-list.ts",
 		"item-action": "tsx src/scripts/item-action.ts",
-		"push-ss": "tsx src/scripts/push-shengsiong.ts"
+		"push-ss": "tsx src/scripts/push-shengsiong.ts",
+		"ext:build": "node extension/build.mjs"
 	},
 	"engines": {
 		"node": ">=22.0.0",
@@ -28,6 +29,7 @@
 	"devDependencies": {
 		"@types/node": "^22.9.0",
 		"tsx": "^4.20.6",
+		"esbuild": "^0.28.1",
 		"typescript": "^5.8.0"
 	},
 	"dependencies": {

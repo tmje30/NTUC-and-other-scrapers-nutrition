@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "Add to Ingredients",
+  "description": "Capture a grocery product page into the Notion Ingredients DB — add it as a new row, or replace an existing one. Internal tool.",
+  "version": "0.1.0",
+  "action": { "default_popup": "popup.html", "default_title": "Add to Ingredients" },
+  "background": { "service_worker": "dist/background.js", "type": "module" },
+  "options_page": "options.html",
+  "side_panel": { "default_path": "sidepanel.html" },
+  "comment_permissions": "activeTab + scripting let the popup inject dist/content.js into the CURRENT tab on demand (only when you click the extension), so capture works on ANY shop without a hardcoded host list. No broad host_permissions for reading page CONTENT by default. The SIDE PANEL stays open across navigation and has no per-open activeTab grant: 'tabs' lets it see the active tab's URL (metadata only) so it can name the vendor + dup-check as you browse, and reading page CONTENT there needs the optional_host_permissions it asks for once via its banner.",
+  "permissions": ["storage", "activeTab", "scripting", "sidePanel", "tabs"],
+  "optional_host_permissions": ["http://*/*", "https://*/*"],
+  "host_permissions": ["https://api.notion.com/*"]
+}
