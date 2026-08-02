@@ -10,34 +10,61 @@
 // FairPrice — the one site worth a dedicated reader
 // ---------------------------------------------------------------------------
 // The scraper already reverse-engineered this page (src/core/stores/fairprice.ts): products live in the
-// __NEXT_DATA__ blob, and — the part worth carrying over — `metaData.DisplayUnit` is the accurate pack size
-// while `metaData.Weight` is NOT ("2 gm" for 2 L of milk). A generic scrape would read the wrong one.
+// __NEXT_DATA__ blob, and `metaData.DisplayUnit` is the accurate pack size while `metaData.Weight` is NOT
+// ("2 gm" for 2 L of milk). A generic scrape would read the wrong one.
+//
+// ⚠️ NEVER "find the first product-shaped object" in this blob. A FairPrice product page embeds its whole
+// recommendations carousel in the SAME payload — on the Vegeponics Crystal Lettuce page there are 17
+// product objects and the page's OWN product is not among them, because only the carousel entries carry
+// `final_price`. An earlier version of this function took the first one and captured "ZENXIN Organic
+// Crystal Lettuce $3.65/200 G" while the user was looking at "Vegeponics … $2.80/120 G". Everything below
+// is anchored on the URL slug so that cannot recur.
+//
+// The page's own product also prices differently from a search result: it has no `final_price`, and its
+// selling price is storeSpecificData[0] `mrp` MINUS `discount` (measured: Simply Organic Cinnamon,
+// mrp 11.9 − discount 0.59 = the $11.31 on the page).
+function readNextProduct(v) {
+  if (!v || !v.name) return null;
+  const ssd = (v.storeSpecificData || [])[0] || {};
+  const mrp = Number(ssd.mrp);
+  const discount = Number(ssd.discount || 0);
+  const listed = v.final_price ?? v.finalPrice;
+  let price = null;
+  if (listed != null && listed !== "") price = Number(listed);
+  else if (Number.isFinite(mrp)) price = Number.isFinite(discount) && discount > 0 ? Math.round((mrp - discount) * 100) / 100 : mrp;
+  return {
+    name: String(v.name),
+    brand: String(v.brand?.name || v.brand || ""),
+    priceText: price != null && Number.isFinite(price) ? String(price) : "",
+    sizeText: String(v.metaData?.DisplayUnit || ""),
+    slug: String(v.slug || ""),
+  };
+}
+
 function fromNextData() {
   const el = document.getElementById("__NEXT_DATA__");
   if (!el) return null;
   let data;
   try { data = JSON.parse(el.textContent); } catch { return null; }
 
-  // The product-detail payload is nested differently across FairPrice's page types, so recurse for the
-  // first object that looks like a product rather than hardcoding a path that breaks on the next redesign.
-  let best = null;
+  const urlSlug = decodeURIComponent((location.pathname.split("/product/")[1] || "")).replace(/\/+$/, "");
+
+  // 1. The page's own product sits at layouts[0].value — every recommendation lives under a later layout.
+  const own = readNextProduct(data?.props?.pageProps?.product?.data?.page?.layouts?.[0]?.value);
+  if (own && (!urlSlug || !own.slug || own.slug === urlSlug)) return own;
+
+  // 2. Path changed? Accept ONLY an object whose slug is the one in the address bar.
+  let match = null;
   const walk = (n, depth = 0) => {
-    if (!n || typeof n !== "object" || depth > 12 || best) return;
+    if (!n || typeof n !== "object" || depth > 14 || match) return;
     if (Array.isArray(n)) { for (const v of n) walk(v, depth + 1); return; }
-    const price = n.final_price ?? n.finalPrice;
-    if (n.name && (price != null) && (n.slug || n.sku || n.metaData)) {
-      best = {
-        name: String(n.name),
-        brand: String(n.brand?.name || n.brand || ""),
-        priceText: String(price),
-        sizeText: String(n.metaData?.DisplayUnit || ""),
-      };
-      return;
-    }
+    if (urlSlug && n.slug === urlSlug && n.name) { match = readNextProduct(n); return; }
     for (const v of Object.values(n)) walk(v, depth + 1);
   };
   walk(data);
-  return best;
+  // 3. Still nothing → give up and let JSON-LD / the DOM answer. Returning some OTHER product here is the
+  //    one outcome worse than returning nothing: it looks filled-in and is silently about the wrong item.
+  return match;
 }
 
 // ---------------------------------------------------------------------------
