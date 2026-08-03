@@ -1,6 +1,16 @@
 {
   "version": 1,
-  "updatedAt": "",
+  "updatedAt": "2026-08-03T00:54:34.769Z",
   "terms": [],
-  "products": []
+  "products": [
+    {
+      "key": "appl cider vinegar",
+      "store": "Sheng Siong",
+      "product": "Apple Cider Vinegar",
+      "url": "https://shengsiong.com.sg/product/heinz-apple-cider-vinegar-473-ml",
+      "name": "Apple Cider vinegar (Unpasteurized)",
+      "note": "close, but not confirmed",
+      "addedAt": "2026-08-03T00:54:34.769Z"
+    }
+  ]
 }
