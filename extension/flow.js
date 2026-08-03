@@ -170,6 +170,75 @@ async function extractFromTab(tabId) {
   } catch { return null; }
 }
 
+/**
+ * Ask a Meteor shop's OWN app for the product — Sheng Siong.
+ *
+ * Sheng Siong publishes nothing a scraper can read: no JSON-LD, no product meta tags, no server-rendered
+ * data, not even an <h1>, and a site-wide <title>. Everything arrives over its DDP socket after hydration.
+ * But the page already holds an open, Incapsula-cleared connection, so the cheapest reliable route is to
+ * ask it, with the same method the daily scraper uses — `Products.getOneByIdOrSlug`. That returns the
+ * authoritative record including a NUMERIC `netWeight`, which is better than anything the DOM could give.
+ *
+ * This has to live here rather than in content.js because a content script runs in an ISOLATED world and
+ * cannot see the page's `window.Meteor`; `world: "MAIN"` is the supported way in.
+ *
+ * `func` is serialised and runs in the page, so it must close over NOTHING. Self-guarding: a page without
+ * Meteor, or one whose record doesn't match the slug in the address bar, resolves null and the normal
+ * extraction stands.
+ */
+async function extractViaMeteor(tabId) {
+  try {
+    const [res] = await chrome.scripting.executeScript({
+      target: { tabId },
+      world: "MAIN",
+      func: () =>
+        new Promise((resolve) => {
+          const slug = decodeURIComponent((location.pathname.split("/product/")[1] || "")).replace(/\/+$/, "");
+          const m = window.Meteor;
+          if (!slug || !m || typeof m.call !== "function") return resolve(null);
+          let settled = false;
+          const finish = (v) => { if (!settled) { settled = true; resolve(v); } };
+          setTimeout(() => finish(null), 6000); // never hang the panel on a dead socket
+          try {
+            m.call("Products.getOneByIdOrSlug", slug, null, { slug: "" }, (err, p) => {
+              if (err || !p || (p.slug && p.slug !== slug)) return finish(null);
+              finish({
+                name: String(p.name || ""),
+                brand: String(p.brand || ""),
+                price: typeof p.price === "number" ? p.price : null,
+                packSize: String(p.packSize || ""),
+                netWeight: typeof p.netWeight === "number" ? p.netWeight : null,
+              });
+            });
+          } catch { finish(null); }
+        }),
+    });
+    const p = res?.result;
+    if (!p || !p.name) return null;
+    // Size: prefer the numeric `netWeight` over the printed `packSize` ("6 x 10 g"), which a parser has to
+    // interpret. But netWeight is ALWAYS in grams, so the UNIT has to come from packSize or a 12 x 1 L
+    // carton of milk is filed as 12000 By Gram instead of By ml. Three cases, decided by what packSize says:
+    //   volume ("12 x 1 L")  -> "<netWeight> ml"  (the project treats ml ≈ g, so the number carries over)
+    //   weight ("6 x 10 g")  -> "<netWeight> g"
+    //   a bare count ("10 s") -> packSize itself, so eggs and tea bags stay By Unit
+    const hasVolume = /\b(ml|cl|dl|l|ltr|litre|liter)\b/i.test(p.packSize);
+    const hasWeight = /\b(g|gm|gms|gram|grams|kg|kgs)\b/i.test(p.packSize);
+    const weighed = p.netWeight != null && p.netWeight > 0;
+    const sizeText = weighed && hasVolume ? `${p.netWeight} ml`
+      : weighed && (hasWeight || !p.packSize) ? `${p.netWeight} g`
+      : p.packSize || (weighed ? `${p.netWeight} g` : "");
+
+    return {
+      name: p.name,
+      brand: p.brand,
+      priceText: p.price != null ? String(Math.round(p.price * 100) / 100) : "",
+      sizeText,
+    };
+  } catch {
+    return null; // no permission / not a Meteor page / injection refused
+  }
+}
+
 /** The whole flow for one tab. Re-entrant: safe to call repeatedly (the side panel does). */
 export async function render(tab, alive = () => true) {
   resetUi();
@@ -189,10 +258,16 @@ export async function render(tab, alive = () => true) {
 
   const extracted = await extractFromTab(tab.id);
   if (!alive()) return;
-  if (!extracted) {
+
+  // A Meteor shop's own record beats anything scraped off its DOM, so it wins where it answers. Returns
+  // null on every non-Meteor page, which is why it can run unconditionally rather than behind a host list.
+  const viaApp = await extractViaMeteor(tab.id);
+  if (!alive()) return;
+
+  if (!extracted && !viaApp) {
     setStatus("⚠️ Couldn't read this page — type the fields in below.", "error");
   }
-  const data = extracted || { name: "", brand: "", priceText: "", sizeText: "" };
+  const data = { ...(extracted || { name: "", brand: "", priceText: "", sizeText: "" }), ...(viaApp || {}) };
 
   // Generic Name / exact name / category / size — derived in the worker so the popup and side panel can't
   // drift apart. Non-fatal: a failure just leaves the derived boxes blank for the user to fill.

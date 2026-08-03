@@ -283,14 +283,24 @@ function pageSize(name) {
   return leafSize();
 }
 
-/** Product heading — the first sane <h1>, then og:title, then the cleaned <title>. */
-function genericName() {
+/** Product heading — the first sane <h1>, then og:title. Both name THIS product, so both are trusted. */
+function headingName() {
   for (const h of document.querySelectorAll("h1")) {
     const t = (h.textContent || "").replace(/\s+/g, " ").trim();
     if (t.length >= 2 && t.length <= 140) return t;
   }
   const og = document.querySelector('meta[property="og:title"], meta[name="og:title"]')?.content?.trim();
-  if (og) return og.split(/\s[|–—]\s/)[0].trim();
+  return og ? og.split(/\s[|–—]\s/)[0].trim() : "";
+}
+
+/**
+ * The tab title — the LAST resort, and a bad one on an app-rendered shop.
+ *
+ * Sheng Siong serves every page the same site-wide title ("Online Grocery Shopping and Delivery @ Sheng
+ * Siong Online Singapore"), so this would confidently fill the Name box with the shop's slogan. Used only
+ * when something else on the page corroborated that we're really looking at a product (a price or a size).
+ */
+function titleName() {
   return (document.title || "").split(/\s[|–—-]\s/)[0].trim();
 }
 
@@ -332,14 +342,13 @@ if (!window.__ingredientAddExtractorReady) {
       let special = null;
       try { special = await fromNextData(); } catch { /* fall through to JSON-LD / DOM */ }
       const ld = jsonLdProduct() || {};
-      const name = special?.name || ld.name || genericName();
-      sendResponse({
-        url: location.href,
-        name,
-        brand: special?.brand || ld.brand || genericBrand(),
-        priceText: special?.priceText || ld.priceText || genericPrice(),
-        sizeText: special?.sizeText || ld.sizeText || pageSize(name),
-      });
+      const trusted = special?.name || ld.name || headingName();
+      const priceText = special?.priceText || ld.priceText || genericPrice();
+      const sizeText = special?.sizeText || ld.sizeText || pageSize(trusted);
+      // Fall back to the tab title ONLY when a price or size corroborates that this is a product page —
+      // otherwise a site-wide title becomes a confident-looking wrong name. Blank is the honest answer.
+      const name = trusted || (priceText || sizeText ? titleName() : "");
+      sendResponse({ url: location.href, name, brand: special?.brand || ld.brand || genericBrand(), priceText, sizeText });
     })();
     return true; // async sendResponse
   });

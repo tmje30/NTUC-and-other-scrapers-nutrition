@@ -78,6 +78,30 @@ other shops) → DOM. `metaData.DisplayUnit` is the accurate pack size; `metaDat
 for 2 L of milk). A detail page's selling price is `storeSpecificData[0].mrp` **minus** `discount`, and every
 price is rounded to 2 dp because FairPrice's own `final_price` ships float artefacts (`7.949999999999999`).
 
+### Sheng Siong — ask the app, there is nothing else
+
+Sheng Siong publishes **nothing** a scraper can read: no JSON-LD, no product meta tags, no server-rendered
+data, not even an `<h1>`, and the same site-wide `<title>` on every page. Everything arrives over its DDP
+socket after hydration.
+
+So the extension asks the page's own Meteor app, with the same method the daily scraper uses —
+`Products.getOneByIdOrSlug`. The page already holds an open, Incapsula-cleared connection, so this costs no
+new network trust and returns the authoritative record: name, brand, price, `packSize` and a **numeric**
+`netWeight`. Better data than the DOM could ever give.
+
+This lives in `flow.js`, not `content.js`, because a content script runs in an **isolated world** and cannot
+see `window.Meteor`; `chrome.scripting.executeScript({ world: "MAIN" })` is the supported way in. The
+injected function closes over nothing (it is serialised into the page), self-guards on a missing Meteor or a
+slug that doesn't match the address bar, and times out at 6 s.
+
+`netWeight` is always in **grams**, so the unit is taken from `packSize`: a volume there ("12 x 1 L") emits
+`ml`, a weight ("6 x 10 g") emits `g`, and a bare count ("10 s") passes `packSize` straight through so eggs
+and tea bags stay `By Unit`. Without that, a 12 × 1 L carton of milk filed itself as 12000 **By Gram**.
+
+⚠️ Sheng Siong records a piece count in the NAME ("Omega 6 Fresh Eggs (10s)") but not in `packSize`, so a
+carton reads as `550 g / By Gram`. Change the dropdown to `By Unit` and the count by hand if you want it
+planned per egg.
+
 ## Safety invariants (don't weaken these)
 
 - **It cannot create Notion schema.** `Catagory` and `Unit type ` values are validated against the live

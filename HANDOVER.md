@@ -282,6 +282,14 @@ inline blob when its slug matches the URL and otherwise **re-fetches the page
 same-origin** — 40/40 complete either way, with zero extra requests on a directly
 opened page. See LEARNINGS 2026-08-03.
 
+⚠️ **Sheng Siong works a completely different way.** It publishes nothing
+readable — no JSON-LD, no meta tags, no server-rendered data, no `<h1>`, and one
+site-wide `<title>`. So the extension asks the page's own Meteor app via
+`Products.getOneByIdOrSlug` (the scraper's method), injected with
+`world: "MAIN"` because a content script can't see `window.Meteor`. Returns a
+numeric `netWeight`; the UNIT comes from `packSize`, or a 12 × 1 L carton files
+itself as 12000 By Gram. See `extension/README.md`.
+
 ⚠️ **Three things that will bite whoever edits it:**
 
 1. **API version 2025-09-03, not 2022-06-28.** This project's Notion dialect queries **data sources**
