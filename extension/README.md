@@ -8,7 +8,7 @@ Store). Modelled on the sibling *Inventory Price Upkeeper* extension, with its v
 Open it on a product page and it reads the name, brand, price and pack size, then offers **two** ways to
 commit — and only ever the one you click:
 
-- **Add to Ingredients** — creates a new row.
+- **Add to Ingredients** — creates a new row, then looks up its macro-nutrients and fills those in too.
 - **Replace With This** — appears beside **each** similar ingredient already in Notion. Repoints that row at
   this product.
 
@@ -50,6 +50,40 @@ information the user has to *notice* to fix. Two consequences worth knowing:
 formulas, `Select` tags and relations are the user's own work and have nothing to do with which shop a price
 came from. It includes `Items Exact Name` on purpose: the row now describes a different physical product, so
 leaving the old exact name would label it as something it is not.
+
+## Nutrition (Add only, needs a Claude API key)
+
+The Ingredients DB carries four per-100g columns — `Protein per 100g`, `Fats per 100 g `, `Carbs per 100g `,
+`Fiber per 100g ` — and a stack of formulas on top of them (cost per 100g protein, calories, the plan sums).
+A row added without them silently breaks those formulas, so **Add to Ingredients** fills them in.
+
+Three tiers, tried in order, and the one used is always reported:
+
+| tier | means |
+|---|---|
+| `product-page` | the nutrition panel on the page you were already looking at |
+| `search` | the same product's panel, found elsewhere |
+| `generic` | representative values for that **food**, when the exact product can't be pinned down |
+
+Generic values are flagged with a ⚠️ in the panel, because they are a category average rather than this
+product's own label.
+
+**The state of the food decides the numbers**, and it is written on the label, not in the food name: raw
+chicken is not roast chicken, dry pasta is not boiled pasta, and the difference is a factor of two or three
+on every column. That rule is the bulk of the prompt, and it is why a wrong-state answer is treated as worse
+than no answer — nothing missing is visible, a wrong number is not.
+
+Rejected outright: a reply with no figures, and one whose protein + fat + carbs exceeds ~100 g per 100 g
+(which means per-serving figures got reported as per-100g — the single likeliest failure, and the easiest to
+catch). Either way the row keeps its price and size and the panel says to fill the columns in by hand.
+
+**It runs after the row is written, not before.** The lookup reads the product page and may search, so it
+takes 10–30 s; making the add wait would mean a spinner long enough to abandon a row that was ready to go.
+The work happens in the service worker, so closing the popup doesn't cancel it — the figures still land, you
+just don't see the message. Roughly 6–7 US cents per lookup, only when you tap Add, and the whole feature is
+off if no key is set.
+
+`Replace With This` deliberately does **not** do this: that row's nutrition is the user's own work.
 
 ## Where the data comes from (and why it isn't JSON-LD)
 
@@ -123,9 +157,11 @@ planned per egg.
 2. Chrome → `chrome://extensions` → Developer mode → **Load unpacked** → pick this `extension/` folder.
 3. Extension **Options** → paste the Notion integration token (same value as `NOTION_TOKEN` in `.env`) →
    *Save & test* must come back green.
+4. *Optional, same page:* paste a Claude API key (same value as `ANTHROPIC_API_KEY` in `.env`) to turn on
+   the nutrition lookup. Blank = rows are added without nutrition, exactly as before.
 
 ⚠️ The integration needs **Insert content** *and* **Update content** on the Ingredients DB — replacing a row
-is an update, which adding alone doesn't cover.
+is an update, which adding alone doesn't cover. The nutrition lookup is also an update, for the same reason.
 
 ## Popup vs side panel
 
@@ -148,15 +184,17 @@ carry the same body ids, so there is no duplicated flow to keep in sync.
 | `content.js` | Extraction only; never calls Notion (content scripts are CORS-blocked from `api.notion.com`). Reads `__NEXT_DATA__`, re-fetching the page when the inline copy is stale — see "Where the data comes from" below. |
 | `background.js` | Service worker; the only Notion caller. Imports the naming/category logic from `src/core/` — shared, not copied. |
 | `notion-client.js` | The single Notion module. **API 2025-09-03**, which queries *data sources*, not databases — do not copy endpoints from the reference extension, which speaks 2022-06-28. |
+| `macros-client.js` | The single Claude caller — raw `fetch`, because the Anthropic SDK is a Node client. The prompt, tool set and parsing come from `src/core/macro-prompt.ts`, shared with the Node path, not copied. |
 | `vendors.js` | Host → vendor label. A convenience, not a gate: an unknown shop still captures, with the host as the vendor. |
 | `popup.*` / `sidepanel.*` | Thin callers of `flow.js`. |
 | `shared.css` | One stylesheet for both surfaces — they render the same ids, so they must look the same. |
-| `options.*` | Token entry + live setup check. |
+| `options.*` | Token entry (Notion + optional Claude key) and a live setup check. |
 | `build.mjs` | esbuild. Resolves NodeNext `.js` specifiers to their `.ts` files and stubs `node:fs` so `match.ts` runs in the worker with `synonyms.json` baked in. |
 
 ## Not built (deliberately)
 
 The reference extension's **selection / PDF list mode** and its four **Haiku** helpers (type guess, name
 restructuring, translation, list parsing) are absent. They exist there for a Danish, multi-vendor drinks
-catalogue; here the naming rule is deterministic and needs no API key, and nothing in this project has ever
-required one. Say the word if the bulk list mode turns out to be wanted.
+catalogue; here the **naming rule stays deterministic** (`generic-name.ts`, the house rule from `parse.ts`) —
+the Claude key is used for nutrition lookup only, where the answer lives on a label this code cannot reach,
+and never for deciding what a product is called. Say the word if the bulk list mode turns out to be wanted.

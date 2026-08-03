@@ -8,7 +8,7 @@
 // ⚠️ API version 2025-09-03, the same one @notionhq/client v5 sends. That dialect queries DATA SOURCES,
 // not databases (`/v1/data_sources/{id}/query`), and a created page's parent is `data_source_id`. The
 // reference extension this is modelled on speaks 2022-06-28 — do not copy its endpoints across.
-import { INGREDIENTS_DS, ING_PROPS, REQUIRED_ING_PROPS } from "../src/core/ingredients-schema.js";
+import { INGREDIENTS_DS, ING_MACRO_PROPS, ING_PROPS, REQUIRED_ING_PROPS } from "../src/core/ingredients-schema.js";
 import { score, REVIEW_THRESHOLD } from "../src/core/match.js";
 
 const VERSION = "2025-09-03";
@@ -204,6 +204,45 @@ export async function createIngredient(fields) {
     body: { parent: { type: "data_source_id", data_source_id: INGREDIENTS_DS }, properties },
   });
   return { id: page.id, notionUrl: page.url };
+}
+
+/**
+ * Fill in the four nutrition columns on a row just created by "Add to Ingredients".
+ *
+ * A SEPARATE write from createIngredient on purpose. The lookup takes ten to thirty seconds (it reads the
+ * product page and may search), and making the add wait on it would mean a spinner long enough for the
+ * user to give up on a row that was otherwise ready to write. So the row lands first with price, size and
+ * vendor, and the figures are patched in behind it. The Node side (src/core/macros.ts) writes them with
+ * the row instead — there the caller is a workflow with no one watching a spinner.
+ *
+ * Every column is independent and optional: a lookup that found protein and fat but not fibre writes the
+ * two it has. A column missing from the schema is skipped with a note rather than failing the request —
+ * these four are deliberately NOT in REQUIRED_ING_PROPS, because a renamed nutrition column is no reason
+ * for the extension to stop capturing prices.
+ */
+export async function writeMacros(pageId, macros) {
+  if (!pageId) throw new Error("No row to write nutrition to.");
+  if (!macros) return { written: [], skipped: [] };
+  const props = await getSchema();
+
+  const properties = {};
+  const written = [];
+  const skipped = [];
+  for (const [prop, value, label] of [
+    [ING_MACRO_PROPS.PROTEIN, macros.proteinPer100g, "Protein"],
+    [ING_MACRO_PROPS.FATS, macros.fatsPer100g, "Fat"],
+    [ING_MACRO_PROPS.CARBS, macros.carbsPer100g, "Carbs"],
+    [ING_MACRO_PROPS.FIBER, macros.fiberPer100g, "Fibre"],
+  ]) {
+    if (typeof value !== "number" || Number.isNaN(value)) continue;
+    if (!props[prop]) { skipped.push(`${label} (no "${prop}" column)`); continue; }
+    properties[prop] = { number: value };
+    written.push(label);
+  }
+  if (!written.length) return { written, skipped };
+
+  await api(`/pages/${pageId}`, { method: "PATCH", body: { properties } });
+  return { written, skipped };
 }
 
 /**

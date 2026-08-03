@@ -5,7 +5,8 @@
 // extension and the daily scraper always agree on what a generic name and a category are.
 import { deriveGenericName } from "../src/core/generic-name.js";
 import { categorize, matchCategoryOption, guessSize } from "../src/core/categorize.js";
-import { findSimilar, findByUrl, createIngredient, replaceIngredient, setupCheck, getFieldOptions } from "./notion-client.js";
+import { findSimilar, findByUrl, createIngredient, replaceIngredient, setupCheck, getFieldOptions, writeMacros } from "./notion-client.js";
+import { lookupMacros, macrosConfigured } from "./macros-client.js";
 import { vendorForUrl } from "./vendors.js";
 
 /**
@@ -100,7 +101,38 @@ const handlers = {
     const existing = await findByUrl(m.url); // re-check right before writing (the form may have raced)
     if (existing) return { ok: false, duplicate: existing };
     const created = await createIngredient(fieldsFrom(m));
-    return { ok: true, created };
+    // Told to the caller so it can say "looking up macros…" only when a lookup is
+    // actually coming — a missing key must not leave a spinner running forever.
+    return { ok: true, created, macrosConfigured: await macrosConfigured() };
+  },
+
+  /**
+   * Look up the four nutrition figures for a row just added, and write them.
+   *
+   * A SECOND round trip, deliberately: the lookup reads the product page and may search, which takes ten
+   * to thirty seconds, and the add itself must not wait on it. Notably this runs in the WORKER, so it
+   * survives the popup closing — the row gets its macros whether or not anyone is still watching. Only
+   * the "here's what it found" message is lost in that case.
+   *
+   * Never throws. There is nothing to roll back: the row exists and is correct, just without nutrition,
+   * and the reply says which of the two happened.
+   */
+  async "macros-for"({ pageId, name, exactName, vendor, url, category }) {
+    if (!pageId) throw new Error("No row to look up nutrition for.");
+    if (!(await macrosConfigured())) return { ok: false, reason: "no-key" };
+
+    const macros = await lookupMacros({
+      // The shop's own wording is the better search term; the generic name is the fallback.
+      product: exactName || name || "",
+      store: vendor || "",
+      url: url || "",
+      ingredientName: name || "",
+      category: category || "",
+    });
+    if (!macros) return { ok: false, reason: "not-found" };
+
+    const { written, skipped } = await writeMacros(pageId, macros);
+    return { ok: true, macros, written, skipped };
   },
 
   // "Replace With This" — repoint an existing row at this product.

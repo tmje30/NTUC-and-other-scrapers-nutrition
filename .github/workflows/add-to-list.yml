@@ -62,12 +62,15 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/cooldowns.json
+          # cooldowns.json — the snooze. purchases.json — the permanent record of
+          # what was bought, which is what the history page lists and the only
+          # place this system remembers a price it once saw.
+          git add data/cooldowns.json data/purchases.json
           if git diff --staged --quiet; then
-            echo "no cooldown change"
+            echo "no data change"
             exit 0
           fi
-          git commit -m "cooldown: snooze after adding to the grocery list"
+          git commit -m "add: snoozed and logged the purchase"
           for attempt in 1 2 3 4 5; do
             if git push; then
               exit 0

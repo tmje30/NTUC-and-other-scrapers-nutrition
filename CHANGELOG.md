@@ -125,6 +125,66 @@ All notable changes to this project are documented here. Format based on
   A single-word term folds through the matcher's own tokenizer ("tissue" catches
   "Tissues"); a phrase uses a separator-tolerant regex, since stemming "3 in 1"
   yields "in" and would exclude the whole shop.
+- **Ignore button** — red, directly under *Add* on every card (deal and close
+  match), separated by a real gap so it is never a mis-tap away from the button
+  you press on purpose. It retires the **product**, not the ingredient: this
+  listing is never offered again for any item, permanently, while the ingredient
+  stays in the plan, keeps being searched, and other products still match it.
+  New `ignore-product` action → a `BlockedProduct` keyed `ALL_ITEMS` (`"*"`),
+  which `exclusionReason` matches alongside the item's own key; a real key is a
+  stemmed base noun, so the two can't collide. Adding one supersedes any per-item
+  blocks on the same product, and re-tapping is a no-op. Confirmed before it
+  fires and it names both sides, because there is no button that undoes it —
+  removing the entry from `data/exclusions.json` is the only way back.
+- **History page** (`public/history.html`) — a second page linked from the deals
+  page footer, holding everything the deals page has to forget to stay readable.
+  `src/core/history.ts`; `src/core/page-chrome.ts` now holds the stylesheet and
+  one-tap script both pages share. Four sections:
+  - *Not in use* — ingredients tagged `Not in Use ATM`, which `readGroceryTargets`
+    drops so early they otherwise have no listing anywhere. **Reset** removes that
+    one tag (`unparkIngredient`, preserving all others) and refuses on a row that
+    also carries the permanent `Don't Search`.
+  - *Bought* — the purchase log, with three buttons per row.
+  - *Already filed* / *Never buy again* — the record, and the `ALL_ITEMS` blocks
+    from `exclusions.json` (the same list the red Ignore button writes; listed but
+    deliberately not undoable from the page).
+- **Purchase log** — new `src/core/purchases.ts` + `purchases-file.ts` →
+  `data/purchases.json`, appended by `add-to-list.ts` once the Notion row lands.
+  It exists because `cooldowns.json` **drops expired entries on every write** and
+  so was never a history. Append-only and never trimmed: the only place the system
+  remembers a price it once saw. Starts empty — earlier adds are not recoverable.
+- **Three buttons on a bought row** — *Add to Ingredients* creates a new row
+  (name, exact name, price, size, unit type, category, vendor, URL and macros);
+  *Replace Current* writes price/size/vendor onto the existing row and nothing
+  else, deliberately not renaming it; *Never buy again* writes the `ALL_ITEMS`
+  block and settles every open row naming that product.
+  `src/core/ingredient-write.ts` copies the extension's two rules verbatim —
+  blanks are omitted rather than written as null, and select values are validated
+  against the live schema so Notion can never be made to invent an option.
+- **Macro lookup** (`src/core/macros.ts`) — Claude Sonnet 5 with web search and
+  web fetch, run before the row is written. Product page → search → generic
+  values, with the tier recorded and generic values flagged for checking. The
+  prompt's load-bearing rule is that state decides the numbers (raw vs cooked,
+  dry vs boiled): right food, wrong state is worse than no answer, because
+  nothing looks missing. Capped at 4 searches; figures outside 0–100g dropped;
+  protein+fat+carbs over 105g rejects the answer as per-serving. Every failure
+  returns null and the row is still created — a lookup must never lose an add.
+  Needs `ANTHROPIC_API_KEY`; unset is supported and free.
+- **Macro lookup in the Chrome extension too** — *Add to Ingredients* in the
+  popup / side panel now fills the same four columns, so the two add paths agree.
+  `src/core/macro-prompt.ts` is new and holds everything that decides the answer
+  (system prompt, tool set, parsing, sanity gate); `macros.ts` and the new
+  `extension/macros-client.js` are now only transports — the SDK and raw `fetch`
+  respectively, since the Anthropic SDK cannot bundle into a service worker.
+  Shared, not copied, like `match.ts` and `ingredients-schema.ts` before it.
+  Unlike the Node path the lookup runs **after** the row is written and patches
+  it (`writeMacros`): the request takes 10–30s and no one should watch a spinner
+  that long for a row that was ready. It runs in the worker, so closing the popup
+  doesn't cancel it. Needs `https://api.anthropic.com/*` in `host_permissions`
+  plus the `anthropic-dangerous-direct-browser-access` header (a service worker
+  sends a browser `Origin`). Key is entered on the Options page beside the Notion
+  token; blank disables the whole feature. *Replace With This* still writes no
+  nutrition — that row's figures are the user's own work.
 
 - **Rescan button** in the missing-shop warning banner (and only there — it does
   nothing useful otherwise). The two halves of the hybrid heal at different

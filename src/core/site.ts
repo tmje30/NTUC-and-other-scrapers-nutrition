@@ -6,18 +6,18 @@ import type { ActionPayload } from "./item-actions.js";
 import type { PlanTarget } from "./notion.js";
 import type { StoreProduct } from "./stores/types.js";
 import { parseUnitCount, parseWeight } from "./stores/weight.js";
+import { PAGE_CSS, addScript, menuScript, type ChromeOptions } from "./page-chrome.js";
 
 /**
  * Renders the daily deals as a self-contained HTML page (deployed to GitHub
  * Pages). One Telegram message links here, keeping the chat to a single message.
+ *
+ * The stylesheet and the one-tap dispatch script live in `page-chrome.ts`, shared
+ * with the history page this one links to at the bottom.
  */
 
 /** Page-wide settings the cards need — how "Add" reaches Notion, and what's snoozed. */
-export interface PageOptions {
-	/** "owner/repo" for the Add button's pre-filled issue link. */
-	repo: string;
-	/** One-tap POST endpoint. Empty ⇒ fall back to the GitHub issue link. */
-	addEndpoint?: string;
+export interface PageOptions extends ChromeOptions {
 	/**
 	 * Items being skipped because they were recently bought. `key` (the cooldown
 	 * being served) and `ingredientId` are what the Reset button needs; without
@@ -182,6 +182,10 @@ function actionButton(
 		confirm?: string;
 		/** Question to ask before dispatching, pre-filled with `p.terms`. One-tap only. */
 		prompt?: string;
+		/** Extra class beside `act` — `ignore` paints it red. */
+		cls?: string;
+		/** What the issue title is ABOUT. Defaults to the ingredient (`p.name`). */
+		subject?: string;
 	},
 ): string {
 	const body =
@@ -194,11 +198,11 @@ function actionButton(
 	// two-tap path from being honoured.
 	const href =
 		`https://github.com/${o.repo}/issues/new` +
-		`?title=${encodeURIComponent(`Item: ${ui.label} — ${p.name}`)}` +
+		`?title=${encodeURIComponent(`Item: ${ui.label} — ${ui.subject ?? p.name}`)}` +
 		`&labels=grocery-add` +
 		`&body=${encodeURIComponent(body)}`;
 
-	return `<a class="act" href="${esc(href)}" target="_blank" rel="noopener"
+	return `<a class="act${ui.cls ? ` ${ui.cls}` : ""}" href="${esc(href)}" target="_blank" rel="noopener"
         data-payload="${esc(JSON.stringify(p))}" data-event="item-action"
         data-done="${esc(ui.done)}"${ui.confirm ? ` data-confirm="${esc(ui.confirm)}"` : ""}${
 					ui.prompt
@@ -206,6 +210,56 @@ function actionButton(
 						: ""
 				}
         aria-label="${esc(ui.aria)}">${esc(ui.label)}</a>`;
+}
+
+/**
+ * "Ignore" — the red button under Add. Retires the PRODUCT on this card from
+ * every future search, permanently.
+ *
+ * Deliberately not in the ⋯ menu with the other corrections, and deliberately not
+ * a variation on them: the menu is for "this match was wrong for this item",
+ * whereas this is "I never want to see this listing again" — the shop's own
+ * repackaged, over-priced or simply unwanted line, which will otherwise come back
+ * tomorrow under a different ingredient. So it is scoped to the product and left
+ * out of the item's exclusions entirely; the ingredient stays in the plan, still
+ * searched, with every other product still competing for it.
+ *
+ * Confirmed before it fires. There is no button that undoes it — coming back means
+ * editing `data/exclusions.json` — so the dialog says what it does and what it
+ * does not touch.
+ */
+function ignoreButton(t: PlanTarget, p: StoreProduct, o: PageOptions): string {
+	return actionButton(
+		{
+			v: 1,
+			action: "ignore-product",
+			key: cooldownKey(t.search.searchTerm),
+			ingredientId: t.ingredientId,
+			name: t.name,
+			store: p.store,
+			product: p.name,
+			url: p.url,
+		},
+		o,
+		{
+			label: "Ignore",
+			done: "✓ ignored",
+			cls: "ignore",
+			// The issue is about the PRODUCT, so the title says so — every other
+			// button's title names the ingredient, and this one must not be misread
+			// as retiring it.
+			subject: p.name,
+			aria: `Ignore ${p.name} — never offer this product again`,
+			// One line: a newline inside an HTML attribute would sit there raw.
+			confirm:
+				`Ignore "${p.name}" for good? It is never offered again, for any item. ` +
+				`"${t.name}" itself keeps being searched.`,
+			prose:
+				`Ignoring the product **${p.name}** (${p.store}) from the deals page: never ` +
+				`offer it again, for any item. The ingredient **${t.name}** is NOT changed — ` +
+				`it stays in the plan and other products still match it.`,
+		},
+	);
 }
 
 /**
@@ -408,7 +462,7 @@ function dealCard(d: Deal, o: PageOptions): string {
 	// only, and the lines below reclaim the full width. See the CSS.
 	return `
     <div class="card">
-      ${addButton(addPayload(t, p), o)}
+      <div class="cta">${addButton(addPayload(t, p), o)}${ignoreButton(t, p, o)}</div>
       <div class="main">
         <!-- The % saving, and the menu for telling us the match was wrong -->
         <div class="pctcol">
@@ -489,7 +543,7 @@ function recCard(r: ReviewMiss, o: PageOptions): string {
 
 	return `
     <div class="card rec">
-      ${addButton(payload, o)}
+      <div class="cta">${addButton(payload, o)}${ignoreButton(t, p, o)}</div>
       <div class="main">
         <!-- Percentage, the "closest" label, then the menu — this is the section
              where a wrong match is most likely, so the correction sits right under
@@ -512,256 +566,6 @@ function recCard(r: ReviewMiss, o: PageOptions): string {
     </div>`;
 }
 
-/**
- * The only behaviour the correction menu needs beyond what `<details>` already
- * does: a tap anywhere else closes it. Without this an open menu stays open until
- * you find its own ⋯ again, and on a phone that reads as a stuck page.
- *
- * Emitted on both paths (one-tap and relay), because the menus are rendered
- * either way — everything else about them works with JavaScript off.
- */
-function menuScript(): string {
-	return `<script>
-(function () {
-  document.addEventListener("click", function (ev) {
-    var open = document.querySelector("details.menu[open]");
-    // Capture phase, so this runs before the action handler below and a tap on a
-    // menu item still reaches it. A tap INSIDE the open menu is left alone —
-    // <summary> does its own toggling.
-    if (open && !open.contains(ev.target)) open.open = false;
-  }, true);
-})();
-</script>
-`;
-}
-
-/**
- * One tap, with no server anywhere.
- *
- * `api.github.com` answers cross-origin requests — a preflighted, authenticated
- * POST from `tmje30.github.io` comes back with a readable status, verified
- * 2026-07-29. So the page can fire `repository_dispatch` at the `add-to-list`
- * workflow itself, using a fine-grained PAT the user pastes in once. The token
- * lives only in that browser's localStorage: never in the repo, the page source,
- * or a build artifact.
- *
- * Why this rather than a relay service: it's free, there's nothing to deploy,
- * and — unlike a POST to a Notion webhook, which returns no CORS headers and so
- * an opaque response — the button can read the real status and tell the truth
- * about whether GitHub accepted the job.
- *
- * It is strictly an upgrade over the link underneath it. No token, a cancelled
- * prompt, a revoked token, JavaScript disabled: every one of those falls back to
- * the two-tap issue flow instead of failing.
- */
-function githubOneTapScript(o: PageOptions): string {
-	return `<script>
-(function () {
-  var REPO = ${JSON.stringify(o.repo)};
-  var KEY = "grocery-add-pat";
-  var toggle;
-
-  var token = function () { return localStorage.getItem(KEY) || ""; };
-
-  function paint() {
-    if (!toggle) return;
-    toggle.textContent = token() ? "⚡ one-tap on · tap to remove token" : "⚡ enable one-tap";
-  }
-
-  function configure() {
-    if (token()) {
-      if (confirm("Remove the saved token? Add will go back to opening GitHub.")) {
-        localStorage.removeItem(KEY);
-      }
-    } else {
-      var t = (prompt(
-        "Paste a GitHub fine-grained token for this repo (Contents: read and write).\\n\\n" +
-        "It is stored only in this browser."
-      ) || "").trim();
-      if (t) localStorage.setItem(KEY, t);
-    }
-    paint();
-  }
-
-  function dispatch(btn) {
-    var label = btn.textContent;
-    btn.dataset.state = "busy";
-    btn.textContent = "…";
-    fetch("https://api.github.com/repos/" + REPO + "/dispatches", {
-      method: "POST",
-      headers: {
-        "Authorization": "Bearer " + token(),
-        "Accept": "application/vnd.github+json",
-        "X-GitHub-Api-Version": "2022-11-28",
-        "Content-Type": "application/json"
-      },
-      // Nested: GitHub rejects a client_payload with over 10 top-level keys.
-      body: JSON.stringify({
-        event_type: btn.dataset.event || "add-to-list",
-        client_payload: { payload: JSON.parse(btn.dataset.payload) }
-      })
-    })
-      .then(function (r) {
-        if (r.status === 401 || r.status === 403) {
-          // Bad or revoked token: forget it, so the next tap opens the issue.
-          localStorage.removeItem(KEY);
-          paint();
-          throw new Error("auth");
-        }
-        if (!r.ok) throw new Error(r.status);
-        // 204 = GitHub accepted the job; the row appears ~15s later. This is the
-        // FINAL state — nothing polls afterwards — so the label has to read as
-        // finished. "queued" did not: it looks like a pending state, and you sit
-        // there waiting for it to change into something else.
-        btn.dataset.state = "done";
-        btn.textContent = btn.dataset.done || "✓ sent";
-        // A menu item's new label is inside a panel that is about to close, so the
-        // menu itself has to carry the result — otherwise the only feedback for a
-        // correction is a popup vanishing.
-        var menu = btn.closest && btn.closest("details.menu");
-        if (menu) {
-          menu.open = false;
-          menu.dataset.state = "done";
-          var sum = menu.querySelector("summary");
-          if (sum) sum.textContent = "✓";
-        }
-      })
-      .catch(function (e) {
-        btn.dataset.state = "failed";
-        btn.textContent = e.message === "auth" ? "token?" : "retry";
-        setTimeout(function () { btn.dataset.state = ""; btn.textContent = label; }, 4000);
-      });
-  }
-
-  document.addEventListener("click", function (ev) {
-    if (!ev.target.closest) return;
-    if (ev.target.closest("#onetap")) { ev.preventDefault(); configure(); return; }
-
-    // Every button on the page carries its payload the same way — Add, and the
-    // Reset/park buttons on a snoozed item. data-event picks the workflow.
-    var btn = ev.target.closest("[data-payload]");
-    if (!btn || btn.dataset.state === "busy" || btn.dataset.state === "done") return;
-    // No token? Do nothing and let the link open the pre-filled issue.
-    if (!token()) return;
-    // Only the destructive buttons set data-confirm. Cancelling must not fall
-    // through to the link, or "no" would open the issue form instead.
-    if (btn.dataset.confirm && !confirm(btn.dataset.confirm)) {
-      ev.preventDefault();
-      return;
-    }
-    // "Mismatch item" ships a list of words the page GUESSED at, so it is shown
-    // for editing before anything is banned — the guess includes the brand, and
-    // banning a brand for an item is the user's call. Cancelling, or clearing the
-    // box, sends nothing: an empty exclusion is not a correction. (Without a token
-    // the same list travels in the issue body, which is editable there instead.)
-    if (btn.dataset.prompt) {
-      var edited = prompt(btn.dataset.prompt, btn.dataset.terms || "");
-      ev.preventDefault();
-      if (edited === null) return;
-      var terms = edited.split(",").map(function (s) { return s.trim(); }).filter(Boolean);
-      if (!terms.length) return;
-      var body = JSON.parse(btn.dataset.payload);
-      body.terms = terms;
-      btn.dataset.payload = JSON.stringify(body);
-      btn.dataset.terms = terms.join(", ");
-      dispatch(btn);
-      return;
-    }
-    ev.preventDefault();
-    dispatch(btn);
-  });
-
-  // Shared setup link: opening ".../#add-token=XXX" stores the token and strips
-  // it back out of the address bar, so a second person (partner sharing the
-  // page) is set up by tapping one link instead of pasting a token on a phone.
-  // The fragment is never sent to the server — but it DOES persist in whatever
-  // chat you sent it through, so treat such a link as the secret it contains.
-  var shared = location.hash.match(/[#&]add-token=([^&]+)/);
-  if (shared) {
-    localStorage.setItem(KEY, decodeURIComponent(shared[1]));
-    history.replaceState(null, "", location.pathname + location.search);
-  }
-
-  toggle = document.getElementById("onetap");
-  paint();
-})();
-</script>
-`;
-}
-
-/**
- * Client-side half of the relay one-tap path (a Notion Worker webhook). Only
- * emitted when an endpoint is configured; otherwise the page uses the
- * GitHub-direct script above, which needs no service at all.
- *
- * Two constraints shape this, both from the Notion Worker webhook on the other
- * end (see `docs/one-tap-add.md`):
- *
- *  • It returns no CORS headers, so the request must be a "simple" one — POST,
- *    `text/plain`, no custom headers — to avoid a preflight the browser would
- *    reject. `mode: "no-cors"` sends it; the response comes back opaque.
- *  • Opaque means we cannot read the status. The tick therefore means "sent",
- *    not "confirmed" — the row itself shows up in Notion a few seconds later.
- *    That honesty is why this path is opt-in and the issue button is default.
- *
- * The endpoint lives in a public page, so it's gated by a token the user is
- * asked for once and the browser then remembers.
- */
-function addScript(o: PageOptions): string {
-	if (!o.addEndpoint) return githubOneTapScript(o);
-	return `<script>
-(function () {
-  var endpoint = ${JSON.stringify(o.addEndpoint)};
-  var KEY = "grocery-add-token";
-
-  function token() {
-    var t = localStorage.getItem(KEY);
-    if (!t) {
-      t = (prompt("One-time setup: paste your Add token") || "").trim();
-      if (t) localStorage.setItem(KEY, t);
-    }
-    return t;
-  }
-
-  document.addEventListener("click", function (ev) {
-    // Relay path: adds only. The item-action buttons keep their issue links.
-    var btn = ev.target.closest ? ev.target.closest(".add[data-payload]") : null;
-    if (!btn || btn.dataset.state === "busy" || btn.dataset.state === "done") return;
-    ev.preventDefault();
-
-    var t = token();
-    if (!t) return;
-
-    var label = btn.textContent;
-    var body = JSON.parse(btn.dataset.payload);
-    body.token = t;
-
-    btn.dataset.state = "busy";
-    btn.textContent = "…";
-    fetch(endpoint, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "text/plain" },
-      body: JSON.stringify(body),
-    })
-      .then(function () {
-        // Opaque response: delivered, not verified. Say "sent", not "added".
-        btn.dataset.state = "done";
-        btn.textContent = "sent";
-      })
-      .catch(function () {
-        btn.dataset.state = "failed";
-        btn.textContent = "retry";
-        setTimeout(function () {
-          btn.dataset.state = "";
-          btn.textContent = label;
-        }, 4000);
-      });
-  });
-})();
-</script>
-`;
-}
 
 export function renderDealsPage(
 	planDeals: Deal[],
@@ -846,133 +650,7 @@ export function renderDealsPage(
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Grocery deals · ${date}</title>
-<style>
-  :root { color-scheme: light dark; }
-  * { box-sizing: border-box; }
-  body { margin: 0; font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: #f5f6f8; color: #1a1d21; padding: 16px; }
-  .wrap { max-width: 640px; margin: 0 auto; }
-  h1 { font-size: 1.25rem; margin: 8px 2px 2px; }
-  .sub { color: #6b7280; font-size: .85rem; margin: 0 2px 16px; }
-  .section { font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; color: #6b7280; margin: 20px 2px 8px; }
-  .empty-sm { color: #6b7280; font-size: .9rem; margin: 4px 2px 8px; }
-  .card { display: flex; align-items: stretch; gap: 10px; color: inherit; background: #fff;
-    border: 1px solid #e5e7eb; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px;
-    box-shadow: 0 1px 2px rgba(0,0,0,.04); }
-  /* Everything but the Add button. A block (not a flex item) so the percentage
-     column inside it can float — see .pctcol. The clearfix keeps the card tall
-     enough when that column is taller than the text beside it. */
-  .main { flex: 1; min-width: 0; }
-  .main::after { content: ""; display: block; clear: both; }
-  /* Must NOT establish a block formatting context (no overflow/contain here), or
-     its text would stop flowing around the floated column and sit underneath it. */
-  .body { display: block; text-decoration: none; color: inherit;
-    transition: transform .05s ease; }
-  .body:active { transform: scale(.995); }
-  /* Add: pushes the item onto the Notion grocery list. Deliberately chunky — it's
-     the one thing on this page you tap on purpose rather than to read more. */
-  .add { flex: 0 0 auto; align-self: flex-start; display: inline-flex; align-items: center;
-    justify-content: center; min-width: 52px; min-height: 34px; padding: 0 12px; font: inherit;
-    font-size: .85rem; font-weight: 700; text-decoration: none; cursor: pointer;
-    color: #067647; background: #ecfdf3; border: 1px solid #a6f4c5; border-radius: 9px;
-    -webkit-tap-highlight-color: transparent; transition: transform .05s ease; }
-  .add:active { transform: scale(.94); }
-  .add[data-state="busy"], .act[data-state="busy"] { opacity: .6; }
-  .add[data-state="done"] { color: #fff; background: #067647; border-color: #067647; }
-  .add[data-state="failed"], .act[data-state="failed"] { color: #b42318; background: #fef3f2; border-color: #fecdca; }
-  /* Recently-bought rows: quieter than a card, but the buttons still need a
-     thumb-sized target, so the row is taller than the old one-line paragraph. */
-  .snooze { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 5px 2px; }
-  .sname { font-weight: 600; font-size: .95rem; }
-  .acts { margin-left: auto; display: flex; gap: 6px; }
-  .act { display: inline-flex; align-items: center; justify-content: center; min-height: 32px;
-    padding: 0 10px; font: inherit; font-size: .78rem; font-weight: 600; text-decoration: none;
-    cursor: pointer; color: #4b5563; background: #f3f4f6; border: 1px solid #e5e7eb;
-    border-radius: 8px; white-space: nowrap; -webkit-tap-highlight-color: transparent;
-    transition: transform .05s ease; }
-  .act:active { transform: scale(.94); }
-  .act[data-state="done"] { color: #067647; background: #ecfdf3; border-color: #a6f4c5; }
-  .row1 { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-  .name { font-weight: 650; font-size: 1.05rem; }
-  .pack { color: #6b7280; font-weight: 500; font-size: .9rem; }
-  .pct { color: #067647; font-weight: 700; background: #ecfdf3; border-radius: 8px; padding: 1px 8px; white-space: nowrap; }
-  .price { margin-top: 3px; }
-  .price b { font-size: 1.05rem; }
-  .per100 { color: #6b7280; font-size: .9rem; }
-  .mine { color: #ca8a04; font-size: .9rem; font-weight: 700; margin-left: 4px; white-space: nowrap; }
-  .was { color: #9ca3af; text-decoration: line-through; font-size: .9rem; margin-left: 4px; }
-  .meta { color: #6b7280; font-size: .85rem; margin-top: 4px; }
-  .prodprice { color: #4b5563; font-weight: 600; }
-  .usage { color: #6b7280; font-size: .85rem; margin-top: 2px; }
-  .store { color: #1a1d21; font-weight: 600; }
-  .sale { color: #b42318; font-weight: 600; }
-  .empty { text-align: center; color: #6b7280; padding: 40px 0; }
-  /* A shop missing from the scan. Loud enough to notice, quiet enough not to
-     look like an error page — the deals below are still real. */
-  .warn { color: #92400e; background: #fffaeb; border: 1px solid #fedf89; border-radius: 10px;
-    font-size: .85rem; margin: 0 2px 14px; padding: 8px 12px; }
-  /* Wraps on a phone so the hint drops under the button rather than squeezing it. */
-  .warnrow { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 10px; margin-top: 8px; }
-  .warnhint { flex: 1 1 220px; font-size: .78rem; opacity: .85; }
-  .act.rescan { color: #92400e; background: #fff; border-color: #fedf89; font-weight: 700; }
-  .card.rec { border-style: dashed; background: #fcfcfd; }
-  /* Percentage on top, "closest" beneath it, then the ⋯ menu — all hugging the
-     right edge. A sibling of the product link, never inside it, so the menu is
-     tappable without opening the store page.
-     Floated rather than sat in a column of its own: the card's lines wrap around
-     it while it lasts and then run the full width, which is what keeps a long
-     product name at two lines instead of three. */
-  .pctcol { float: right; margin: 0 0 4px 8px; display: flex; flex-direction: column;
-    align-items: flex-end; gap: 3px; }
-  .tag { color: #6b7280; font-size: .72rem; text-transform: uppercase; letter-spacing: .04em;
-    border: 1px solid #e5e7eb; border-radius: 8px; padding: 1px 7px; white-space: nowrap; }
-  /* The correction menu. <details> gives open/close and keyboard access for free;
-     the panel is absolute so opening it overlays the cards below instead of
-     shoving the whole page down. */
-  .menu { position: relative; margin-top: 1px; }
-  .menu > summary { display: inline-flex; align-items: center; justify-content: center;
-    min-width: 34px; min-height: 26px; padding: 0 8px; font-size: .8rem; line-height: 1;
-    color: #6b7280; background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 8px;
-    cursor: pointer; list-style: none; -webkit-tap-highlight-color: transparent; }
-  .menu > summary::-webkit-details-marker { display: none; }
-  .menu[open] > summary { color: #1a1d21; background: #e5e7eb; }
-  .menu[data-state="done"] > summary { color: #067647; background: #ecfdf3; border-color: #a6f4c5; }
-  .panel { position: absolute; right: 0; top: calc(100% + 4px); z-index: 10;
-    display: flex; flex-direction: column; gap: 5px; min-width: 190px; padding: 6px;
-    background: #fff; border: 1px solid #e5e7eb; border-radius: 10px;
-    box-shadow: 0 8px 24px rgba(0,0,0,.14); }
-  .panel .act { width: 100%; justify-content: flex-start; min-height: 34px; }
-  .why { color: #92400e; font-size: .82rem; margin-top: 4px; }
-  /* Deliberately quiet: setting a token is a once-per-device errand, not a
-     feature to advertise on every visit. */
-  .foot { margin: 22px 2px 8px; font-size: .8rem; }
-  .foot a { color: #9ca3af; text-decoration: none; }
-  @media (prefers-color-scheme: dark) {
-    body { background: #0f1115; color: #e5e7eb; }
-    .sub, .pack, .meta, .per100, .usage, .section, .empty-sm { color: #9aa1ab; }
-    .card { background: #171a1f; border-color: #262b32; box-shadow: none; }
-    .pct { color: #6ee7b7; background: #06251a; }
-    .store { color: #e5e7eb; }
-    .was { color: #6b7280; }
-    .mine { color: #facc15; }
-    .prodprice { color: #cbd2dc; }
-    .card.rec { background: #141619; }
-    .tag { border-color: #2c323a; }
-    .menu > summary { color: #cbd2dc; background: #1c2026; border-color: #2c323a; }
-    .menu[open] > summary { color: #e5e7eb; background: #262b32; }
-    .menu[data-state="done"] > summary { color: #6ee7b7; background: #06251a; border-color: #0b4a34; }
-    .panel { background: #171a1f; border-color: #2c323a; box-shadow: 0 8px 24px rgba(0,0,0,.5); }
-    .why { color: #fbbf24; }
-    .warn { color: #fbbf24; background: #241a06; border-color: #4a3410; }
-    .act.rescan { color: #fbbf24; background: #1c1403; border-color: #4a3410; }
-    .add { color: #6ee7b7; background: #06251a; border-color: #0b4a34; }
-    .add[data-state="done"] { color: #04140e; background: #6ee7b7; border-color: #6ee7b7; }
-    .add[data-state="failed"], .act[data-state="failed"] { color: #fda29b; background: #2b1512; border-color: #5c2420; }
-    .act { color: #cbd2dc; background: #1c2026; border-color: #2c323a; }
-    .act[data-state="done"] { color: #6ee7b7; background: #06251a; border-color: #0b4a34; }
-    .foot a { color: #6b7280; }
-  }
-</style>
+<style>${PAGE_CSS}</style>
 </head>
 <body>
   <div class="wrap">
@@ -989,6 +667,14 @@ export function renderDealsPage(
 				: ""
 		}
     ${cards}
+    <!-- The way into the history page: parked ingredients, what you've bought,
+         and the never-buy list. A separate page on purpose — none of it is a
+         deal, and putting it here would bury the deals it sits under. -->
+    <p class="foot" style="margin-top:26px">
+      <a class="act" href="./history.html" style="font-size:.82rem"
+         aria-label="Open the history page: not in use, bought items, never buy again"
+        >📋 Not in use · bought items · never buy again →</a>
+    </p>
     ${
 			o.addEndpoint
 				? ""

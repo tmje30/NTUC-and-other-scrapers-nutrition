@@ -10,5 +10,6 @@
   "comment_permissions": "activeTab + scripting let the popup inject dist/content.js into the CURRENT tab on demand (only when you click the extension), so capture works on ANY shop without a hardcoded host list. No broad host_permissions for reading page CONTENT by default. The SIDE PANEL stays open across navigation and has no per-open activeTab grant: 'tabs' lets it see the active tab's URL (metadata only) so it can name the vendor + dup-check as you browse, and reading page CONTENT there needs the optional_host_permissions it asks for once via its banner.",
   "permissions": ["storage", "activeTab", "scripting", "sidePanel", "tabs"],
   "optional_host_permissions": ["http://*/*", "https://*/*"],
-  "host_permissions": ["https://api.notion.com/*"]
+  "comment_host_permissions": "api.notion.com for the Ingredients DB; api.anthropic.com for the macro lookup behind 'Add to Ingredients'. Both are called ONLY from the background worker, which host_permissions exempts from CORS.",
+  "host_permissions": ["https://api.notion.com/*", "https://api.anthropic.com/*"]
 }

@@ -147,6 +147,9 @@ function formulaString(p: any): string {
 	if (p?.type === "formula" && p.formula?.type === "string") return p.formula.string ?? "";
 	return "";
 }
+function richText(p: any): string {
+	return (p?.rich_text ?? []).map((r: any) => r.plain_text).join("").trim();
+}
 
 async function queryAll(client: Client, dataSourceId: string): Promise<any[]> {
 	const out: any[] = [];
@@ -161,6 +164,64 @@ async function queryAll(client: Client, dataSourceId: string): Promise<any[]> {
 		cursor = res.has_more ? res.next_cursor : undefined;
 	} while (cursor);
 	return out;
+}
+
+/** One row wearing the parked tag, as the history page lists it. */
+export interface ParkedIngredient {
+	ingredientId: string;
+	name: string;
+	category: string;
+	unitType: string;
+	packPriceSgd: number | null;
+	packSize: number | null;
+	vendor: string;
+	/** Every tag on the row — the page shows the others so a `Don't Search` is visible. */
+	tags: string[];
+}
+
+/**
+ * Ingredients tagged `Not in Use ATM` — the history page's "Not in use" section.
+ *
+ * The counterpart to the filter in `readGroceryTargets`, which drops these rows
+ * so they are never searched. Dropping them there means they vanish completely:
+ * an item you parked in March is simply gone, with no list to find it on and no
+ * way back except remembering its name and un-tagging it in Notion by hand. This
+ * is that list.
+ *
+ * Deliberately NOT filtered the way targets are — no price/size requirement, no
+ * grocery-category check. A row can only be un-parked from a list it appears on,
+ * and an unpriced or oddly-categorised row is exactly the kind that gets parked
+ * and then lost.
+ *
+ * Rows also carrying `Don't Search` are excluded: that tag is permanent and set
+ * by hand, nothing here may undo it, and offering a Reset button beside it would
+ * promise something this tool must never do.
+ */
+export async function readParkedIngredients(client: Client): Promise<ParkedIngredient[]> {
+	const rows = await queryAll(client, INGREDIENTS_DS);
+	const out: ParkedIngredient[] = [];
+	for (const row of rows) {
+		const p = row.properties;
+		const name = titleText(p["Name"]);
+		if (!name) continue;
+
+		const tags = multiSelectNames(p[TAGS_PROPERTY]);
+		const hasTag = (t: string) => tags.some((x) => normTag(x) === normTag(t));
+		if (!hasTag(PARKED_TAG)) continue;
+		if (DONT_SEARCH_TAGS.some(hasTag)) continue; // permanent — no Reset button for it
+
+		out.push({
+			ingredientId: row.id,
+			name,
+			category: selectName(p["Catagory"]),
+			unitType: selectName(p["Unit type "]),
+			packPriceSgd: numberOf(p["Price,SGD"]),
+			packSize: numberOf(p["Weight /Units of New Product "]),
+			vendor: richText(p["Vendor, Current "]),
+			tags,
+		});
+	}
+	return out.sort((a, b) => a.name.localeCompare(b.name));
 }
 
 /**

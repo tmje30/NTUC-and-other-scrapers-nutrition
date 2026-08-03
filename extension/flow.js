@@ -87,6 +87,63 @@ function finish(message, notionUrl) {
   r.innerHTML = "";
   r.append(el("div", { textContent: message }));
   if (notionUrl) r.append(el("a", { href: notionUrl, target: "_blank", textContent: "Open in Notion →" }));
+  return r;
+}
+
+/**
+ * Look up the four macro columns for a row that has just been added, and say what came back.
+ *
+ * Runs AFTER the row is written, never before: the lookup reads the product page and may search the web,
+ * which takes ten to thirty seconds, and nobody should watch a spinner that long to save a price they
+ * already typed. The row is safe by the time this starts, so every failure here is cosmetic.
+ *
+ * The work happens in the background worker, so closing the popup does NOT cancel it — the figures still
+ * land in Notion, only this message is lost. The side panel usually stays open and sees the result.
+ *
+ * The SOURCE is always shown, because it is the difference between a number off the product's own label
+ * and a number off a category average. Generic values get a warning: they're what the user asked for when
+ * the exact product can't be found, but they're the ones worth a second look.
+ */
+async function lookupMacros(box, pageId, fields, timeout) {
+  const line = el("div", { className: "muted", textContent: "Looking up nutrition (10–30s)…" });
+  box.append(line);
+
+  let res;
+  try {
+    // The worker's own ceiling is 180s; allow past it so a slow-but-successful lookup still reports,
+    // rather than the panel giving up on a request that is about to answer.
+    res = await send({ type: "macros-for", pageId, ...fields }, timeout);
+  } catch (err) {
+    line.className = "muted";
+    line.textContent = `Nutrition lookup failed — ${err.message} The row is fine; fill the four columns in by hand.`;
+    return;
+  }
+
+  if (!res.ok) {
+    line.textContent =
+      res.reason === "no-key"
+        ? "No Claude API key set, so no nutrition — add one on the Options page, or fill the four columns in by hand."
+        : "Couldn't establish nutrition figures for this one — fill the four columns in by hand.";
+    return;
+  }
+
+  const m = res.macros;
+  const n = (v) => (typeof v === "number" ? `${v}g` : "?");
+  line.className = m.source === "generic" ? "muted" : "ok";
+  line.textContent =
+    `Nutrition per 100g — protein ${n(m.proteinPer100g)}, fat ${n(m.fatsPer100g)}, ` +
+    `carbs ${n(m.carbsPer100g)}, fibre ${n(m.fiberPer100g)}.`;
+
+  box.append(el("div", { className: "muted", textContent: m.note }));
+  if (m.source === "generic") {
+    box.append(el("div", {
+      className: "muted",
+      textContent: "⚠️ Generic values, not this product's own label — worth checking.",
+    }));
+  }
+  if (res.skipped?.length) {
+    box.append(el("div", { className: "muted", textContent: `Not written: ${res.skipped.join(", ")}` }));
+  }
 }
 
 /**
@@ -315,7 +372,21 @@ export async function render(tab, alive = () => true) {
       const res = await send({ type: "add-item", ...fields });
       if (res.duplicate) { setStatus("Already added from this page.", "ok"); $("form").hidden = true; return showExisting(res.duplicate); }
       setStatus("Added ✓", "ok");
-      finish(`Added "${fields.name}" to Ingredients.`, res.created.notionUrl);
+      const box = finish(`Added "${fields.name}" to Ingredients.`, res.created.notionUrl);
+
+      // The row is written and the user has their confirmation; the nutrition columns fill in behind it.
+      // Not awaited into the add's own error path — a failed lookup must never make a successful add look
+      // like it went wrong. 200s: past the worker's own 180s ceiling, so the timeout that reports is the
+      // one that actually knows why it gave up.
+      if (res.macrosConfigured) {
+        lookupMacros(box, res.created.id, {
+          name: fields.name,
+          exactName: fields.exactName,
+          vendor: fields.vendor,
+          url: fields.url,
+          category: fields.category,
+        }, 200000);
+      }
     } catch (err) {
       setStatus(err.message, "error");
       $("add").disabled = false;

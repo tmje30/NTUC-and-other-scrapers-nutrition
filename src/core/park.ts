@@ -1,5 +1,5 @@
 import { Client } from "@notionhq/client";
-import { INGREDIENTS_DS, PARKED_TAG, TAGS_PROPERTY } from "./notion.js";
+import { DONT_SEARCH_TAGS, INGREDIENTS_DS, PARKED_TAG, TAGS_PROPERTY, normTag } from "./notion.js";
 
 /**
  * Parking an ingredient: the page's "Not in use" button, which tags the Notion
@@ -74,4 +74,61 @@ export async function parkIngredient(
 		} as any);
 	}
 	return { tags, alreadyParked: false };
+}
+
+export interface UnparkResult {
+	/** The row's tags after the write (or as found, when it wasn't parked). */
+	tags: string[];
+	/** True when the tag wasn't there and nothing was written. */
+	notParked: boolean;
+	/** Set when the row also carries `Don't Search` — nothing was written. */
+	blockedBy?: string;
+}
+
+/**
+ * Remove the parked tag from one ingredient — the history page's Reset button.
+ *
+ * The inverse of `parkIngredient`, and it inherits rule 1 in full: the write
+ * sends back the whole `multi_select`, so every OTHER tag has to be carried
+ * across or Notion deletes it. Losing `Brand Specific` or `Quality item` while
+ * un-parking would bring the item back into the scan configured wrongly, which
+ * is worse than leaving it parked — the item returns, matches the wrong things,
+ * and nothing about the page says why.
+ *
+ * Rule 2 doesn't apply here (removing an option can't create schema), but a
+ * third rule of its own does:
+ *
+ *  3. **`Don't Search` is never touched, and blocks the un-park.** That tag is
+ *     set by hand and means permanently excluded. A row wearing both is one the
+ *     user retired twice over, so this refuses rather than half-reviving it —
+ *     un-parking would clear the reversible tag and leave the item still
+ *     invisible, which reads as a button that did nothing.
+ */
+export async function unparkIngredient(
+	client: Client,
+	ingredientId: string,
+	dryRun = false,
+): Promise<UnparkResult> {
+	if (!ingredientId) throw new Error("unpark needs an ingredientId");
+
+	const page = (await client.pages.retrieve({ page_id: ingredientId })) as any;
+	const current: string[] = (page.properties?.[TAGS_PROPERTY]?.multi_select ?? [])
+		.map((o: any) => o.name)
+		.filter(Boolean);
+
+	const blocking = current.find((t) => DONT_SEARCH_TAGS.some((d) => normTag(d) === normTag(t)));
+	if (blocking) return { tags: current, notParked: false, blockedBy: blocking };
+
+	if (!current.some((t) => normTag(t) === normTag(PARKED_TAG))) {
+		return { tags: current, notParked: true };
+	}
+
+	const tags = current.filter((t) => normTag(t) !== normTag(PARKED_TAG));
+	if (!dryRun) {
+		await client.pages.update({
+			page_id: ingredientId,
+			properties: { [TAGS_PROPERTY]: { multi_select: tags.map((name) => ({ name })) } },
+		} as any);
+	}
+	return { tags, notParked: false };
 }

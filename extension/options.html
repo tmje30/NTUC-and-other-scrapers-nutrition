@@ -19,6 +19,17 @@
   <p class="muted">The integration needs <strong>Insert content</strong> and <strong>Update content</strong>
   capability on the <strong>Ingredients</strong> database, since this writes rows and can replace one.</p>
   <label>Notion token <input id="token" type="password" autocomplete="off"></label>
+
+  <h2 style="font-size:14px;margin:20px 0 0">Nutrition lookup <span class="muted">(optional)</span></h2>
+  <p class="muted">With a Claude API key — the same value as <code>ANTHROPIC_API_KEY</code> in the
+  project's <code>.env</code> — <strong>Add to Ingredients</strong> also fills in protein, fat, carbs and
+  fibre per 100g. It reads the shop's own nutrition panel where there is one, searches for the product
+  where there isn't, and falls back to generic values for that food, matching the state on the label
+  (raw chicken stays raw). It always says which of the three it used.</p>
+  <p class="muted">Leave this blank to skip the lookup — rows are then added without nutrition, exactly as
+  before. Roughly 6–7 US cents per lookup, and only when you tap Add.</p>
+  <label>Claude API key <input id="anthropic" type="password" autocomplete="off" placeholder="sk-ant-…"></label>
+
   <button id="save">Save &amp; test</button>
   <div id="msg"></div>
   <script type="module" src="dist/options.js"></script>

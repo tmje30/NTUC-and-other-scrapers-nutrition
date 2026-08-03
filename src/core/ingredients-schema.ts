@@ -37,6 +37,25 @@ export const ING_PROPS = {
 	VENDOR_URL: "Vendor 1 URL",
 } as const;
 
+/**
+ * The four nutrition columns, per 100 g — filled in by the history page's
+ * "Add to Ingredients" (see `macros.ts`).
+ *
+ * ⚠️ Same verbatim-copy rule as above, and these are the worst offenders in the
+ * whole schema. `Fats per 100 g ` has a space BEFORE the g as well as a trailing
+ * one; `Carbs` and `Fiber` are trailing-space only; `Protein` has neither. They
+ * are not typos to fix here — they are what Notion is storing.
+ *
+ * Deliberately NOT in `REQUIRED_ING_PROPS`: the extension writes prices and sizes
+ * and has no business refusing to work because a nutrition column was renamed.
+ */
+export const ING_MACRO_PROPS = {
+	PROTEIN: "Protein per 100g",
+	FATS: "Fats per 100 g ",
+	CARBS: "Carbs per 100g ",
+	FIBER: "Fiber per 100g ",
+} as const;
+
 /** Properties that must exist before the extension will write anything. */
 export const REQUIRED_ING_PROPS: string[] = [
 	ING_PROPS.NAME,

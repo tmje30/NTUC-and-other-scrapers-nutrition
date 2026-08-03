@@ -9,6 +9,8 @@ import {
 } from "../core/grocery-list.js";
 import { planCooldown, withCooldown, type CooldownEntry } from "../core/cooldown.js";
 import { readCooldowns, writeCooldowns } from "../core/cooldown-file.js";
+import { purchaseFromAdd, withPurchase } from "../core/purchases.js";
+import { readPurchases, writePurchases } from "../core/purchases-file.js";
 
 /**
  * The other end of the page's Add button: put one deal on the Notion grocery
@@ -106,6 +108,19 @@ const entry: CooldownEntry = {
 	monthlyAmount: payload.monthlyAmount,
 };
 await writeCooldowns(withCooldown(await readCooldowns(), entry, now), undefined);
+
+// The purchase log — the history page's whole input, and the only lasting record
+// of what this product cost today. Written AFTER the Notion row exists, so the
+// log never claims a purchase that failed to land. Non-fatal: a log write that
+// fails must not turn a successful add into a failed workflow run, because the
+// row is already on the user's list and re-running would duplicate it.
+try {
+	const purchase = purchaseFromAdd(payload, now);
+	const { file, added: logged } = withPurchase(await readPurchases(), purchase, now);
+	if (logged) await writePurchases(file);
+} catch (e) {
+	console.error(`Warning: could not write the purchase log — ${(e as Error).message}`);
+}
 
 // No Telegram ping here by design — the user gets one daily digest and doesn't
 // want an add narrating itself. The issue comment below is the whole receipt.

@@ -22,6 +22,11 @@ import type { StoreProduct } from "./stores/types.js";
  * cooldowns use, so a correction made on "Onion (White)" also applies to
  * "Onion (not red)" — they are one shopping decision spelled two ways.
  *
+ * A blocked product may instead carry the key `ALL_ITEMS`, which is the page's
+ * red "Ignore" button: this PRODUCT is never to be offered again, for anything.
+ * Nothing about the ingredient changes — that item keeps being searched, and
+ * every other product in the shop still competes for it.
+ *
  * Pure module (no I/O): file persistence lives in `exclusions-file.ts`, so the
  * static page builder, the daily scan and the privileged workflow all share one
  * definition of what an exclusion means.
@@ -40,7 +45,14 @@ export interface ExcludedTerm {
 	addedAt: string;
 }
 
-/** One specific store product, blocked for this item. */
+/**
+ * The key that means "every item, forever" on a blocked product — the red
+ * "Ignore" button. A real key is a stemmed base noun (`cooldownKey`), which can
+ * never be `*`, so the two can't collide.
+ */
+export const ALL_ITEMS = "*";
+
+/** One specific store product, blocked for this item (or for `ALL_ITEMS`). */
 export interface BlockedProduct {
 	key: string;
 	store: string;
@@ -137,7 +149,10 @@ export function exclusionReason(
 		if (t.key === key && termHits(t.term, product)) return `excluded term "${t.term}"`;
 	}
 	for (const b of file.products ?? []) {
-		if (b.key === key && isBlocked(b, product)) return b.note ? `blocked (${b.note})` : "blocked";
+		if (b.key !== key && b.key !== ALL_ITEMS) continue;
+		if (!isBlocked(b, product)) continue;
+		const scope = b.key === ALL_ITEMS ? "ignored" : "blocked";
+		return b.note ? `${scope} (${b.note})` : scope;
 	}
 	return null;
 }
@@ -170,25 +185,38 @@ export function withExcludedTerms(
 	};
 }
 
-/** Block one product for a key. Blocking it twice changes nothing. */
+/**
+ * Block one product for a key. Blocking it twice changes nothing.
+ *
+ * `ALL_ITEMS` is the wider scope, so the two interact:
+ *  • a product already ignored everywhere can't be blocked "again" for one item —
+ *    it is already gone from every search, so there is nothing to add;
+ *  • ignoring it everywhere REPLACES any per-item blocks on it, which would
+ *    otherwise sit in the file forever saying the same thing about one item.
+ */
 export function withBlockedProduct(
 	file: ExclusionFile,
 	entry: Omit<BlockedProduct, "addedAt">,
 	now: Date = new Date(),
 ): { file: ExclusionFile; added: boolean } {
 	const products = file.products ?? [];
+	const sameProduct = (b: BlockedProduct) =>
+		entry.url && b.url
+			? same(b.url, entry.url)
+			: same(b.store, entry.store) && same(b.product, entry.product);
 	const dupe = products.some(
-		(b) =>
-			b.key === entry.key &&
-			(entry.url && b.url ? same(b.url, entry.url) : same(b.store, entry.store) && same(b.product, entry.product)),
+		(b) => (b.key === entry.key || b.key === ALL_ITEMS) && sameProduct(b),
 	);
 	if (dupe) return { file, added: false };
+	// A global ignore subsumes the per-item blocks on the same product.
+	const kept =
+		entry.key === ALL_ITEMS ? products.filter((b) => !sameProduct(b)) : products;
 	return {
 		file: {
 			version: 1,
 			updatedAt: now.toISOString(),
 			terms: file.terms ?? [],
-			products: [...products, { ...entry, addedAt: now.toISOString() }],
+			products: [...kept, { ...entry, addedAt: now.toISOString() }],
 		},
 		added: true,
 	};

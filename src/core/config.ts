@@ -41,4 +41,11 @@ export const config = {
 	 * Unset — the normal case — makes Add open a pre-filled GitHub issue instead.
 	 */
 	addEndpoint: () => optional("ADD_ENDPOINT"),
+	/**
+	 * Claude API key, for the macro lookup behind "Add to Ingredients".
+	 * `optional` on purpose: unset simply means the new row is written without
+	 * nutrition figures, which is a worse row but still a correct one. Only the
+	 * macro lookup should ever fail for want of this — never an add.
+	 */
+	anthropicKey: () => optional("ANTHROPIC_API_KEY"),
 };

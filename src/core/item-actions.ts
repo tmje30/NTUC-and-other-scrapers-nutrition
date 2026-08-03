@@ -12,18 +12,37 @@
  */
 
 /**
- * The five things a button can ask for:
+ * What a button can ask for. Two families, from two pages.
  *
- *   reset        un-snooze now
- *   park         retire the ingredient in Notion as well
- *   ignore-week  don't search this until the start of next week
- *   mismatch     never match these words for this item again
- *   almost       block this one product for this item
+ * **From the deals page** — about an item and today's match for it:
+ *   reset           un-snooze now
+ *   park            retire the ingredient in Notion as well
+ *   ignore-week     don't search this until the start of next week
+ *   mismatch        never match these words for this item again
+ *   almost          block this one product for this item
+ *   ignore-product  never offer this PRODUCT again, for any item
  *
- * The last three come from the menu under a card's percentage, so they carry the
- * product that was on screen as well as the item.
+ * **From the history page** — about something already bought or parked:
+ *   unpark             clear `Not in Use ATM` so the ingredient is searched again
+ *   add-ingredient     file a bought product as a NEW Ingredients row, macros and all
+ *   replace-ingredient point the existing ingredient row at what was actually bought
+ *   never-buy          never buy this product again (the same block as `ignore-product`)
+ *
+ * `ignore-product` and `never-buy` do the identical thing and are kept apart only
+ * so the log says which page it came from — one is "stop offering me this deal",
+ * the other is "I bought this and regret it". Both write one `ALL_ITEMS` block.
  */
-export type ItemAction = "reset" | "park" | "ignore-week" | "mismatch" | "almost";
+export type ItemAction =
+	| "reset"
+	| "park"
+	| "ignore-week"
+	| "mismatch"
+	| "almost"
+	| "ignore-product"
+	| "unpark"
+	| "add-ingredient"
+	| "replace-ingredient"
+	| "never-buy";
 
 export interface ActionPayload {
 	v: 1;
@@ -34,19 +53,49 @@ export interface ActionPayload {
 	ingredientId: string;
 	/** The ingredient's display name, for the log and the issue comment. */
 	name: string;
-	/** The store the card was showing. Evidence on `mismatch`, identity on `almost`. */
+	/** The store the card was showing. Evidence on `mismatch`, identity on `almost`/`ignore-product`. */
 	store?: string;
 	/** The product name the card was showing. */
 	product?: string;
-	/** The product's page URL — how `almost` recognises it again. */
+	/** The product's page URL — how `almost` and `ignore-product` recognise it again. */
 	url?: string;
 	/** Words to stop matching, for `mismatch`. Suggested by the page, edited by the user. */
 	terms?: string[];
 	/** Free-text reason, for `almost` ("not pasteurized"). */
 	note?: string;
+
+	// ---- History-page fields. Only the three purchase actions set these. ----
+
+	/** Which row of `data/purchases.json` this is about (see `purchaseId`). */
+	purchaseId?: string;
+	/** What the pack cost, SGD — written onto the Ingredients row. */
+	priceSgd?: number | null;
+	/** Pack size in grams/ml, or null when the shop published neither. */
+	packSizeG?: number | null;
+	/** True when the pack was measured by volume — decides By ml vs By Gram. */
+	volumetric?: boolean;
 }
 
-const ACTIONS = new Set<ItemAction>(["reset", "park", "ignore-week", "mismatch", "almost"]);
+const ACTIONS = new Set<ItemAction>([
+	"reset",
+	"park",
+	"ignore-week",
+	"mismatch",
+	"almost",
+	"ignore-product",
+	"unpark",
+	"add-ingredient",
+	"replace-ingredient",
+	"never-buy",
+]);
+
+/**
+ * Actions that suppress or un-suppress an item by its base noun, and so cannot
+ * work without `key`. The history-page actions are about a specific Notion row or
+ * a specific product, not a base noun, so they carry no key and none is demanded
+ * — requiring one there would mean the page inventing a value nothing reads.
+ */
+const NEEDS_KEY = new Set<ItemAction>(["reset", "park", "ignore-week", "mismatch", "almost"]);
 
 /** How many words one tap may exclude — a guard on a hand-edited free-text field. */
 const MAX_TERMS = 12;
@@ -89,10 +138,18 @@ export function parseActionPayload(raw: unknown): ActionPayload {
 		throw new Error("payload.terms must list at least one word to exclude");
 	}
 
+	/** A number, or null. Blank and unparseable both mean "not supplied". */
+	const num = (k: string): number | null => {
+		const v = o[k];
+		if (v == null || v === "") return null;
+		const n = Number(v);
+		return Number.isFinite(n) ? n : null;
+	};
+
 	const payload: ActionPayload = {
 		v: 1,
 		action,
-		key: str("key"),
+		key: str("key", NEEDS_KEY.has(action)),
 		// A reset only needs the key, so an id-less payload is still usable; `park`
 		// checks for it itself, where a missing id is a hard error.
 		ingredientId: str("ingredientId", false),
@@ -102,12 +159,31 @@ export function parseActionPayload(raw: unknown): ActionPayload {
 		url: str("url", false),
 		terms,
 		note: str("note", false),
+		purchaseId: str("purchaseId", false),
+		priceSgd: num("priceSgd"),
+		packSizeG: num("packSizeG"),
+		volumetric: Boolean(o.volumetric),
 	};
 
 	// A block that can't recognise the product again would silently do nothing, so
 	// it fails loudly instead. Either identity will do — see `isBlocked`.
-	if (action === "almost" && !payload.url && !(payload.store && payload.product)) {
+	const blocksAProduct =
+		action === "almost" || action === "ignore-product" || action === "never-buy";
+	if (blocksAProduct && !payload.url && !(payload.store && payload.product)) {
 		throw new Error("payload must name the product (url, or store + product)");
 	}
+
+	// The two Notion writes both act on one specific row. Without its id there is
+	// nothing to write to, and guessing from the name is exactly the kind of
+	// almost-right that edits the wrong ingredient.
+	if ((action === "unpark" || action === "replace-ingredient") && !payload.ingredientId) {
+		throw new Error(`payload.ingredientId is required for "${action}"`);
+	}
+	// A new Ingredients row needs at minimum something to call it. Price is checked
+	// in the handler, where a missing one is a warning rather than a refusal.
+	if (action === "add-ingredient" && !payload.product) {
+		throw new Error('payload.product is required for "add-ingredient"');
+	}
+
 	return payload;
 }

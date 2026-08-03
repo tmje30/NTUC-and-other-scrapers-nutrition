@@ -52,6 +52,10 @@ jobs:
         run: npm run item-action
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          # Only "Add to Ingredients" uses this — it looks up the product's macros
+          # before writing the row. Unset is a supported state: the row is created
+          # without nutrition figures and the reply says so, rather than failing.
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           ISSUE_BODY: ${{ github.event.issue.body }}
           ACTION_PAYLOAD: ${{ toJSON(github.event.client_payload) }}
 
@@ -60,9 +64,11 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           # cooldowns.json — reset / not in use / ignore for the week.
-          # exclusions.json — mismatch / almost-but-no. One action writes one file,
-          # but staging both keeps this step honest as actions are added.
-          git add data/cooldowns.json data/exclusions.json
+          # exclusions.json — mismatch / almost-but-no / ignore / never buy again.
+          # purchases.json — which bought rows have been filed into Ingredients.
+          # One action writes one file, but staging all three keeps this step
+          # honest as actions are added.
+          git add data/cooldowns.json data/exclusions.json data/purchases.json
           if git diff --staged --quiet; then
             echo "no data change"
             exit 0

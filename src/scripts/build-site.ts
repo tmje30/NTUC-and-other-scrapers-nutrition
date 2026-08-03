@@ -1,6 +1,11 @@
 import { mkdir, writeFile } from "node:fs/promises";
+import { Client } from "@notionhq/client";
 import { runOnce } from "../core/run.js";
 import { renderDealsPage } from "../core/site.js";
+import { renderHistoryPage } from "../core/history.js";
+import { readParkedIngredients, type ParkedIngredient } from "../core/notion.js";
+import { readPurchases } from "../core/purchases-file.js";
+import { readExclusions } from "../core/exclusions-file.js";
 import { config } from "../core/config.js";
 
 /**
@@ -88,6 +93,49 @@ await writeFile(
 );
 if (warning) console.error(`Warning: ${warning}`);
 console.error(`Wrote public/index.html (${total} deals) and public/summary.json`);
+
+/**
+ * The history page — parked ingredients, what's been bought, the never-buy list.
+ *
+ * Wrapped in its own try so it can never take the deals page down with it: the
+ * deals page is the one the daily Telegram message links to, and a Notion hiccup
+ * while listing parked rows is not a reason for the user to get a broken link at
+ * 06:00. A failed parked read still renders the page — it just says so, rather
+ * than showing an empty section that reads as "nothing is parked".
+ */
+try {
+	let parked: ParkedIngredient[] = [];
+	let parkedError: string | undefined;
+	try {
+		parked = await readParkedIngredients(new Client({ auth: config.notionToken() }));
+	} catch (e: any) {
+		parkedError = e.message;
+		console.error(`Warning: could not read parked ingredients: ${e.message}`);
+	}
+
+	const purchases = await readPurchases();
+	const exclusions = await readExclusions();
+
+	await writeFile(
+		"public/history.html",
+		renderHistoryPage({
+			repo: config.repo(),
+			addEndpoint: config.addEndpoint(),
+			parked,
+			purchases,
+			exclusions,
+			parkedError,
+		}),
+		"utf8",
+	);
+	const open = purchases.entries.filter((e) => e.outcome === "open").length;
+	console.error(
+		`Wrote public/history.html (${parked.length} parked, ${open} to file, ` +
+			`${purchases.entries.length} purchases logged)`,
+	);
+} catch (e: any) {
+	console.error(`Warning: failed to write public/history.html: ${e.message}`);
+}
 
 // Publish the search terms so residential runners (phone/laptop) can fetch them
 // without a Notion token. Wrapped so a failure here never breaks the page/notify.

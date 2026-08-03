@@ -293,6 +293,128 @@ applied in `findDeal`/`findReview` and keyed by `cooldownKey`, so a correction o
 catches "Tissues". A **phrase** uses a separator-tolerant regex instead, because
 stemming "3 in 1" yields "in" — which would have excluded most of the shop.
 
+### Ignore — retiring a product outright (added 2026-08-03)
+
+The red **Ignore** button, directly under **Add** on every card. Unlike everything
+in the `⋯` menu, it is scoped to the **product**, not the ingredient: this listing
+is never offered again, **for any item**, permanently. The ingredient is untouched
+— still in the plan, still searched, and every other product still competes for
+it. That distinction is the whole point of the button, so it is repeated in the
+confirm dialog, the issue body and the workflow's reply.
+
+Mechanically it is a `BlockedProduct` under the key `ALL_ITEMS` (`"*"`), which
+`exclusionReason` matches alongside the item's own key. A real key is a stemmed
+base noun, so it can never be `*`. Adding one **replaces** any per-item blocks on
+the same product (the narrower entries would say nothing new), and blocking an
+already-ignored product is a no-op.
+
+⚠️ There is no button that undoes it. Coming back means deleting the entry from
+`data/exclusions.json` — hence the confirm dialog, which no other correction has
+except *Not in use*.
+
+## History page — `public/history.html` (added 2026-08-03)
+
+A second page on the same Pages site, linked from the footer of the deals page.
+The deals page answers "what should I buy today"; everything it has to forget to
+stay readable lives here. `src/core/history.ts`, built by `build-site.ts` in a
+try of its own so a Notion hiccup can never take the deals page down with it.
+
+Four sections:
+
+- **Not in use** — every ingredient tagged `Not in Use ATM`, from
+  `readParkedIngredients()`. This list exists because `readGroceryTargets` drops
+  those rows so early that a parked item otherwise has no listing *anywhere* —
+  park something in March and it is simply gone. **Reset** removes that one tag
+  (`unparkIngredient`), preserving every other, and refuses outright on a row
+  that also carries `Don't Search`.
+- **Bought** — the purchase log, with three buttons per row.
+- **Already filed** — the same rows once settled, kept as a record.
+- **Never buy again** — the `ALL_ITEMS` blocks from `data/exclusions.json`, i.e.
+  exactly what the red Ignore button writes. One mechanism, one file, so this
+  list cannot disagree with what the scan actually skips. Listed but **not
+  undoable from the page** on purpose.
+
+### ⚠️ `cooldowns.json` is not a history — hence `data/purchases.json`
+
+`withCooldown` and `withoutCooldown` both **drop expired entries on every
+write**, by design: that file answers "what is suppressed right now". So there
+was no record of what had been bought, and the history page needed one.
+`src/core/purchases.ts` (pure) + `purchases-file.ts` → `data/purchases.json`,
+appended by `add-to-list.ts` after the Notion row lands, and **never trimmed** —
+it is the only place this system remembers a price it once saw.
+
+The log started empty on 2026-08-03. Adds made before that are **not
+recoverable**; the cooldown entries that recorded them have long since been
+swept.
+
+### The three buttons on a bought row
+
+- **Add to Ingredients** — a NEW Ingredients row: generic Name, `Items Exact
+  Name`, price, size, `Unit type `, `Catagory`, `Vendor, Current `, URL, plus the
+  four macro columns. `src/core/ingredient-write.ts`.
+- **Replace Current** — writes price, size, vendor and URL onto the *existing*
+  ingredient row and nothing else. Unlike the Chrome extension's "Replace With
+  This", it deliberately does **not** rename the row: there you are looking at a
+  product page and chose the rename; here the button means "same thing, new
+  price".
+- **Never buy again** — the same `ALL_ITEMS` block as Ignore, plus it settles
+  *every* open purchase row naming that product, not just the one tapped.
+
+⚠️ `ingredient-write.ts` copies two rules from `extension/notion-client.js` and
+they must stay in step: **a blank field is omitted, never written as null** (so a
+missing size can't blank a size the row had), and **select values are validated
+against the live schema** — an unknown option is dropped with a warning, never
+created, because writing one makes Notion invent it.
+
+### Macro lookup — `src/core/macros.ts`
+
+Claude Sonnet 5 with `web_search` + `web_fetch`, run *before* the row is written
+so the four columns land with it. Three tiers, recorded and reported: the product
+page, then a search, then generic values for the food. The reply says which, and
+flags generic values for checking.
+
+The prompt's load-bearing instruction is that **state decides the numbers** —
+raw vs cooked meat, dry vs boiled pasta — because a lookup that gets the food
+right and the state wrong is worse than one returning nothing: nothing is
+visibly missing and a wrong number quietly poisons the plan formulas.
+
+Guards: `max_uses: 4` caps the per-tap cost; any figure outside 0–100 g is
+dropped; protein + fat + carbs over 105 g rejects the whole answer (that shape
+means per-serving figures read as per-100g). **Every failure path returns null
+and the row is written without nutrition** — a macro lookup must never lose an
+add.
+
+⚠️ Needs `ANTHROPIC_API_KEY` (repo secret + `.env`). Unset is supported and
+costs nothing: rows are created without nutrition and the reply says to fill it
+in. Roughly 6–7 US cents per tap when it is set.
+
+⚠️ **`web_fetch` cannot read Sheng Siong — it is in `UNFETCHABLE_DOMAINS`.**
+Same Incapsula wall that forced the daily scraper onto DDP. It does not fail
+fast, it *stalls*: measured 2026-08-03, one Sheng Siong lookup took **245s**
+mostly waiting on a page that was never going to answer, then fell back to
+search anyway. Blocking the domain sends it straight to search — the identical
+answer in **51s**. FairPrice is deliberately not blocked; its pages are
+server-rendered and often carry a real panel.
+
+Belt and braces on top: `TIMEOUT_MS` 180s with one retry, against the SDK's own
+10-minute/2-retry defaults. A timed-out lookup writes the row without nutrition,
+which is the module's whole failure posture.
+
+`npm run macro-test -- "<product>" [--url …] [--store …]` runs one lookup and
+prints what would be written, touching nothing. Use it before trusting a new
+food category, especially one where raw-vs-cooked matters.
+
+The four Notion columns are in `ING_MACRO_PROPS`, and their names are the worst
+in the schema — `Fats per 100 g ` has a space *before* the g **and** a trailing
+one; `Carbs`/`Fiber` are trailing-space only; `Protein` has neither.
+
+### Shared chrome
+
+`src/core/page-chrome.ts` holds the stylesheet and the one-tap dispatch script
+both pages use. Extracted from `site.ts` when the second page arrived — two
+pages on one site that a user moves between should not be able to drift apart
+visually.
+
 ## Chrome extension — "Nutrition Plan Extension" (added 2026-08-02)
 
 `extension/` — capture a grocery product page straight into the Notion **Ingredients** DB. Modelled on the

@@ -10,10 +10,18 @@ import {
 	type CooldownEntry,
 } from "../core/cooldown.js";
 import { readCooldowns, writeCooldowns } from "../core/cooldown-file.js";
-import { withBlockedProduct, withExcludedTerms } from "../core/exclusions.js";
+import { ALL_ITEMS, withBlockedProduct, withExcludedTerms } from "../core/exclusions.js";
 import { readExclusions, writeExclusions } from "../core/exclusions-file.js";
-import { parkIngredient } from "../core/park.js";
+import { parkIngredient, unparkIngredient } from "../core/park.js";
 import { PARKED_TAG } from "../core/notion.js";
+import {
+	createIngredient,
+	fieldsFromPurchase,
+	replaceIngredientPrice,
+} from "../core/ingredient-write.js";
+import { lookupMacros, macrosConfigured } from "../core/macros.js";
+import { withNeverBuy, withOutcome } from "../core/purchases.js";
+import { readPurchases, writePurchases } from "../core/purchases-file.js";
 
 /**
  * The other end of the page's buttons — the "Recently bought" row, and the ⋯ menu
@@ -23,15 +31,24 @@ import { PARKED_TAG } from "../core/notion.js";
  * GitHub issue (the default path) or by a `repository_dispatch` from the page's
  * one-tap script. Both hand over the same payload.
  *
- *   reset       — delete the item's cooldown so the next daily scan searches it again
- *   park        — tag the Notion ingredient "Not in Use ATM" (and clear its cooldown,
- *                 so a parked item stops appearing under "Recently bought" too)
- *   ignore-week — snooze the item until the start of next week; nothing was bought
- *   mismatch    — ban words for this item, so every later SEARCH is better
- *   almost      — block one product for this item, leaving the rest of the shop alone
+ *   reset          — delete the item's cooldown so the next daily scan searches it again
+ *   park           — tag the Notion ingredient "Not in Use ATM" (and clear its cooldown,
+ *                    so a parked item stops appearing under "Recently bought" too)
+ *   ignore-week    — snooze the item until the start of next week; nothing was bought
+ *   mismatch       — ban words for this item, so every later SEARCH is better
+ *   almost         — block one product for this item, leaving the rest of the shop alone
+ *   ignore-product — retire one product from every search, for good
  *
- * Only `park` touches Notion. The other four write repo files, which is why they
- * are cheap enough to offer on every card.
+ * And the history page's own four:
+ *
+ *   unpark             — clear `Not in Use ATM` so the ingredient is searched again
+ *   add-ingredient     — file a bought product as a NEW Ingredients row, macros included
+ *   replace-ingredient — write the bought price/size/shop onto the existing row
+ *   never-buy          — the same permanent product block as `ignore-product`
+ *
+ * `park`, `unpark`, `add-ingredient` and `replace-ingredient` touch Notion. The
+ * rest write repo files only, which is why they are cheap enough to offer on
+ * every card.
  *
  *   npm run item-action -- --payload '{"v":1,"action":"reset","key":"garlic",…}'
  *   ISSUE_BODY="$(cat issue.md)" npm run item-action
@@ -244,6 +261,41 @@ if (payload.action === "almost") {
 	process.exit(0);
 }
 
+if (payload.action === "ignore-product") {
+	// Keyed to ALL_ITEMS, not `payload.key`: the ingredient is untouched and keeps
+	// being searched — it is this listing that is retired, everywhere.
+	const { file, added } = withBlockedProduct(
+		await readExclusions(),
+		{
+			key: ALL_ITEMS,
+			store: payload.store ?? "",
+			product: payload.product ?? "",
+			url: payload.url ?? "",
+			name: label,
+			note: payload.note || "ignored from the deals page",
+		},
+		now,
+	);
+
+	const what = payload.product || payload.url;
+	if (!added) {
+		await report(`**${what}** is already ignored — nothing to add.`);
+		process.exit(0);
+	}
+	if (dryRun) {
+		await report(`DRY RUN — would ignore "${what}" in every future search.`);
+		process.exit(0);
+	}
+	await writeExclusions(file);
+	await report(
+		`Ignored for good: ${payload.store} · ${what} is no longer offered for any item.\n` +
+			`**${label}** itself is unchanged — it is still searched, and other products ` +
+			`still compete for it. Takes effect on the next daily scan; ` +
+			`edit \`data/exclusions.json\` to undo.`,
+	);
+	process.exit(0);
+}
+
 if (payload.action === "park") {
 	// Notion first. If the tag write fails the item must stay snoozed rather than
 	// come back into the scan — a half-applied park that re-searches an ingredient
@@ -262,6 +314,216 @@ if (payload.action === "park") {
 		`${dryRun ? "DRY RUN — " : ""}${verb}: ` +
 			`**${label}** is tagged \`${PARKED_TAG}\` and is no longer searched.${cooldownNote}\n` +
 			`Tags: ${parked.tags.join(", ")}. Remove the tag in Notion to bring it back.`,
+	);
+	process.exit(0);
+}
+
+// ---------------------------------------------------------------------------
+// The history page's own actions.
+// ---------------------------------------------------------------------------
+
+/**
+ * Settle one row of the purchase log.
+ *
+ * Deliberately non-fatal and always LAST: the Notion write is the thing the user
+ * asked for, and it has already happened by the time this runs. A log that fails
+ * to update leaves a stale button on the page — annoying, and fixed by tapping
+ * again. Throwing here would report the whole action as failed when the row is
+ * already sitting in their Ingredients DB, which is the more expensive lie.
+ */
+async function settlePurchase(
+	id: string,
+	outcome: "added" | "replaced" | "never",
+	note: string,
+): Promise<void> {
+	if (!id || dryRun) return;
+	try {
+		const { file, entry } = withOutcome(await readPurchases(), id, outcome, note, now);
+		if (!entry) {
+			console.error(`Warning: no purchase "${id}" in the log — nothing to settle.`);
+			return;
+		}
+		await writePurchases(file);
+	} catch (e) {
+		console.error(`Warning: could not settle the purchase log — ${(e as Error).message}`);
+	}
+}
+
+if (payload.action === "unpark") {
+	const client = new Client({ auth: config.notionToken() });
+	const res = await unparkIngredient(client, payload.ingredientId, dryRun);
+
+	// `Don't Search` is set by hand and is permanent. Un-parking would clear the
+	// reversible tag and leave the item just as invisible — a button that appears
+	// to work and changes nothing. Say why instead.
+	if (res.blockedBy) {
+		await report(
+			`**${label}** also carries \`${res.blockedBy}\`, which is permanent and set by hand.\n` +
+				`Nothing was changed — remove that tag in Notion first if you want it searched again.`,
+		);
+		process.exit(0);
+	}
+	// Same reasoning as a reset with nothing to remove: the end state is what was
+	// asked for, so report it rather than erroring.
+	if (res.notParked) {
+		await report(`**${label}** was not tagged \`${PARKED_TAG}\` — it is already being searched.`);
+		process.exit(0);
+	}
+
+	await report(
+		`${dryRun ? "DRY RUN — would un-park" : "Un-parked"}: **${label}** no longer carries ` +
+			`\`${PARKED_TAG}\`, so the next daily scan searches for it again.\n` +
+			`Tags now: ${res.tags.length ? res.tags.join(", ") : "(none)"}.`,
+	);
+	process.exit(0);
+}
+
+if (payload.action === "never-buy") {
+	const { file, added } = withBlockedProduct(
+		await readExclusions(),
+		{
+			key: ALL_ITEMS,
+			store: payload.store ?? "",
+			product: payload.product ?? "",
+			url: payload.url ?? "",
+			name: label,
+			note: payload.note || "never buy again, from the history page",
+		},
+		now,
+	);
+	const what = payload.product || payload.url;
+
+	if (dryRun) {
+		await report(`DRY RUN — would never buy "${what}" again.`);
+		process.exit(0);
+	}
+	if (added) await writeExclusions(file);
+
+	// Settle every OPEN purchase of this product, not just the row that was
+	// tapped — see `withNeverBuy`. A second open row for the same dead product
+	// would otherwise sit there offering to add it to Ingredients.
+	let cleared = 0;
+	try {
+		const purchases = await readPurchases();
+		const res = withNeverBuy(
+			purchases,
+			{ store: payload.store ?? "", product: payload.product ?? "", url: payload.url ?? "" },
+			"never buy again",
+			now,
+		);
+		cleared = res.count;
+		if (cleared) await writePurchases(res.file);
+	} catch (e) {
+		console.error(`Warning: could not settle the purchase log — ${(e as Error).message}`);
+	}
+
+	await report(
+		(added
+			? `Never buying again: ${payload.store} · ${what}.`
+			: `**${what}** was already on the never-buy list.`) +
+			`\nIt is blocked from every future search, and drops off the history page.` +
+			(cleared > 1 ? ` Settled ${cleared} open rows naming it.` : "") +
+			`\nEdit \`data/exclusions.json\` to undo.`,
+	);
+	process.exit(0);
+}
+
+if (payload.action === "replace-ingredient") {
+	const price = payload.priceSgd ?? null;
+	const size = payload.packSizeG ?? null;
+	if (price == null && size == null && !payload.store) {
+		throw new Error("nothing to write — the payload carries no price, size or shop");
+	}
+
+	if (dryRun) {
+		await report(
+			`DRY RUN — would set **${label}** to $${price?.toFixed(2) ?? "—"}` +
+				`${size ? ` / ${size}${payload.volumetric ? "ml" : "g"}` : ""} from ${payload.store}.`,
+		);
+		process.exit(0);
+	}
+
+	const client = new Client({ auth: config.notionToken() });
+	const res = await replaceIngredientPrice(client, payload.ingredientId, {
+		priceSgd: price,
+		size,
+		unitType: size ? (payload.volumetric ? "By ml" : "By Gram") : undefined,
+		vendor: payload.store || undefined,
+		url: payload.url || undefined,
+	});
+
+	await settlePurchase(
+		payload.purchaseId ?? "",
+		"replaced",
+		`price/size written onto ${label}`,
+	);
+
+	await report(
+		`Replaced: **${label}** now reads $${price?.toFixed(2) ?? "—"}` +
+			`${size ? ` for ${size}${payload.volumetric ? "ml" : "g"}` : ""} from ${payload.store}.\n` +
+			`Wrote: ${res.written.join(", ") || "nothing"}.` +
+			(res.skipped.length ? `\nSkipped: ${res.skipped.join("; ")}.` : "") +
+			`\nNutrition, tags and plan formulas were left alone.`,
+	);
+	process.exit(0);
+}
+
+if (payload.action === "add-ingredient") {
+	const fields = fieldsFromPurchase({
+		product: payload.product ?? "",
+		store: payload.store ?? "",
+		priceSgd: payload.priceSgd ?? 0,
+		packSizeG: payload.packSizeG ?? null,
+		volumetric: Boolean(payload.volumetric),
+		url: payload.url ?? "",
+		ingredientName: payload.name ?? "",
+	});
+
+	if (dryRun) {
+		await report(
+			`DRY RUN — would add **${fields.name}** ("${fields.exactName}") at ` +
+				`$${(fields.priceSgd ?? 0).toFixed(2)} / ${fields.size ?? "?"} ${fields.unitType}, ` +
+				`vendor ${fields.vendor}` +
+				(macrosConfigured() ? ", after looking up its macros." : " — no ANTHROPIC_API_KEY, so no macros."),
+		);
+		process.exit(0);
+	}
+
+	// The macro lookup runs BEFORE the write, so the four columns land with the
+	// row rather than as a second edit. It never throws — a failed lookup returns
+	// null and the row is created without nutrition, which the reply says plainly
+	// so the user knows to fill it in.
+	const macros = await lookupMacros({
+		product: payload.product ?? "",
+		store: payload.store,
+		url: payload.url,
+		ingredientName: payload.name,
+		category: fields.categoryKey ?? undefined,
+	});
+
+	const client = new Client({ auth: config.notionToken() });
+	const res = await createIngredient(client, { ...fields, macros });
+
+	await settlePurchase(
+		payload.purchaseId ?? "",
+		"added",
+		`filed as a new Ingredients row${macros ? ` (${macros.source} macros)` : " without macros"}`,
+	);
+
+	const nutrition = macros
+		? `Nutrition per 100g — protein ${macros.proteinPer100g ?? "?"}, fat ${macros.fatsPer100g ?? "?"}, ` +
+			`carbs ${macros.carbsPer100g ?? "?"}, fibre ${macros.fiberPer100g ?? "?"} (${macros.note}).` +
+			(macros.source === "generic"
+				? `\n⚠️ These are **generic values**, not this product's own label — check them.`
+				: "")
+		: `⚠️ No nutrition figures — fill in protein/fat/carbs/fibre by hand.`;
+
+	await report(
+		`Added to Ingredients: **${fields.name}** — "${fields.exactName}", ` +
+			`$${(fields.priceSgd ?? 0).toFixed(2)} for ${fields.size ?? "?"} (${fields.unitType}), ` +
+			`vendor ${fields.vendor}.\n${nutrition}\n` +
+			`Wrote: ${res.written.join(", ")}.` +
+			(res.skipped.length ? `\nSkipped: ${res.skipped.join("; ")}.` : ""),
 	);
 	process.exit(0);
 }
