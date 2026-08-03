@@ -57,19 +57,15 @@ function readNextProduct(v) {
   };
 }
 
-function fromNextData() {
-  const el = document.getElementById("__NEXT_DATA__");
-  if (!el) return null;
-  let data;
-  try { data = JSON.parse(el.textContent); } catch { return null; }
+const urlSlugOf = () => decodeURIComponent((location.pathname.split("/product/")[1] || "")).replace(/\/+$/, "");
 
-  const urlSlug = decodeURIComponent((location.pathname.split("/product/")[1] || "")).replace(/\/+$/, "");
-
-  // 1. The page's own product sits at layouts[0].value — every recommendation lives under a later layout.
+/** The product THIS page is showing, out of one parsed __NEXT_DATA__ blob. Null if it isn't in there. */
+function productFromBlob(data, urlSlug) {
+  // The page's own product sits at layouts[0].value — every recommendation lives under a later layout.
   const own = readNextProduct(data?.props?.pageProps?.product?.data?.page?.layouts?.[0]?.value);
   if (own && (!urlSlug || !own.slug || own.slug === urlSlug)) return own;
 
-  // 2. Path changed? Accept ONLY an object whose slug is the one in the address bar.
+  // Path changed? Accept ONLY an object whose slug is the one in the address bar.
   let match = null;
   const walk = (n, depth = 0) => {
     if (!n || typeof n !== "object" || depth > 14 || match) return;
@@ -78,9 +74,47 @@ function fromNextData() {
     for (const v of Object.values(n)) walk(v, depth + 1);
   };
   walk(data);
-  // 3. Still nothing → give up and let JSON-LD / the DOM answer. Returning some OTHER product here is the
-  //    one outcome worse than returning nothing: it looks filled-in and is silently about the wrong item.
+  // Otherwise give up. Returning some OTHER product is the one outcome worse than returning nothing: it
+  // looks filled in and is silently about the wrong item.
   return match;
+}
+
+const NEXT_BLOB_RE = /<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/;
+
+/**
+ * The page's product from __NEXT_DATA__ — re-fetching the page itself when the inline copy has gone stale.
+ *
+ * WHY THIS EXISTS. Measured over 40 FairPrice product pages: the server-rendered __NEXT_DATA__ was valid
+ * JSON, matched the URL slug and carried a price on 40/40. The product JSON-LD was invalid on 40/40. So the
+ * reliable source is this one — its ONLY weakness is that the inline copy is not rewritten on an in-site
+ * navigation, which is exactly when we were falling back to the broken one.
+ *
+ * A content script is same-origin with its page, so it can simply ask the server again. Measured in a real
+ * browser from a stale page: HTTP 200 in ~480 ms, valid JSON, slug matched. One extra request, only on a
+ * page reached by clicking, and never for a directly-opened page (the inline copy is correct there).
+ */
+async function fromNextData() {
+  const el = document.getElementById("__NEXT_DATA__");
+  if (!el) return null; // not a Next.js page — nothing to read or re-fetch
+  const urlSlug = urlSlugOf();
+
+  try {
+    const inline = productFromBlob(JSON.parse(el.textContent), urlSlug);
+    if (inline) return inline;
+  } catch { /* unparseable inline blob — the re-fetch below is the answer to that too */ }
+
+  if (!urlSlug) return null; // not a product page; nothing to re-fetch for
+  try {
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 8000); // never hang the panel on a slow network
+    const res = await fetch(location.href, { credentials: "same-origin", signal: ctl.signal });
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    const m = NEXT_BLOB_RE.exec(await res.text());
+    return m ? productFromBlob(JSON.parse(m[1]), urlSlug) : null;
+  } catch {
+    return null; // offline / aborted / blocked → fall through to JSON-LD and the DOM
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -291,16 +325,22 @@ if (!window.__ingredientAddExtractorReady) {
   window.__ingredientAddExtractorReady = true;
   chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     if (msg?.type !== "extract") return false;
-    const special = fromNextData();
-    const ld = jsonLdProduct() || {};
-    const name = special?.name || ld.name || genericName();
-    sendResponse({
-      url: location.href,
-      name,
-      brand: special?.brand || ld.brand || genericBrand(),
-      priceText: special?.priceText || ld.priceText || genericPrice(),
-      sizeText: special?.sizeText || ld.sizeText || pageSize(name),
-    });
-    return false; // responded synchronously
+    // Async now: fromNextData() may re-fetch the page when the inline blob is stale. `return true` keeps
+    // the message channel open until sendResponse fires — without it Chrome closes it and the caller sees
+    // an empty reply. A failure still answers, with blank fields, rather than leaving the panel spinning.
+    (async () => {
+      let special = null;
+      try { special = await fromNextData(); } catch { /* fall through to JSON-LD / DOM */ }
+      const ld = jsonLdProduct() || {};
+      const name = special?.name || ld.name || genericName();
+      sendResponse({
+        url: location.href,
+        name,
+        brand: special?.brand || ld.brand || genericBrand(),
+        priceText: special?.priceText || ld.priceText || genericPrice(),
+        sizeText: special?.sizeText || ld.sizeText || pageSize(name),
+      });
+    })();
+    return true; // async sendResponse
   });
 }

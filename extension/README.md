@@ -51,6 +51,33 @@ formulas, `Select` tags and relations are the user's own work and have nothing t
 came from. It includes `Items Exact Name` on purpose: the row now describes a different physical product, so
 leaving the old exact name would label it as something it is not.
 
+## Where the data comes from (and why it isn't JSON-LD)
+
+Measured over 40 FairPrice product pages across 8 categories:
+
+| source | valid JSON | matches the URL | has a price |
+|---|---|---|---|
+| product **JSON-LD** | **0 / 40** | — | — |
+| **`__NEXT_DATA__`** (server-rendered) | **40 / 40** | 40 / 40 | 40 / 40 |
+
+FairPrice's JSON-LD is invalid on **every** product — a stray closing brace in the template (identical on
+all 12 pages checked byte-by-byte), plus raw newlines pasted into `description` on some. Both are what
+hand-concatenated JSON looks like; neither is possible with `JSON.stringify`. Repairing it is endless, so
+nothing here depends on it.
+
+`__NEXT_DATA__` is perfect — with one catch: **the inline copy goes stale.** Next.js does not rewrite it on
+an in-site navigation, so browsing a category and clicking a product leaves the *category's* blob in the DOM
+(no `product` key at all) while the address bar shows the product.
+
+A content script is same-origin with its page, so the reader simply **asks the server again** when the
+inline blob doesn't match the URL slug. Measured on the same 40 pages: reached by clicking → 40/40 complete,
+one extra request each (~450–1100 ms); opened directly → 40/40 complete, **zero** extra requests.
+
+The order is therefore: inline `__NEXT_DATA__` → same-origin re-fetch → JSON-LD (repair ladder, kept for
+other shops) → DOM. `metaData.DisplayUnit` is the accurate pack size; `metaData.Weight` is **not** ("2 gm"
+for 2 L of milk). A detail page's selling price is `storeSpecificData[0].mrp` **minus** `discount`, and every
+price is rounded to 2 dp because FairPrice's own `final_price` ships float artefacts (`7.949999999999999`).
+
 ## Safety invariants (don't weaken these)
 
 - **It cannot create Notion schema.** `Catagory` and `Unit type ` values are validated against the live
@@ -94,7 +121,7 @@ carry the same body ids, so there is no duplicated flow to keep in sync.
 |---|---|
 | `manifest.json` | MV3. `activeTab`+`scripting` inject the reader on demand (works on any shop, no host list) + `sidePanel` + `tabs`. Notion via `host_permissions`; `optional_host_permissions` is what the side panel opts into for page CONTENT. No `content_scripts`. |
 | `flow.js` | The **shared** flow used by both surfaces. Re-entrant (honours `alive()`) so the side panel can re-run it on navigation without stacking listeners or clobbering the new tab's fields. |
-| `content.js` | Extraction only; never calls Notion (content scripts are CORS-blocked from `api.notion.com`). FairPrice gets a dedicated `__NEXT_DATA__` reader — the scraper already learned that `metaData.DisplayUnit` is the accurate size and `Weight` is not. |
+| `content.js` | Extraction only; never calls Notion (content scripts are CORS-blocked from `api.notion.com`). Reads `__NEXT_DATA__`, re-fetching the page when the inline copy is stale — see "Where the data comes from" below. |
 | `background.js` | Service worker; the only Notion caller. Imports the naming/category logic from `src/core/` — shared, not copied. |
 | `notion-client.js` | The single Notion module. **API 2025-09-03**, which queries *data sources*, not databases — do not copy endpoints from the reference extension, which speaks 2022-06-28. |
 | `vendors.js` | Host → vendor label. A convenience, not a gate: an unknown shop still captures, with the host as the vendor. |

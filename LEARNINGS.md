@@ -2,6 +2,61 @@
 
 Running log of decisions, gotchas, and non-obvious facts. Newest on top.
 
+## 2026-08-03 — FairPrice's JSON-LD is broken on EVERY product, and the fix was to stop using it
+
+Three separate "the price is blank / wrong" reports from the extension, each
+patched individually, each followed by another. So I measured instead of
+patching again: 40 product pages across 8 categories, checking both structured
+sources.
+
+| source | valid | slug matches the URL | has a price |
+| --- | --- | --- | --- |
+| product **JSON-LD** | **0 / 40** | — | — |
+| **`__NEXT_DATA__`** (server-rendered) | **40 / 40** | 40 / 40 | 40 / 40 |
+
+**The JSON-LD is invalid on every single product**, in two ways that stack:
+
+- **A stray closing brace**, on **12 of 12** pages inspected byte-by-byte. Always
+  present, always identical — so it is in the template, not the data.
+- **Raw newlines inside a string**, on 7 of 40 — the importer's postal address
+  pasted into `description` ("Kaiser Foods Singapore Pte Ltd, ⏎103 Kallang
+  Avenue ⏎…"). Only fails when the text happens to contain a control character.
+
+**Root cause: the JSON-LD is built by string concatenation from a hand-written
+template, not by `JSON.stringify`.** Both symptoms follow from that and neither
+is possible with a serializer — a structural brace error would be impossible, and
+supplier text would be escaped. That is also why patching it is endless: the
+number of ways hand-built JSON can break is bounded only by the data.
+
+**So the fix was architectural, not another repair.** `__NEXT_DATA__` was already
+perfect; its only weakness is that the INLINE copy is not rewritten on an in-site
+navigation (Next.js keeps the blob the page first loaded — browse a category,
+click a product, and the DOM still holds the category's blob with no `product`
+key at all, while the address bar shows the product). That is precisely when we
+were falling through to the broken source.
+
+A content script is **same-origin with its page, so it can just ask the server
+again.** When the inline blob doesn't match the URL slug, re-fetch
+`location.href` and read that HTML's `__NEXT_DATA__`. Measured over the same 40
+pages:
+
+- reached by clicking → **40/40** complete (name, brand, price, size), one extra
+  request each, ~450–1100 ms;
+- opened directly → **40/40** complete, **zero** extra requests (the inline copy
+  is already right).
+
+General rules worth keeping:
+
+- **Count before patching.** Three fixes in a row on one reported page each is
+  the signal to go and measure the population. The answer here ("100 % broken")
+  changes the decision completely — a source that fails 5 % of the time is worth
+  repairing, one that fails always is worth replacing.
+- **A same-origin re-fetch is a legitimate tool for a content script.** It turns
+  "hope one of three sources is intact" into "always read the reliable one".
+- The JSON-LD repair ladder is kept as a third-tier fallback for OTHER shops —
+  it is now proven that real sites ship invalid JSON-LD — but nothing on
+  FairPrice depends on it any more.
+
 ## 2026-07-31 — Sheng Siong was only ever showing us PROMOTED products
 
 `ecommPromotionFilter: { active: true }` sat in the `Products.getByAllSlugs`

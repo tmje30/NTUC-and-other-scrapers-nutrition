@@ -274,6 +274,14 @@ renamed to Vendor. Full detail in `extension/README.md`; the essentials:
 - `npm run ext:build` regenerates `extension/dist/` — **required after editing `synonyms.json`**, which is
   baked into the bundle at build time.
 
+⚠️ **Where it reads prices from — don't "simplify" this.** FairPrice's product
+JSON-LD is invalid on **every** product (0/40 pages parsed; a stray brace in
+their template plus unescaped supplier text). `__NEXT_DATA__` is valid on 40/40,
+but its INLINE copy goes stale on an in-site navigation. So the reader uses the
+inline blob when its slug matches the URL and otherwise **re-fetches the page
+same-origin** — 40/40 complete either way, with zero extra requests on a directly
+opened page. See LEARNINGS 2026-08-03.
+
 ⚠️ **Three things that will bite whoever edits it:**
 
 1. **API version 2025-09-03, not 2022-06-28.** This project's Notion dialect queries **data sources**
