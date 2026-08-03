@@ -1,7 +1,21 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-31T02:15:48.170Z",
+  "updatedAt": "2026-08-03T09:22:12.342Z",
   "entries": [
+    {
+      "key": "oil",
+      "ingredientId": "34c69a18-4fe7-80a9-af53-cf0c2e5cf7f8",
+      "ingredientName": "Oil (Bran)",
+      "reason": "ignored",
+      "addedAt": "2026-08-03T09:22:12.342Z",
+      "until": "2026-08-09T16:00:00.000Z",
+      "days": 6,
+      "basis": "ignored from the deals page until the start of next week (Mon, SGT)",
+      "store": "Sheng Siong",
+      "product": "Rice Bran Oil",
+      "packSizeG": null,
+      "monthlyAmount": 0
+    },
     {
       "key": "chicken thigh",
       "ingredientId": "39869a18-4fe7-80c6-abc1-d1713f27ac47",
