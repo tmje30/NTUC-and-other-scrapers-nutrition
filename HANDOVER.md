@@ -3,9 +3,11 @@
 Read this first, then `LEARNINGS.md` (deep technical detail + gotchas) and
 `CHANGELOG.md` (what shipped). Memory files also auto-load via `MEMORY.md`.
 
-*Last reviewed 2026-07-31. The system is live and self-running; the parts most
-likely to bite a newcomer are the Incapsula browser mint and the two comparison
-dimensions, both flagged ⚠️ below.*
+*Last reviewed 2026-08-03. The system is live and self-running. The parts most
+likely to bite a newcomer, all flagged ⚠️ below: the Incapsula browser mint, the
+two comparison dimensions, and — for the Chrome extension — the fact that
+FairPrice's JSON-LD is invalid on **every** product while Sheng Siong publishes
+no readable data at all.*
 
 ## TL;DR
 
@@ -18,6 +20,12 @@ Sheng Siong is blocked from datacenter IPs, so it runs via a **residential-IP
 hybrid**: a runner (the user's **laptop**, daily) scans Sheng Siong and commits
 `data/shengsiong-latest.json`; the cloud reads that file. FairPrice runs in the
 cloud directly. If the file is missing/stale the page degrades to FairPrice-only.
+
+There is a second, **manual** way in: the **Chrome extension** in `extension/`
+("Nutrition Plan Extension"), which captures a product page you're looking at
+straight into the Ingredients DB — either as a new row or over an existing one.
+Unlike the daily job it writes to **Ingredients**, not the grocery List, and it
+only ever acts on a button press. See its section below.
 
 ⚠️ **Changed 2026-07-30:** Incapsula now challenges *residential* IPs too, not
 just datacenter ones. The runner therefore needs **Google Chrome installed** — it
@@ -258,6 +266,33 @@ apostrophes and stray spacing. A suppression tag that silently stops matching is
 the worst kind of bug: everything keeps "working" and the user gets back items
 they asked never to see again.
 
+### Correction menu — teaching the matcher (added 2026-08-02)
+
+The `⋯` button under the percentage on every deal card (and under *closest* on a
+close match) holds three actions. The point of all three is that they **teach the
+matcher**, rather than just hiding today's card:
+
+- **Ignore 1× week** — a cooldown until Monday 00:00 SGT (`startOfNextWeek`),
+  tagged `reason: "ignored"` so the page lists it under "Ignored this week"
+  instead of claiming it was recently bought. Under a day of cover rolls to the
+  Monday after, or the item is back on the next morning's scan. Never shortens a
+  cooldown already in place.
+- **Mismatch item** — bans words for that item, permanently. The page proposes
+  the title's words the item never asked for (`suggestExclusionTerms`), and the
+  user edits the list before anything is saved — because "extra" honestly
+  includes the brand.
+- **Almost, but no** — blocks ONE product for ONE item, for a near-miss whose
+  defining property can't be confirmed (the item wants unpasteurized; the shop
+  doesn't say). There's no word to ban, so the product itself is the exclusion.
+
+`src/core/exclusions.ts` (pure) + `exclusions-file.ts` → `data/exclusions.json`,
+applied in `findDeal`/`findReview` and keyed by `cooldownKey`, so a correction on
+"Onion (White)" also covers "Onion (not red)".
+
+⚠️ A single-word term folds through the matcher's own tokenizer, so "tissue"
+catches "Tissues". A **phrase** uses a separator-tolerant regex instead, because
+stemming "3 in 1" yields "in" — which would have excluded most of the shop.
+
 ## Chrome extension — "Nutrition Plan Extension" (added 2026-08-02)
 
 `extension/` — capture a grocery product page straight into the Notion **Ingredients** DB. Modelled on the
@@ -401,11 +436,23 @@ copied. Nothing under `src/` imports from `extension/`; the sharing goes one way
 9. Optional: more `GENERIC_FORM_PATTERNS` / variety tuning as false matches
    appear. `Whey` is the last search still returning nothing from both shops —
    worth checking whether it should be named "protein powder".
-10. **`Egg White (…)` can match "White Egg".** Sheng Siong sells "Omega 3 White
-    Egg", i.e. a white-SHELLED egg, and the matcher is bag-of-words, so
-    `{egg, white}` is identical either way. Today it is harmless — the candidate
-    costs more per 100 g than the item's baseline, so it never publishes — but a
-    price move would surface it. Word order is the only thing separating them.
+10. ~~`Egg White (…)` can match "White Egg"~~ **moot** — both omega-3 egg rows
+    were tagged `Don't Search` on 2026-07-31, so neither is scanned. The
+    underlying weakness stands if they ever come back: the matcher is
+    bag-of-words, so `{egg, white}` is identical in either order and only word
+    order separates "Egg White" from a white-SHELLED "White Egg".
+11. **The Chrome extension has never been used in anger.** Everything about it
+    was verified through Node harnesses and browser probes — 40/40 FairPrice
+    pages, 6 Sheng Siong products, and both writes proven against the live DB —
+    but nobody has yet sat down and captured a shop for real. First actual use is
+    the outstanding test.
+12. Two known extension quirks, neither a bug:
+    - A Sheng Siong egg carton reads `550 g / By Gram`, because they record the
+      piece count in the NAME ("Fresh Eggs (10s)") and not in `packSize`. Switch
+      the dropdown to `By Unit` by hand if you want it planned per egg.
+    - When a shop's brand field doesn't appear in its own title (`T.Valley` vs
+      "Tamar Valley Dairy"), the generic-name stripper can't match them, so the
+      Name box keeps the full title. Edit it before adding.
 
 ## Naming an item so the shops can find it (worked example, 2026-07-31)
 

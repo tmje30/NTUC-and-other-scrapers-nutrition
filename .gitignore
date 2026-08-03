@@ -9,3 +9,17 @@ workers.json
 
 # Browser session cookies minted to get past a WAF (see stores/incapsula.ts).
 .sessions/
+
+# Credentials. This repo is PUBLIC (GitHub Pages needs it on the free plan), so
+# these are listed even though none exist today — a public repo is the worst
+# place to find out a key got committed.
+*.pem
+*.key
+id_rsa
+id_ed25519
+service-account*.json
+credentials*.json
+token*.json
+*.credentials
+.npmrc
+secrets/
