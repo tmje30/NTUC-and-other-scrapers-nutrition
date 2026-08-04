@@ -3,11 +3,17 @@
 Read this first, then `LEARNINGS.md` (deep technical detail + gotchas) and
 `CHANGELOG.md` (what shipped). Memory files also auto-load via `MEMORY.md`.
 
-*Last reviewed 2026-08-03. The system is live and self-running. The parts most
+*Last reviewed 2026-08-04. The system is live and self-running. The parts most
 likely to bite a newcomer, all flagged ⚠️ below: the Incapsula browser mint, the
 two comparison dimensions, and — for the Chrome extension — the fact that
 FairPrice's JSON-LD is invalid on **every** product while Sheng Siong publishes
 no readable data at all.*
+
+*If you are picking this up to continue the nutrition work, skip to **"Next
+session — pick up here"**. Short version: the three-item plan is finished — #1
+(pack-shot images) and #3 shipped, #2 was measured and rejected. **What's left is
+using it for real**: neither the extension nor the nutrition lookup has yet been
+run in anger by a human on an actual shopping trip.*
 
 ## TL;DR
 
@@ -386,7 +392,15 @@ add.
 
 ⚠️ Needs `ANTHROPIC_API_KEY` (repo secret + `.env`). Unset is supported and
 costs nothing: rows are created without nutrition and the reply says to fill it
-in. Roughly 6–7 US cents per tap when it is set.
+in.
+
+⚠️ **Cost: US$0.29–0.41 per lookup, NOT the 6–7 cents this file used to say.**
+Measured 2026-08-04 over eight real calls. Input tokens are ~90% of the bill
+(123k–280k per call — `web_fetch` drops whole 340–390 KB pages into context);
+two searches were 2 cents of a 41-cent call. Fresh produce and raw meat now skip
+the tools entirely and cost **~$0.003** (see "Nutrition, end to end" below).
+`lookupMacros` prints tokens/searches/cost on every call — the 5× error survived
+as long as it did because nothing printed it.
 
 ⚠️ **`web_fetch` cannot read Sheng Siong — it is in `UNFETCHABLE_DOMAINS`.**
 Same Incapsula wall that forced the daily scraper onto DDP. It does not fail
@@ -428,8 +442,12 @@ renamed to Vendor. Full detail in `extension/README.md`; the essentials:
   "Malaysia Round Cabbage" → `Name` "Round Cabbage". Done by `src/core/generic-name.ts`, deterministically.
 - Also writes `Price,SGD`, `Weight /Units of New Product `, `Unit type `, `Catagory`, `Vendor, Current `
   and `Vendor 1 URL`.
+- **And the four per-100g nutrition columns** — read off the shop's panel where there is one, off its
+  back-of-pack photo where there isn't, and looked up only when neither exists. See "Nutrition, end to end"
+  below; that section, not this one, is where the cost and the gates are explained.
 - `npm run ext:build` regenerates `extension/dist/` — **required after editing `synonyms.json`**, which is
-  baked into the bundle at build time.
+  baked into the bundle at build time. `extension/dist/` is gitignored, so a fresh clone must build before
+  the extension will load.
 
 ⚠️ **Where it reads prices from — don't "simplify" this.** FairPrice's product
 JSON-LD is invalid on **every** product (0/40 pages parsed; a stray brace in
@@ -462,6 +480,144 @@ itself as 12000 By Gram. See `extension/README.md`.
 
 The extension imports `src/core/` (match, generic-name, categorize, ingredients-schema) — shared, not
 copied. Nothing under `src/` imports from `extension/`; the sharing goes one way only.
+
+## Nutrition, end to end (added 2026-08-04)
+
+Both "Add to Ingredients" buttons — the history page's and the extension's — fill the four per-100g columns
+(`Protein per 100g`, `Fats per 100 g `, `Carbs per 100g `, `Fiber per 100g `). A row without them silently
+breaks the plan formulas built on top, which is the whole reason this exists.
+
+**Four sources, cheapest first.** Read them in this order; each is a fallback for the one above. The
+percentages are from a 32-product survey of live FairPrice pages (see "Next session" below).
+
+| # | source | cost | share | when |
+|---|---|---|--:|---|
+| 1 | the shop's own panel, parsed | **free** | 28% | page publishes `Nutritional Data` |
+| 2 | model, no tools | **~$0.003** | 31% | fresh produce / raw meat — no label exists to find |
+| 3 | model + the shop's back-of-pack photo | **~$0.03** | 34% | the shop published a back or side pack shot |
+| 4 | model + web search & fetch | **$0.29–0.41** | 6% | everything else — front shot only, or a shop with no photos |
+
+**Where the code lives.** `src/core/macro-prompt.ts` holds everything that *decides* an answer — system
+prompt, tool set, parsing, sanity gate, `isCommodityFood`, and the `packShotsFor` image gate. It has **no
+Node imports**, because the extension bundles it verbatim. The two transports are thin:
+`src/core/macros.ts` (Node, official SDK) and `extension/macros-client.js` (browser, raw `fetch`); both
+build their user turn with `macroUserContent` rather than assembling it themselves.
+`src/core/nutrition-panel.ts` is source 1 and is fully deterministic — the `generic-name.ts` house rule,
+no model.
+
+⚠️ **The panel must be read off the slug-anchored product object, never searched for in the page.** The
+payload also carries the recommendations carousel. On the Skippy Peanut Butter page the product's own object
+has **no** panel while **four rival peanut butters do** — a first-match search returns a competitor's label
+as this product's, which is wrong and entirely plausible-looking. An early measurement made exactly that
+mistake and reported "4 of 5 products have a panel"; the true slug-anchored rate is **4 of 16**.
+
+⚠️ **Every panel is PER SERVING, never per 100g** — measured servings 32 g, 35 g, 236 ml, 100 g. The parser
+scales, and *refuses* a panel whose serving size isn't stated. A 32 g peanut-butter serving read as 100 g is
+wrong by 3×, in the direction that looks fine. Row labels are matched **exactly**, so Skippy's
+`- Saturated Fat` sub-row can't be taken for `Total Fat`, nor `Added Sugars` for carbohydrate.
+
+⚠️ **`max_content_tokens` on web_fetch was tried and REJECTED — do not retry it.** Capping the fetch at 8k
+made one product 25% cheaper and another **27% dearer**: starved of page text the model simply searches
+more, and search results are large too. Related: **identical configs rerun a day apart varied ±30%**
+(123k→93k input tokens on one product, 189k→236k on another), so **anything under ~30% here is noise, not
+a result.** Measure more than once before believing a lever.
+
+**The extension's UI.** Four boxes side by side under "Per 100g", above the Add button, in both popup and
+side panel. Pre-filled and marked green when source 1 fired (captioned with the serving it was scaled
+from); blank otherwise. Blank boxes trigger sources 2–4 *after* the row is written and patch it in, because
+the lookup takes 10–30 s (about 5 s on source 3) and nobody should watch that before their row exists.
+Filled boxes are written **with** the row and cost nothing. Every box is editable, so a figure you disagree
+with is one you overtype. The note under the boxes and the waiting line both say **which** source is coming,
+using `packShotsFor` — the same function the worker gates on, imported rather than re-implemented, so the
+panel cannot promise a path the lookup won't take.
+
+**Key goes on the extension Options page**, beside the Notion token. Blank = the whole feature is off and
+rows add exactly as before. Needs `https://api.anthropic.com/*` in `host_permissions` plus the
+`anthropic-dangerous-direct-browser-access` header (a service worker sends a browser `Origin`).
+
+## Next session — pick up here (as of 2026-08-04)
+
+The agreed three-item plan is **finished**: #3 shipped, #2 was measured and rejected, #1 shipped.
+
+- ✅ **#3 — skip search for fresh commodities.** `isCommodityFood()` in `macro-prompt.ts`.
+  Frozen chicken $0.41 → **$0.0030** (34s → 2.5s) and broccoli $0.081 → **$0.0027** (17.7s → 2.2s), with
+  the same or better figures — the chicken no longer throws the 24.8 g protein outlier the searching
+  version did (~17–18 g is right). Gate is narrow on purpose: `produce` category, **or** a meat/fish/egg
+  word **with** a `fresh|frozen|chilled|raw|live` state. That state requirement is what keeps branded dairy
+  and "Tuna Flakes - In Water" on the full lookup. 25 classification cases tested.
+- ❌ **#2 — `max_content_tokens` cap.** Measured and rejected, see the ⚠️ above. Don't revisit.
+- ✅ **#1 — pack-shot images.** Shipped 2026-08-04. See below.
+
+**The outstanding work is now the first real use** of both the extension and the nutrition feature —
+"Remaining work" items 11 and 13. Everything in this area has been proven by Node harness, offline test and
+live page fetch; nobody has yet sat down and captured a shop for real.
+
+### #1 — reading the label off the shop's pack shots (shipped 2026-08-04)
+
+The lookup is handed FairPrice's own back-of-pack photograph instead of being sent to find the panel on the
+web. Measured on Skippy Peanut Butter:
+
+| variant | input tok | searches | secs | tier | cost |
+|---|--:|--:|--:|---|--:|
+| text only | 123,389 | 2 | 54 | search | $0.2877 |
+| + 2 pack shots (front + back) | 13,885 | 0 | 8 | product-page | $0.0296 |
+| + 2 pack shots (rerun) | 13,885 | 0 | 8 | product-page | $0.0314 |
+| **as shipped — back shot only** | **10,767** | **0** | **5.2** | **product-page** | **$0.0239** |
+
+Same answer every way: 22.8 g protein, which is right for Skippy. The saving is not the searches (2 cents
+of a 29-cent call) — it is that `web_fetch` stops dropping a 340–390 KB page into context.
+
+**Over a real basket** — 32 live FairPrice products across 16 search terms, surveyed offline (free):
+
+| path | share | cost each |
+|---|--:|--:|
+| the shop's own panel | 28% | free |
+| fresh commodity, no tools | 31% | ~$0.003 |
+| **back-of-pack photo** | **34%** | **~$0.03** |
+| text only | 6% | ~$0.29 |
+
+**$3.80 → $0.94** to add all 32.
+
+**Where it lives.** `selectPackShots` picks the views; **`packShotsFor` is the gate every caller should
+use** (it adds the commodity refusal). `macroUserContent` builds the images-then-text content array for
+both transports, so the Node side and the extension cannot disagree about what was asked. `content.js`
+returns `own.images` off the slug-anchored object, `flow.js` carries it into `macros-for`, `background.js`
+forwards it. `macro-test.ts` takes a repeatable `--image <url>` and prints how many were actually attached.
+
+⚠️ **The FRONT shot is deliberately excluded, and that exclusion is the entire gate.** Images back-fired on
+frozen chicken ($0.60 against $0.41, and the 24.8 g outlier) because a pack with no panel leaves only
+marketing copy to read. So a listing publishing **nothing but a front shot gets no images** and takes the
+ordinary path — that is what left the two silken tofus on the expensive path in the survey above, and it is
+the gate working. `packShotsFor` additionally refuses photos to anything `isCommodityFood` catches, which
+blocks the same failure from the other end.
+
+⚠️ **Do NOT filter the photos by the product's SKU** — the obvious-looking rule, and wrong. FairPrice reuses
+one photo across a range: "[BCRS] Farmhouse Milk - Fresh" (`clientItemId` 13281014) publishes
+`10966597_LXL1_20230327.jpg` as its own side view, and an SKU filter throws away the only label shot it has.
+Read `own.images` off the slug-anchored object — same anti-carousel rule as the panel, and simpler.
+
+⚠️ **The date suffix in the filename is optional** — `13051601_BXL1.jpg` as well as
+`47440_BXL1_20250411.jpg`. A pattern that requires it silently drops a good share of the back shots.
+
+**Sheng Siong contributes no photos**, so its products stay on the text-only path — and they are the ones
+that need this most, since `web_fetch` cannot read the site at all. Worth a look next:
+`Products.getOneByIdOrSlug` (already called by `extractViaMeteor` in `flow.js`) almost certainly carries
+image paths; `selectPackShots` would need a second naming convention taught to it.
+
+### Testing without burning money
+
+- `npm run macro-test -- "<product>" [--url …] [--store …] [--as …] [--image <url> …]` — one real lookup,
+  writes nothing to Notion, prints tier, basis, timing and **cost**. It mirrors production (it derives
+  `categoryKey` the same way the real callers do — it didn't until 2026-08-04, which made it under-report
+  both cost and behaviour). `--image` is repeatable and takes the shop's URLs **unfiltered**, exactly as
+  the extension hands them over; the line it prints says how many of them `packShotsFor` actually attached,
+  so "3 image URLs given, 1 attached" is the gate working.
+- Offline test scripts used across these sessions live in the scratchpad, not the repo: panel parsing (22
+  cases), macro reply parsing (14), the commodity gate (25) and pack-shot selection (30). Also a free
+  survey script that walks live FairPrice pages and reports which of the four paths each product would
+  take — that is where the 28/31/34/6% split above came from, and it costs nothing to re-run.
+- ⚠️ A lookup costs real money. The account ran out of credit mid-session on 2026-08-04. Budget ~$0.30 per
+  tools-path call, **~$0.03 per pack-shot call**, ~$0.003 per commodity call.
 
 ## Commands (run from repo root, needs `.env`)
 
@@ -568,7 +724,23 @@ copied. Nothing under `src/` imports from `extension/`; the sharing goes one way
     pages, 6 Sheng Siong products, and both writes proven against the live DB —
     but nobody has yet sat down and captured a shop for real. First actual use is
     the outstanding test.
-12. Two known extension quirks, neither a bug:
+12. ~~Pack-shot images for the macro lookup (#1)~~ **done** 2026-08-04 — the
+    lookup reads the label off the shop's own back-of-pack photo. $0.2877 → 
+    **$0.0239** and 54s → **5.2s** on Skippy, same answer; 34% of a real 32-product
+    basket now takes that path. Full detail and the two gates in "Next session"
+    above. **Sheng Siong still contributes no photos** — the obvious next step.
+13. **The nutrition feature has never been used in anger either.** The panel
+    parser, the commodity gate and the four boxes were verified with offline
+    tests and live page fetches, and the lookup itself with 8 real API calls —
+    but no one has yet added a real row through the extension with nutrition
+    switched on. First actual use is the outstanding test.
+14. **#1 has landed, so this is now due:** the offline test scripts (panel
+    parsing, reply parsing, commodity gate, pack-shot selection — **91 cases**
+    between them) live only in a scratchpad, and this is the fourth suite to end
+    up there. They need no test runner — each is a plain script `tsx` can run —
+    so bringing them into the repo is mostly a decision about where they go and
+    what invokes them.
+15. Two known extension quirks, neither a bug:
     - A Sheng Siong egg carton reads `550 g / By Gram`, because they record the
       piece count in the NAME ("Fresh Eggs (10s)") and not in `packSize`. Switch
       the dropdown to `By Unit` by hand if you want it planned per egg.
