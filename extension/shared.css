@@ -23,3 +23,17 @@ a { color: #2f6fed; display: inline-block; margin-top: 4px; }
 /* One similar-row card, separated so several "Replace With This" buttons never read as one list. */
 .sim { border-top: 1px solid color-mix(in srgb, currentColor 15%, transparent); margin-top: 10px; padding-top: 8px; }
 #banner { background: color-mix(in srgb, #2f6fed 12%, transparent); border-radius: 8px; padding: 8px; margin-bottom: 8px; }
+
+/* The four macro columns, side by side — they are one reading of one label, so they are grouped and read
+   across rather than stacked as four unrelated fields. 4 equal columns fits the popup's 360px at 13px. */
+.macros { margin-top: 12px; border: 1px solid color-mix(in srgb, currentColor 20%, transparent); border-radius: 8px; padding: 8px; }
+.macros-title { font-weight: 600; }
+.macros-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+/* Beat the global `label { margin-top: 8px }` — inside the grid the gap does that job. */
+.macros-grid label { margin-top: 4px; font-weight: 400; font-size: 12px; opacity: .85; }
+/* Tighter padding than a normal input: four of these share the width of one. */
+.macros-grid input { padding: 5px 4px; text-align: center; }
+#f-macro-note { font-size: 12px; margin-top: 2px; }
+/* Filled from the shop's own panel — worth marking, since the alternative sources are a web search and a
+   category average, and the user is the one deciding how much to trust the number. */
+.macros.from-page { border-color: color-mix(in srgb, #1e8e3e 45%, transparent); }

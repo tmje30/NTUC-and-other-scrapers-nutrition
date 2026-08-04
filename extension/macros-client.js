@@ -21,8 +21,9 @@
 import {
   MACRO_MODEL,
   MACRO_SYSTEM,
-  MACRO_TOOLS,
-  macroUserPrompt,
+  isCommodityFood,
+  macroToolsFor,
+  macroUserContent,
   parseMacroReply,
   replyText,
 } from "../src/core/macro-prompt.js";
@@ -76,8 +77,13 @@ export async function lookupMacros(q) {
         system: MACRO_SYSTEM,
         // No temperature/top_p — Sonnet 5 rejects non-default sampling parameters.
         output_config: { effort: "medium" },
-        tools: MACRO_TOOLS,
-        messages: [{ role: "user", content: macroUserPrompt(q) }],
+        // No tools for fresh produce and raw meat — measured, searching for those costs 40-50 cents to
+        // reach the generic answer the model already had. See `isCommodityFood` in macro-prompt.ts.
+        tools: macroToolsFor(q),
+        // Pack shots (when the shop published a back or side view) then the text — see `macroUserContent`.
+        // The API fetches the image URLs itself, which is the only reason this works from a service worker:
+        // downloading them here would need media.nedigital.sg in host_permissions and a base64 round trip.
+        messages: [{ role: "user", content: macroUserContent(q) }],
       }),
     });
   } catch (e) {

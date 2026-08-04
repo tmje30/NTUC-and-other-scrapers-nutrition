@@ -20,6 +20,18 @@
     <label>Unit type <select id="f-unit"><option value="">— none —</option></select></label>
     <label>Category <select id="f-category"><option value="">— none —</option></select></label>
     <label>Vendor, Current <input id="f-vendor" placeholder="e.g. NTUC"></label>
+
+    <div class="macros">
+      <span class="macros-title">Per 100g</span>
+      <div id="f-macro-note" class="muted"></div>
+      <div class="macros-grid">
+        <label>Protein <input id="f-protein" inputmode="decimal" placeholder="—"></label>
+        <label>Carbs <input id="f-carbs" inputmode="decimal" placeholder="—"></label>
+        <label>Fats <input id="f-fats" inputmode="decimal" placeholder="—"></label>
+        <label>Fiber <input id="f-fiber" inputmode="decimal" placeholder="—"></label>
+      </div>
+    </div>
+
     <button id="add" type="submit">Add to Ingredients</button>
   </form>
 

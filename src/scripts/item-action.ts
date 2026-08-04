@@ -499,6 +499,9 @@ if (payload.action === "add-ingredient") {
 		url: payload.url,
 		ingredientName: payload.name,
 		category: fields.categoryKey ?? undefined,
+		// Same value, under the field `isCommodityFood` actually reads — fresh produce and raw
+		// meat skip the (measured) 40-50 cent search that only ever returns a generic figure.
+		categoryKey: fields.categoryKey ?? undefined,
 	});
 
 	const client = new Client({ auth: config.notionToken() });

@@ -5,6 +5,7 @@
 // extension and the daily scraper always agree on what a generic name and a category are.
 import { deriveGenericName } from "../src/core/generic-name.js";
 import { categorize, matchCategoryOption, guessSize } from "../src/core/categorize.js";
+import { parseNutritionPanel } from "../src/core/nutrition-panel.js";
 import { findSimilar, findByUrl, createIngredient, replaceIngredient, setupCheck, getFieldOptions, writeMacros } from "./notion-client.js";
 import { lookupMacros, macrosConfigured } from "./macros-client.js";
 import { vendorForUrl } from "./vendors.js";
@@ -48,13 +49,40 @@ const fieldsFrom = (m) => ({
   url: m.url || "",
 });
 
+/**
+ * A macro box → grams per 100g, or null when blank.
+ *
+ * Unparseable is treated as blank rather than thrown, unlike `priceOf`: a price is money and a wrong one
+ * is worth stopping for, but a nutrition box is one of four optional columns beside it. Values outside
+ * 0–100 are dropped — nothing in 100 g of food weighs more than 100 g.
+ */
+function macroOf(text) {
+  if (text == null || String(text).trim() === "") return null;
+  const n = Number.parseFloat(String(text).replace(",", ".").replace(/[^\d.]/g, ""));
+  if (!Number.isFinite(n) || n < 0 || n > 100) return null;
+  return Math.round(n * 100) / 100;
+}
+
+/** The four boxes as a Macros object, or null when the user left every one of them empty. */
+function macrosFrom(m) {
+  const macros = {
+    proteinPer100g: macroOf(m.protein),
+    fatsPer100g: macroOf(m.fats),
+    carbsPer100g: macroOf(m.carbs),
+    fiberPer100g: macroOf(m.fiber),
+  };
+  return Object.values(macros).some((v) => v != null) ? macros : null;
+}
+
 const handlers = {
   // Opened on a page: can we write at all, and which vendor is this? Unlike the reference extension there
   // is no vendor gate — an unrecognised host still captures, with the host as the vendor label.
   async "setup-check"({ url }) {
     const res = await setupCheck();
     const { host, vendor, known } = vendorForUrl(url);
-    return { ...res, host, vendor, known };
+    // Reported but never a `problem`: the nutrition lookup is optional, and a missing Claude key must not
+    // stop the extension writing prices. It only changes what the empty macro boxes say they'll do.
+    return { ...res, host, vendor, known, macrosConfigured: await macrosConfigured() };
   },
 
   // Options-page "Save & test".
@@ -78,7 +106,7 @@ const handlers = {
    * guess resolved against the LIVE options, and a size + unit type. Done in the worker so the popup and the
    * side panel can't drift apart on it.
    */
-  async "derive"({ name, brand, sizeText }) {
+  async "derive"({ name, brand, sizeText, nutritionHtml }) {
     const exactName = [String(name || "").trim(), String(brand || "").trim()]
       .filter(Boolean)
       // Only append the brand when the title doesn't already carry it — shops repeat it about half the time.
@@ -87,7 +115,11 @@ const handlers = {
     const { categories } = await getFieldOptions();
     const category = matchCategoryOption(categorize(generic || name || ""), categories) || "";
     const { amount, unitType } = guessSize(sizeText || "");
-    return { generic, exactName, category, size: amount, unitType: unitType || "" };
+    // The shop's own panel, if it published one. Free and authoritative, so it beats the paid lookup —
+    // which is why it runs here at render time rather than at Add. null whenever the page said nothing or
+    // said something that didn't survive the per-100g sanity check, and then the boxes stay empty.
+    const panel = nutritionHtml ? parseNutritionPanel(nutritionHtml) : null;
+    return { generic, exactName, category, size: amount, unitType: unitType || "", panel };
   },
 
   // Ingredient rows this product might already BE — each gets a "Replace With This" button.
@@ -100,10 +132,20 @@ const handlers = {
   async "add-item"(m) {
     const existing = await findByUrl(m.url); // re-check right before writing (the form may have raced)
     if (existing) return { ok: false, duplicate: existing };
-    const created = await createIngredient(fieldsFrom(m));
-    // Told to the caller so it can say "looking up macros…" only when a lookup is
-    // actually coming — a missing key must not leave a spinner running forever.
-    return { ok: true, created, macrosConfigured: await macrosConfigured() };
+
+    // Whatever is in the four boxes wins: it came off the shop's own panel or out of the user's head, and
+    // either beats a lookup. Only a completely empty set triggers the paid fallback.
+    const macros = macrosFrom(m);
+    const created = await createIngredient({ ...fieldsFrom(m), macros });
+
+    // `needsLookup` is told to the caller so it can show "looking up nutrition…" only when a lookup is
+    // actually coming — no key, or figures already present, must not leave a spinner running forever.
+    return {
+      ok: true,
+      created,
+      needsLookup: !macros && (await macrosConfigured()),
+      macrosFromForm: Boolean(macros),
+    };
   },
 
   /**
@@ -117,7 +159,7 @@ const handlers = {
    * Never throws. There is nothing to roll back: the row exists and is correct, just without nutrition,
    * and the reply says which of the two happened.
    */
-  async "macros-for"({ pageId, name, exactName, vendor, url, category }) {
+  async "macros-for"({ pageId, name, exactName, vendor, url, category, images }) {
     if (!pageId) throw new Error("No row to look up nutrition for.");
     if (!(await macrosConfigured())) return { ok: false, reason: "no-key" };
 
@@ -128,6 +170,14 @@ const handlers = {
       url: url || "",
       ingredientName: name || "",
       category: category || "",
+      // The project's own key ("produce", "protein"), NOT the Notion option name in `category` — it is
+      // what `isCommodityFood` branches on to decide whether searching is worth paying for, and the
+      // user can rename their Notion options at any time.
+      categoryKey: categorize(name || exactName || "") || undefined,
+      // The shop's own pack shots. Passed whole — `selectPackShots` keeps the back and side views and
+      // drops the front, because a marketing face with no panel is what made this back-fire on frozen
+      // chicken. When it keeps none, the lookup is exactly the text-only one it was before.
+      images: Array.isArray(images) ? images : [],
     });
     if (!macros) return { ok: false, reason: "not-found" };
 

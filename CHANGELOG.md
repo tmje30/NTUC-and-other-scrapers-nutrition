@@ -185,6 +185,73 @@ All notable changes to this project are documented here. Format based on
   sends a browser `Origin`). Key is entered on the Options page beside the Notion
   token; blank disables the whole feature. *Replace With This* still writes no
   nutrition — that row's figures are the user's own work.
+- **Four macro boxes on the capture form**, side by side per 100g (Protein /
+  Carbs / Fats / Fiber), above the Add button. They pre-fill from the shop's own
+  nutrition panel where the page publishes one, stay blank where it doesn't, and
+  are editable either way. Filled boxes are written **with** the row and cost
+  nothing; empty ones trigger the paid lookup at Add, as before.
+- **`src/core/nutrition-panel.ts`** — deterministic reader for a shop's own
+  `Nutritional Data` table (no model; the `generic-name.ts` house rule).
+  ⚠️ Every panel measured is **per serving, never per 100g** — 32 g, 35 g, 236 ml,
+  100 g — so it scales, and refuses a panel whose serving size isn't stated
+  rather than emitting figures 3× out. Prefers a real per-100g column when a
+  panel offers both. Matches row labels exactly, so Skippy's `- Saturated Fat`
+  sub-row can't be mistaken for `Total Fat`, nor `Added Sugars` for carbohydrate.
+  Same per-100g plausibility gate as the model path.
+  ⚠️ **The panel is read off the slug-anchored product object only, never
+  searched for in the page.** On the Skippy Peanut Butter page the product's own
+  object carries no panel while the recommendations carousel carries four rival
+  peanut butters' — a first-match search returns a competitor's label as this
+  product's, which is both wrong and entirely plausible-looking. An early
+  measurement made exactly that mistake and reported 4-of-5 availability; the
+  real slug-anchored rate is **4 of 16** (packaged goods hit, fresh produce and
+  meat always miss — which is precisely where the paid lookup is needed anyway).
+- **Fresh commodities skip the web search** (`isCommodityFood` in
+  `macro-prompt.ts`). Measured 2026-08-04: a lookup costs **US$0.29–0.41**, not
+  the 6-7 cents claimed everywhere in this repo — out by ~5x, now corrected in
+  the code, Options page, `macro-test.ts` and the README. Input tokens are ~90%
+  of it (123k-280k per call: `web_fetch` drops whole 340-390 KB pages into
+  context); two searches were 2 cents of a 41-cent call.
+  Fresh items were the worst of it — every frozen-chicken variant cost $0.38-0.60
+  and landed on `generic` regardless, with answers spread 16.6-24.8 g protein.
+  Sending no tools for those gives **$0.0030 in 2.5s (was $0.41 in 34s)** for the
+  chicken and **$0.0027 (was $0.081)** for broccoli, with the same or better
+  figures — the chicken no longer produces the 24.8 g outlier. Gate is narrow on
+  purpose: `produce`, or a meat/fish/egg word WITH a fresh/frozen/chilled/raw
+  state, so branded dairy and canned fish keep their tools. 25 cases tested.
+  ⚠️ `max_content_tokens` on web_fetch was tried and **rejected** — capping the
+  fetch made one product 25% cheaper and another **27% dearer** (starved of page
+  text it just searches more). Reruns of identical configs also varied ±30%, so
+  anything under ~30% here is noise, not a result.
+- **`lookupMacros` now logs tokens, searches and estimated cost** on every call.
+  The 5x cost error above survived as long as it did because nothing printed it.
+- **The lookup reads the label off the shop's own pack shots**
+  (`selectPackShots` / `packShotsFor` in `macro-prompt.ts`, `images` on
+  `MacroQuery`). Instead of sending the model to find a nutrition panel on the
+  web, it is handed the back-of-pack photograph FairPrice already publishes.
+  Skippy Peanut Butter: **$0.0239 in 5.2s with 0 searches on the `product-page`
+  tier**, against $0.2877 in 54s with 2 searches text-only — same answer (22.8 g
+  protein, right for Skippy). The saving isn't the searches (2 cents of a 29-cent
+  call); it's that `web_fetch` no longer drops a 340-390 KB page into context.
+  FairPrice names the views in `own.images` — `<sku>_XL1_<date>.jpg` front,
+  `_BXL1_` back, `_LXL1_`/`_RXL1_` sides, date suffix optional. Back first, then
+  sides, **at most two**.
+  ⚠️ **The FRONT shot is excluded, and that exclusion is the gate.** Photographs
+  back-fired once, on frozen chicken — $0.60 against $0.41 and the 24.8 g outlier
+  — because a pack with no panel leaves only marketing copy to read. So a listing
+  with nothing but a front shot gets no images and takes the ordinary path, and
+  `packShotsFor` additionally refuses photos to anything `isCommodityFood`
+  catches. The two gates cover "no label exists" from both ends.
+  ⚠️ **Do not filter the photos by the product's SKU** — FairPrice reuses one
+  across a range ("[BCRS] Farmhouse Milk - Fresh", item 13281014, publishes
+  `10966597_LXL1_20230327.jpg` as its own side view). They are read off the
+  slug-anchored product object, same anti-carousel rule as the panel.
+  Surveyed over 32 live FairPrice products: 28% shop panel (free), 31% commodity
+  (~$0.003), **34% pack shot (~$0.03)**, 6% text-only (~$0.29) — **$3.80 → $0.94**
+  to add all 32. The two left on the expensive path publish a front shot only.
+  30 offline cases cover the selector, the commodity interaction and the content
+  array. `macro-test.ts` takes a repeatable `--image <url>` and reports how many
+  of the URLs given were actually attached.
 
 - **Rescan button** in the missing-shop warning banner (and only there — it does
   nothing useful otherwise). The two halves of the hybrid heal at different

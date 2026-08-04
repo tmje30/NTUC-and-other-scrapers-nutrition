@@ -3,8 +3,10 @@ import { config } from "./config.js";
 import {
 	MACRO_MODEL,
 	MACRO_SYSTEM,
-	MACRO_TOOLS,
-	macroUserPrompt,
+	isCommodityFood,
+	macroToolsFor,
+	macroUserContent,
+	packShotsFor,
 	parseMacroReply,
 	replyText,
 	type MacroQuery,
@@ -63,6 +65,20 @@ export async function lookupMacros(q: MacroQuery): Promise<MacroResult | null> {
 		return null;
 	}
 
+	// Fresh produce and raw meat get NO tools: measured, searching for them costs 40-50 cents to arrive at
+	// the generic answer the model already had. See `isCommodityFood`.
+	const tools = macroToolsFor(q);
+	if (isCommodityFood(q)) {
+		console.error(`Macro lookup: "${q.product}" is a fresh commodity — answering without search.`);
+	}
+
+	// Printed for the same reason the cost line is: the pack shots are the difference between a 3-cent
+	// lookup and a 29-cent one, and a silent gate is one nobody notices has stopped firing.
+	const shots = packShotsFor(q);
+	if (shots.length) {
+		console.error(`Macro lookup: reading ${shots.length} pack shot${shots.length === 1 ? "" : "s"} off the label.`);
+	}
+
 	try {
 		const client = new Anthropic({
 			apiKey: key,
@@ -75,11 +91,24 @@ export async function lookupMacros(q: MacroQuery): Promise<MacroResult | null> {
 			system: MACRO_SYSTEM,
 			// No temperature/top_p — Sonnet 5 rejects non-default sampling parameters.
 			output_config: { effort: "medium" },
-			tools: MACRO_TOOLS as unknown as never,
-			messages: [{ role: "user", content: macroUserPrompt(q) }],
+			tools: tools as unknown as never,
+			messages: [{ role: "user", content: macroUserContent(q) }],
 		} as any);
 
-		const searches = (response as any).usage?.server_tool_use?.web_search_requests ?? 0;
+		const u = (response as any).usage ?? {};
+		const searches = u.server_tool_use?.web_search_requests ?? 0;
+
+		// Log what the call cost. This exists because the figure in this file was wrong by 5x for a while
+		// and nobody could see it: the bill is dominated by INPUT tokens (web_fetch drops whole pages in),
+		// not by the model rate, and that is invisible without printing it. Sonnet 5 introductory rates.
+		const inTok = (u.input_tokens ?? 0) + (u.cache_read_input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0);
+		const outTok = u.output_tokens ?? 0;
+		const usd = (inTok * 2) / 1e6 + (outTok * 10) / 1e6 + searches * 0.01;
+		console.error(
+			`Macro lookup: in=${inTok} out=${outTok} searches=${searches} ≈ US$${usd.toFixed(4)}` +
+				(tools.length ? "" : " (no tools — fresh commodity)"),
+		);
+
 		return parseMacroReply(replyText(response.content), searches);
 	} catch (e) {
 		// Rate limit, bad key, network, a model change: none of these are worth

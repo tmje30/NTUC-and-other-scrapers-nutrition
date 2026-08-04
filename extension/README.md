@@ -51,17 +51,49 @@ formulas, `Select` tags and relations are the user's own work and have nothing t
 came from. It includes `Items Exact Name` on purpose: the row now describes a different physical product, so
 leaving the old exact name would label it as something it is not.
 
-## Nutrition (Add only, needs a Claude API key)
+## Nutrition
 
 The Ingredients DB carries four per-100g columns — `Protein per 100g`, `Fats per 100 g `, `Carbs per 100g `,
 `Fiber per 100g ` — and a stack of formulas on top of them (cost per 100g protein, calories, the plan sums).
 A row added without them silently breaks those formulas, so **Add to Ingredients** fills them in.
 
-Three tiers, tried in order, and the one used is always reported:
+The form shows the four side by side, per 100g, above the Add button:
+
+```text
+Per 100g
+  Protein     Carbs      Fats      Fiber
+   11.43       68        9.14      10.57
+```
+
+**They fill themselves in from the shop's own panel where there is one, and are left blank where there
+isn't.** Blank boxes are looked up when you press Add; filled boxes are written as-is and cost nothing.
+Every box is editable either way, so a figure you disagree with is one you overtype.
+
+### Reading the shop's panel (free, no API key)
+
+FairPrice ships a `Nutritional Data` field — the packaging's own table — in the product payload. When it's
+there the boxes fill immediately, marked green with the serving they were scaled from.
+
+⚠️ **It is always *per serving*, never per 100g.** Measured servings: 32 g, 35 g, 236 ml, 100 g. So
+`nutrition-panel.ts` scales every figure, and refuses the panel outright when the serving size isn't stated —
+a 32 g peanut-butter serving read as 100 g is wrong by a factor of three, in the direction that looks fine.
+
+Measured 2026-08-03 over 16 products, **4 had a usable panel**. The split is the useful part: the hits were
+packaged goods (oats, yoghurt, instant noodles, canned tuna) and **every fresh item missed** — chicken
+breast, salmon, broccoli, bananas, eggs, tofu. Which is exactly where the lookup below earns its keep.
+
+⚠️ **Never search the page for a nutrition table.** The payload carries the recommendations carousel too. On
+the Skippy Peanut Butter page the product's own object has *no* panel while four rival peanut butters do, so
+a first-match search returns a competitor's label as this product's — plausible, and silently wrong. The
+panel is read off the same slug-anchored object as the name and price, and nowhere else.
+
+### Looking it up (needs a Claude API key)
+
+Only when the boxes are empty. Three tiers, tried in order, and the one used is always reported:
 
 | tier | means |
 |---|---|
-| `product-page` | the nutrition panel on the page you were already looking at |
+| `product-page` | the nutrition panel on the page you were already looking at — including the one photographed on the back of the pack |
 | `search` | the same product's panel, found elsewhere |
 | `generic` | representative values for that **food**, when the exact product can't be pinned down |
 
@@ -77,13 +109,105 @@ Rejected outright: a reply with no figures, and one whose protein + fat + carbs 
 (which means per-serving figures got reported as per-100g — the single likeliest failure, and the easiest to
 catch). Either way the row keeps its price and size and the panel says to fill the columns in by hand.
 
-**It runs after the row is written, not before.** The lookup reads the product page and may search, so it
-takes 10–30 s; making the add wait would mean a spinner long enough to abandon a row that was ready to go.
+**It runs after the row is written, not before.** The lookup may have to search, so it takes 10–30 s (or
+about 5 s when there is a back-of-pack photo to read — the panel says which wait you are in for); making the
+add wait would mean a spinner long enough to abandon a row that was ready to go.
 The work happens in the service worker, so closing the popup doesn't cancel it — the figures still land, you
-just don't see the message. Roughly 6–7 US cents per lookup, only when you tap Add, and the whole feature is
-off if no key is set.
+just don't see the message. Only runs when the boxes were empty when you tapped Add, and the whole feature
+is off if no key is set.
+
+⚠️ **Cost, measured 2026-08-04 over four real lookups: US$0.29–0.41 each**, not the 6–7 cents first
+estimated. The model rate is not where it goes — input was **123k–280k tokens per call**, about 90% of the
+bill, because `web_fetch` drops the entire product page into context (a FairPrice page is 340–390 KB of
+HTML). Two web searches came to 2 cents of a 41-cent call.
+
+| product | variant | input tok | searches | secs | tier | cost |
+|---|---|--:|--:|--:|---|--:|
+| Skippy Peanut Butter | text only | 123,389 | 2 | 54 | search | $0.29 |
+| Skippy Peanut Butter | + 2 pack shots | 13,885 | 0 | 8 | **product-page** | **$0.03** |
+| Seara Chicken Thigh | text only | 189,271 | 2 | 34 | search | $0.41 |
+| Seara Chicken Thigh | + 2 pack shots | 280,409 | 2 | 66 | generic | $0.60 |
+
+**Pack-shot images cut the packaged-goods case 10×** — the model read the label off the back of the jar,
+answered in 8 s with no search at all, and landed on the `product-page` tier. Repeated on a second run:
+$0.0314, 8 s, same tier, same answer. That is the one robust result here, and it is now how the extension
+works — see below.
+
+⚠️ **`max_content_tokens` on web_fetch does not fix the bill — measured, don't retry it.** Capping the
+fetch at 8k moved Skippy −25% but Seara **+27%**: starved of page text the model simply searches more, and
+search results are large too.
+
+⚠️ **Single measurements here are noisy — treat anything under ~30% as nothing.** Identical configs rerun
+a day apart gave 123k then 93k input tokens (Skippy) and 189k then 236k (Seara).
+
+### Fresh commodities skip the search entirely
+
+Every Seara variant above cost $0.38–0.60 and still landed on `generic` — the model searched, found no
+label, and answered from its own knowledge anyway. The four runs also disagreed: 16.6, 16.7, 17 and **24.8**
+g protein per 100 g for raw chicken thigh, where ~17–18 is right.
+
+So `isCommodityFood()` now sends **no tools at all** for those, and the model answers directly:
+
+| product | before | after | speed | answer |
+|---|--:|--:|--:|---|
+| Seara Frozen Chicken Thigh | $0.41 | **$0.0030** | 34s → 2.5s | 17.0 g protein — correct |
+| Agro Fresh Broccoli | $0.081 | **$0.0027** | 17.7s → 2.2s | unchanged (2.8 / 0.4 / 7.0 / 2.6) |
+
+**137× and 30× cheaper, and the chicken answer got *better*** — it no longer produces the 24.8 g outlier.
+
+The gate is deliberately narrow, because "no label" isn't the same as the category: fresh chicken and a tub
+of Greek yoghurt are both `protein`, but the yoghurt is branded and its panel is findable, so it keeps its
+tools. Only two cases qualify — the `produce` category, or a meat/fish/egg word **with** an explicit
+`fresh|frozen|chilled|raw|live` state. Requiring the state word is what keeps "FairPrice Tuna Flakes - In
+Water" on the full lookup. 25 classification cases are covered by tests.
+
+Figures read off the page go in **with** the row instead — one write, no window where the row exists without
+its nutrition, and no charge.
 
 `Replace With This` deliberately does **not** do this: that row's nutrition is the user's own work.
+
+### Reading the label off the shop's pack shots (added 2026-08-04)
+
+For everything left on the paid path, the lookup is now handed **the shop's own back-of-pack photograph**
+instead of being sent to find the label on the web. It reads the panel off the jar and stops:
+
+| | text only | + back-of-pack shot |
+|---|--:|--:|
+| Skippy Peanut Butter | $0.2877, 54 s, 2 searches, `search` tier | **$0.0239, 5.2 s, 0 searches, `product-page` tier** |
+
+Same answer, 22.8 g protein — right for Skippy. The saving is not really the searches (2 cents of a
+29-cent call); it is that `web_fetch` no longer drops a 340–390 KB page into context. A photo of a label
+answers the question directly and costs a fraction.
+
+**Which photos, and why not all of them.** FairPrice publishes the views in `own.images` on the product
+object, named by view: `<sku>_XL1_<date>.jpg` is the front, `_BXL1_` the back, `_LXL1_` / `_RXL1_` the
+sides (the date suffix is optional). `selectPackShots` takes the **back first, then the sides, at most two**.
+
+⚠️ **The front shot is excluded on purpose, and that exclusion is the whole gate.** Photographs back-fired
+once — on frozen chicken, at $0.60 against $0.41 text-only, producing the 24.8 g outlier — because a pack
+with no panel leaves only marketing copy to read. So a listing publishing **nothing but a front shot gets no
+images at all** and takes the ordinary path. `packShotsFor` also refuses photos to anything
+`isCommodityFood` catches, which is the same failure blocked from the other end.
+
+⚠️ **Don't filter the photos by the product's SKU.** The obvious rule, and wrong: FairPrice reuses one photo
+across a range, so "[BCRS] Farmhouse Milk - Fresh" (item 13281014) publishes `10966597_LXL1_20230327.jpg` as
+its own side view. Read `own.images` off the slug-anchored object — the same anti-carousel rule as the panel,
+and simpler than reconstructing which files belong to the product.
+
+**What it does to a real basket.** Surveyed over 32 live FairPrice products across 16 categories:
+
+| path | share | cost each |
+|---|--:|--:|
+| the shop's own panel | 28% | free |
+| fresh commodity, no tools | 31% | ~$0.003 |
+| **back-of-pack photo** | **34%** | **~$0.03** |
+| text only | 6% | ~$0.29 |
+
+Adding all 32 would have cost **$3.80 before, $0.94 after**. The only two left on the expensive path were
+the silken tofus, which publish a front shot and nothing else — exactly what the gate is for.
+
+Sheng Siong contributes no photos: its Meteor record isn't read for images, so its products take the
+text-only path as before.
 
 ## Where the data comes from (and why it isn't JSON-LD)
 

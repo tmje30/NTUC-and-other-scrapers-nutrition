@@ -54,6 +54,24 @@ function readNextProduct(v) {
     priceText: price != null ? String(price) : "",
     sizeText: String(v.metaData?.DisplayUnit || ""),
     slug: String(v.slug || ""),
+    // The shop's own nutrition panel, as an HTML table. Measured 2026-08-03: on 4 of 16 FairPrice products
+    // (packaged goods yes, fresh produce and meat never), and always PER SERVING (32g / 35g / 236ml / 100g),
+    // never per 100g — src/core/nutrition-panel.ts does the scaling.
+    //
+    // ⚠️ Read off THIS object — the one already anchored to the URL slug — and never searched for in the
+    // page. The payload also carries the recommendations carousel: on the Skippy Peanut Butter page the
+    // product's own object has no panel while FOUR rival peanut butters do, so a loose search returns a
+    // competitor's label as this product's. Wrong, and plausible enough that nobody would notice.
+    nutritionHtml: String(v.metaData?.["Nutritional Data"] || ""),
+    // The shop's own pack shots, in the order it publishes them, straight off THIS object — the anti-carousel
+    // rule above applies to photos exactly as it does to the panel. Sent raw and unfiltered; `selectPackShots`
+    // in src/core/macro-prompt.ts decides which views are worth attaching to the nutrition lookup, so the
+    // rule lives with the thing it affects rather than being spread across the extraction.
+    //
+    // ⚠️ Do NOT reduce this to the ones whose filename carries `clientItemId`. FairPrice reuses a photo across
+    // a range: "[BCRS] Farmhouse Milk - Fresh" (item 13281014) publishes `10966597_LXL1_20230327.jpg` as its
+    // own side view, and an SKU filter would throw away the only label shot it has.
+    images: Array.isArray(v.images) ? v.images.filter((u) => typeof u === "string" && u) : [],
   };
 }
 
@@ -348,7 +366,21 @@ if (!window.__ingredientAddExtractorReady) {
       // Fall back to the tab title ONLY when a price or size corroborates that this is a product page —
       // otherwise a site-wide title becomes a confident-looking wrong name. Blank is the honest answer.
       const name = trusted || (priceText || sizeText ? titleName() : "");
-      sendResponse({ url: location.href, name, brand: special?.brand || ld.brand || genericBrand(), priceText, sizeText });
+      sendResponse({
+        url: location.href,
+        name,
+        brand: special?.brand || ld.brand || genericBrand(),
+        priceText,
+        sizeText,
+        // Raw table; the worker parses it (shared with the Node side) rather than the content script, so
+        // the scaling rules live in one place. "" whenever the shop publishes no panel — which is the
+        // common case for fresh meat and produce, and exactly where the paid lookup takes over.
+        nutritionHtml: special?.nutritionHtml || "",
+        // Pack-shot URLs for the nutrition lookup. Only the structured reader supplies these — a photo
+        // scraped off the DOM has no guarantee of being this product's, and a rival's label read as this
+        // one's is the failure this whole file is arranged to prevent.
+        images: special?.images || [],
+      });
     })();
     return true; // async sendResponse
   });

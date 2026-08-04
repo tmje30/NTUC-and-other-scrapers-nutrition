@@ -11,6 +11,22 @@
 //   - "Add to Ingredients"  → a NEW row.
 //   - "Replace With This"   → shown beside each SIMILAR existing row; repoints that row at this product.
 
+// Imported, not reimplemented: which pack shots get attached is a decision with a price on it, and the
+// panel must not describe a gate different from the one the worker actually applies. esbuild bundles
+// flow.js into popup.js and sidepanel.js, so src/core is reachable from here exactly as it is from
+// background.js. `categorize` comes along because `packShotsFor` needs the same `categoryKey` the worker
+// derives — a fresh commodity is refused its photos, and the panel must say so too.
+import { packShotsFor } from "../src/core/macro-prompt.js";
+import { categorize } from "../src/core/categorize.js";
+
+/** The bit of the worker's MacroQuery that decides whether pack shots are attached. Kept in step with `macros-for`. */
+const shotQuery = (name, exactName, images) => ({
+  product: exactName || name || "",
+  ingredientName: name || "",
+  categoryKey: categorize(name || exactName || "") || undefined,
+  images: images || [],
+});
+
 const $ = (id) => document.getElementById(id);
 
 // Timeout + no-response guard so a crashed service worker gives a readable error, never a silent spin.
@@ -43,7 +59,14 @@ function resetUi() {
   tracked = [];
   for (const id of ["existing", "similar", "result"]) { const n = $(id); n.hidden = true; n.innerHTML = ""; }
   $("form").hidden = true;
-  for (const id of ["f-name", "f-exact", "f-price", "f-size", "f-vendor"]) $(id).value = "";
+  for (const id of ["f-name", "f-exact", "f-price", "f-size", "f-vendor", "f-protein", "f-carbs", "f-fats", "f-fiber"]) {
+    $(id).value = "";
+  }
+  // The side panel re-renders on every navigation, so the previous product's panel note and its
+  // "read off the label" highlight must not carry over onto the next one.
+  $("f-macro-note").textContent = "";
+  $("f-macro-note").className = "muted";
+  document.querySelector(".macros")?.classList.remove("from-page");
   for (const id of ["f-category", "f-unit"]) {
     const s = $(id);
     while (s.lastElementChild && s.lastElementChild !== s.firstElementChild) s.removeChild(s.lastElementChild);
@@ -62,7 +85,38 @@ const formFields = (tab) => ({
   unitType: $("f-unit").value,
   vendor: $("f-vendor").value.trim(),
   url: tab.url,
+  // Per 100g. Sent as typed and parsed in the worker, like price and size — the four boxes are editable,
+  // so a figure corrected by hand must be the one that gets written.
+  protein: $("f-protein").value.trim(),
+  carbs: $("f-carbs").value.trim(),
+  fats: $("f-fats").value.trim(),
+  fiber: $("f-fiber").value.trim(),
 });
+
+/** True when the user (or the page) has put a figure in at least one macro box. */
+const hasMacros = () =>
+  ["f-protein", "f-carbs", "f-fats", "f-fiber"].some((id) => $(id).value.trim() !== "");
+
+/**
+ * Show the four figures the shop's own panel gave, ready to be edited or cleared.
+ *
+ * Filling these in is what stops the paid lookup from running at all — the page already answered, so
+ * spending 3 to 29 cents and up to 30 seconds asking a model the same question would be daft. Marked green and
+ * captioned with the serving it was scaled from, because "per 32 g serving, scaled to 100 g" is the one
+ * fact that says whether to trust the number: getting the serving wrong is the classic way a nutrition
+ * panel gets misread, and the user can check it against the packet in about a second.
+ */
+function fillMacrosFromPanel(panel) {
+  const set = (id, v) => { $(id).value = typeof v === "number" ? String(v) : ""; };
+  set("f-protein", panel.proteinPer100g);
+  set("f-carbs", panel.carbsPer100g);
+  set("f-fats", panel.fatsPer100g);
+  set("f-fiber", panel.fiberPer100g);
+  const note = $("f-macro-note");
+  note.className = "ok";
+  note.textContent = `✓ ${panel.basis}`;
+  document.querySelector(".macros")?.classList.add("from-page");
+}
 
 function showRow(container, row, headline) {
   container.hidden = false;
@@ -105,7 +159,16 @@ function finish(message, notionUrl) {
  * the exact product can't be found, but they're the ones worth a second look.
  */
 async function lookupMacros(box, pageId, fields, timeout) {
-  const line = el("div", { className: "muted", textContent: "Looking up nutrition (10–30s)…" });
+  // Two very different waits, so say which one this is. With the shop's back-of-pack photo attached the
+  // model reads the panel and stops — measured at 8s and 3 cents, against 54s and 29 cents for the
+  // text-only lookup that has to go and find the label on the web.
+  const shots = packShotsFor(shotQuery(fields.name, fields.exactName, fields.images));
+  const line = el("div", {
+    className: "muted",
+    textContent: shots.length
+      ? `Reading the nutrition panel off the pack photo${shots.length === 1 ? "" : "s"} (a few seconds)…`
+      : "Looking up nutrition (10–30s)…",
+  });
   box.append(line);
 
   let res;
@@ -324,13 +387,22 @@ export async function render(tab, alive = () => true) {
   if (!extracted && !viaApp) {
     setStatus("⚠️ Couldn't read this page — type the fields in below.", "error");
   }
+  // ⚠️ Spread order matters and `viaApp` must not blank a field it doesn't carry: the Meteor reader returns
+  // name/brand/price/size only, so `images` and `nutritionHtml` survive from `extracted`. Adding a key to
+  // `extractViaMeteor`'s return that it can't actually fill would silently wipe the FairPrice one.
   const data = { ...(extracted || { name: "", brand: "", priceText: "", sizeText: "" }), ...(viaApp || {}) };
 
   // Generic Name / exact name / category / size — derived in the worker so the popup and side panel can't
   // drift apart. Non-fatal: a failure just leaves the derived boxes blank for the user to fill.
-  let derived = { generic: "", exactName: "", category: "", size: null, unitType: "" };
+  let derived = { generic: "", exactName: "", category: "", size: null, unitType: "", panel: null };
   try {
-    derived = await send({ type: "derive", name: data.name, brand: data.brand, sizeText: data.sizeText });
+    derived = await send({
+      type: "derive",
+      name: data.name,
+      brand: data.brand,
+      sizeText: data.sizeText,
+      nutritionHtml: data.nutritionHtml,
+    });
   } catch { /* fall through with blanks */ }
   if (!alive()) return;
 
@@ -339,6 +411,18 @@ export async function render(tab, alive = () => true) {
   $("f-price").value = data.priceText || "";
   $("f-size").value = derived.size != null ? String(derived.size) : (data.sizeText || "");
   $("f-vendor").value = setup.vendor || "";
+
+  // The shop's own panel, when it published one. Left blank otherwise, and then Add looks the figures up —
+  // which is the common case for fresh meat and produce, where no panel exists to read.
+  if (derived.panel) {
+    fillMacrosFromPanel(derived.panel);
+  } else {
+    $("f-macro-note").textContent = !setup.macrosConfigured
+      ? "No panel on this page. Add a Claude API key in Options to look these up, or type them in."
+      : packShotsFor(shotQuery(derived.generic || data.name, derived.exactName || data.name, data.images)).length
+        ? "No panel on this page — these are read off the back-of-pack photo when you add."
+        : "No panel on this page — these are looked up when you add.";
+  }
 
   let options = { categories: [], unitTypes: [] };
   try { options = await send({ type: "field-options" }); } catch { /* dropdowns stay empty */ }
@@ -374,17 +458,34 @@ export async function render(tab, alive = () => true) {
       setStatus("Added ✓", "ok");
       const box = finish(`Added "${fields.name}" to Ingredients.`, res.created.notionUrl);
 
-      // The row is written and the user has their confirmation; the nutrition columns fill in behind it.
-      // Not awaited into the add's own error path — a failed lookup must never make a successful add look
-      // like it went wrong. 200s: past the worker's own 180s ceiling, so the timeout that reports is the
-      // one that actually knows why it gave up.
-      if (res.macrosConfigured) {
+      // Figures that were already in the boxes went in WITH the row — nothing more to do, and nothing to
+      // pay for. This is the whole point of reading the shop's panel at render time.
+      if (res.macrosFromForm) {
+        const w = res.created.macrosWritten || [];
+        box.append(el("div", {
+          className: "ok",
+          textContent: w.length ? `Nutrition written: ${w.join(", ")}.` : "Nutrition: nothing to write.",
+        }));
+        if (res.created.macrosSkipped?.length) {
+          box.append(el("div", { className: "muted", textContent: `Not written: ${res.created.macrosSkipped.join(", ")}` }));
+        }
+      }
+
+      // Otherwise the page had no panel and the boxes were left empty, so the figures get looked up and
+      // patched in behind the row. Not awaited into the add's own error path — a failed lookup must never
+      // make a successful add look like it went wrong. 200s: past the worker's own 180s ceiling, so the
+      // timeout that reports is the one that actually knows why it gave up.
+      if (res.needsLookup) {
         lookupMacros(box, res.created.id, {
           name: fields.name,
           exactName: fields.exactName,
           vendor: fields.vendor,
           url: fields.url,
           category: fields.category,
+          // Not a form field — these come off the page reading, not the boxes. Attaching the shop's back
+          // and side pack shots is what turns a 29-cent, 54-second lookup into a 3-cent, 8-second one, by
+          // letting the model read the label instead of hunting the web for it.
+          images: data.images || [],
         }, 200000);
       }
     } catch (err) {

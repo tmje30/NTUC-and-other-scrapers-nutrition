@@ -192,42 +192,46 @@ async function buildProps({ name, exactName, price, size, category, unitType, ve
   return out;
 }
 
-/** "Add to Ingredients" — create a new row. */
+/**
+ * "Add to Ingredients" — create a new row.
+ *
+ * `fields.macros` is optional and only set when the figures were already known at write time — read off
+ * the shop's own panel, or typed into the four boxes by hand. When it is absent the row is created without
+ * nutrition and the caller may follow up with a lookup + `writeMacros`.
+ */
 export async function createIngredient(fields) {
   const check = await setupCheck();
   if (!check.ok) throw new Error(check.problems.join(" "));
   if (!fields.name || !fields.name.trim()) throw new Error("A name is required.");
   const props = await getSchema();
   const properties = await buildProps(fields, props);
+  const macro = macroProperties(fields.macros, props);
   const page = await api("/pages", {
     method: "POST",
-    body: { parent: { type: "data_source_id", data_source_id: INGREDIENTS_DS }, properties },
+    body: {
+      parent: { type: "data_source_id", data_source_id: INGREDIENTS_DS },
+      properties: { ...properties, ...macro.properties },
+    },
   });
-  return { id: page.id, notionUrl: page.url };
+  return { id: page.id, notionUrl: page.url, macrosWritten: macro.written, macrosSkipped: macro.skipped };
 }
 
 /**
- * Fill in the four nutrition columns on a row just created by "Add to Ingredients".
+ * The four nutrition columns as Notion properties.
  *
- * A SEPARATE write from createIngredient on purpose. The lookup takes ten to thirty seconds (it reads the
- * product page and may search), and making the add wait on it would mean a spinner long enough for the
- * user to give up on a row that was otherwise ready to write. So the row lands first with price, size and
- * vendor, and the figures are patched in behind it. The Node side (src/core/macros.ts) writes them with
- * the row instead — there the caller is a workflow with no one watching a spinner.
+ * Shared by both write paths, because macros reach a row two different ways: read off the shop's own panel
+ * and written WITH the row (createIngredient), or looked up afterwards and patched in (writeMacros).
  *
- * Every column is independent and optional: a lookup that found protein and fat but not fibre writes the
- * two it has. A column missing from the schema is skipped with a note rather than failing the request —
+ * Every column is independent and optional — a source that gave protein and fat but not fibre writes the
+ * two it has. A column missing from the schema is skipped with a note rather than failing the request:
  * these four are deliberately NOT in REQUIRED_ING_PROPS, because a renamed nutrition column is no reason
  * for the extension to stop capturing prices.
  */
-export async function writeMacros(pageId, macros) {
-  if (!pageId) throw new Error("No row to write nutrition to.");
-  if (!macros) return { written: [], skipped: [] };
-  const props = await getSchema();
-
+function macroProperties(macros, props) {
   const properties = {};
   const written = [];
   const skipped = [];
+  if (!macros) return { properties, written, skipped };
   for (const [prop, value, label] of [
     [ING_MACRO_PROPS.PROTEIN, macros.proteinPer100g, "Protein"],
     [ING_MACRO_PROPS.FATS, macros.fatsPer100g, "Fat"],
@@ -239,6 +243,24 @@ export async function writeMacros(pageId, macros) {
     properties[prop] = { number: value };
     written.push(label);
   }
+  return { properties, written, skipped };
+}
+
+/**
+ * Fill in the four nutrition columns on a row that already exists.
+ *
+ * Used only when the figures had to be LOOKED UP — the shop published no panel, so the answer arrives ten
+ * to thirty seconds after the row was written. Making the add wait on that would mean a spinner long
+ * enough to give up on a row that was otherwise ready, so the row lands first and this patches it.
+ *
+ * When the page did carry a panel there is nothing to wait for, and the figures go in with the row via
+ * createIngredient instead — one write, no window where the row exists without its nutrition.
+ */
+export async function writeMacros(pageId, macros) {
+  if (!pageId) throw new Error("No row to write nutrition to.");
+  if (!macros) return { written: [], skipped: [] };
+  const props = await getSchema();
+  const { properties, written, skipped } = macroProperties(macros, props);
   if (!written.length) return { written, skipped };
 
   await api(`/pages/${pageId}`, { method: "PATCH", body: { properties } });
