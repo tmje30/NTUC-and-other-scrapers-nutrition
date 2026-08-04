@@ -86,6 +86,12 @@ function mapProduct(p: any): StoreProduct {
 		// without paying for a lookup. Each object here is already the product itself
 		// (see `collectProducts`), so there is no carousel to read the wrong one from.
 		nutritionHtml: typeof meta["Nutritional Data"] === "string" ? meta["Nutritional Data"] : null,
+		// Pack shots, straight out of the same search payload — measured 2026-08-04 on
+		// 10/10 products, at no extra request. These are what let a deals-page lookup
+		// read the label off the back of the pack (~$0.03) instead of hunting the web
+		// for it (~$0.29). Each object here is already the product itself, so there is
+		// no recommendations carousel to read the wrong one from.
+		images: Array.isArray(p.images) ? p.images.filter((u: unknown) => typeof u === "string" && u) : [],
 		raw: p,
 	};
 }

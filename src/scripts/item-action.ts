@@ -375,6 +375,11 @@ async function macrosFor(
 		// Same value, under the field `isCommodityFood` actually reads — fresh produce and raw
 		// meat skip the (measured) 40-50 cent search that only ever returns a generic figure.
 		categoryKey: categoryKey ?? undefined,
+		// The page already narrowed these to the label views; `lookupMacros` re-gates them
+		// anyway. Empty means a text-only lookup, exactly as this was before 2026-08-04 —
+		// which is what every deals-page lookup got, FairPrice included, until the pack
+		// shots were threaded through.
+		images: payload.images ?? [],
 	});
 }
 

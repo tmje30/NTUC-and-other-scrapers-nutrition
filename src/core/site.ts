@@ -4,6 +4,8 @@ import { suggestExclusionTerms } from "./exclusions.js";
 import { groceryRowTitle, type AddPayload } from "./grocery-list.js";
 import type { ActionPayload } from "./item-actions.js";
 import type { PlanTarget } from "./notion.js";
+import { categorize } from "./categorize.js";
+import { packShotsFor } from "./macro-prompt.js";
 import { parseNutritionPanel, type PanelMacros } from "./nutrition-panel.js";
 import type { StoreProduct } from "./stores/types.js";
 import { parseUnitCount, parseWeight } from "./stores/weight.js";
@@ -339,6 +341,17 @@ function ingredientPayload(
 		// Always serialised, always false. The toggle flips it in the browser — see
 		// `macroToggle` — and it must be present in the baked JSON for that to work.
 		findMacros: false,
+		// The back-of-pack shots, already narrowed to at most two and never the front.
+		// Only read when the toggle is on and the shop published no panel — but they
+		// are baked in regardless, because the page is static and cannot go and fetch
+		// them at the moment the user decides. Empty for a commodity food (the gate
+		// refuses photographs there) and for any shop we have no convention for.
+		images: packShotsFor({
+			product: p.name,
+			ingredientName: t.name,
+			categoryKey: categorize(t.name || p.name) ?? undefined,
+			images: p.images,
+		}),
 	};
 }
 

@@ -51,6 +51,20 @@ export interface StoreProduct {
 	 * slowdown. Sheng Siong publishes nothing readable and always leaves it unset.
 	 */
 	nutritionHtml?: string | null;
+	/**
+	 * The shop's own pack-shot URLs, in the order it publishes them — front first.
+	 *
+	 * Passed WHOLE, front included: `packShotsFor` in `macro-prompt.ts` is the one
+	 * place allowed to decide what a lookup may see, and it drops the front. Filtering
+	 * here would put that rule in two places, and the front-shot exclusion is the
+	 * entire gate that stops a pack with no panel being read as marketing copy.
+	 *
+	 * FairPrice fills this from its search payload (10/10 products carry an `images`
+	 * array — free, no extra request). Sheng Siong cannot yet: its search results give
+	 * `imgKey` but not `totalImg`, and without the count an index past the end returns
+	 * 403 and fails the whole lookup. See `shengsiong-images.ts` and Remaining work 20.
+	 */
+	images?: string[];
 	/** Original store payload, for debugging. */
 	raw?: unknown;
 }

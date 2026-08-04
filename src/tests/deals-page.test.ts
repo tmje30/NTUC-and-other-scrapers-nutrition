@@ -106,3 +106,59 @@ check("Replace asks before it fires", html.includes("data-confirm"));
 // ⚠️ The grocery button's machinery is still `add` even though its label is Buy.
 // Renaming the issue prefix would break the workflow's allowlist silently.
 check("the grocery issue prefix is still Add:", html.includes(encodeURIComponent("Add: ")) || html.includes("Add%3A"));
+
+/**
+ * Pack shots have to reach the payload, or the + Macros toggle buys the expensive
+ * lookup instead of the cheap one.
+ *
+ * This is a regression guard on a gap that existed and was missed: the deals page
+ * carried no images at all until 2026-08-04, so every armed lookup was text-only
+ * (~$0.29) even for FairPrice products whose back-of-pack shot was sitting in the
+ * search payload the whole time.
+ */
+describe("deals page — pack shots reach the payload");
+
+const M = "https://media.nedigital.sg/fairprice/fpol/media/images/product/XL";
+const withImages = renderDealsPage(
+	[
+		deal(
+			target({ name: "Instant Oats", search: { searchTerm: "oats", mustMatch: [], properties: [], keywords: [] } }),
+			product({
+				name: "Quaker Oats Instant Oatmeal",
+				nutritionHtml: null,
+				images: [`${M}/47440_XL1_20260327.jpg`, `${M}/47440_BXL1_20250411.jpg`, `${M}/11838626_LXL1_2024.jpg`],
+			}),
+			20,
+		),
+	],
+	[],
+	new Date(),
+	[],
+	{ repo: "tmje30/NTUC-and-other-scrapers-nutrition" },
+);
+
+check("the back shot is in the payload", withImages.includes("47440_BXL1_20250411.jpg"));
+check("the side shot is too", withImages.includes("11838626_LXL1_2024.jpg"));
+// ⚠️ The front must never be there. It is the marketing face, and sending it is
+// what produced the bogus 24.8 g protein reading on frozen chicken.
+check("the FRONT shot is not", !withImages.includes("47440_XL1_20260327.jpg"));
+
+// A commodity food is refused photographs entirely, even when the shop published them.
+const commodityPage = renderDealsPage(
+	[
+		deal(
+			target({ name: "Chicken Breast", search: { searchTerm: "chicken breast", mustMatch: [], properties: [], keywords: [] } }),
+			product({
+				name: "Kee Song Fresh Chicken - Boneless Breast",
+				nutritionHtml: null,
+				images: [`${M}/47440_XL1_20260327.jpg`, `${M}/47440_BXL1_20250411.jpg`],
+			}),
+			18,
+		),
+	],
+	[],
+	new Date(),
+	[],
+	{ repo: "tmje30/NTUC-and-other-scrapers-nutrition" },
+);
+check("a fresh commodity ships no photographs", !commodityPage.includes("_BXL1_"));

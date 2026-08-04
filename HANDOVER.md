@@ -940,14 +940,16 @@ panel, legible and carrying its own Per-100g column. `shengSiongPackShots` retur
     misleads a year from now. `hasMacros()` in `flow.js` is a third, older one.
 18. **Docs not yet caught up with the 2026-08-04 redesign:** `CHANGELOG.md` and
     `extension/README.md`. This file is current.
-20. **Sheng Siong pack shots reach the EXTENSION only.** The deals page cannot
-    build them: `imgKey` is in the search record but `totalImg` is not, and an
-    index past the end 403s. Two ways round it — a HEAD probe on index 1 at build
-    time (~30 cheap S3 requests a day, no WAF, self-correcting), or one
-    `getOneByIdOrSlug` per matched product during the scan (authoritative, but ~30
-    extra DDP calls on a connection already fighting Incapsula). The probe is the
-    lighter of the two.
-19. Two known extension quirks, neither a bug:
+19. **Sheng Siong pack shots reach the EXTENSION only.** FairPrice now reaches the
+    deals page as well — its search payload carries `images` on 10/10 products, so
+    the scan gets them free. Sheng Siong can't: `imgKey` is in its search record
+    but `totalImg` is not, and an index past the end returns 403, which fails the
+    whole lookup rather than being skipped. Two ways round it — a HEAD probe on
+    index 1 at build time (~15 cheap S3 requests a day, no WAF, self-correcting),
+    or one `getOneByIdOrSlug` per matched product during the scan (authoritative,
+    but ~15 extra DDP calls on a connection already fighting Incapsula). The probe
+    is the lighter of the two.
+20. Two known extension quirks, neither a bug:
     - A Sheng Siong egg carton reads `550 g / By Gram`, because they record the
       piece count in the NAME ("Fresh Eggs (10s)") and not in `packSize`. Switch
       the dropdown to `By Unit` by hand if you want it planned per egg.

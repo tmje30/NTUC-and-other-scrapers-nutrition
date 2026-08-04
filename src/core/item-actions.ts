@@ -118,6 +118,19 @@ export interface ActionPayload {
 	 * with the toggle on.
 	 */
 	findMacros?: boolean;
+	/**
+	 * Pack-shot URLs for the paid lookup, already narrowed by `packShotsFor` on the
+	 * page — so at most two, and never the front shot.
+	 *
+	 * Narrowed at build time rather than sent whole because this rides in a GitHub
+	 * issue body a human reads before submitting, and four URLs of ~95 characters is
+	 * noise in something meant to be checkable. The worker re-applies the same gate
+	 * anyway, so a hand-edited payload cannot smuggle a front shot back in.
+	 *
+	 * Only useful when `findMacros` is set: with free panel figures present nothing is
+	 * looked up, and with the toggle off nothing is looked up either.
+	 */
+	images?: string[];
 }
 
 const ACTIONS = new Set<ItemAction>([
@@ -234,6 +247,13 @@ export function parseActionPayload(raw: unknown): ActionPayload {
 		volumetric: Boolean(o.volumetric),
 		macros: freeMacros(o.macros),
 		findMacros: Boolean(o.findMacros),
+		// https only, deduped and capped. This arrives through an editable issue body,
+		// and an image URL is fetched by the Anthropic API on our behalf — so it is
+		// narrowed here as well as on the page. `packShotsFor` in the handler applies
+		// the view gate on top.
+		images: Array.isArray(o.images)
+			? [...new Set(o.images.filter((u: unknown) => typeof u === "string" && /^https:\/\//i.test(u)))].slice(0, 4)
+			: [],
 	};
 
 	// A block that can't recognise the product again would silently do nothing, so
