@@ -647,8 +647,9 @@ a user stops trusting the panel.
 
 ⚠️ **"Are there macros?" is the WORKER's answer, and the panel must not compute its own.** `macrosFrom()`
 in `background.js` runs each box through `macroOf()` (parse + the 0–100 g sanity gate) and returns null only
-if all four come back null; the reply carries that as `macrosFromForm` and `needsLookup`, and `flow.js`
-branches on those. A client-side "is any box non-empty?" check is not the same question — a box holding junk
+if all four come back null; the reply carries that as `macrosFromForm`, which is what `flow.js` branches on.
+(It also still returns `needsLookup`, which nothing reads any more — see Remaining work 17.)
+A client-side "is any box non-empty?" check is not the same question — a box holding junk
 reads as filled there and as empty in the worker, so the panel would promise a path the lookup won't take.
 One such helper was written and never wired up; it was deleted on 2026-08-04. Don't reintroduce it.
 
