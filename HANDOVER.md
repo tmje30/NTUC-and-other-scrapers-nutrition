@@ -532,8 +532,9 @@ renamed to Vendor. Full detail in `extension/README.md`; the essentials:
 
 - **Two writes, never automatic.** *Add to Ingredients* creates a row; *Replace With This* appears beside
   **each** similar existing row and repoints it at this product (asks first, showing before → after).
-- **The naming split:** `Name` gets the generic title, `Items Exact Name` the shop's full title + brand —
-  "Malaysia Round Cabbage" → `Name` "Round Cabbage". Done by `src/core/generic-name.ts`, deterministically.
+- **The naming split:** `Name` gets the generic title in the **user's bracket standard**, `Items Exact Name`
+  the shop's full title + brand, verbatim. Done by `src/core/generic-name.ts`, deterministically.
+  See "The bracket standard" below.
 - Also writes `Price,SGD`, `Weight /Units of New Product `, `Unit type `, `Catagory`, `Vendor, Current `
   and `Vendor 1 URL`.
 - **And the four per-100g nutrition columns** — read off the shop's panel where there is one, off its
@@ -574,6 +575,54 @@ itself as 12000 By Gram. See `extension/README.md`.
 
 The extension imports `src/core/` (match, generic-name, categorize, ingredients-schema) — shared, not
 copied. Nothing under `src/` imports from `extension/`; the sharing goes one way only.
+
+## The bracket standard — how an ingredient `Name` is written
+
+The user's own naming convention, read by `parseName` in `src/core/parse.ts`. **It
+applies to `Name` and nothing else** — `Items Exact Name` is never parsed, only
+written and displayed, and its job is provenance: what the shop actually called the
+thing.
+
+| | means | effect on the scan |
+| --- | --- | --- |
+| `[ ]` | brand | **never** part of the search text; a hard filter only when the row is tagged `Brand Specific` |
+| `( )` | defining property | a **hard requirement** — a candidate failing it is never published as a deal, only surfaced as a close match |
+| `{ }` | ignored | excluded from the search term **and** from every matching decision |
+
+Two special forms inside `( )`: `(not red)` is a hard exclusion, and
+`(Normal)`/`(Regular)`/`(Plain)` mean the basic range — identical to writing no
+property, but they switch on variant exclusion, so `Milk (Normal)` rejects
+low-fat / skimmed / flavoured / plant milk.
+
+⚠️ **A parenthetical that is only a pack size — `(600g)`, `(6 x 250ml)` — is a
+SIZE, not a property.** No shop prints your pack size, so treating it as a
+requirement matched nothing. This is also how a By-Unit item counted in slices gets
+a weight to be priced against.
+
+**The extension proposes this shape** (`structuredName`, added 2026-08-04):
+
+```
+"Skippy Peanut Butter Spread - Creamy"  →  Peanut Butter Spread [Skippy] {Creamy}
+"[BCRS] Farmhouse Milk - Fresh"         →  Milk [Farmhouse] {Fresh}
+```
+
+⚠️ **The variant goes in `{ }`, not `( )`, and that is deliberate.** `(Crunchy)`
+would reject every product whose title omits the word — including the smooth jar
+on offer this week that would have been a fine substitute. Braces keep the words
+visible without letting them silently kill matches. Promoting one to `( )` is a
+judgement only the user can make, so it stays a hand edit.
+
+⚠️ **Pre-existing brackets in a shop title are stripped first.** FairPrice really
+ships `"[BCRS] Farmhouse Milk - Fresh"`, and leaving it would have `parse.ts` read
+"BCRS" as the brand.
+
+⚠️ **`deriveGenericName` stays plain and is NOT the box value.** It feeds the
+category guess and the similar-rows search, both of which would match on
+punctuation; `find-similar` runs its input through `stripStructure` for the same
+reason — the brand in `[ ]` is precisely what must not drive a search.
+
+The split point is the shop's own dash (`Tuna Flakes - In Water`), the one
+separator FairPrice and Sheng Siong both use consistently.
 
 ## Nutrition, end to end (added 2026-08-04)
 
@@ -960,7 +1009,15 @@ panel, legible and carrying its own Per-100g column. `shengSiongPackShots` retur
     deals are chosen — a couple of dozen products, not the 1,100-odd the scan
     returns — deduped by key and wrapped so a failure can never stop the page
     building.
-20. Two known extension quirks, neither a bug:
+20. **`Household Supplies` is being searched, and probably should not be.**
+    `NON_GROCERY_CATEGORIES` in `notion.ts` is a DENY-list of exactly two
+    (`Suppliments`, `Filler`), so any new `Catagory` option is scanned by
+    default. The live options now include `Household Supplies` — priced per 100 g
+    and compared against food, which is not a meaningful comparison. One line adds
+    it; the user was asked on 2026-08-04 and had not yet answered.
+    ⚠️ The deny-list shape means this recurs every time a category is added.
+    Consider inverting it to an allow-list if the option set keeps growing.
+21. Two known extension quirks, neither a bug:
     - A Sheng Siong egg carton reads `550 g / By Gram`, because they record the
       piece count in the NAME ("Fresh Eggs (10s)") and not in `packSize`. Switch
       the dropdown to `By Unit` by hand if you want it planned per egg.
