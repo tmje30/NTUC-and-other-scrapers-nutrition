@@ -263,7 +263,87 @@ All notable changes to this project are documented here. Format based on
   rescans, redeploys Pages and re-sends the Telegram digest. Without a token it
   falls back to that workflow's own page, where *Run workflow* does the same.
 
+- **Add and Replace on every deal card** — the deals page can now write to the
+  **Ingredients** DB, not just the grocery List. *Add* files the discovered
+  product as a new row; *Replace* re-bases the ingredient that **seeded** the
+  search on it, writing `Name` (a generic name derived from the product),
+  `Price,SGD`, `Weight /Units of New Product `, `Unit type ` and
+  `Vendor, Current `. Both take the same road as every other card button — a
+  pre-filled GitHub issue, one tap when a token is saved — routed to
+  `item-actions.yml`, which needed no change (it gates on the `Item: ` title
+  prefix, not on the action).
+  New action `rebase-ingredient` + `rebaseIngredient()` in `ingredient-write.ts`.
+  ⚠️ **Not the same as the history page's `replace-ingredient`, and they must not
+  be merged**: that one does not rename and does write the URL; this one renames
+  and does not. The rename is load-bearing — a row's name IS the search term the
+  daily scan uses, so re-basing without it leaves the scan hunting for the thing
+  you just replaced. Confirmed before it fires; there is no undo.
+  ⚠️ `Unit type ` is written even though it isn't one of the four columns the
+  button advertises, and it has to be: re-base a 500 g item onto a 1 L bottle and
+  the size becomes 1000, but a stale `By Gram` then claims a kilogram of liquid
+  and every per-100g figure built on it is wrong.
+- **`has macro` / `no macro` tag** on each deal card, and it costs nothing.
+  Measured 2026-08-04: FairPrice's **search** payload carries `Nutritional Data`
+  on **34 of 72** products — the scraper already had it in `raw` and nobody had
+  looked. New `StoreProduct.nutritionHtml` carries it through, `site.ts` parses it
+  at build time, and the four figures ride in the Add/Replace payloads, so a card
+  marked `has macro` files its nutrition with **no page fetch, no model and no API
+  call**. Sheng Siong publishes nothing readable and always leaves it unset.
+- **`Find Macros` button in the Chrome extension** (`find-macros` worker handler),
+  which looks the figures up and hands them **back** rather than writing them. It
+  fills the four boxes *before* the row exists, so they arrive where you can read,
+  edit or clear them — and only then does Add write them, free. Shown only when a
+  lookup is possible: no free panel on the page, and a key set.
+
 ### Changed
+- **Nothing spends money unasked.** No button on any surface starts a paid
+  nutrition lookup on its own any more. Adding a row used to look macros up
+  automatically whenever the four boxes were empty, so an ordinary tap could
+  quietly spend up to 29 cents on figures nobody asked for and nobody read. Now
+  the deals page has a per-card **+ Macros** toggle (red when off, green and
+  reading `+ Macros` when on) and the extension has **Find Macros**; both default
+  to off. `macrosFor()` in `item-action.ts` is the one place that decides, and its
+  order is the whole cost story: the shop's free panel first, a paid lookup only
+  if the toggle was on, otherwise nothing.
+  ⚠️ The free panel is checked **before** the toggle, so a product whose shop
+  published a table costs nothing even with + Macros armed — the shop's own label
+  beats a model's answer.
+  ⚠️ The history page's "Add to Ingredients" still looks up automatically, by
+  passing `findMacros: true` explicitly. Deliberate: the default is now off
+  everywhere, and that one button opts back in because filing a purchase is a
+  one-off deliberate act on something already bought.
+  The flag travels on both roads out of the static page — `"findMacros":false` in
+  the one-tap JSON and the URL-encoded `"findMacros": false` in the two-tap issue
+  body — which is why `ingredientPayload` always serialises it even though it is
+  always false: a string replace can only rewrite a value that is actually there.
+- **Deal card restructured** to fit five controls on a phone. The text is now five
+  short rows rather than four long ones, and the right rail holds `−%`, `⋯`, a
+  one-line gap, then Add / Replace / Macros. That pairing is the trick: a floated
+  rail only costs text width while it is *taller* than the text beside it, so
+  splitting "item [size] price" across two lines makes the rail free. The usage
+  line `clear: both`s below it and gets the full card width back, which is where
+  the has/no-macro tag sits. ⚠️ Undo that split and every product name loses
+  ~80px on a 390px screen.
+- **The grocery-list button is labelled `Buy`, not `Add`** — because a second
+  button called Add now sits on the same card and writes to a different database.
+  ⚠️ **Only the label changed.** The CSS class, `AddPayload`, the `grocery-add`
+  label, the `Add: ` title prefix the workflow's allowlist matches and
+  `add-to-list.yml` are all still `add`; renaming those would have broken every
+  in-flight issue for nothing.
+- **The plan is now whatever you tag `Main`.** `readGroceryTargets()` builds it
+  from Meal prep's `Current Plan` = "Main" meals — their sub-item lines'
+  ingredients, `Amount Used ` summed per ingredient, monthly = daily × 20 —
+  instead of the Ingredients `Used 'N' Plan` formula chosen by
+  `ACTIVE_PLAN_NUMBER`. Re-tagging meals in Notion now changes what gets scanned;
+  the env var didn't. Same ingredients either way (verified: 33/33 monthly
+  amounts identical), plus 2 items whose `Amount Used ` is blank and which used
+  to land in "other items". No fallback: nothing tagged `Main` means an empty
+  plan section, logged.
+
+### Removed
+- `ACTIVE_PLAN_NUMBER` — the plan is the `Main` tag, so the env var no longer
+  selects anything. Dropped from `config.ts`, `.github/workflows/daily.yml` and
+  `.env.example`, along with the never-read `ACTIVE_PLAN` entry beside it.
 - Deal/close-match cards restructured: the percentage column is now a `float`
   inside a `.main` block, a sibling of the product link rather than nested in it
   — a control inside an `<a>` is invalid and untappable. Floating (rather than a

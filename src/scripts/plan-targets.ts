@@ -1,11 +1,10 @@
 import { readGroceryTargets } from "../core/notion.js";
-import { config } from "../core/config.js";
 
 /** Print the resolved active-plan grocery targets (the v1 "shopping list"). */
 
 const targets = (await readGroceryTargets()).filter((t) => t.inActivePlan);
 
-console.log(`Active plan: '${config.activePlanNumber()}'  →  ${targets.length} grocery targets\n`);
+console.log(`Main plan  →  ${targets.length} grocery targets\n`);
 for (const t of targets) {
 	const base =
 		t.unitType === "By Gram"

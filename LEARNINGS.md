@@ -2,6 +2,61 @@
 
 Running log of decisions, gotchas, and non-obvious facts. Newest on top.
 
+## 2026-08-04 — `Current Plan` became a formula; still not the plan switch
+
+The user moved Meal prep's `Current Plan ` from a select to a **formula** (string)
+of the same name. Re-introspected rather than assumed: it now returns `"Main"` on
+5 of 125 rows — exactly the rows with checkbox `1` ticked, i.e. the same 5 rows
+the old select tagged. Those rows are meal-level parents (`[All] Cold Brew Tea`,
+`[All] Supplements`, `1 Ice Coffee (Protein) + yolk`, `1/ 2.Lunch/ Omelet + tofu`,
+`1 BreakFast - Oat Meal `; each has sub-items, no `Ingredients` relation, no
+`Amount Used `).
+
+So the column marks *which meals are in plan 1*, not *which plan is current* —
+it carries no plan number and no ingredient rows, and nothing downstream reads
+it directly.
+
+**But Main and plan 1 are the same set, one level apart** (measured, corrects the
+2026-07-27 entry below): the 5 Main meals have 37 sub-items; exactly 37 rows have
+`Formula '1'` non-empty; the two sets are **identical** (0 rows in either
+direction). Those 37 lines reference 35 distinct Ingredients, which is what
+populates `Used '1' Plan` (the earlier "~33 ingredients, so Main doesn't drive
+it" reasoning compared parents against children and drew the wrong conclusion).
+
+**So the switch now reads the tag** (reverses the 2026-07-27 decision). The user
+wants Main to *be* the plan, and since the two agree today, moving to it changes
+no numbers but makes retagging in Notion actually work — which
+`ACTIVE_PLAN_NUMBER` never did. `readMainPlanUsage()` walks Main parents →
+`Sub-item` lines → `Ingredients`, summing `Amount Used ` per ingredient;
+monthly = daily × 20. Packs and cost are recomputed from the row's own pack
+rather than parsed, which drops the formula's display rounding (rice: 0.36 packs,
+not the "0.4Pk" the formula prints).
+
+Measured before switching, so the change was known to be safe:
+
+| check | result |
+| --- | --- |
+| monthly amount vs `Used '1' Plan` | 33/33 identical |
+| plan ingredients after all filters | 24 → 26 |
+| gained | `blachan[Taho]`, `Instant Coffee (plain)` |
+| lost | none |
+
+The 2 gains are lines with a blank `Amount Used ` (usage 0). `Used '1' Plan` is
+empty for them so they used to fall into "other items"; they're food in a Main
+meal, so they now sit in the plan section at 0/month. Deliberate.
+
+**No fallback** (user's call, and the right one): nothing tagged `Main` = empty
+plan section, logged and left blank. A fallback to `Used 'N' Plan` would have
+kept publishing a stale plan from a column the user no longer edits, and the page
+would have looked perfectly fine while doing it. `ACTIVE_PLAN_NUMBER` is deleted
+— from `config.ts`, `daily.yml`, and `.env.example` (which also carried a dead
+`ACTIVE_PLAN=Plan 1.8k` nothing ever read).
+
+Since an empty plan is now a real outcome rather than a caught one, the tag is
+read defensively: `propByName` + `planTagText` tolerate case, trailing spaces
+(`"Current Plan "`), and select vs formula vs rich text — this column has already
+changed shape once, and a rename must not silently blank the plan.
+
 ## 2026-08-03 — FairPrice's JSON-LD is broken on EVERY product, and the fix was to stop using it
 
 Three separate "the price is blank / wrong" reports from the extension, each
@@ -440,6 +495,12 @@ Meal prep's `Formula '1'/'2'/'3'` columns (="✅" when a line is in that plan),
 independent of both `Current Plan` and the 1/2/3 checkboxes. Proof: `Current Plan
 = Main` matches exactly the 5 checkbox-"1" rows, yet ~33 ingredients have a
 populated `Used '1' Plan` — so neither Main nor the checkboxes drive it.
+
+> **Superseded 2026-08-04** — that last inference was wrong. The 5 Main rows are
+> *parent meals*; `Formula '1'` is set on their *children*. Measured, the two
+> sets are identical (5 Main meals → 37 sub-items = the 37 `Formula '1'` rows →
+> 35 Ingredients). Main and plan 1 describe the same food. The decision below is
+> still right, for the different reason given in the 2026-08-04 entry.
 
 Decision: read the already-correct `Used 'N' Plan` string directly (PRD's original
 plan), N from `ACTIVE_PLAN_NUMBER` (default "1"). Plan 1 → 27 grocery targets.

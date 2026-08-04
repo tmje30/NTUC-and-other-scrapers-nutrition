@@ -44,7 +44,7 @@ const warning = (() => {
 })();
 const total = planDeals.length + otherDeals.length;
 console.error(
-	`Plan '${config.activePlanNumber()}': ${targetsConsidered} targets → ${planDeals.length} plan + ${otherDeals.length} other deals` +
+	`Main plan: ${targetsConsidered} targets → ${planDeals.length} plan + ${otherDeals.length} other deals` +
 		(errors.length ? `, ${errors.length} store errors` : ""),
 );
 if (snoozed.length) {

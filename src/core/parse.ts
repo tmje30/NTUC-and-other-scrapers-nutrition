@@ -7,6 +7,11 @@ import { normSynonyms } from "./match.js";
  *  2. "Used 'N' Plan" formula string → monthly usage (amount, packs, cost).
  *
  * Formats verified against live Notion data (see LEARNINGS 2026-07-27).
+ *
+ * (2) is no longer on the scan's path: since 2026-08-04 usage is summed from the
+ * `Main`-tagged meals in Meal prep (`readMainPlanUsage`), not read off this
+ * formula. It stays because `Used 'N' Plan` is still the figure shown IN Notion,
+ * and `npm run test-parse` is how you check the two agree.
  */
 
 /**

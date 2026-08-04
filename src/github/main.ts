@@ -16,7 +16,7 @@ const dryRun = process.argv.includes("--dry-run") || process.env.DRY_RUN === "1"
 const { planDeals, otherDeals, targetsConsidered, recommendations, errors } = await runOnce();
 const total = planDeals.length + otherDeals.length;
 console.error(
-	`Plan '${config.activePlanNumber()}': ${targetsConsidered} targets → ${planDeals.length} plan + ${otherDeals.length} other deals` +
+	`Main plan: ${targetsConsidered} targets → ${planDeals.length} plan + ${otherDeals.length} other deals` +
 		(recommendations.length ? `, ${recommendations.length} close matches` : "") +
 		(errors.length ? `, ${errors.length} store errors` : ""),
 );

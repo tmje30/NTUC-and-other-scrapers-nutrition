@@ -48,7 +48,6 @@ jobs:
         run: npm run build-site
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
-          ACTIVE_PLAN_NUMBER: ${{ vars.ACTIVE_PLAN_NUMBER || '1' }}
 
       - uses: actions/configure-pages@v6
 

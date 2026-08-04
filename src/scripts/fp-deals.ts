@@ -1,7 +1,6 @@
 import { readGroceryTargets } from "../core/notion.js";
 import { fairprice } from "../core/stores/fairprice.js";
 import { findDeal } from "../core/compare.js";
-import { config } from "../core/config.js";
 
 /** End-to-end (FairPrice only): plan targets → search → deals. */
 
@@ -12,7 +11,7 @@ const targets = (await readGroceryTargets()).filter((t) => t.inActivePlan);
 const comparable = targets.filter((t) => t.baselinePer100g != null || t.baselinePerUnit != null);
 
 console.log(
-	`Plan '${config.activePlanNumber()}': ${targets.length} targets, ${comparable.length} comparable. Searching FairPrice…\n`,
+	`Main plan: ${targets.length} targets, ${comparable.length} comparable. Searching FairPrice…\n`,
 );
 
 const deals = [];

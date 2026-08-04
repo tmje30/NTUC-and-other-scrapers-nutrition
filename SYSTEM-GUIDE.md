@@ -35,9 +35,11 @@ you — you only ever maintain your ingredient list in Notion.
 - **"How do I stop watching an item, or fix a bad match?"** Remove or rename it
   in Notion. If a search brings back the wrong thing (e.g. "Butter" matching
   "Peanut Butter"), renaming the ingredient to be more specific fixes it.
-- **"How do I switch which meal plan is active?"** Set the `ACTIVE_PLAN_NUMBER`
-  environment variable to `1`, `2`, or `3` (default `1`). That chooses which
-  `Used 'N' Plan` column in Notion drives the "In your plan" section.
+- **"How do I switch which meal plan is active?"** In Notion, tag the meals you
+  want as `Main` in Meal prep's `Current Plan` column. The plan is every
+  ingredient on those meals' sub-item lines, and the next scan picks the change
+  up — nothing to configure. Tag nothing and the plan is empty: the scan still
+  runs and everything appears under "other items on offer".
 - **"Which store is cheaper?"** Each deal card names the store and product, so
   the page is also a quick cross-store price check for the things you buy.
 
@@ -88,8 +90,10 @@ All commands run from the repo root and read secrets from `.env` (see Setup).
 - **What it does:** reads the whole grocery inventory from the Notion Ingredients
   data source and returns one `PlanTarget` per item, each flagged `inActivePlan`
   and carrying its monthly usage.
-- **Inputs:** `NOTION_TOKEN`; `ACTIVE_PLAN_NUMBER` (picks the `Used 'N' Plan`
-  column). Queries Notion data source `34b69a18-4fe7-80e6-904e-000b208cf560`.
+- **Inputs:** `NOTION_TOKEN`. Queries Notion data sources
+  `34b69a18-4fe7-80e6-904e-000b208cf560` (Ingredients) and
+  `34b69a18-4fe7-8086-83fa-000b24c37d2b` (Meal prep). The plan itself is not
+  configurable — it is the `Main` tag.
 - **Key detail:** uses the Notion SDK **v5** `dataSources.query` (not
   `databases.query`). Skips the `Suppliments` and `Filler` categories. Notion
   property names contain real typos/trailing spaces and must be matched exactly:
@@ -193,7 +197,9 @@ product that previously scored too low. Adding `szechuan → sze chuan` lifted a
 After adding an entry, re-run the affected item and check what else moved.
 - `parseMonthlyUsage(usedPlan)` → monthly `{ amount, unit, packs, costSgd }` by
   parsing the `Used 'N' Plan` formula string Notion already computed; returns
-  `null` when the item isn't in that plan.
+  `null` when the item isn't in that plan. **No longer used by the scan** (since
+  2026-08-04 usage is summed from the `Main`-tagged meals); kept for
+  `npm run test-parse`, which is how that formula gets read when checking Notion.
 
 ### Store modules (the `StoreModule` interface)
 
@@ -308,8 +314,6 @@ secrets in the cloud — names only here, never values):
   list. Must have access to the Ingredients database.
 - **`TELEGRAM_BOT_TOKEN`**, **`TELEGRAM_CHAT_ID`** — the bot (reuses the user's
   `@Big_Notion_Bot`) and destination chat for the daily message.
-- **`ACTIVE_PLAN_NUMBER`** — `1`/`2`/`3`, which meal plan drives the plan section
-  (default `1`).
 - **`SITE_URL`** — public URL of the Pages page (defaults to the live URL);
   used in the Telegram message.
 - **`SHENGSIONG_LIVE`** — set to `1` to force the live Sheng Siong scan instead
@@ -331,8 +335,9 @@ the scheduled task above; GitHub Pages must be enabled for the repo.
   Notion; the number a store must beat to count as a deal.
 - **By-Gram / By-Unit** — whether an ingredient is measured by weight or by count
   (eggs). Only By-Gram items are compared in this version.
-- **Active plan** — the meal plan (`Used '1'/'2'/'3' Plan`) selected by
-  `ACTIVE_PLAN_NUMBER`; its items form the "In your plan" section.
+- **Active plan** — the meals tagged `Main` in Meal prep's `Current Plan`
+  column; the ingredients on their sub-item lines form the "In your plan"
+  section.
 - **DDP** — the WebSocket-based protocol (from the Meteor framework) that Sheng
   Siong's website uses; the live Sheng Siong module speaks it directly.
 - **Residential vs data-centre IP** — a home/mobile internet address vs a cloud

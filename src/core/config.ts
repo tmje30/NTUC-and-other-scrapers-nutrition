@@ -24,8 +24,6 @@ export const config = {
 	notionToken: () => required("NOTION_TOKEN"),
 	ingredientsDbId: () => optional("INGREDIENTS_DB_ID"),
 	mealPrepDbId: () => optional("MEAL_PREP_DB_ID"),
-	/** Which "Used 'N' Plan" column drives the alerts: "1" | "2" | "3". */
-	activePlanNumber: () => optional("ACTIVE_PLAN_NUMBER", "1"),
 	telegramBotToken: () => required("TELEGRAM_BOT_TOKEN"),
 	telegramChatId: () => required("TELEGRAM_CHAT_ID"),
 	/** Public URL of the deployed GitHub Pages deals page. */

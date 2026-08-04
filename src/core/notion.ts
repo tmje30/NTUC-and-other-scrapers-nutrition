@@ -1,19 +1,23 @@
 import { Client } from "@notionhq/client";
 import { config } from "./config.js";
-import { parseName, parseMonthlyUsage, type ParsedName } from "./parse.js";
+import { parseName, type ParsedName } from "./parse.js";
 
 /**
  * Reads the Ingredients data and resolves the "active plan" grocery targets the
  * scraper should search for.
  *
- * Plan membership + monthly usage come straight from the already-computed
- * `Used 'N' Plan` formula string on each ingredient (PRD: parse it, don't
- * recompute). N is set by config (ACTIVE_PLAN_NUMBER, default "1"). An empty
- * `Used 'N' Plan` means the ingredient isn't in plan N.
+ * **The plan is whatever you tag `Main`.** In Meal prep, marking a meal's
+ * `Current Plan` as "Main" puts that meal in the plan; the plan's ingredients
+ * are the ingredients of those meals' sub-item lines, and each one's daily usage
+ * is the sum of the `Amount Used ` on the lines that reference it. Monthly =
+ * daily × 20, the same 20-day month the DB's own `Monthly[20]` figure uses.
  *
- * NOTE: the `Current Plan` select the user added to Meal prep is NOT yet wired
- * into these formulas (only 5 rows tagged, no formula reads it), so we don't use
- * it for v1. See LEARNINGS 2026-07-27.
+ * That makes the tag the switch, and the only one: re-tag your meals in Notion
+ * and the next scan follows, with no config to change. Tag nothing and the plan
+ * is empty — there is no second source to fall back on. Before 2026-08-04 this
+ * read the Ingredients `Used 'N' Plan` formula with N from `ACTIVE_PLAN_NUMBER`
+ * instead: the same ingredients by a longer route (the Main meals' lines ARE the
+ * `Formula 'N'` lines), but retagging did nothing. Both are gone.
  *
  * Notion SDK v5: query via dataSources.query (see LEARNINGS 2026-07-27).
  */
@@ -24,6 +28,39 @@ import { parseName, parseMonthlyUsage, type ParsedName } from "./parse.js";
 // (it would pull @notionhq/client into the browser bundle).
 export { INGREDIENTS_DS } from "./ingredients-schema.js";
 import { INGREDIENTS_DS } from "./ingredients-schema.js";
+
+/**
+ * Meal prep data source — the meal side of the plan. Not in
+ * `ingredients-schema.ts` because the extension never touches it; only the plan
+ * reader below does.
+ */
+export const MEAL_PREP_DS = "34b69a18-4fe7-8086-83fa-000b24c37d2b";
+
+/**
+ * The Meal prep column saying a meal is part of the plan being eaten now, and
+ * the value that means yes.
+ *
+ * Looked up through `propByName`/`normTag` rather than by exact key because this
+ * column has already changed shape once: it was a select until 2026-08-04 and is
+ * now a string formula, and its Notion name carries a trailing space
+ * (`"Current Plan "`). Neither a re-typed name nor another select→formula flip
+ * should quietly empty the plan — see `planTagText`.
+ */
+const CURRENT_PLAN_PROP = "Current Plan";
+const MAIN_VALUE = "Main";
+
+/** Sub-item line properties the plan is built from. */
+const SUB_ITEM_PROP = "Sub-item";
+const LINE_INGREDIENTS_PROP = "Ingredients";
+const LINE_AMOUNT_PROP = "Amount Used";
+
+/**
+ * Days of the plan in a month. Meal prep costs a plan over 20 days, not 30 —
+ * `Used 'N' Plan` renders "Monthly[20]" — so daily × 20 is what reproduces the
+ * DB's own monthly figures. Verified 2026-08-04: for all 33 plan ingredients
+ * that carry a `Used '1' Plan` value, daily × 20 equals it exactly.
+ */
+const PLAN_DAYS_PER_MONTH = 20;
 
 /**
  * The multi-select carrying an ingredient's search flags, and the one tag that
@@ -150,6 +187,36 @@ function formulaString(p: any): string {
 function richText(p: any): string {
 	return (p?.rich_text ?? []).map((r: any) => r.plain_text).join("").trim();
 }
+function relationIds(p: any): string[] {
+	return (p?.relation ?? []).map((r: any) => r.id).filter(Boolean);
+}
+
+/**
+ * Look a property up by name, ignoring case and stray spacing. Notion matches
+ * keys exactly, and this schema is full of trailing spaces — see
+ * `ingredients-schema.ts`. Used only where a rename would silently produce an
+ * EMPTY result rather than an error (the plan tag), never where a wrong guess
+ * could write to the wrong column.
+ */
+function propByName(props: Record<string, any>, name: string): any {
+	const want = normTag(name);
+	for (const [key, value] of Object.entries(props ?? {})) {
+		if (normTag(key) === want) return value;
+	}
+	return undefined;
+}
+
+/**
+ * Read a tag that may be stored as a select, a formula string, or plain text.
+ * `Current Plan` has been two of those three already; which one it is says
+ * nothing about what the user meant by it.
+ */
+function planTagText(p: any): string {
+	if (p?.type === "select") return p.select?.name ?? "";
+	if (p?.type === "formula") return formulaString(p);
+	if (p?.type === "rich_text") return richText(p);
+	return "";
+}
 
 async function queryAll(client: Client, dataSourceId: string): Promise<any[]> {
 	const out: any[] = [];
@@ -224,6 +291,61 @@ export async function readParkedIngredients(client: Client): Promise<ParkedIngre
 	return out.sort((a, b) => a.name.localeCompare(b.name));
 }
 
+/** How much of one ingredient the Main-tagged meals get through. */
+export interface PlanUsage {
+	/** Sum of `Amount Used ` across the plan's lines that name this ingredient. */
+	dailyAmount: number;
+	/** `dailyAmount × PLAN_DAYS_PER_MONTH`. */
+	monthlyAmount: number;
+}
+
+/**
+ * The plan, read from the meals you tagged `Main`: ingredient id → usage.
+ *
+ * Meal prep is two levels — a parent row per meal ("1 BreakFast - Oat Meal"),
+ * and under it one sub-item line per ingredient carrying `Amount Used `. The tag
+ * sits on the PARENT, so the plan is every line under every Main-tagged meal.
+ * An ingredient used in two meals gets both lines summed, which is why this
+ * returns a map built by addition rather than a lookup.
+ *
+ * Lines with no `Amount Used ` count as 0 — in the plan, quantity unstated.
+ * They stay in the map deliberately: they're food you're buying, so they belong
+ * in the plan section of the page even though nothing can be said about how much
+ * you get through (2 such lines on 2026-08-04).
+ *
+ * An empty map means nothing is tagged `Main` at all — see `readGroceryTargets`,
+ * which treats that as "tag missing", not "plan empty".
+ */
+export async function readMainPlanUsage(client: Client): Promise<Map<string, PlanUsage>> {
+	const rows = await queryAll(client, MEAL_PREP_DS);
+	const byId = new Map<string, any>(rows.map((r) => [r.id, r]));
+
+	// The tagged meals' lines. A Set because two Main meals could name the same
+	// line, and a line must not be counted twice.
+	const lineIds = new Set<string>();
+	for (const row of rows) {
+		const tag = planTagText(propByName(row.properties, CURRENT_PLAN_PROP));
+		if (normTag(tag) !== normTag(MAIN_VALUE)) continue;
+		for (const id of relationIds(propByName(row.properties, SUB_ITEM_PROP))) lineIds.add(id);
+	}
+
+	const usage = new Map<string, PlanUsage>();
+	for (const id of lineIds) {
+		const line = byId.get(id);
+		if (!line) continue; // sub-item outside this data source
+		const amount = numberOf(propByName(line.properties, LINE_AMOUNT_PROP)) ?? 0;
+		for (const ingredientId of relationIds(propByName(line.properties, LINE_INGREDIENTS_PROP))) {
+			const prev = usage.get(ingredientId)?.dailyAmount ?? 0;
+			const dailyAmount = prev + amount;
+			usage.set(ingredientId, {
+				dailyAmount,
+				monthlyAmount: dailyAmount * PLAN_DAYS_PER_MONTH,
+			});
+		}
+	}
+	return usage;
+}
+
 /**
  * All grocery ingredients with a comparable baseline — the whole inventory, not
  * just the active plan. Each is flagged `inActivePlan` and carries monthly usage
@@ -231,9 +353,21 @@ export async function readParkedIngredients(client: Client): Promise<ParkedIngre
  */
 export async function readGroceryTargets(): Promise<PlanTarget[]> {
 	const client = new Client({ auth: config.notionToken() });
-	const planKey = `Used '${config.activePlanNumber()}' Plan`;
 
-	const ingredients = await queryAll(client, INGREDIENTS_DS);
+	const [ingredients, mainUsage] = await Promise.all([
+		queryAll(client, INGREDIENTS_DS),
+		readMainPlanUsage(client),
+	]);
+
+	// No tag, no plan. Nothing tagged `Main` means an empty plan section — the
+	// scan still runs and every item lands under "other items on offer". There is
+	// deliberately no second source to fall back on: the tag IS the plan, and a
+	// fallback would keep publishing a stale plan while the page looked fine.
+	if (mainUsage.size === 0) {
+		console.error(
+			`No Meal prep meal is tagged '${MAIN_VALUE}' in '${CURRENT_PLAN_PROP}' — plan section will be empty.`,
+		);
+	}
 
 	const targets: PlanTarget[] = [];
 	for (const row of ingredients) {
@@ -270,11 +404,24 @@ export async function readGroceryTargets(): Promise<PlanTarget[]> {
 				: null;
 		const baselinePerUnit = unitType === "By Unit" ? packPriceSgd / packSize : null;
 
-		// Monthly usage from the Used 'N' Plan formula — null when not in the plan.
 		// By-ml rows render the monthly line without a unit, so the row's own
 		// `Unit type ` supplies it (see parseMonthlyUsage).
 		const impliedUnit = unitType === "By Unit" ? "x" : unitType === "By ml" ? "ml" : "g";
-		const usage = parseMonthlyUsage(formulaString(p[planKey]), impliedUnit);
+
+		// Monthly usage — null when the ingredient is in no Main-tagged meal.
+		// Packs and cost are computed from the pack this row describes rather than
+		// read off Notion's `Used 'N' Plan` formula: the same numbers, minus that
+		// formula's display rounding (it shows packs to 1 dp, so 0.36 packs of
+		// rice printed as "0.4Pk").
+		const main = mainUsage.get(row.id);
+		const usage = main
+			? {
+					amount: main.monthlyAmount,
+					unit: impliedUnit,
+					packs: main.monthlyAmount / packSize,
+					costSgd: (main.monthlyAmount / packSize) * packPriceSgd,
+				}
+			: null;
 
 		// Usage in grams: a By-Unit row's plan figure is a piece count, so it's
 		// converted at the pack's own grams-per-piece (600g ÷ 20 slices = 30g each).

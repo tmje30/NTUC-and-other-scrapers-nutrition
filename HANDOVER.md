@@ -9,11 +9,19 @@ two comparison dimensions, and — for the Chrome extension — the fact that
 FairPrice's JSON-LD is invalid on **every** product while Sheng Siong publishes
 no readable data at all.*
 
-*If you are picking this up to continue the nutrition work, skip to **"Next
-session — pick up here"**. Short version: the three-item plan is finished — #1
-(pack-shot images) and #3 shipped, #2 was measured and rejected. **What's left is
-using it for real**: neither the extension nor the nutrition lookup has yet been
-run in anger by a human on an actual shopping trip.*
+*If you are picking this up, skip to **"Next session — pick up here"** first —
+**there is uncommitted work in the tree, including some from a different session
+than the one that wrote this**, and you need to know that before you stage
+anything.*
+
+*Short version of where things are: the three-item macro plan is finished (#1
+pack-shot images and #3 shipped, #2 measured and rejected), and on 2026-08-04 the
+deal card was redesigned around one rule — **nothing spends money unasked**.
+Adding a row no longer looks nutrition up on its own anywhere; a per-card
+**+ Macros** toggle and the extension's **Find Macros** button are the only ways
+to start a paid lookup. **What's left is using it for real**: none of the new
+buttons, the extension, or the nutrition lookup has yet been pressed in anger by a
+human on an actual shopping trip.*
 
 ## TL;DR
 
@@ -32,6 +40,12 @@ There is a second, **manual** way in: the **Chrome extension** in `extension/`
 straight into the Ingredients DB — either as a new row or over an existing one.
 Unlike the daily job it writes to **Ingredients**, not the grocery List, and it
 only ever acts on a button press. See its section below.
+
+Since 2026-08-04 the **deals page can write to Ingredients too**: each card's
+**Add** files the discovered product as a new row, and **Replace** re-bases the
+ingredient that seeded the search on it. So there are now three doors into
+Ingredients — the extension, the history page and the deals page — and they share
+`src/core/ingredient-write.ts` rather than each having their own.
 
 ⚠️ **Changed 2026-07-30:** Incapsula now challenges *residential* IPs too, not
 just datacenter ones. The runner therefore needs **Google Chrome installed** — it
@@ -171,10 +185,18 @@ laptop now covers the runner role, this is optional. To finish later:
 
 ## Add to grocery list (+ cooldowns)
 
-Each deal card has an **Add** button on the left. The page is static, so it
-can't hold a Notion token: Add opens a **pre-filled GitHub issue** ("Add: [NTUC]
+Each deal card has a **Buy** button on the left. The page is static, so it
+can't hold a Notion token: Buy opens a **pre-filled GitHub issue** ("Add: [NTUC]
 Milk", payload in a ```json block), you tap Submit, and
 `.github/workflows/add-to-list.yml` does the privileged half —
+
+⚠️ **It was called "Add" until 2026-08-04, and only the LABEL changed.** The CSS
+class, the `AddPayload`, the `grocery-add` issue label, the `Add: ` title prefix
+the workflow's allowlist matches, and `add-to-list.yml` itself are all still
+`add`. It was renamed on the page because a second button called **Add** now sits
+on the same card and writes to **Ingredients** instead — two buttons saying "Add"
+that hit different databases is exactly the mis-tap worth a rename. Renaming the
+machinery too would have broken every in-flight issue for nothing, so don't.
 
 1. writes the row to the Notion **grocery List** DB: Name `[NTUC] Milk`,
    `Price , To Buy ` = the discounted price, `Current Price ` = what you pay for
@@ -317,6 +339,78 @@ already-ignored product is a no-op.
 ⚠️ There is no button that undoes it. Coming back means deleting the entry from
 `data/exclusions.json` — hence the confirm dialog, which no other correction has
 except *Not in use*.
+
+### The deal card, as it now stands (redesigned 2026-08-04)
+
+The card grew from "here is a cheaper price, want it on the list?" to "…and is
+this what the ingredient should BE?". Five controls, in two groups:
+
+```
+[Buy]     Peanut Butter, Smooth                          −31%
+[Ignore]  [500g] Price $8.20                               ⋯
+          FairPrice · Skippy Peanut Butter Spread        [Add]
+          [500g] $5.65 on sale (−15%)                [Replace]
+          $11.30/kg vs $16.40/kg                     [Macros]
+          uses ~400g/month                      has macro
+```
+
+- **Buy** / **Ignore** — left column, unchanged in meaning. Buy is the one button
+  pressed on purpose; Ignore is the one with no undo. Neither belongs beside the
+  three quieter controls, which is why they stay in their own column.
+- **Add** — file today's match into **Ingredients** as a NEW row.
+- **Replace** — re-base the ingredient that *seeded* this search on today's match.
+  Writes `Name` (a generic name derived from the product), `Price,SGD`,
+  `Weight /Units of New Product `, `Unit type ` and `Vendor, Current `.
+  Confirmed first; there is no undo.
+- **Macros** — a per-card toggle, red when off, green and reading `+ Macros` when
+  on. See "Nothing spends money unasked" below.
+- **has macro / no macro** — on the usage line: whether this listing's nutrition
+  is free to file.
+
+⚠️ **Why the text is five short rows and not four long ones.** The three new
+controls needed somewhere to live, and a floated rail only costs text width while
+it is *taller* than the text beside it. Splitting "item [size] price" across two
+lines makes rail and text the same height, so the rail is free — and the usage
+line, which `clear: both`s below it, gets the full card width back. Undo that
+split and every product name loses ~80px on a phone.
+
+⚠️ **`Unit type ` is written by Replace even though it isn't in the four columns
+the button advertises**, and it has to be: re-base a 500 g item onto a 1 L bottle
+and the size column becomes 1000, but a stale `By Gram` then claims a kilogram of
+liquid and every per-100g figure built on it is wrong. Size and its unit move
+together or not at all.
+
+⚠️ **`rebase-ingredient` is NOT `replace-ingredient`** — see `item-actions.ts`.
+The history page's version does not rename and does write the URL; this one
+renames and does not. The rename is load-bearing: a row's name is the search term
+the daily scan uses, so re-basing without it leaves the scan hunting for the thing
+you just replaced.
+
+### Nothing spends money unasked (2026-08-04)
+
+**The rule: no button on any surface may start a paid nutrition lookup on its own.**
+Before this, adding a row looked macros up automatically whenever the four boxes
+were empty — so an ordinary tap could quietly spend up to 29 cents on figures
+nobody had asked for and nobody read.
+
+| surface | how a lookup starts now |
+| --- | --- |
+| deals page | the **+ Macros** toggle, per card, off by default |
+| Chrome extension | the **Find Macros** button, which fills the boxes *before* the row is written |
+| history page | still automatic — see below |
+
+⚠️ **The free panel is checked FIRST, before the toggle.** A product whose shop
+published a nutrition table costs nothing even with **+ Macros** on, because the
+shop's own label beats a model's answer. That order lives in `macrosFor()` in
+`item-action.ts`, and it is why the `has macro` tag matters: it tells you which
+case you are in before you decide whether to arm the toggle.
+
+⚠️ **The history page's "Add to Ingredients" still looks up automatically**, by
+passing `findMacros: true` explicitly. That is deliberate, not an oversight: the
+default is now OFF everywhere, and this one button opts back in because filing a
+purchase is a one-off deliberate act on something you already bought, unlike a
+deals card you are still browsing. If that turns out to be the wrong call, delete
+the flag — nothing else needs to change.
 
 ## History page — `public/history.html` (added 2026-08-03)
 
@@ -497,6 +591,17 @@ percentages are from a 32-product survey of live FairPrice pages (see "Next sess
 | 3 | model + the shop's back-of-pack photo | **~$0.03** | 34% | the shop published a back or side pack shot |
 | 4 | model + web search & fetch | **$0.29–0.41** | 6% | everything else — front shot only, or a shop with no photos |
 
+⚠️ **Source 1 is now reachable from the DAILY SCAN too, not just a product page.**
+Measured 2026-08-04: FairPrice's **search** payload carries `Nutritional Data` on
+**34 of 72** products — the scraper already had it in `raw` and nobody had looked.
+So `StoreProduct.nutritionHtml` carries it through, `site.ts` parses it at build
+time, and the four figures ride in the Add/Replace payloads. A deal card marked
+`has macro` files its nutrition with **no page fetch, no model and no API call**.
+Sheng Siong publishes nothing readable and always leaves the field unset.
+
+⚠️ Sources 2–4 are the paid ones and **none of them runs on its own any more** —
+see "Nothing spends money unasked" above.
+
 **Where the code lives.** `src/core/macro-prompt.ts` holds everything that *decides* an answer — system
 prompt, tool set, parsing, sanity gate, `isCommodityFood`, and the `packShotsFor` image gate. It has **no
 Node imports**, because the extension bundles it verbatim. The two transports are thin:
@@ -524,12 +629,21 @@ a result.** Measure more than once before believing a lever.
 
 **The extension's UI.** Four boxes side by side under "Per 100g", above the Add button, in both popup and
 side panel. Pre-filled and marked green when source 1 fired (captioned with the serving it was scaled
-from); blank otherwise. Blank boxes trigger sources 2–4 *after* the row is written and patch it in, because
-the lookup takes 10–30 s (about 5 s on source 3) and nobody should watch that before their row exists.
-Filled boxes are written **with** the row and cost nothing. Every box is editable, so a figure you disagree
-with is one you overtype. The note under the boxes and the waiting line both say **which** source is coming,
-using `packShotsFor` — the same function the worker gates on, imported rather than re-implemented, so the
-panel cannot promise a path the lookup won't take.
+from); blank otherwise. Filled boxes are written **with** the row and cost nothing. Every box is editable,
+so a figure you disagree with is one you overtype.
+
+⚠️ **Blank boxes stay blank until you press `Find Macros` (changed 2026-08-04).** They used to trigger a
+paid lookup automatically once the row was written, which patched the figures in behind you. Now the button
+appears only when a lookup is possible (no free panel **and** a key is set), and it fills the BOXES rather
+than the row — so the figures arrive where you can read them, edit them or clear them, and only then does
+Add write them. Worker handler `find-macros` looks up and returns without writing; `macros-for` (which
+patches a written row) has no caller left.
+
+The note under the boxes says which wait to expect — about 5 s reading a back-of-pack photo, 10–30 s
+without one — using `packShotsFor`, the same function the worker gates on, imported rather than
+re-implemented so the panel cannot promise a path the lookup won't take. ⚠️ Those strings must never say
+"when you add"; nothing happens on Add any more, and a note promising figures that then don't appear is how
+a user stops trusting the panel.
 
 **Key goes on the extension Options page**, beside the Notion token. Blank = the whole feature is off and
 rows add exactly as before. Needs `https://api.anthropic.com/*` in `host_permissions` plus the
@@ -537,7 +651,27 @@ rows add exactly as before. Needs `https://api.anthropic.com/*` in `host_permiss
 
 ## Next session — pick up here (as of 2026-08-04)
 
-The agreed three-item plan is **finished**: #3 shipped, #2 was measured and rejected, #1 shipped.
+### Uncommitted, and read this before you commit anything
+
+The deals-page redesign and the "nothing spends money unasked" change are **built,
+typechecked and rendered, but NOT committed.** Verified: `npm run check` clean,
+`npm run ext:build` clean, 30 offline pack-shot cases pass, 10 markup assertions
+against a real rendered page pass. Not yet done: `CHANGELOG.md`, `extension/README.md`.
+
+⚠️ **The working tree also holds work from a PARALLEL session that is not this
+one** — a plan-selection feature: `src/core/notion.ts` (+170 lines, resolving the
+active plan from Meal prep's `Current Plan` tagged `Main` instead of the
+`Used 'N' Plan` formula), plus `LEARNINGS.md`, `SYSTEM-GUIDE.md` and four scripts
+switching their banner to "Main plan". **`git add -A` would sweep it up.** Stage
+by path.
+
+⚠️ There is also an orphaned worktree at `.claude/worktrees/goofy-satoshi-6d2419`
+(detached at `f4eef22`), left by a background task that was deleted. It changed
+nothing. `git worktree remove` when convenient.
+
+### The three-item macro plan
+
+**Finished**: #3 shipped, #2 was measured and rejected, #1 shipped.
 
 - ✅ **#3 — skip search for fresh commodities.** `isCommodityFood()` in `macro-prompt.ts`.
   Frozen chicken $0.41 → **$0.0030** (34s → 2.5s) and broccoli $0.081 → **$0.0027** (17.7s → 2.2s), with
@@ -548,9 +682,20 @@ The agreed three-item plan is **finished**: #3 shipped, #2 was measured and reje
 - ❌ **#2 — `max_content_tokens` cap.** Measured and rejected, see the ⚠️ above. Don't revisit.
 - ✅ **#1 — pack-shot images.** Shipped 2026-08-04. See below.
 
-**The outstanding work is now the first real use** of both the extension and the nutrition feature —
-"Remaining work" items 11 and 13. Everything in this area has been proven by Node harness, offline test and
-live page fetch; nobody has yet sat down and captured a shop for real.
+**The outstanding work is now the first real use** of the extension, the nutrition feature and the four new
+deal-card buttons — "Remaining work" items 11, 13 and 16. Everything in this area has been proven by Node
+harness, offline test, live page fetch and a rendered page; nobody has yet pressed any of it in anger.
+
+**What to check on that first real run**, in order of how badly it would bite:
+
+1. **Replace on a real ingredient.** It renames a row you maintain by hand and there is no undo. Try it on
+   something you don't care about first, and confirm the generic name it derives is one you'd have chosen.
+2. **The + Macros toggle actually arms both roads.** One-tap flips `"findMacros":false` in the JSON;
+   two-tap rewrites the URL-encoded `"findMacros": false` in the issue body. Both were asserted against
+   rendered markup, neither has been fired at the live workflow.
+3. **A `has macro` card costs nothing.** Its figures should land straight from the payload — the run log
+   says `Nutrition: using the shop's own panel — free, no lookup.` If you see a cost line, the free path
+   didn't fire.
 
 ### #1 — reading the label off the shop's pack shots (shipped 2026-08-04)
 
@@ -643,9 +788,12 @@ image paths; `selectPackShots` would need a second naming convention taught to i
   data source `34b69a18-4fe7-80e6-904e-000b208cf560`. Property names have
   typos/trailing spaces — match exactly (`Price,SGD`, `Catagory`, `Unit type `,
   `Weight /Units of New Product `, `Used '1'/'2'/'3' Plan`).
-- **Active plan** = read `Used 'N' Plan` formula (N from `ACTIVE_PLAN_NUMBER`,
-  default 1). Rows tagged `Not in Use ATM` or `Don't Search` are dropped here —
-  see "Don't Search" above.
+- **Active plan** = the meals tagged `Main` in Meal prep's `Current Plan` (data
+  source `34b69a18-4fe7-8086-83fa-000b24c37d2b`): their sub-item lines'
+  ingredients, daily `Amount Used ` summed, monthly = daily × 20. No fallback and
+  no env var: nothing tagged `Main` = empty plan (logged). The old
+  `Used 'N' Plan` / `ACTIVE_PLAN_NUMBER` path is gone. Rows tagged
+  `Not in Use ATM` or `Don't Search` are dropped here — see "Don't Search" above.
   `readGroceryTargets()` reads the WHOLE grocery inventory (excludes
   `Suppliments`/`Filler` categories) and flags `inActivePlan`.
 - **FairPrice** = SSR-scrape `GET /search?query=`, parse `__NEXT_DATA__`; weight
@@ -666,6 +814,12 @@ image paths; `selectPackShots` would need a second naming convention taught to i
 - **Match quality** = `FORM_WORDS` negative filter in `compare.ts` (rejects
   "Banana"→"Banana Milk", "Butter"→"Peanut Butter", etc.). Soft matches fixed by
   renaming the ingredient in Notion.
+- **`StoreProduct.nutritionHtml`** = the shop's own nutrition table, when it
+  publishes one. FairPrice fills it from the SEARCH payload (34/72 products, free);
+  Sheng Siong leaves it unset. Decides the `has macro` tag and lets Add/Replace
+  write the four columns without paying. ⚠️ Never read numbers out of it directly —
+  every panel is per SERVING, and `parseNutritionPanel` does the scaling and
+  refuses one whose serving size isn't stated.
 - **Price/units — TWO dimensions.** Most items compare per 100g and display per kg
   (per L for volumetric ml/L items). Items counted in pieces (`By Unit` — eggs,
   slices, tea bags) compare **per piece**, because that's how they're bought and
@@ -740,7 +894,18 @@ image paths; `selectPackShots` would need a second naming convention taught to i
     up there. They need no test runner — each is a plain script `tsx` can run —
     so bringing them into the repo is mostly a decision about where they go and
     what invokes them.
-15. Two known extension quirks, neither a bug:
+16. **The four new deal-card controls have never been fired at the live workflow.**
+    Buy / Add / Replace / + Macros and the has-macro tag were proven by rendering
+    the real page and asserting its markup, not by pressing them. `Replace` is the
+    one to try first and carefully — it renames a hand-maintained row with no undo.
+17. **Dead code left behind on purpose, to keep the diff honest.** The extension's
+    `macros-for` worker handler and the `needsLookup` flag `add-item` returns both
+    lost their only caller when the automatic lookup went. Harmless, but they
+    describe a behaviour that no longer exists, which is the kind of comment that
+    misleads a year from now. `hasMacros()` in `flow.js` is a third, older one.
+18. **Docs not yet caught up with the 2026-08-04 redesign:** `CHANGELOG.md` and
+    `extension/README.md`. This file is current.
+19. Two known extension quirks, neither a bug:
     - A Sheng Siong egg carton reads `550 g / By Gram`, because they record the
       piece count in the NAME ("Fresh Eggs (10s)") and not in `packSize`. Switch
       the dropdown to `By Unit` by hand if you want it planned per egg.
