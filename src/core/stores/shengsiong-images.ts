@@ -78,6 +78,59 @@ export function shengSiongPackShots(imgKey: unknown, totalImg: unknown): string[
 }
 
 /**
+ * The pack shots for a product whose COUNT we don't know — established by asking
+ * the bucket, one cheap request at a time.
+ *
+ * **Why this exists.** `totalImg` lives only in the detail record, and the daily
+ * scan only ever searches. Without the count, building past index 0 is a guess, and
+ * a wrong guess is not a missing image — it is a **403** that fails the entire
+ * lookup, because the Anthropic API fetches these URLs itself and an unreachable
+ * one is an error rather than something it skips.
+ *
+ * So: probe. The bucket is public, not behind Incapsula, and a HEAD is a few
+ * hundred bytes. Only ever called for products that actually reached the page —
+ * a couple of dozen a day, not the 1,100-odd the scan returns.
+ *
+ * Indices are contiguous (`0 … totalImg-1`), so the first miss ends the series and
+ * there is no point looking further. `max` caps it at the two `packShotsFor` would
+ * keep anyway.
+ *
+ * Index 0 is included in the result without being probed — it always exists, it is
+ * the thumbnail the search results already use — so that the caller can keep handing
+ * the whole series to `packShotsFor` and let that one place decide the front is not
+ * a label shot.
+ *
+ * Never throws: a network failure, a timeout or a 403 all mean "no more images",
+ * and the lookup falls back to the text-only path it had before.
+ */
+export async function resolveShengSiongPackShots(
+	imgKey: unknown,
+	max = 2,
+	timeoutMs = 4000,
+): Promise<string[]> {
+	// Reuse the builder's validation and URL shape by asking for a generous series,
+	// then confirming which of them are real.
+	const candidates = shengSiongPackShots(imgKey, max + 1);
+	if (!candidates.length) return [];
+
+	const found = [candidates[0]];
+	for (const url of candidates.slice(1)) {
+		const ctl = new AbortController();
+		const timer = setTimeout(() => ctl.abort(), timeoutMs);
+		try {
+			const res = await fetch(url, { method: "HEAD", signal: ctl.signal });
+			if (!res.ok) break; // 403 — past the end of the series
+			found.push(url);
+		} catch {
+			break; // offline, aborted, blocked: treat as the end
+		} finally {
+			clearTimeout(timer);
+		}
+	}
+	return found;
+}
+
+/**
  * Does this URL look like one of ours, and which view is it?
  *
  * Exported for `selectPackShots`, which has to classify a mixed bag of URLs from

@@ -60,6 +60,11 @@ function mapProduct(p: any): StoreProduct {
 		listPriceSgd: onSale ? prev : null,
 		saleEndsAt: null, // not exposed in search payload
 		url: `${BASE}/product/${p.slug}`,
+		// The pack-shot series key. Search results carry it but NOT `totalImg`, so the
+		// URLs can be built and the count cannot — `resolveShengSiongPackShots` probes
+		// for that. Kept out of `raw` because the runner strips `raw` before committing
+		// the daily file, and the cloud is where these are needed.
+		imageKey: typeof p.imgKey === "string" ? p.imgKey : null,
 		raw: p,
 	};
 }

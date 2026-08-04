@@ -768,9 +768,20 @@ https://ssecomm.s3.ap-southeast-1.amazonaws.com/products/{sm|md|lg}/{imgKey}.{0.
 Siong URLs in this project an ordinary `fetch` can reach.
 
 ⚠️ **`totalImg` is load-bearing and is in the DETAIL record only.** An index past the end returns **403**,
-not 404, and an unreachable image fails the whole API request rather than being skipped. The extension gets
-`totalImg` free from `Products.getOneByIdOrSlug`; **search results do not carry it**, which is the open
-question for the deals page (see Remaining work 20).
+not 404, and an unreachable image fails the whole API request rather than being skipped — so the count is
+never guessed. Two routes to it, because the two surfaces have different data:
+
+| surface | how the count is known |
+| --- | --- |
+| Chrome extension | `Products.getOneByIdOrSlug` returns `totalImg` — free, already called |
+| deals page | `resolveShengSiongPackShots` HEAD-probes the bucket, since search results carry `imgKey` but no count |
+
+The probe runs in `build-site.ts` **after** the deals are chosen — two dozen products rather than the
+1,100-odd the scan returns — deduped by key, run in parallel, and wrapped in its own try so a photograph can
+never stop the page building. Indices are contiguous, so the first 403 ends the series.
+
+⚠️ `StoreProduct.imageKey` is a first-class field and not left in `raw` **because the runner strips `raw`**
+before committing `data/shengsiong-latest.json`. Anything the cloud needs has to survive that strip.
 
 ⚠️ **Index 0 is always the front** — it is the thumbnail the search results use, and it is the marketing
 face. Verified by looking at both: index 0 was "Cholesterol Free / Trans Fat Free", index 1 the nutrition
@@ -940,15 +951,15 @@ panel, legible and carrying its own Per-100g column. `shengSiongPackShots` retur
     misleads a year from now. `hasMacros()` in `flow.js` is a third, older one.
 18. **Docs not yet caught up with the 2026-08-04 redesign:** `CHANGELOG.md` and
     `extension/README.md`. This file is current.
-19. **Sheng Siong pack shots reach the EXTENSION only.** FairPrice now reaches the
-    deals page as well — its search payload carries `images` on 10/10 products, so
-    the scan gets them free. Sheng Siong can't: `imgKey` is in its search record
-    but `totalImg` is not, and an index past the end returns 403, which fails the
-    whole lookup rather than being skipped. Two ways round it — a HEAD probe on
-    index 1 at build time (~15 cheap S3 requests a day, no WAF, self-correcting),
-    or one `getOneByIdOrSlug` per matched product during the scan (authoritative,
-    but ~15 extra DDP calls on a connection already fighting Incapsula). The probe
-    is the lighter of the two.
+19. ~~Sheng Siong pack shots reach the extension only~~ **done** 2026-08-04 —
+    both stores now reach both surfaces. FairPrice's search payload carries
+    `images` (10/10 products, free); Sheng Siong's carries `imgKey` but **not**
+    `totalImg`, so `resolveShengSiongPackShots` establishes the count with a HEAD
+    probe. Verified live: `totalImg` 3 → indices [0,1,2], 2 → [0,1], unknown key →
+    [0] alone, each under 2 s. Probing happens in `build-site.ts` **after** the
+    deals are chosen — a couple of dozen products, not the 1,100-odd the scan
+    returns — deduped by key and wrapped so a failure can never stop the page
+    building.
 20. Two known extension quirks, neither a bug:
     - A Sheng Siong egg carton reads `550 g / By Gram`, because they record the
       piece count in the NAME ("Fresh Eggs (10s)") and not in `packSize`. Switch

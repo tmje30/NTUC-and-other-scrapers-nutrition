@@ -65,6 +65,19 @@ export interface StoreProduct {
 	 * 403 and fails the whole lookup. See `shengsiong-images.ts` and Remaining work 20.
 	 */
 	images?: string[];
+	/**
+	 * An opaque handle from which pack-shot URLs must be CONSTRUCTED, for a store
+	 * that publishes a key rather than a list — Sheng Siong's `imgKey`.
+	 *
+	 * ⚠️ It is a first-class field and not left in `raw` on purpose: the runner
+	 * strips `raw` before committing `data/shengsiong-latest.json` (see
+	 * `push-shengsiong.ts`), so anything the cloud needs has to survive that. Putting
+	 * it here is the difference between the deals page being able to build these URLs
+	 * and not.
+	 *
+	 * Says nothing about how MANY images exist — see `resolveShengSiongPackShots`.
+	 */
+	imageKey?: string | null;
 	/** Original store payload, for debugging. */
 	raw?: unknown;
 }

@@ -5,7 +5,7 @@ import {
 	packShotsFor,
 	selectPackShots,
 } from "../core/macro-prompt.js";
-import { shengSiongPackShots } from "../core/stores/shengsiong-images.js";
+import { resolveShengSiongPackShots, shengSiongPackShots } from "../core/stores/shengsiong-images.js";
 import { check, describe, eq } from "./harness.js";
 
 /**
@@ -122,6 +122,12 @@ eq("a missing key means no urls", shengSiongPackShots("", 3), []);
 // stray slash or dot would silently address a different object.
 eq("a key with a path separator is refused", shengSiongPackShots("ab/../c", 3), []);
 eq("a key with a dot is refused", shengSiongPackShots("abc.0", 3), []);
+
+// The probe short-circuits on a key it can't use, so a malformed one costs no
+// network at all. (The probing itself needs the live bucket and is checked by hand
+// — verified 2026-08-04: totalImg 3 → indices [0,1,2], totalImg 2 → [0,1], and an
+// unknown key → [0] alone, each in under two seconds.)
+check("a refused key costs no request", (await resolveShengSiongPackShots("ab/../c")).length === 0);
 
 // Both schemes must coexist: a mixed list is ranked without either one poisoning
 // the other, which is what will happen the day a third store arrives.

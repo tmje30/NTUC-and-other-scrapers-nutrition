@@ -2,6 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { Client } from "@notionhq/client";
 import { runOnce } from "../core/run.js";
 import { renderDealsPage } from "../core/site.js";
+import { resolveShengSiongPackShots } from "../core/stores/shengsiong-images.js";
 import { renderHistoryPage } from "../core/history.js";
 import { readParkedIngredients, type ParkedIngredient } from "../core/notion.js";
 import { readPurchases } from "../core/purchases-file.js";
@@ -66,6 +67,57 @@ if (errors.length) {
 	for (const [store, { count, sample }] of byStore) {
 		console.error(`  ${store}: ${count} errors — e.g. "${sample}"`);
 	}
+}
+
+/**
+ * Give the Sheng Siong products on this page their pack shots.
+ *
+ * FairPrice hands over a finished `images` list in its search payload, so its cards
+ * need nothing here. Sheng Siong gives an `imageKey` and no count, and guessing the
+ * count means a 403 that fails the whole lookup — so the count is established by
+ * asking the bucket. See `resolveShengSiongPackShots`.
+ *
+ * Done HERE, after the deals are chosen, and not in the store module: the scan
+ * returns well over a thousand products and about two dozen reach the page. Probing
+ * at scan time would be fifty times the requests for the same answer.
+ *
+ * Entirely best-effort. Every failure path resolves to no images, which is the
+ * text-only lookup this had before — a page must never fail to build over a
+ * photograph.
+ */
+async function attachShengSiongPackShots(): Promise<void> {
+	const products = [
+		...planDeals.map((d) => d.product),
+		...otherDeals.map((d) => d.product),
+		...recommendations.map((r) => r.product),
+	].filter((p) => p && p.store === "Sheng Siong" && p.imageKey && !p.images?.length);
+	if (!products.length) return;
+
+	// One key can back several cards (the same product matching two ingredients), so
+	// probe each key once and share the answer.
+	const byKey = new Map<string, typeof products>();
+	for (const p of products) {
+		const k = String(p.imageKey);
+		byKey.set(k, [...(byKey.get(k) ?? []), p]);
+	}
+
+	const resolved = await Promise.all(
+		[...byKey.keys()].map(async (key) => [key, await resolveShengSiongPackShots(key)] as const),
+	);
+	let withShots = 0;
+	for (const [key, urls] of resolved) {
+		for (const p of byKey.get(key) ?? []) p.images = urls;
+		if (urls.length > 1) withShots++;
+	}
+	console.error(
+		`Sheng Siong pack shots: ${withShots}/${byKey.size} products have a back-of-pack photo.`,
+	);
+}
+
+try {
+	await attachShengSiongPackShots();
+} catch (e) {
+	console.error(`Sheng Siong pack shots failed — ${(e as Error).message}. Building without them.`);
 }
 
 await mkdir("public", { recursive: true });
