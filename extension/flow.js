@@ -99,10 +99,6 @@ const formFields = (tab) => ({
   fiber: $("f-fiber").value.trim(),
 });
 
-/** True when the user (or the page) has put a figure in at least one macro box. */
-const hasMacros = () =>
-  ["f-protein", "f-carbs", "f-fats", "f-fiber"].some((id) => $(id).value.trim() !== "");
-
 /**
  * Show the four figures the shop's own panel gave, ready to be edited or cleared.
  *

@@ -645,6 +645,13 @@ re-implemented so the panel cannot promise a path the lookup won't take. ⚠️ 
 "when you add"; nothing happens on Add any more, and a note promising figures that then don't appear is how
 a user stops trusting the panel.
 
+⚠️ **"Are there macros?" is the WORKER's answer, and the panel must not compute its own.** `macrosFrom()`
+in `background.js` runs each box through `macroOf()` (parse + the 0–100 g sanity gate) and returns null only
+if all four come back null; the reply carries that as `macrosFromForm` and `needsLookup`, and `flow.js`
+branches on those. A client-side "is any box non-empty?" check is not the same question — a box holding junk
+reads as filled there and as empty in the worker, so the panel would promise a path the lookup won't take.
+One such helper was written and never wired up; it was deleted on 2026-08-04. Don't reintroduce it.
+
 **Key goes on the extension Options page**, beside the Notion token. Blank = the whole feature is off and
 rows add exactly as before. Needs `https://api.anthropic.com/*` in `host_permissions` plus the
 `anthropic-dangerous-direct-browser-access` header (a service worker sends a browser `Origin`).
