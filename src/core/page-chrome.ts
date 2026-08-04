@@ -82,7 +82,12 @@ export const PAGE_CSS = `
   .was { color: #9ca3af; text-decoration: line-through; font-size: .9rem; margin-left: 4px; }
   .meta { color: #6b7280; font-size: .85rem; margin-top: 4px; }
   .prodprice { color: #4b5563; font-weight: 600; }
-  .usage { color: #6b7280; font-size: .85rem; margin-top: 2px; }
+  /* Usage and the has/no-macro tag share the last row. "clear: both" drops it below
+     the rail, which is what gives this one line the full card width — the tag would
+     otherwise be squeezed against the buttons. */
+  .usage { clear: both; color: #6b7280; font-size: .85rem; margin-top: 2px;
+    display: flex; align-items: center; gap: 8px; }
+  .usage .tag { margin-left: auto; }
   .store { color: #1a1d21; font-weight: 600; }
   .sale { color: #b42318; font-weight: 600; }
   .empty { text-align: center; color: #6b7280; padding: 40px 0; }
@@ -103,6 +108,28 @@ export const PAGE_CSS = `
      product name at two lines instead of three. */
   .pctcol { float: right; margin: 0 0 4px 8px; display: flex; flex-direction: column;
     align-items: flex-end; gap: 3px; }
+  /* The deal card's rail: the percentage and ⋯ menu, then Add / Replace / Macros.
+     Same float as .pctcol and for the same reason, but "stretch" so the three
+     buttons share one width and read as a group rather than three loose chips.
+     Sized off the widest label ("Replace") — wide enough to tap, narrow enough
+     that the five text rows beside it still fit a 390px phone. */
+  .rail { float: right; margin: 0 0 4px 8px; display: flex; flex-direction: column;
+    align-items: stretch; gap: 4px; width: 80px; }
+  .rail .pct, .rail .menu { align-self: flex-end; }
+  .rail .act { width: 100%; min-height: 27px; padding: 0 6px; font-size: .74rem; }
+  /* One blank line between the menu and the buttons. Purely a separator: above it
+     is what this deal IS, below it is what to do about it, and without the break
+     Macros reads as a fourth entry in the ⋯ menu. */
+  .railgap { height: 11px; }
+  /* Macros: OFF is red and says "Macros", ON is green and says "+ Macros". Red for
+     off is deliberate and the opposite of the usual convention — off is the safe,
+     free state, and the colour is there to make an armed toggle obvious before you
+     press Add, not to warn you about the safe one. The label change carries it for
+     anyone who can't tell the two apart. */
+  .act.macro { color: #b42318; background: #fef3f2; border-color: #fecdca; }
+  .act.macro[aria-pressed="true"] { color: #067647; background: #ecfdf3; border-color: #a6f4c5; }
+  .tag-has { color: #067647; background: #ecfdf3; border-color: #a6f4c5; }
+  .tag-no { color: #6b7280; }
   .tag { color: #6b7280; font-size: .72rem; text-transform: uppercase; letter-spacing: .04em;
     border: 1px solid #e5e7eb; border-radius: 8px; padding: 1px 7px; white-space: nowrap; }
   /* The correction menu. <details> gives open/close and keyboard access for free;
@@ -140,6 +167,10 @@ export const PAGE_CSS = `
     .menu > summary { color: #cbd2dc; background: #1c2026; border-color: #2c323a; }
     .menu[open] > summary { color: #e5e7eb; background: #262b32; }
     .menu[data-state="done"] > summary { color: #6ee7b7; background: #06251a; border-color: #0b4a34; }
+    .act.macro { color: #fda29b; background: #2a1412; border-color: #5a2420; }
+    .act.macro[aria-pressed="true"] { color: #6ee7b7; background: #06251a; border-color: #0b4a34; }
+    .tag-has { color: #6ee7b7; background: #06251a; border-color: #0b4a34; }
+    .tag-no { color: #9aa1ab; }
     .panel { background: #171a1f; border-color: #2c323a; box-shadow: 0 8px 24px rgba(0,0,0,.5); }
     .why { color: #fbbf24; }
     .warn { color: #fbbf24; background: #241a06; border-color: #4a3410; }
@@ -216,6 +247,61 @@ export function menuScript(): string {
     // <summary> does its own toggling.
     if (open && !open.contains(ev.target)) open.open = false;
   }, true);
+})();
+</script>
+${macroToggleScript()}`;
+}
+
+/**
+ * The per-card **+ Macros** toggle.
+ *
+ * Arming it has to reach BOTH roads out of this page, because the page is static
+ * and has two:
+ *
+ *   one-tap  — \`data-payload\` JSON, dispatched straight at the workflow.
+ *   two-tap  — the pre-filled GitHub issue \`href\`, whose body is URL-encoded.
+ *
+ * So the flag is baked in as \`"findMacros": false\` on both, and this flips the
+ * text of each. That is why \`ingredientPayload\` always serialises the field even
+ * though it is always false: a string replace can only rewrite a value that is
+ * actually there, and a toggle that silently worked on one path and not the other
+ * would be the worst of both.
+ *
+ * No persistence, deliberately. It resets on reload and the page is rebuilt daily
+ * — a switch that spends money should not survive out of sight.
+ */
+function macroToggleScript(): string {
+	// The exact spacing `JSON.stringify(p, null, 2)` produces, then URL-encoded the
+	// way encodeURIComponent does. Both halves must match the generated markup, so
+	// they are written once here rather than guessed at in two places.
+	return `<script>
+(function () {
+  var RAW_OFF = '"findMacros": false', RAW_ON = '"findMacros": true';
+  var ENC_OFF = encodeURIComponent(RAW_OFF), ENC_ON = encodeURIComponent(RAW_ON);
+
+  document.addEventListener("click", function (ev) {
+    var btn = ev.target.closest("[data-macro-toggle]");
+    if (!btn) return;
+    ev.preventDefault();
+    var on = btn.getAttribute("aria-pressed") !== "true";
+    btn.setAttribute("aria-pressed", on ? "true" : "false");
+    btn.textContent = on ? "+ Macros" : "Macros";
+
+    // Every Ingredients button on THIS card only. The rail is the scope, so a
+    // toggle can never arm the card below it.
+    var rail = btn.closest(".rail");
+    if (!rail) return;
+    rail.querySelectorAll("[data-payload]").forEach(function (el) {
+      var p = el.getAttribute("data-payload") || "";
+      // Buy lives outside the rail, but guard anyway: only the two Ingredients
+      // actions carry the flag, and rewriting anything else would be a bug.
+      if (p.indexOf("findMacros") < 0) return;
+      el.setAttribute("data-payload", on ? p.replace(/"findMacros":false/, '"findMacros":true')
+                                         : p.replace(/"findMacros":true/, '"findMacros":false'));
+      var href = el.getAttribute("href");
+      if (href) el.setAttribute("href", on ? href.split(ENC_OFF).join(ENC_ON) : href.split(ENC_ON).join(ENC_OFF));
+    });
+  });
 })();
 </script>
 `;

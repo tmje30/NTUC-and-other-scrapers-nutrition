@@ -4,6 +4,7 @@ import { suggestExclusionTerms } from "./exclusions.js";
 import { groceryRowTitle, type AddPayload } from "./grocery-list.js";
 import type { ActionPayload } from "./item-actions.js";
 import type { PlanTarget } from "./notion.js";
+import { parseNutritionPanel, type PanelMacros } from "./nutrition-panel.js";
 import type { StoreProduct } from "./stores/types.js";
 import { parseUnitCount, parseWeight } from "./stores/weight.js";
 import { PAGE_CSS, addScript, menuScript, type ChromeOptions } from "./page-chrome.js";
@@ -124,10 +125,18 @@ function addPayload(t: PlanTarget, p: StoreProduct, ingredient = t.name): AddPay
 }
 
 /**
- * The Add button — always a plain link to a pre-filled GitHub issue.
+ * The "Buy" button — always a plain link to a pre-filled GitHub issue.
+ *
+ * ⚠️ **Called "Buy" on the page, but everything underneath it is still `add`** —
+ * the CSS class, the `AddPayload`, the `grocery-add` label and the `add-to-list`
+ * workflow. It was renamed on the page in 2026-08-04 because a second button
+ * called **Add** now sits beside it and files the product into *Ingredients*;
+ * two buttons both saying "Add" that write to different databases is exactly the
+ * mis-tap worth spending a rename on. Renaming the machinery too would have
+ * broken every in-flight issue and the workflow's own allowlist, for nothing.
  *
  * The page is static, so it can hold no credentials of its own. The link works
- * with JavaScript off, in any browser, forever: tap Add → tap Submit → the
+ * with JavaScript off, in any browser, forever: tap Buy → tap Submit → the
  * `add-to-list` workflow writes the Notion row and the cooldown.
  *
  * `data-payload` carries the same payload as the issue body, which is what lets
@@ -138,10 +147,14 @@ function addPayload(t: PlanTarget, p: StoreProduct, ingredient = t.name): AddPay
 function addButton(p: AddPayload, o: PageOptions): string {
 	const label = groceryRowTitle(p.store, p.ingredient);
 	const payload = esc(JSON.stringify(p));
+	// The issue title keeps the "Add: " prefix the workflow's allowlist matches on.
+	// Same reason `actionButton` fixes "Item: ": a label is a display string and must
+	// never be load-bearing.
+	const aria = `Buy ${esc(label)} — put it on the grocery list`;
 
 	if (o.addEndpoint) {
 		return `<button class="add" type="button" data-payload="${payload}"
-        aria-label="Add ${esc(label)} to the grocery list">Add</button>`;
+        aria-label="${aria}">Buy</button>`;
 	}
 
 	const body =
@@ -158,7 +171,7 @@ function addButton(p: AddPayload, o: PageOptions): string {
 
 	return `<a class="add" href="${esc(href)}" target="_blank" rel="noopener"
         data-payload="${payload}"
-        aria-label="Add ${esc(label)} to the grocery list">Add</a>`;
+        aria-label="${aria}">Buy</a>`;
 }
 
 /**
@@ -260,6 +273,143 @@ function ignoreButton(t: PlanTarget, p: StoreProduct, o: PageOptions): string {
 				`it stays in the plan and other products still match it.`,
 		},
 	);
+}
+
+/**
+ * The four per-100g figures the shop published, free — or null when it published
+ * none this parser trusts.
+ *
+ * This is the whole basis of the `has macro` tag AND of what Add writes. Doing it
+ * here, at build time, is what makes the free path actually free: no model, no API
+ * call, no page fetch. FairPrice ships the panel in its own search payload (34 of
+ * 72 products, measured 2026-08-04), so the daily scan already has it in hand.
+ *
+ * Null covers "no panel" and "a panel we could not trust" identically, and that is
+ * on purpose: `parseNutritionPanel` refuses a table whose serving size isn't
+ * stated, and a tag promising free macros that then don't appear is worse than no
+ * tag at all.
+ */
+function freeMacros(p: StoreProduct): PanelMacros | null {
+	return p.nutritionHtml ? parseNutritionPanel(p.nutritionHtml) : null;
+}
+
+/**
+ * `has macro` / `no macro` — whether this listing's nutrition is free to file.
+ *
+ * It describes the SHOP's page, not the Notion row: an ingredient already in the
+ * DB has its macros already. What this answers is "if I press Add, do I get the
+ * four columns for nothing, or does it need the paid lookup?" — which is exactly
+ * the question the **+ Macros** toggle beside it exists to answer.
+ */
+function macroTag(panel: PanelMacros | null): string {
+	return panel
+		? `<span class="tag tag-has" title="${esc(panel.basis)}">has macro</span>`
+		: `<span class="tag tag-no" title="This shop publishes no nutrition panel for this product — turn on + Macros to look it up (costs money).">no macro</span>`;
+}
+
+/** Everything the Ingredients writes need about today's match. Shared by Add and Replace. */
+function ingredientPayload(
+	t: PlanTarget,
+	p: StoreProduct,
+	panel: PanelMacros | null,
+	action: "add-ingredient" | "rebase-ingredient",
+): ActionPayload {
+	return {
+		v: 1,
+		action,
+		key: cooldownKey(t.search.searchTerm),
+		ingredientId: t.ingredientId,
+		name: t.name,
+		store: p.store,
+		product: p.name,
+		url: p.url,
+		priceSgd: p.priceSgd,
+		packSizeG: p.packWeightG,
+		volumetric: p.volumetric,
+		// Free figures travel WITH the payload, so the workflow writes them without
+		// calling anything. Only their absence can ever cost money.
+		macros: panel
+			? {
+					proteinPer100g: panel.proteinPer100g,
+					fatsPer100g: panel.fatsPer100g,
+					carbsPer100g: panel.carbsPer100g,
+					fiberPer100g: panel.fiberPer100g,
+				}
+			: null,
+		// Always serialised, always false. The toggle flips it in the browser — see
+		// `macroToggle` — and it must be present in the baked JSON for that to work.
+		findMacros: false,
+	};
+}
+
+/**
+ * **Add** — file today's match into Ingredients as a NEW row.
+ *
+ * Distinct from **Buy** beside it, which puts the item on the shopping list: this
+ * one says "this product should be a thing I track", and it is the same write the
+ * history page and the Chrome extension do.
+ */
+function dealAddButton(t: PlanTarget, p: StoreProduct, panel: PanelMacros | null, o: PageOptions): string {
+	return actionButton(ingredientPayload(t, p, panel, "add-ingredient"), o, {
+		label: "Add",
+		done: "✓ added",
+		subject: p.name,
+		aria: `Add ${p.name} to Ingredients as a new row`,
+		prose:
+			`Adding **${p.name}** (${p.store}) to the Ingredients DB as a NEW row, from the ` +
+			`deals page. The existing ingredient **${t.name}** is not touched.` +
+			(panel ? `\n\nNutrition comes free from the shop's own panel.` : ""),
+	});
+}
+
+/**
+ * **Replace** — repoint the ingredient that SEEDED this search at today's match.
+ *
+ * Writes `Name` (a generic name derived from the product), `Price,SGD`,
+ * `Weight /Units of New Product ` and `Vendor, Current `. Deliberately **not** the
+ * URL — see `rebase-ingredient` in `item-actions.ts` for why this and the history
+ * page's "Replace Current" are different actions rather than one shared one.
+ *
+ * Confirmed before it fires: it renames a row the user maintains by hand, and
+ * there is no undo.
+ */
+function dealReplaceButton(t: PlanTarget, p: StoreProduct, panel: PanelMacros | null, o: PageOptions): string {
+	return actionButton(ingredientPayload(t, p, panel, "rebase-ingredient"), o, {
+		label: "Replace",
+		done: "✓ replaced",
+		aria: `Replace the ingredient ${t.name} with ${p.name}`,
+		confirm:
+			`Re-base "${t.name}" on "${p.name}"? Its name, price, size and vendor are ` +
+			`overwritten, and future scans search for the new name. There is no undo.`,
+		prose:
+			`Re-basing the ingredient **${t.name}** on **${p.name}** (${p.store}) from the ` +
+			`deals page: overwrite its Name, Price,SGD, Weight /Units and Vendor, Current. ` +
+			`The product URL and every other column are left alone.`,
+	});
+}
+
+/**
+ * **+ Macros** — the per-card toggle that permits a PAID nutrition lookup.
+ *
+ * Off by default and red, because off is the safe state: nothing on this page may
+ * spend money unasked. On, it turns green and Add / Replace also fill the four
+ * per-100g columns, at US$0.003–0.29 depending on the product
+ * (see `macro-prompt.ts`).
+ *
+ * It only ever matters on a `no macro` card. Where the shop published a panel the
+ * figures already travel in the payload for free, so the toggle changes nothing —
+ * which is why the tag sits on the card telling you which case you are in.
+ *
+ * A plain `<button>`, not a checkbox: it has to work identically for the one-tap
+ * path (flip a flag in the JSON) and the two-tap issue path (rewrite the encoded
+ * body), and `toggleScript` does both from one click handler.
+ */
+function macroToggle(hasFree: boolean): string {
+	const why = hasFree
+		? "This shop already publishes the nutrition panel, so Add fills it in free either way."
+		: "Off: Add and Replace write no nutrition. On: they look it up, which costs money.";
+	return `<button class="act macro" type="button" data-macro-toggle aria-pressed="false"
+        title="${esc(why)}" aria-label="Look up nutrition when adding or replacing (costs money)">Macros</button>`;
 }
 
 /**
@@ -454,33 +604,56 @@ function dealCard(d: Deal, o: PageOptions): string {
 	const usage =
 		t.unitType === "By Unit" ? `${t.monthlyAmount} units` : amount(t.monthlyAmount, p.volumetric);
 
-	// The Add button, then everything else. Inside `.main` the percentage column is
-	// FLOATED past the product link rather than nested in it: a control inside an
-	// <a> is both invalid and untappable without swallowing the link, but a right
-	// column would have cost every card ~60px of text width — enough to push a real
-	// product name onto a third line. Floating reserves space beside the top rows
-	// only, and the lines below reclaim the full width. See the CSS.
+	// The shop's own nutrition panel, parsed once: it decides the tag AND rides in
+	// both button payloads, so a card that says "has macro" cannot then fail to
+	// deliver them.
+	const panel = freeMacros(p);
+
+	// Layout, and why it is shaped like this (redesigned 2026-08-04):
+	//
+	// The text is FIVE short rows rather than four long ones, and the right rail is
+	// five items — %, ⋯, then Add / Replace / Macros. That pairing is the whole
+	// trick: three more controls had to go somewhere, and a rail only costs text
+	// width while it is taller than the text beside it. Splitting "item [size] price"
+	// into two lines makes the rail and the text the same height, so the rail is free.
+	//
+	// The rail is FLOATED, not a flex column, for the original reason: a control
+	// inside the product <a> is invalid and untappable, and a real column would eat
+	// the width on every row including the ones below the buttons. The float ends
+	// where the buttons do and the usage line reclaims the full card.
+	//
+	// ⚠️ Buy and Ignore stay in the left `.cta` column, away from the rail. Buy is the
+	// one button pressed on purpose and Ignore is the one with no undo; neither
+	// belongs a mis-tap away from three quieter controls.
 	return `
     <div class="card">
       <div class="cta">${addButton(addPayload(t, p), o)}${ignoreButton(t, p, o)}</div>
       <div class="main">
-        <!-- The % saving, and the menu for telling us the match was wrong -->
-        <div class="pctcol">
+        <!-- The % saving, the wrong-match menu, then the three Ingredients controls.
+             The gap under ⋯ is deliberate: it splits "what this deal is" from
+             "what to do about it", so Macros can never be read as part of the menu. -->
+        <div class="rail">
           <span class="pct">−${d.savingPct.toFixed(0)}%</span>
           ${actionMenu(t, p, o)}
+          <span class="railgap"></span>
+          ${dealAddButton(t, p, panel, o)}
+          ${dealReplaceButton(t, p, panel, o)}
+          ${macroToggle(Boolean(panel))}
         </div>
         <a class="body" href="${esc(p.url)}" target="_blank" rel="noopener">
-          <!-- Row 1: your item [pack] + the price you pay (yellow) -->
-          <div class="row1">
-            <span class="name">${esc(t.name)}${itemPack}
-              <span class="mine">Price ${myPrice}</span></span>
-          </div>
-          <!-- Row 2: the cheaper product we found + its price + sale % (red) -->
-          <div class="meta"><span class="store">${esc(p.store)}</span> · ${esc(p.name)}${prodPack} <span class="prodprice">${prodPrice}</span>${sale}</div>
-          <!-- Row 3: product $/kg vs your $/kg (struck through) -->
+          <!-- Row 1: your item, on its own so a long name has the width for it -->
+          <div class="row1"><span class="name">${esc(t.name)}</span></div>
+          <!-- Row 2: its pack size and what you pay for it (yellow) -->
+          <div class="meta">${itemPack || `<span class="pack">[—]</span>`} <span class="mine">Price ${myPrice}</span></div>
+          <!-- Row 3: the cheaper product we found -->
+          <div class="meta"><span class="store">${esc(p.store)}</span> · ${esc(p.name)}</div>
+          <!-- Row 4: its pack size, its price, and the shop's own sale % (red) -->
+          <div class="meta">${prodPack || `<span class="pack">[—]</span>`} <span class="prodprice">${prodPrice}</span>${sale}</div>
+          <!-- Row 5: product $/kg vs your $/kg (struck through) -->
           <div class="price"><b>${dealKg}</b> <span class="was">vs ${baseKg}</span></div>
-          <!-- Row 4: how much of it you use -->
-          ${t.inActivePlan ? `<div class="usage">uses ~${usage}/month</div>` : ""}
+          <!-- Row 6: usage and whether nutrition is free here. Always rendered, because
+               the tag has to appear even on an item outside the active plan. -->
+          <div class="usage">${t.inActivePlan ? `uses ~${usage}/month` : ""}${macroTag(panel)}</div>
         </a>
       </div>
     </div>`;

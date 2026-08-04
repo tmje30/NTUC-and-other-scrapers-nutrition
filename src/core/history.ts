@@ -163,7 +163,13 @@ function boughtRow(e: PurchaseEntry, o: HistoryOptions): string {
 	const size = sizeLabel(e.packSizeG, e.volumetric);
 	const priced = `${money(e.priceSgd)}${size ? ` · ${size}` : ""}`;
 
-	const add = button({ ...base, action: "add-ingredient" }, o, {
+	// `findMacros: true` keeps this button doing exactly what it did before the deals
+	// page grew its own opt-in toggle: file the row AND look the nutrition up. It is
+	// set explicitly rather than left to default because the default is now OFF —
+	// nothing may spend money unasked, and here the asking is the button itself.
+	// Filing a purchase is a deliberate, one-off act on a product you already bought,
+	// unlike a deals card you are still only browsing.
+	const add = button({ ...base, action: "add-ingredient", findMacros: true }, o, {
 		label: "Add to Ingredients",
 		done: "✓ added",
 		cls: "file",

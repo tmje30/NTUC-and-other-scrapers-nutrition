@@ -67,6 +67,12 @@ function resetUi() {
   $("f-macro-note").textContent = "";
   $("f-macro-note").className = "muted";
   document.querySelector(".macros")?.classList.remove("from-page");
+  // Hidden by default and re-shown per page in render(): the side panel re-renders on every navigation,
+  // and a Find Macros left over from the last product would look the current one up.
+  const fm = $("find-macros");
+  fm.hidden = true;
+  fm.disabled = false;
+  fm.textContent = "Find Macros";
   for (const id of ["f-category", "f-unit"]) {
     const s = $(id);
     while (s.lastElementChild && s.lastElementChild !== s.firstElementChild) s.removeChild(s.lastElementChild);
@@ -145,68 +151,70 @@ function finish(message, notionUrl) {
 }
 
 /**
- * Look up the four macro columns for a row that has just been added, and say what came back.
+ * "Find Macros" — the ONLY road to a paid nutrition lookup in this extension.
  *
- * Runs AFTER the row is written, never before: the lookup reads the product page and may search the web,
- * which takes ten to thirty seconds, and nobody should watch a spinner that long to save a price they
- * already typed. The row is safe by the time this starts, so every failure here is cosmetic.
+ * ⚠️ It fills the BOXES; it does not write to Notion. That ordering is the whole point (changed
+ * 2026-08-04). Adding a row used to fire this automatically whenever the boxes were empty, so an ordinary
+ * Add could quietly spend up to 29 cents on a lookup nobody asked for and nobody read. Now the figures
+ * arrive in four editable boxes, the user reads them — the SOURCE line especially — and only then presses
+ * Add, which writes them with the row for free.
  *
- * The work happens in the background worker, so closing the popup does NOT cancel it — the figures still
- * land in Notion, only this message is lost. The side panel usually stays open and sees the result.
- *
- * The SOURCE is always shown, because it is the difference between a number off the product's own label
- * and a number off a category average. Generic values get a warning: they're what the user asked for when
- * the exact product can't be found, but they're the ones worth a second look.
+ * The button only exists when it would do something: the page published no panel, and a key is set.
+ * Where the shop published a panel the boxes are already filled and greened, and pressing anything would
+ * be paying for an answer we have.
  */
-async function lookupMacros(box, pageId, fields, timeout) {
-  // Two very different waits, so say which one this is. With the shop's back-of-pack photo attached the
-  // model reads the panel and stops — measured at 8s and 3 cents, against 54s and 29 cents for the
-  // text-only lookup that has to go and find the label on the web.
+async function findMacros(fields) {
+  const btn = $("find-macros");
+  const note = $("f-macro-note");
+  // The wait is wildly different depending on whether the shop photographed the back of the pack: ~5s
+  // reading a label off a photo, 10-30s sending the model to find one. Say which, so a long wait doesn't
+  // look like a hang.
   const shots = packShotsFor(shotQuery(fields.name, fields.exactName, fields.images));
-  const line = el("div", {
-    className: "muted",
-    textContent: shots.length
-      ? `Reading the nutrition panel off the pack photo${shots.length === 1 ? "" : "s"} (a few seconds)…`
-      : "Looking up nutrition (10–30s)…",
-  });
-  box.append(line);
+  btn.disabled = true;
+  btn.textContent = "Looking up…";
+  note.className = "muted";
+  note.textContent = shots.length
+    ? `Reading the panel off the pack photo${shots.length === 1 ? "" : "s"} (a few seconds)…`
+    : "Looking up nutrition (10–30s)…";
 
   let res;
   try {
-    // The worker's own ceiling is 180s; allow past it so a slow-but-successful lookup still reports,
-    // rather than the panel giving up on a request that is about to answer.
-    res = await send({ type: "macros-for", pageId, ...fields }, timeout);
+    // 200s: past the worker's own 180s ceiling, so the timeout that reports is the one that actually
+    // knows why it gave up.
+    res = await send({ type: "find-macros", ...fields }, 200000);
   } catch (err) {
-    line.className = "muted";
-    line.textContent = `Nutrition lookup failed — ${err.message} The row is fine; fill the four columns in by hand.`;
+    note.textContent = `Lookup failed — ${err.message} Type the figures in by hand, or try again.`;
+    btn.disabled = false;
+    btn.textContent = "Find Macros";
     return;
   }
 
   if (!res.ok) {
-    line.textContent =
+    note.textContent =
       res.reason === "no-key"
-        ? "No Claude API key set, so no nutrition — add one on the Options page, or fill the four columns in by hand."
-        : "Couldn't establish nutrition figures for this one — fill the four columns in by hand.";
+        ? "No Claude API key set — add one on the Options page, or type the figures in."
+        : "Couldn't establish figures for this one — type them in by hand.";
+    btn.disabled = false;
+    btn.textContent = "Find Macros";
     return;
   }
 
   const m = res.macros;
-  const n = (v) => (typeof v === "number" ? `${v}g` : "?");
-  line.className = m.source === "generic" ? "muted" : "ok";
-  line.textContent =
-    `Nutrition per 100g — protein ${n(m.proteinPer100g)}, fat ${n(m.fatsPer100g)}, ` +
-    `carbs ${n(m.carbsPer100g)}, fibre ${n(m.fiberPer100g)}.`;
-
-  box.append(el("div", { className: "muted", textContent: m.note }));
-  if (m.source === "generic") {
-    box.append(el("div", {
-      className: "muted",
-      textContent: "⚠️ Generic values, not this product's own label — worth checking.",
-    }));
-  }
-  if (res.skipped?.length) {
-    box.append(el("div", { className: "muted", textContent: `Not written: ${res.skipped.join(", ")}` }));
-  }
+  const set = (id, v) => { $(id).value = typeof v === "number" ? String(v) : ""; };
+  set("f-protein", m.proteinPer100g);
+  set("f-carbs", m.carbsPer100g);
+  set("f-fats", m.fatsPer100g);
+  set("f-fiber", m.fiberPer100g);
+  // Generic values are a category average rather than this product's label, so they stay grey and say so.
+  // Everything else came off a real panel and is greened like the free path.
+  note.className = m.source === "generic" ? "muted" : "ok";
+  note.textContent =
+    (m.source === "generic" ? "⚠️ Generic values, not this product's own label — check them. " : "✓ ") +
+    m.note;
+  if (m.source !== "generic") document.querySelector(".macros")?.classList.add("from-page");
+  // Left enabled: the figures are a proposal, and asking again is the user's call.
+  btn.disabled = false;
+  btn.textContent = "Find again";
 }
 
 /**
@@ -416,12 +424,33 @@ export async function render(tab, alive = () => true) {
   // which is the common case for fresh meat and produce, where no panel exists to read.
   if (derived.panel) {
     fillMacrosFromPanel(derived.panel);
-  } else {
+  } else if (setup.macrosConfigured) {
+    // No free panel, but a key is set — so a lookup is possible and the button appears. It is the only
+    // way anything here spends money; nothing runs on its own.
+    const fm = $("find-macros");
+    fm.hidden = false;
+    on(fm, "click", () => {
+      const f = formFields(tab);
+      findMacros({
+        name: f.name,
+        exactName: f.exactName,
+        vendor: f.vendor,
+        url: f.url,
+        category: f.category,
+        // Off the page reading, not the form: the shop's back and side pack shots turn a 29-cent,
+        // 54-second lookup into a 3-cent, 8-second one by letting the model read the label.
+        images: data.images || [],
+      });
+    });
+  }
+  if (!derived.panel) {
+    // ⚠️ These lines must never say "when you add". Nothing is looked up on Add any more, and a note
+    // promising figures that then don't appear is how a user stops trusting the panel.
     $("f-macro-note").textContent = !setup.macrosConfigured
       ? "No panel on this page. Add a Claude API key in Options to look these up, or type them in."
       : packShotsFor(shotQuery(derived.generic || data.name, derived.exactName || data.name, data.images)).length
-        ? "No panel on this page — these are read off the back-of-pack photo when you add."
-        : "No panel on this page — these are looked up when you add.";
+        ? "No panel on this page — Find Macros reads it off the back-of-pack photo (a few seconds)."
+        : "No panel on this page — Find Macros looks it up (10–30s, and it costs money).";
   }
 
   let options = { categories: [], unitTypes: [] };
@@ -471,22 +500,17 @@ export async function render(tab, alive = () => true) {
         }
       }
 
-      // Otherwise the page had no panel and the boxes were left empty, so the figures get looked up and
-      // patched in behind the row. Not awaited into the add's own error path — a failed lookup must never
-      // make a successful add look like it went wrong. 200s: past the worker's own 180s ceiling, so the
-      // timeout that reports is the one that actually knows why it gave up.
-      if (res.needsLookup) {
-        lookupMacros(box, res.created.id, {
-          name: fields.name,
-          exactName: fields.exactName,
-          vendor: fields.vendor,
-          url: fields.url,
-          category: fields.category,
-          // Not a form field — these come off the page reading, not the boxes. Attaching the shop's back
-          // and side pack shots is what turns a 29-cent, 54-second lookup into a 3-cent, 8-second one, by
-          // letting the model read the label instead of hunting the web for it.
-          images: data.images || [],
-        }, 200000);
+      // WARNING: nothing is looked up here, and that is the design (changed 2026-08-04).
+      //
+      // Adding a row used to fire a paid lookup automatically whenever the boxes were empty, so an
+      // ordinary Add could quietly spend up to 29 cents. Now the only road to a paid lookup is pressing
+      // "Find Macros" first, reading what comes back, and then adding — whatever is written is something
+      // a human actually saw. An add with empty boxes writes the row without nutrition and says so.
+      if (!res.macrosFromForm) {
+        box.append(el("div", {
+          className: "muted",
+          textContent: "No nutrition written — use Find Macros before adding if you want it looked up.",
+        }));
       }
     } catch (err) {
       setStatus(err.message, "error");

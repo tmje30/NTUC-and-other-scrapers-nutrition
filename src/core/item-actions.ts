@@ -21,6 +21,8 @@
  *   mismatch        never match these words for this item again
  *   almost          block this one product for this item
  *   ignore-product  never offer this PRODUCT again, for any item
+ *   add-ingredient  file today's match as a NEW Ingredients row (shared with the history page)
+ *   rebase-ingredient  repoint the ingredient that SEEDED the search at today's match
  *
  * **From the history page** — about something already bought or parked:
  *   unpark             clear `Not in Use ATM` so the ingredient is searched again
@@ -31,6 +33,19 @@
  * `ignore-product` and `never-buy` do the identical thing and are kept apart only
  * so the log says which page it came from — one is "stop offering me this deal",
  * the other is "I bought this and regret it". Both write one `ALL_ITEMS` block.
+ *
+ * ⚠️ `rebase-ingredient` and `replace-ingredient` are NOT the same and must not be
+ * merged. Both point an existing row at a different product, but they disagree on
+ * the two things that matter:
+ *
+ * | | renames the row | writes the URL |
+ * | `replace-ingredient` (history page) | no | yes |
+ * | `rebase-ingredient` (deals page)    | **yes**, to a generic name | **no** |
+ *
+ * The history page means "same thing, new price", so renaming would be a change
+ * nobody asked for. The deals page means "this cheaper product is what I actually
+ * want this ingredient to be from now on" — it re-bases the search itself, so the
+ * name has to follow or the next scan keeps hunting for the old thing.
  */
 export type ItemAction =
 	| "reset"
@@ -42,6 +57,7 @@ export type ItemAction =
 	| "unpark"
 	| "add-ingredient"
 	| "replace-ingredient"
+	| "rebase-ingredient"
 	| "never-buy";
 
 export interface ActionPayload {
@@ -74,6 +90,34 @@ export interface ActionPayload {
 	packSizeG?: number | null;
 	/** True when the pack was measured by volume — decides By ml vs By Gram. */
 	volumetric?: boolean;
+
+	// ---- Nutrition. Two fields, and the difference between them is money. ----
+
+	/**
+	 * The four per-100g figures the SHOP already published, parsed off its own
+	 * nutrition panel at build time. **Free** — deterministic, no model, no API call
+	 * — so when this is set the handler writes it and never looks anything up.
+	 *
+	 * Present only when the store gave a panel that survived `parseNutritionPanel`'s
+	 * serving-size scaling and sanity gate. Null and absent both mean "no free
+	 * figures", which is the `no macro` tag on the card.
+	 */
+	macros?: {
+		proteinPer100g: number | null;
+		fatsPer100g: number | null;
+		carbsPer100g: number | null;
+		fiberPer100g: number | null;
+	} | null;
+	/**
+	 * The user pressed **+ Macros** before acting: go and find the figures even
+	 * though it costs money (US$0.003–0.29 — see `macro-prompt.ts`).
+	 *
+	 * ⚠️ **Defaults to false, and that default is the point.** Nothing on the deals
+	 * page may spend money unasked; the toggle is the asking. `macros` above is
+	 * checked first, so a product whose shop published a panel costs nothing even
+	 * with the toggle on.
+	 */
+	findMacros?: boolean;
 }
 
 const ACTIONS = new Set<ItemAction>([
@@ -86,6 +130,7 @@ const ACTIONS = new Set<ItemAction>([
 	"unpark",
 	"add-ingredient",
 	"replace-ingredient",
+	"rebase-ingredient",
 	"never-buy",
 ]);
 
@@ -138,6 +183,30 @@ export function parseActionPayload(raw: unknown): ActionPayload {
 		throw new Error("payload.terms must list at least one word to exclude");
 	}
 
+	/**
+	 * The free panel figures, re-validated rather than trusted.
+	 *
+	 * This arrives through a GitHub issue body a human can edit, so every figure is
+	 * re-gated exactly as `parseNutritionPanel` gated it: a number in 0–100 g or
+	 * nothing. An all-null set collapses to null so the handler sees "no free
+	 * figures" rather than a row of nulls it would dutifully not write.
+	 */
+	const freeMacros = (v: unknown): ActionPayload["macros"] => {
+		if (!v || typeof v !== "object") return null;
+		const m = v as Record<string, unknown>;
+		const g = (k: string): number | null => {
+			const n = Number(m[k]);
+			return Number.isFinite(n) && n >= 0 && n <= 100 ? Math.round(n * 100) / 100 : null;
+		};
+		const out = {
+			proteinPer100g: g("proteinPer100g"),
+			fatsPer100g: g("fatsPer100g"),
+			carbsPer100g: g("carbsPer100g"),
+			fiberPer100g: g("fiberPer100g"),
+		};
+		return Object.values(out).some((x) => x != null) ? out : null;
+	};
+
 	/** A number, or null. Blank and unparseable both mean "not supplied". */
 	const num = (k: string): number | null => {
 		const v = o[k];
@@ -163,6 +232,8 @@ export function parseActionPayload(raw: unknown): ActionPayload {
 		priceSgd: num("priceSgd"),
 		packSizeG: num("packSizeG"),
 		volumetric: Boolean(o.volumetric),
+		macros: freeMacros(o.macros),
+		findMacros: Boolean(o.findMacros),
 	};
 
 	// A block that can't recognise the product again would silently do nothing, so
@@ -176,8 +247,16 @@ export function parseActionPayload(raw: unknown): ActionPayload {
 	// The two Notion writes both act on one specific row. Without its id there is
 	// nothing to write to, and guessing from the name is exactly the kind of
 	// almost-right that edits the wrong ingredient.
-	if ((action === "unpark" || action === "replace-ingredient") && !payload.ingredientId) {
+	if (
+		(action === "unpark" || action === "replace-ingredient" || action === "rebase-ingredient") &&
+		!payload.ingredientId
+	) {
 		throw new Error(`payload.ingredientId is required for "${action}"`);
+	}
+	// Re-basing renames the row after the product, so without a product name it would
+	// blank the title of an ingredient the user maintains by hand.
+	if (action === "rebase-ingredient" && !payload.product) {
+		throw new Error('payload.product is required for "rebase-ingredient"');
 	}
 	// A new Ingredients row needs at minimum something to call it. Price is checked
 	// in the handler, where a missing one is a warning rather than a refusal.

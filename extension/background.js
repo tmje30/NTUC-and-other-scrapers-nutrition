@@ -149,6 +149,33 @@ const handlers = {
   },
 
   /**
+   * "Find Macros" — look the figures up and hand them BACK, writing nothing.
+   *
+   * Deliberately different from `macros-for` below, which needs a row to patch. This
+   * runs BEFORE the row exists, so the four boxes fill and the user reads them,
+   * edits them, or clears them before anything reaches Notion. That ordering is the
+   * whole point of the button: a lookup costs US$0.003–0.29 and is occasionally
+   * wrong, and figures you approved are worth more than figures that appeared
+   * behind your back.
+   *
+   * Only ever reached by a deliberate press — see `flow.js`. Nothing in this
+   * extension starts a paid lookup on its own any more.
+   */
+  async "find-macros"({ name, exactName, vendor, url, category, images }) {
+    if (!(await macrosConfigured())) return { ok: false, reason: "no-key" };
+    const macros = await lookupMacros({
+      product: exactName || name || "",
+      store: vendor || "",
+      url: url || "",
+      ingredientName: name || "",
+      category: category || "",
+      categoryKey: categorize(name || exactName || "") || undefined,
+      images: Array.isArray(images) ? images : [],
+    });
+    return macros ? { ok: true, macros } : { ok: false, reason: "not-found" };
+  },
+
+  /**
    * Look up the four nutrition figures for a row just added, and write them.
    *
    * A SECOND round trip, deliberately: the lookup reads the product page and may search, which takes ten

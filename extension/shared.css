@@ -37,3 +37,10 @@ a { color: #2f6fed; display: inline-block; margin-top: 4px; }
 /* Filled from the shop's own panel — worth marking, since the alternative sources are a web search and a
    category average, and the user is the one deciding how much to trust the number. */
 .macros.from-page { border-color: color-mix(in srgb, #1e8e3e 45%, transparent); }
+/* "Find Macros" — shown only when the page published no panel AND a key is set, so
+   it appears exactly when pressing it would do something. Full width and quiet:
+   it costs money, so it must be a decision, not a thing you hit on the way to Add. */
+.findmac { width: 100%; margin: 6px 0 2px; padding: 6px 10px; font-size: 12px; font-weight: 600;
+  cursor: pointer; border-radius: 6px; border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
+  background: transparent; color: inherit; }
+.findmac:disabled { opacity: .55; cursor: default; }

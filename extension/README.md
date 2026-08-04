@@ -8,7 +8,8 @@ Store). Modelled on the sibling *Inventory Price Upkeeper* extension, with its v
 Open it on a product page and it reads the name, brand, price and pack size, then offers **two** ways to
 commit — and only ever the one you click:
 
-- **Add to Ingredients** — creates a new row, then looks up its macro-nutrients and fills those in too.
+- **Add to Ingredients** — creates a new row, with whatever nutrition is in the four boxes (the shop's own
+  panel where it published one, otherwise whatever **Find Macros** or your own typing put there).
 - **Replace With This** — appears beside **each** similar ingredient already in Notion. Repoints that row at
   this product.
 
@@ -66,8 +67,9 @@ Per 100g
 ```
 
 **They fill themselves in from the shop's own panel where there is one, and are left blank where there
-isn't.** Blank boxes are looked up when you press Add; filled boxes are written as-is and cost nothing.
-Every box is editable either way, so a figure you disagree with is one you overtype.
+isn't.** Filled boxes are written as-is and cost nothing. Blank boxes **stay blank** unless you press
+**Find Macros**, which is the only thing here that spends money. Every box is editable either way, so a
+figure you disagree with is one you overtype — and whatever ends up in them is what Add writes.
 
 ### Reading the shop's panel (free, no API key)
 
@@ -87,9 +89,23 @@ the Skippy Peanut Butter page the product's own object has *no* panel while four
 a first-match search returns a competitor's label as this product's — plausible, and silently wrong. The
 panel is read off the same slug-anchored object as the name and price, and nowhere else.
 
-### Looking it up (needs a Claude API key)
+### Looking it up — press **Find Macros** (needs a Claude API key)
 
-Only when the boxes are empty. Three tiers, tried in order, and the one used is always reported:
+⚠️ **This never happens on its own.** Until 2026-08-04 an empty set of boxes triggered a lookup
+automatically once the row was written, and patched the figures in behind you — so an ordinary Add could
+quietly spend up to 29 cents on numbers nobody asked for and nobody read. Now there is a **Find Macros**
+button under the four boxes, and pressing it is the only way this extension spends anything.
+
+It appears only when it would do something: the page published **no** free panel, and a key is set. Where
+the shop did publish one the boxes are already filled and green, and paying for an answer you have would be
+daft.
+
+**It fills the BOXES, not the row.** That ordering is the point — the figures land where you can read them,
+overtype them or clear them, and only then does Add write them, with the row, for free. The source line is
+right there while you decide, which is what makes a `generic` answer easy to reject. Press it again and it
+re-asks; the button reads "Find again" afterwards.
+
+Three tiers, tried in order, and the one used is always reported:
 
 | tier | means |
 |---|---|
@@ -109,12 +125,16 @@ Rejected outright: a reply with no figures, and one whose protein + fat + carbs 
 (which means per-serving figures got reported as per-100g — the single likeliest failure, and the easiest to
 catch). Either way the row keeps its price and size and the panel says to fill the columns in by hand.
 
-**It runs after the row is written, not before.** The lookup may have to search, so it takes 10–30 s (or
-about 5 s when there is a back-of-pack photo to read — the panel says which wait you are in for); making the
-add wait would mean a spinner long enough to abandon a row that was ready to go.
-The work happens in the service worker, so closing the popup doesn't cancel it — the figures still land, you
-just don't see the message. Only runs when the boxes were empty when you tapped Add, and the whole feature
-is off if no key is set.
+**How long it takes:** about 5 s when there is a back-of-pack photo to read, 10–30 s when the model has to
+go and find the label. The note under the boxes says which wait you are in for *before* you press, using
+`packShotsFor` — the same function the worker gates on, imported rather than re-implemented, so the panel
+can never promise a path the lookup won't take.
+
+⚠️ Those strings must never say "when you add". Nothing is looked up on Add any more, and a note promising
+figures that then don't appear is how a user stops trusting the panel.
+
+The whole feature is off if no key is set: the button doesn't appear, and rows add exactly as they did
+before nutrition existed.
 
 ⚠️ **Cost, measured 2026-08-04 over four real lookups: US$0.29–0.41 each**, not the 6–7 cents first
 estimated. The model rate is not where it goes — input was **123k–280k tokens per call**, about 90% of the
@@ -308,7 +328,7 @@ carry the same body ids, so there is no duplicated flow to keep in sync.
 | `content.js` | Extraction only; never calls Notion (content scripts are CORS-blocked from `api.notion.com`). Reads `__NEXT_DATA__`, re-fetching the page when the inline copy is stale — see "Where the data comes from" below. |
 | `background.js` | Service worker; the only Notion caller. Imports the naming/category logic from `src/core/` — shared, not copied. |
 | `notion-client.js` | The single Notion module. **API 2025-09-03**, which queries *data sources*, not databases — do not copy endpoints from the reference extension, which speaks 2022-06-28. |
-| `macros-client.js` | The single Claude caller — raw `fetch`, because the Anthropic SDK is a Node client. The prompt, tool set and parsing come from `src/core/macro-prompt.ts`, shared with the Node path, not copied. |
+| `macros-client.js` | The single Claude caller — raw `fetch`, because the Anthropic SDK is a Node client. The prompt, tool set and parsing come from `src/core/macro-prompt.ts`, shared with the Node path, not copied. Reached only from the `find-macros` handler, i.e. only from a button press. |
 | `vendors.js` | Host → vendor label. A convenience, not a gate: an unknown shop still captures, with the host as the vendor. |
 | `popup.*` / `sidepanel.*` | Thin callers of `flow.js`. |
 | `shared.css` | One stylesheet for both surfaces — they render the same ids, so they must look the same. |

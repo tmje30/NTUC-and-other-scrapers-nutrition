@@ -80,6 +80,12 @@ function mapProduct(p: any): StoreProduct {
 		listPriceSgd: onSale ? mrp : null,
 		saleEndsAt: null, // FairPrice search payload doesn't expose a promo end date
 		url: `${BASE}/product/${p.slug}`,
+		// The packaging's own nutrition table, straight out of the search payload —
+		// measured 2026-08-04 on 34 of 72 products, at no extra cost. It is what puts
+		// the `has macro` tag on a deal card and what lets Add fill the four columns
+		// without paying for a lookup. Each object here is already the product itself
+		// (see `collectProducts`), so there is no carousel to read the wrong one from.
+		nutritionHtml: typeof meta["Nutritional Data"] === "string" ? meta["Nutritional Data"] : null,
 		raw: p,
 	};
 }

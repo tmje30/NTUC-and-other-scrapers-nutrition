@@ -232,3 +232,37 @@ export async function replaceIngredientPrice(
 	const page = (await client.pages.update({ page_id: pageId, properties } as any)) as any;
 	return { id: page.id, notionUrl: page.url, written, skipped };
 }
+
+/**
+ * "Replace" on the DEALS page — re-base an ingredient on the product that beat it.
+ *
+ * ⚠️ **This is not `replaceIngredientPrice` above, and merging them would be a
+ * bug.** They differ on exactly the two fields that matter:
+ *
+ * - **It renames the row**, to a generic name derived from the product. The
+ *   history page's version deliberately does not, because there the button means
+ *   "same thing, new price". Here it means "this cheaper product is what this
+ *   ingredient should be from now on" — and the row's name is the search term the
+ *   daily scan uses, so leaving it would keep hunting for the thing you just
+ *   replaced.
+ * - **It does not write the URL.** The user's call: the URL drives a different
+ *   function, and a re-base is about what the ingredient IS, not where this
+ *   week's cheapest one happened to be listed.
+ *
+ * Everything else on the row — tags, plan formulas, the columns nothing here
+ * names — is untouched, same as every other write in this file.
+ */
+export async function rebaseIngredient(
+	client: Client,
+	pageId: string,
+	fields: Pick<IngredientFields, "name" | "priceSgd" | "size" | "unitType" | "vendor" | "macros">,
+): Promise<WriteResult> {
+	if (!pageId) throw new Error("no ingredient row to re-base");
+	if (!fields.name?.trim()) throw new Error("re-basing needs a name — refusing to blank the title");
+	const schema = await schemaOf(client);
+	const { properties, written, skipped } = buildProps(fields, schema);
+	if (!Object.keys(properties).length) throw new Error("nothing to write");
+
+	const page = (await client.pages.update({ page_id: pageId, properties } as any)) as any;
+	return { id: page.id, notionUrl: page.url, written, skipped };
+}

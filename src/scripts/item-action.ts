@@ -17,9 +17,10 @@ import { PARKED_TAG } from "../core/notion.js";
 import {
 	createIngredient,
 	fieldsFromPurchase,
+	rebaseIngredient,
 	replaceIngredientPrice,
 } from "../core/ingredient-write.js";
-import { lookupMacros, macrosConfigured } from "../core/macros.js";
+import { lookupMacros, macrosConfigured, type Macros, type MacroResult } from "../core/macros.js";
 import { withNeverBuy, withOutcome } from "../core/purchases.js";
 import { readPurchases, writePurchases } from "../core/purchases-file.js";
 
@@ -331,6 +332,70 @@ if (payload.action === "park") {
  * again. Throwing here would report the whole action as failed when the row is
  * already sitting in their Ingredients DB, which is the more expensive lie.
  */
+/**
+ * The four per-100g figures for a row about to be written — free ones first, and a
+ * paid lookup ONLY when the payload asked for one.
+ *
+ * ⚠️ **The order here is the whole cost story, and it is not an optimisation.**
+ *
+ * 1. `payload.macros` — parsed off the shop's own published panel when the page
+ *    was built. Free, deterministic, and already scaled to per-100g. If it's
+ *    there, nothing is looked up, *even with the toggle on* — the answer is
+ *    already better than a model's.
+ * 2. `payload.findMacros` — the user pressed **+ Macros** on the card. Only this
+ *    spends money (US$0.003–0.29, see `macro-prompt.ts`).
+ * 3. Otherwise **null**, and the row is written without nutrition.
+ *
+ * Step 3 is the default and that is deliberate: before 2026-08-04 this function
+ * did not exist and every add looked up unconditionally, which meant a page could
+ * spend real money on a tap that never mentioned it. Nothing may spend unasked;
+ * the toggle is the asking.
+ *
+ * Never throws — `lookupMacros` returns null on every failure path, and a row
+ * without nutrition is always better than a lost add.
+ */
+async function macrosFor(
+	payload: ActionPayload,
+	categoryKey: string | null | undefined,
+): Promise<MacroResult | Macros | null> {
+	if (payload.macros) {
+		console.error("Nutrition: using the shop's own panel — free, no lookup.");
+		return payload.macros;
+	}
+	if (!payload.findMacros) {
+		console.error("Nutrition: not requested (+ Macros was off) — writing the row without it.");
+		return null;
+	}
+	return await lookupMacros({
+		product: payload.product ?? "",
+		store: payload.store,
+		url: payload.url,
+		ingredientName: payload.name,
+		category: categoryKey ?? undefined,
+		// Same value, under the field `isCommodityFood` actually reads — fresh produce and raw
+		// meat skip the (measured) 40-50 cent search that only ever returns a generic figure.
+		categoryKey: categoryKey ?? undefined,
+	});
+}
+
+/** How the reply describes where the figures came from — or why there are none. */
+function macroNote(payload: ActionPayload, macros: MacroResult | Macros | null): string {
+	if (!macros) {
+		return payload.findMacros
+			? `⚠️ No nutrition figures could be established — fill in protein/fat/carbs/fibre by hand.`
+			: `No nutrition written (**+ Macros** was off, and this shop publishes no panel).`;
+	}
+	const src = "source" in macros ? macros.source : null;
+	const where = src ? ("note" in macros ? macros.note : src) : "from the shop's own nutrition panel (free)";
+	return (
+		`Nutrition per 100g — protein ${macros.proteinPer100g ?? "?"}, fat ${macros.fatsPer100g ?? "?"}, ` +
+		`carbs ${macros.carbsPer100g ?? "?"}, fibre ${macros.fiberPer100g ?? "?"} (${where}).` +
+		(src === "generic"
+			? `\n⚠️ These are **generic values**, not this product's own label — check them.`
+			: "")
+	);
+}
+
 async function settlePurchase(
 	id: string,
 	outcome: "added" | "replaced" | "never",
@@ -489,20 +554,7 @@ if (payload.action === "add-ingredient") {
 		process.exit(0);
 	}
 
-	// The macro lookup runs BEFORE the write, so the four columns land with the
-	// row rather than as a second edit. It never throws — a failed lookup returns
-	// null and the row is created without nutrition, which the reply says plainly
-	// so the user knows to fill it in.
-	const macros = await lookupMacros({
-		product: payload.product ?? "",
-		store: payload.store,
-		url: payload.url,
-		ingredientName: payload.name,
-		category: fields.categoryKey ?? undefined,
-		// Same value, under the field `isCommodityFood` actually reads — fresh produce and raw
-		// meat skip the (measured) 40-50 cent search that only ever returns a generic figure.
-		categoryKey: fields.categoryKey ?? undefined,
-	});
+	const macros = await macrosFor(payload, fields.categoryKey);
 
 	const client = new Client({ auth: config.notionToken() });
 	const res = await createIngredient(client, { ...fields, macros });
@@ -510,16 +562,10 @@ if (payload.action === "add-ingredient") {
 	await settlePurchase(
 		payload.purchaseId ?? "",
 		"added",
-		`filed as a new Ingredients row${macros ? ` (${macros.source} macros)` : " without macros"}`,
+		`filed as a new Ingredients row${macros ? ` (${"source" in macros ? macros.source : "shop panel"} macros)` : " without macros"}`,
 	);
 
-	const nutrition = macros
-		? `Nutrition per 100g — protein ${macros.proteinPer100g ?? "?"}, fat ${macros.fatsPer100g ?? "?"}, ` +
-			`carbs ${macros.carbsPer100g ?? "?"}, fibre ${macros.fiberPer100g ?? "?"} (${macros.note}).` +
-			(macros.source === "generic"
-				? `\n⚠️ These are **generic values**, not this product's own label — check them.`
-				: "")
-		: `⚠️ No nutrition figures — fill in protein/fat/carbs/fibre by hand.`;
+	const nutrition = macroNote(payload, macros);
 
 	await report(
 		`Added to Ingredients: **${fields.name}** — "${fields.exactName}", ` +
@@ -527,6 +573,64 @@ if (payload.action === "add-ingredient") {
 			`vendor ${fields.vendor}.\n${nutrition}\n` +
 			`Wrote: ${res.written.join(", ")}.` +
 			(res.skipped.length ? `\nSkipped: ${res.skipped.join("; ")}.` : ""),
+	);
+	process.exit(0);
+}
+
+/**
+ * "Replace" on the deals page — re-base the ingredient that seeded the search on
+ * the product that beat it.
+ *
+ * The only write in this file that changes an ingredient's NAME, which is why it
+ * is a separate action from the history page's `replace-ingredient` and why the
+ * page asks for confirmation first. The name matters beyond cosmetics: it is the
+ * search term the daily scan uses, so re-basing without renaming would leave the
+ * scan hunting for the thing that was just replaced.
+ *
+ * The URL is deliberately not written — see `rebaseIngredient`.
+ */
+if (payload.action === "rebase-ingredient") {
+	const fields = fieldsFromPurchase({
+		product: payload.product ?? "",
+		store: payload.store ?? "",
+		priceSgd: payload.priceSgd ?? 0,
+		packSizeG: payload.packSizeG ?? null,
+		volumetric: Boolean(payload.volumetric),
+		url: payload.url ?? "",
+		ingredientName: payload.name ?? "",
+	});
+
+	if (dryRun) {
+		await report(
+			`DRY RUN — would re-base **${payload.name}** on "${payload.product}": ` +
+				`Name → ${fields.name}, Price,SGD → $${(fields.priceSgd ?? 0).toFixed(2)}, ` +
+				`Weight /Units → ${fields.size ?? "?"} (${fields.unitType}), Vendor → ${fields.vendor}. ` +
+				`URL and every other column left alone.`,
+		);
+		process.exit(0);
+	}
+
+	const macros = await macrosFor(payload, fields.categoryKey);
+
+	const client = new Client({ auth: config.notionToken() });
+	const res = await rebaseIngredient(client, payload.ingredientId, {
+		name: fields.name,
+		priceSgd: fields.priceSgd,
+		size: fields.size,
+		unitType: fields.unitType,
+		vendor: fields.vendor,
+		// Only ever set when the shop published a panel or the toggle was on; otherwise
+		// the row keeps whatever nutrition it already had, which is the right default
+		// for a row the user maintains.
+		macros: macros ?? undefined,
+	});
+
+	await report(
+		`Re-based **${payload.name}** on "${payload.product}" (${payload.store}).\n` +
+			`Wrote: ${res.written.join(", ") || "nothing"}.` +
+			(res.skipped.length ? `\nSkipped: ${res.skipped.join("; ")}.` : "") +
+			`\n${macroNote(payload, macros)}\n` +
+			`The product URL, tags and plan formulas were left alone.`,
 	);
 	process.exit(0);
 }
