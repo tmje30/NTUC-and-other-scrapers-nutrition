@@ -13,6 +13,7 @@
 import "./packshots.test.js";
 import "./nutrition-panel.test.js";
 import "./macro-reply.test.js";
+import "./naming.test.js";
 import "./deals-page.test.js";
 import { report } from "./harness.js";
 

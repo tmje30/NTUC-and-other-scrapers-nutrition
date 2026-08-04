@@ -108,3 +108,59 @@ export function deriveGenericName(fullName: string, brand?: string | null): stri
 	if (s.length < 2) return original;
 	return s;
 }
+
+/**
+ * Strip the naming structure back off — everything inside `[ ]`, `( )` and `{ }`.
+ *
+ * For the places that want the plain words: the category guess, and the
+ * similar-rows search. Feeding either a name full of brackets makes it match on
+ * punctuation, and `[Skippy]` is the brand precisely because it should NOT drive
+ * the search.
+ */
+export function stripStructure(name: string): string {
+	return tidy(String(name || "").replace(/[[({][^\])}]*[\])}]/g, " "));
+}
+
+/**
+ * The shop's title → the user's own naming standard, for the `Name` box.
+ *
+ *   "Skippy Peanut Butter Spread - Creamy"  →  "Peanut Butter Spread [Skippy] {Creamy}"
+ *
+ * **What the brackets mean** (see `parse.ts`, which is what reads them):
+ *   `[ ]` brand — never part of the search text, and a hard filter only when the
+ *         row is tagged `Brand Specific`.
+ *   `( )` defining property — a HARD requirement; a candidate failing it is never
+ *         published as a deal.
+ *   `{ }` ignored — excluded from the search term and from every matching decision.
+ *
+ * ⚠️ **The variant goes in `{ }`, not `( )`, and that is the safe default rather
+ * than the obvious one.** "Peanut Butter (Crunchy)" would reject every product
+ * whose title omits the word "Crunchy" — including the smooth jar that is on offer
+ * this week and would have been a fine substitute. `{ }` keeps the words visible on
+ * the row without letting them silently kill matches. Promote to `( )` by hand when
+ * the variant genuinely IS the item ("Onion (White)"), which is a judgement only
+ * the user can make.
+ *
+ * ⚠️ **Pre-existing brackets in the shop's title are stripped first.** FairPrice
+ * really does ship names like "[BCRS] Farmhouse Milk - Fresh", and leaving that in
+ * would have `parse.ts` read "BCRS" as the brand. The structure is ours to impose,
+ * so the source text is cleared of it.
+ *
+ * Deterministic, no model — same house rule as `deriveGenericName` above, and the
+ * reason this can run in the extension.
+ */
+export function structuredName(fullName: string, brand?: string | null): string {
+	const generic = stripStructure(deriveGenericName(fullName, brand));
+	if (!generic) return "";
+
+	// Shops put the variant after a dash — "Tuna Flakes - In Water", "Peanut Butter
+	// - Crunchy", "Farmhouse Milk - Fresh". It is the one separator both FairPrice
+	// and Sheng Siong use consistently, so it is the only one trusted here.
+	const [base, ...rest] = generic.split(/\s+[-–—]\s+/);
+	const head = tidy(base);
+	const variant = tidy(rest.join(", "));
+	if (!head) return generic;
+
+	const b = tidy(String(brand || ""));
+	return head + (b ? ` [${b}]` : "") + (variant ? ` {${variant}}` : "");
+}

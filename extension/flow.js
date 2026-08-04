@@ -426,7 +426,9 @@ export async function render(tab, alive = () => true) {
   } catch { /* fall through with blanks */ }
   if (!alive()) return;
 
-  $("f-name").value = derived.generic || data.name || "";
+  // The user's own bracket standard — "Peanut Butter [Skippy] {Creamy}" — because `Name` is the column
+  // `parse.ts` reads to build the search. Falls back to the plain generic if structuring produced nothing.
+  $("f-name").value = derived.structured || derived.generic || data.name || "";
   $("f-exact").value = derived.exactName || data.name || "";
   $("f-price").value = data.priceText || "";
   $("f-size").value = derived.size != null ? String(derived.size) : (data.sizeText || "");

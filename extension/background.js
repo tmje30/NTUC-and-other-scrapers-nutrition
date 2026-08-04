@@ -3,7 +3,7 @@
 //
 // The name/category/size logic is IMPORTED from the project's own core (src/core/*), not copied, so the
 // extension and the daily scraper always agree on what a generic name and a category are.
-import { deriveGenericName } from "../src/core/generic-name.js";
+import { deriveGenericName, stripStructure, structuredName } from "../src/core/generic-name.js";
 import { categorize, matchCategoryOption, guessSize } from "../src/core/categorize.js";
 import { parseNutritionPanel } from "../src/core/nutrition-panel.js";
 import { findSimilar, findByUrl, createIngredient, replaceIngredient, setupCheck, getFieldOptions, writeMacros } from "./notion-client.js";
@@ -112,6 +112,12 @@ const handlers = {
       // Only append the brand when the title doesn't already carry it — shops repeat it about half the time.
       .reduce((acc, part) => (acc.toLowerCase().includes(part.toLowerCase()) ? acc : `${acc} ${part}`.trim()), "");
     const generic = deriveGenericName(name || "", brand || "");
+    // The Name box gets the user's own bracket standard — "Peanut Butter [Skippy] {Creamy}" — because
+    // that column is the one `parse.ts` reads to build the search. `generic` stays plain and is what the
+    // category guess and the similar-rows search use; brackets there would match on punctuation.
+    // The variant lands in { } (ignored by the matcher) rather than ( ) (a hard requirement) on purpose:
+    // "(Crunchy)" would reject the smooth jar that is actually on offer. See `structuredName`.
+    const structured = structuredName(name || "", brand || "");
     const { categories } = await getFieldOptions();
     const category = matchCategoryOption(categorize(generic || name || ""), categories) || "";
     const { amount, unitType } = guessSize(sizeText || "");
@@ -119,13 +125,17 @@ const handlers = {
     // which is why it runs here at render time rather than at Add. null whenever the page said nothing or
     // said something that didn't survive the per-100g sanity check, and then the boxes stay empty.
     const panel = nutritionHtml ? parseNutritionPanel(nutritionHtml) : null;
-    return { generic, exactName, category, size: amount, unitType: unitType || "", panel };
+    return { generic, structured, exactName, category, size: amount, unitType: unitType || "", panel };
   },
 
   // Ingredient rows this product might already BE — each gets a "Replace With This" button.
   async "find-similar"({ name }) {
-    if (!name || !String(name).trim()) return { items: [] };
-    return { items: await findSimilar(String(name)) };
+    // Brackets off first. The Name box now carries the structure ("[Skippy]", "{Creamy}"), and searching
+    // Notion for punctuation — or for the brand, which the standard says is NOT part of the search —
+    // finds nothing. `stripStructure` is the same helper the category guess uses.
+    const plain = stripStructure(String(name || ""));
+    if (!plain.trim()) return { items: [] };
+    return { items: await findSimilar(plain) };
   },
 
   // "Add to Ingredients" — a new row.
