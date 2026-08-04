@@ -21,7 +21,8 @@
 		"item-action": "tsx src/scripts/item-action.ts",
 		"macro-test": "tsx src/scripts/macro-test.ts",
 		"push-ss": "tsx src/scripts/push-shengsiong.ts",
-		"ext:build": "node extension/build.mjs"
+		"ext:build": "node extension/build.mjs",
+		"test": "tsx src/tests/run.ts"
 	},
 	"engines": {
 		"node": ">=22.0.0",

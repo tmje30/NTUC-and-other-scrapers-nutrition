@@ -765,10 +765,15 @@ image paths; `selectPackShots` would need a second naming convention taught to i
   both cost and behaviour). `--image` is repeatable and takes the shop's URLs **unfiltered**, exactly as
   the extension hands them over; the line it prints says how many of them `packShotsFor` actually attached,
   so "3 image URLs given, 1 attached" is the gate working.
-- Offline test scripts used across these sessions live in the scratchpad, not the repo: panel parsing (22
-  cases), macro reply parsing (14), the commodity gate (25) and pack-shot selection (30). Also a free
-  survey script that walks live FairPrice pages and reports which of the four paths each product would
-  take — that is where the 28/31/34/6% split above came from, and it costs nothing to re-run.
+- **`npm test` — 109 offline cases, free and in the repo** (`src/tests/`). Four suites: pack-shot selection
+  and its commodity gate, nutrition-panel parsing, macro-reply parsing, and the deals page's markup. No test
+  runner and no new dependency — each file registers cases into `harness.ts` and `run.ts` sets the exit code.
+  Nothing here calls Notion, a shop or Anthropic: a test that costs 29 cents is a test nobody runs.
+  ⚠️ They cover exactly the functions where being *quietly* wrong is the danger — a misread serving size is
+  out by 3× and looks plausible, a pack-shot gate that stops matching FairPrice's filenames silently costs
+  10× per lookup, and a drifting commodity gate spends real money. None of those announce themselves.
+  These lived in a scratchpad and were thrown away with the session **four times** before landing here on
+  2026-08-04; the first run caught two bugs in its own fixtures.
 - ⚠️ A lookup costs real money. The account ran out of credit mid-session on 2026-08-04. Budget ~$0.30 per
   tools-path call, **~$0.03 per pack-shot call**, ~$0.003 per commodity call.
 
@@ -789,6 +794,7 @@ image paths; `selectPackShots` would need a second naming convention taught to i
   `--dry-run` reads Notion but writes nothing.
 - `npm run ext:build` — rebuild the Chrome extension's `dist/` (see above).
 - `npm run check` — typecheck.
+- `npm test` — 109 offline cases (`src/tests/`). Free, fast, no network.
 
 ## Key technical facts (details in LEARNINGS.md)
 
@@ -896,12 +902,10 @@ image paths; `selectPackShots` would need a second naming convention taught to i
     tests and live page fetches, and the lookup itself with 8 real API calls —
     but no one has yet added a real row through the extension with nutrition
     switched on. First actual use is the outstanding test.
-14. **#1 has landed, so this is now due:** the offline test scripts (panel
-    parsing, reply parsing, commodity gate, pack-shot selection — **91 cases**
-    between them) live only in a scratchpad, and this is the fourth suite to end
-    up there. They need no test runner — each is a plain script `tsx` can run —
-    so bringing them into the repo is mostly a decision about where they go and
-    what invokes them.
+14. ~~The offline test scripts live only in a scratchpad~~ **done** 2026-08-04 —
+    `src/tests/`, **109 cases**, `npm test`. No runner, no dependency. Pack-shot
+    parsing/reply parsing/commodity gate were re-created from scratch (the earlier
+    scratchpad copies were already gone); the deals-page suite is new.
 16. **The four new deal-card controls have never been fired at the live workflow.**
     Buy / Add / Replace / + Macros and the has-macro tag were proven by rendering
     the real page and asserting its markup, not by pressing them. `Replace` is the

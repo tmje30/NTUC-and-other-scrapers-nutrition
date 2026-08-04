@@ -295,6 +295,18 @@ All notable changes to this project are documented here. Format based on
   edit or clear them — and only then does Add write them, free. Shown only when a
   lookup is possible: no free panel on the page, and a key set.
 
+- **`npm test` — 109 offline cases in `src/tests/`**, and no test runner. Four
+  suites: pack-shot selection with its commodity gate, nutrition-panel parsing,
+  macro-reply parsing, and the deals page's markup. Each file registers cases into
+  a 40-line `harness.ts`; `run.ts` sets the exit code. Nothing calls Notion, a shop
+  or Anthropic — a test that costs 29 cents is a test nobody runs, so the paid
+  checks keep their own scripts (`macro-test`, `fp`, `ss`).
+  They cover the functions where being *quietly* wrong is the whole danger: a
+  misread serving size is out by 3× and looks plausible; a pack-shot gate that
+  stops matching FairPrice's filenames silently costs 10× a lookup; a drifting
+  commodity gate spends real money. Equivalent suites had been written and thrown
+  away with the session four times before this.
+
 ### Changed
 - **Nothing spends money unasked.** No button on any surface starts a paid
   nutrition lookup on its own any more. Adding a row used to look macros up
