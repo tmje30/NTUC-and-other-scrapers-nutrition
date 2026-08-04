@@ -18,6 +18,7 @@
 // derives — a fresh commodity is refused its photos, and the panel must say so too.
 import { packShotsFor } from "../src/core/macro-prompt.js";
 import { categorize } from "../src/core/categorize.js";
+import { shengSiongPackShots } from "../src/core/stores/shengsiong-images.js";
 
 /** The bit of the worker's MacroQuery that decides whether pack shots are attached. Kept in step with `macros-for`. */
 const shotQuery = (name, exactName, images) => ({
@@ -332,6 +333,12 @@ async function extractViaMeteor(tabId) {
                 price: typeof p.price === "number" ? p.price : null,
                 packSize: String(p.packSize || ""),
                 netWeight: typeof p.netWeight === "number" ? p.netWeight : null,
+                // The pack shots. `imgKey` names the whole series and `totalImg` says how
+                // many exist — both come free with the record we are already fetching, and
+                // `totalImg` appears ONLY here, never in search results. See
+                // src/core/stores/shengsiong-images.ts.
+                imgKey: String(p.imgKey || ""),
+                totalImg: typeof p.totalImg === "number" ? p.totalImg : 0,
               });
             });
           } catch { finish(null); }
@@ -357,6 +364,13 @@ async function extractViaMeteor(tabId) {
       brand: p.brand,
       priceText: p.price != null ? String(Math.round(p.price * 100) / 100) : "",
       sizeText,
+      // Sheng Siong publishes no nutrition data at all, and web_fetch cannot read its
+      // pages either — so before this, every Sheng Siong product took the most
+      // expensive lookup there is (~$0.29, guessing from a web search). The panel is
+      // photographed on the back of the pack, and reading it costs ~$0.03.
+      // Built whole, front shot included: `packShotsFor` is the one place allowed to
+      // decide what a lookup sees, and it drops index 0.
+      images: shengSiongPackShots(p.imgKey, p.totalImg),
     };
   } catch {
     return null; // no permission / not a Meteor page / injection refused
@@ -391,9 +405,11 @@ export async function render(tab, alive = () => true) {
   if (!extracted && !viaApp) {
     setStatus("⚠️ Couldn't read this page — type the fields in below.", "error");
   }
-  // ⚠️ Spread order matters and `viaApp` must not blank a field it doesn't carry: the Meteor reader returns
-  // name/brand/price/size only, so `images` and `nutritionHtml` survive from `extracted`. Adding a key to
-  // `extractViaMeteor`'s return that it can't actually fill would silently wipe the FairPrice one.
+  // ⚠️ Spread order matters, and `viaApp` must never carry a key it cannot actually fill. It returns
+  // name/brand/price/size and — on a Meteor shop — its own `images`, so those win where it answers and
+  // `extracted`'s survive where it doesn't (it returns null on every non-Meteor page, which is how a
+  // FairPrice page keeps its `nutritionHtml` and its own pack shots). Adding a key here that the Meteor
+  // reader leaves empty would silently wipe the FairPrice one.
   const data = { ...(extracted || { name: "", brand: "", priceText: "", sizeText: "" }), ...(viaApp || {}) };
 
   // Generic Name / exact name / category / size — derived in the worker so the popup and side panel can't

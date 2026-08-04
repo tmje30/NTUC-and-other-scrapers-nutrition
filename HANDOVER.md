@@ -752,10 +752,33 @@ Read `own.images` off the slug-anchored object — same anti-carousel rule as th
 ⚠️ **The date suffix in the filename is optional** — `13051601_BXL1.jpg` as well as
 `47440_BXL1_20250411.jpg`. A pattern that requires it silently drops a good share of the back shots.
 
-**Sheng Siong contributes no photos**, so its products stay on the text-only path — and they are the ones
-that need this most, since `web_fetch` cannot read the site at all. Worth a look next:
-`Products.getOneByIdOrSlug` (already called by `extractViaMeteor` in `flow.js`) almost certainly carries
-image paths; `selectPackShots` would need a second naming convention taught to it.
+### Sheng Siong pack shots (added 2026-08-04)
+
+**Sheng Siong now has pack shots too**, which matters more than FairPrice's did: it publishes no nutrition
+data of any kind AND `web_fetch` cannot read its pages, so every product used to take the worst path there
+is — ~$0.29 guessing from a web search. Verified end to end on "Bake For You Peanut Butter - Crunchy":
+**$0.0296, 9.3 s, 0 searches, `product-page` tier**, and the figures (24.0 / 48.8 / 21.1 / 5.2) match what
+the photo actually shows — checked by eye, not just believed.
+
+```
+https://ssecomm.s3.ap-southeast-1.amazonaws.com/products/{sm|md|lg}/{imgKey}.{0..totalImg-1}.jpg
+```
+
+`src/core/stores/shengsiong-images.ts` builds them. Public S3, **not** behind Incapsula — the only Sheng
+Siong URLs in this project an ordinary `fetch` can reach.
+
+⚠️ **`totalImg` is load-bearing and is in the DETAIL record only.** An index past the end returns **403**,
+not 404, and an unreachable image fails the whole API request rather than being skipped. The extension gets
+`totalImg` free from `Products.getOneByIdOrSlug`; **search results do not carry it**, which is the open
+question for the deals page (see Remaining work 20).
+
+⚠️ **Index 0 is always the front** — it is the thumbnail the search results use, and it is the marketing
+face. Verified by looking at both: index 0 was "Cholesterol Free / Trans Fat Free", index 1 the nutrition
+panel, legible and carrying its own Per-100g column. `shengSiongPackShots` returns index 0 anyway and
+`packShotsFor` drops it, so the "never the front" rule stays in one place.
+
+⚠️ `lg` is the largest size the bucket serves — `sm` 17 KB, `md` 85 KB, `lg` 256 KB; `xl`, `org`,
+`original` and the bare path all 403.
 
 ### Testing without burning money
 
@@ -917,6 +940,13 @@ image paths; `selectPackShots` would need a second naming convention taught to i
     misleads a year from now. `hasMacros()` in `flow.js` is a third, older one.
 18. **Docs not yet caught up with the 2026-08-04 redesign:** `CHANGELOG.md` and
     `extension/README.md`. This file is current.
+20. **Sheng Siong pack shots reach the EXTENSION only.** The deals page cannot
+    build them: `imgKey` is in the search record but `totalImg` is not, and an
+    index past the end 403s. Two ways round it — a HEAD probe on index 1 at build
+    time (~30 cheap S3 requests a day, no WAF, self-correcting), or one
+    `getOneByIdOrSlug` per matched product during the scan (authoritative, but ~30
+    extra DDP calls on a connection already fighting Incapsula). The probe is the
+    lighter of the two.
 19. Two known extension quirks, neither a bug:
     - A Sheng Siong egg carton reads `550 g / By Gram`, because they record the
       piece count in the NAME ("Fresh Eggs (10s)") and not in `packSize`. Switch

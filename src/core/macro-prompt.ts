@@ -33,6 +33,10 @@
  * and the user is the one who decides whether that is good enough to keep.
  */
 
+// The only import this file has, and it keeps the rule: `shengsiong-images.ts` is
+// pure too — no Node, no I/O — so the extension still bundles this module verbatim.
+import { shengSiongViewIndex } from "./stores/shengsiong-images.js";
+
 /** Grams per 100 g (or per 100 ml) of product. */
 export interface Macros {
 	proteinPer100g: number | null;
@@ -179,10 +183,7 @@ export function selectPackShots(images: readonly string[] | undefined, max = MAX
 	const ranked: { url: string; rank: number }[] = [];
 	for (const url of images ?? []) {
 		if (typeof url !== "string" || !/^https:\/\//i.test(url)) continue;
-		const view = PACK_SHOT_VIEW.exec(url)?.[1]?.toUpperCase();
-		// "" is the front shot — a known view, and one we are choosing not to send.
-		if (!view) continue;
-		const rank = VIEW_RANK[view];
+		const rank = viewRank(url);
 		if (rank == null) continue;
 		if (!ranked.some((r) => r.url === url)) ranked.push({ url, rank });
 	}
@@ -190,6 +191,37 @@ export function selectPackShots(images: readonly string[] | undefined, max = MAX
 		.sort((a, b) => a.rank - b.rank)
 		.slice(0, max)
 		.map((r) => r.url);
+}
+
+/**
+ * How good a label shot is this URL likely to be — lower is better — or null for
+ * "not a label shot", which covers both the front view and a convention we don't
+ * recognise.
+ *
+ * Two stores, two schemes, one rule: **the front is never a label shot.**
+ *
+ * - FairPrice bakes the view into the filename (`_BXL1_` back, `_LXL1_`/`_RXL1_`
+ *   sides, plain `_XL1_` front).
+ * - Sheng Siong numbers them `.0`, `.1`, `.2` with no view marker at all, and
+ *   index 0 is always the front — verified 2026-08-04 by looking at both: index 0
+ *   was the marketing face ("Cholesterol Free", "Trans Fat Free"), index 1 the
+ *   nutrition panel. So index ≥ 1 is a candidate and 0 never is.
+ *
+ * A URL matching neither scheme scores null rather than being guessed at. For a
+ * shop whose naming we have not measured, "no images" is the honest answer and the
+ * cheaper mistake — it costs a text-only lookup, where a wrong guess costs a wrong
+ * number written into the plan.
+ */
+function viewRank(url: string): number | null {
+	const view = PACK_SHOT_VIEW.exec(url)?.[1]?.toUpperCase();
+	// A FairPrice URL always matches the pattern; "" is its front shot.
+	if (view != null) return view ? (VIEW_RANK[view] ?? null) : null;
+
+	const idx = shengSiongViewIndex(url);
+	if (idx == null || idx < 1) return null;
+	// Index 1 is the back on every product measured, so it ranks first; later
+	// indices are the sides and rank behind it.
+	return idx - 1;
 }
 
 /**

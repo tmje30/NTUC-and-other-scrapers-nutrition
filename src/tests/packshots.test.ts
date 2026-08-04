@@ -5,6 +5,7 @@ import {
 	packShotsFor,
 	selectPackShots,
 } from "../core/macro-prompt.js";
+import { shengSiongPackShots } from "../core/stores/shengsiong-images.js";
 import { check, describe, eq } from "./harness.js";
 
 /**
@@ -82,6 +83,53 @@ eq(
 eq("canned tuna is not a commodity", shots({ product: "FairPrice Tuna Flakes - In Water", images: [front, back] }), 1);
 eq("fresh milk is not a commodity", shots({ product: "[BCRS] Farmhouse Milk - Fresh", images: [front, otherSkuLeft] }), 1);
 eq("commodity with no images", shots({ product: "Sumifru Sweet Mountain Bananas", categoryKey: "produce" }), 0);
+
+/**
+ * Sheng Siong's scheme — a second convention, and a very different one.
+ *
+ * FairPrice bakes the view into the filename; Sheng Siong numbers them `.0`, `.1`,
+ * `.2` with no marker at all. Index 0 is always the front — verified 2026-08-04 by
+ * looking at both: index 0 was the marketing face ("Cholesterol Free"), index 1 the
+ * nutrition panel, legible and carrying its own Per-100g column.
+ *
+ * This matters more here than at FairPrice: Sheng Siong publishes no nutrition data
+ * and `web_fetch` cannot read its pages either, so without these photos its products
+ * take the ~$0.29 guess-from-a-web-search path. With them, ~$0.03.
+ */
+describe("pack shots — Sheng Siong's numbered scheme");
+
+const SS = "https://ssecomm.s3.ap-southeast-1.amazonaws.com/products/lg";
+const KEY = "qmuntLDsvIewDRGoQl2yWBoTTNqsxB";
+
+eq("three images built from key + count", shengSiongPackShots(KEY, 3), [
+	`${SS}/${KEY}.0.jpg`,
+	`${SS}/${KEY}.1.jpg`,
+	`${SS}/${KEY}.2.jpg`,
+]);
+eq("the front is built but never selected", selectPackShots(shengSiongPackShots(KEY, 3)), [
+	`${SS}/${KEY}.1.jpg`,
+	`${SS}/${KEY}.2.jpg`,
+]);
+eq("a single-image product yields no label shot", selectPackShots(shengSiongPackShots(KEY, 1)), []);
+eq("index 1 outranks index 2", selectPackShots(shengSiongPackShots(KEY, 3), 1), [`${SS}/${KEY}.1.jpg`]);
+
+// ⚠️ totalImg is load-bearing: an index past the end returns 403, not 404, and an
+// unreachable image fails the whole API request rather than being skipped.
+eq("no count means no urls", shengSiongPackShots(KEY, 0), []);
+eq("a missing count means no urls", shengSiongPackShots(KEY, undefined), []);
+eq("a missing key means no urls", shengSiongPackShots("", 3), []);
+// The key lands in a URL path, so anything but the opaque token is refused — a
+// stray slash or dot would silently address a different object.
+eq("a key with a path separator is refused", shengSiongPackShots("ab/../c", 3), []);
+eq("a key with a dot is refused", shengSiongPackShots("abc.0", 3), []);
+
+// Both schemes must coexist: a mixed list is ranked without either one poisoning
+// the other, which is what will happen the day a third store arrives.
+eq(
+	"the two conventions coexist",
+	selectPackShots([front, back, `${SS}/${KEY}.0.jpg`, `${SS}/${KEY}.1.jpg`], 4),
+	[back, `${SS}/${KEY}.1.jpg`],
+);
 
 /** The wire shape both transports send, and the prompt that must agree with it. */
 describe("pack shots — the user turn");
