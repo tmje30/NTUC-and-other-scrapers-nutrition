@@ -1,6 +1,6 @@
 # Grocery Deal Scraper — System Guide
 
-*Last updated: 2026-08-05 · Covers changes through commit a50fc7a*
+*Last updated: 2026-08-05 · Covers changes through commit f09a505*
 
 ## What this is
 
@@ -57,12 +57,14 @@ browsing.
   Yes. **Add** files it as a *new* ingredient; **Replace** re-bases the existing
   ingredient onto it (new name, price, pack size, unit and vendor). Replace asks
   first and cannot be undone.
-- **"How do I get rid of a bad match?"** Three levels, all on the card. The `⋯`
-  menu holds **Ignore 1× week** (quiet until Monday), **Mismatch item** (ban words
-  for that ingredient, permanently) and **Almost, but no** (block this one product
-  for this one ingredient). The red **Ignore** button retires a *product* outright,
-  for every ingredient, forever. All of them teach the matcher rather than just
-  hiding today's card.
+- **"I don't want to be asked about this again this week."** Tap **Ignore 1wk**,
+  under Buy. The ingredient isn't searched again until Monday, and it's undone from
+  the list at the foot of the page.
+- **"How do I get rid of a bad match?"** The `⋯` menu holds three corrections:
+  **Ignore for good** (retires that *product* for every ingredient, permanently),
+  **Mismatch item** (ban words for that ingredient) and **Almost, but no** (block
+  this one product for this one ingredient). All of them teach the matcher rather
+  than just hiding today's card.
 - **"Where did that price go?"** A second page — **History** — links from the
   footer. It lists what you bought and when, ingredients you've parked, and
   products you've banned outright. It exists because the deals page has to forget
@@ -341,12 +343,12 @@ Each card carries five controls in two groups — two on the left, three on a ri
 rail — plus a `⋯` correction menu:
 
 ```
-[Buy]     Peanut Butter, Smooth                          −31%
-[Ignore]  [500g] Price $8.20                               ⋯
-          FairPrice · Skippy Peanut Butter Spread        [Add]
-          [500g] $5.65 on sale (−15%)                [Replace]
-          $11.30/kg vs $16.40/kg                     [Macros]
-          uses ~400g/month                      has macro
+[Buy]      Peanut Butter, Smooth                         −31%
+[Ignore    [500g] Price $8.20                              ⋯
+ 1wk]      FairPrice · Skippy Peanut Butter Spread       [Add]
+           [500g] $5.65 on sale (−15%)               [Replace]
+           $11.30/kg vs $16.40/kg                    [Macros]
+           uses ~400g/month                     has macro
 ```
 
 - **Buy** — writes the row to the Notion **grocery List** (Name `[NTUC] Milk`,
@@ -354,9 +356,9 @@ rail — plus a `⋯` correction menu:
   left empty), records a cooldown, and appends to the purchase log. Column names
   are resolved from the live Notion schema at write time, never hardcoded, because
   they drift.
-- **Ignore** — retires this **product** for every ingredient, permanently. Scoped
-  to the product, not the ingredient: the ingredient stays in the plan and every
-  other product still competes for it. There is no button that undoes it.
+- **Ignore 1wk** — snoozes this **ingredient** until Monday 00:00 SGT. Nothing is
+  searched for it until then, and it's undone with **Reset** from the list at the
+  foot of the page. Deliberately not red: on this page red means "no undo".
 - **Add** — files today's match into **Ingredients** as a new row.
 - **Replace** — re-bases the ingredient that *seeded* the search onto today's
   match: `Name`, `Price,SGD`, `Weight /Units of New Product `, `Unit type ` and
@@ -367,12 +369,23 @@ rail — plus a `⋯` correction menu:
   lookup for that card only.
 - **has macro / no macro** — whether this listing's nutrition is free to file.
 
-The `⋯` menu holds the three corrections: **Ignore 1× week** (a cooldown until
-Monday 00:00 SGT, tagged so the page lists it as ignored rather than bought),
-**Mismatch item** (bans words for that ingredient permanently — the page proposes
-the words and you edit the list before anything is saved), and **Almost, but no**
-(blocks one product for one ingredient, for a near-miss whose defining property
-the shop simply doesn't state).
+The `⋯` menu holds the three corrections: **Ignore for good** (retires this
+**product** for every ingredient, permanently — red, confirms first, and the one
+control on the page with no undo; coming back means editing
+`data/exclusions.json`), **Mismatch item** (bans words for that ingredient
+permanently — the page proposes the words and you edit the list before anything is
+saved), and **Almost, but no** (blocks one product for one ingredient, for a
+near-miss whose defining property the shop simply doesn't state).
+
+⚠️ **The two ignores are different scopes, not two durations of one thing.**
+`Ignore 1wk` suppresses the *ingredient* for a week; `Ignore for good` retires a
+*product* forever. A permanent ingredient-level ignore is a different mechanism
+again — the `Don't Search` tag, set by hand in Notion.
+
+They swapped places on 2026-08-05: the button used to hold the permanent block and
+the menu the weekly snooze. Neither *action* changed, only which control emits it.
+The reversible correction is the reachable one because it is the one reached for
+most often; the irreversible one sits behind the menu's two taps.
 
 Corrections live in `src/core/exclusions.ts` (pure) + `exclusions-file.ts` →
 `data/exclusions.json`, applied in `findDeal`/`findReview` and keyed by
@@ -621,7 +634,7 @@ under `src/` imports from `extension/`.
 
 ### Tests — `npm test`
 
-**167 offline cases in `src/tests/`**, free and fast. Six suites: pack-shot
+**178 offline cases in `src/tests/`**, free and fast. Six suites: pack-shot
 selection and its commodity gate, nutrition-panel parsing, macro-reply parsing,
 name derivation, the deals page's markup, and marketplace size parsing.
 
@@ -743,7 +756,7 @@ why `vendor-probe` prints its egress IP and flags datacenter addresses.
   address means nothing.
 - **`npm run ext:build`** — rebuild the Chrome extension's `dist/`. Required after
   editing `synonyms.json`.
-- **`npm test`** — the 167 offline cases. Free, fast, no network.
+- **`npm test`** — the 178 offline cases. Free, fast, no network.
 - **`npm run check`** — TypeScript type-check (no emit). **`npm run build`** emits
   `dist/`.
 
@@ -903,6 +916,14 @@ Other requirements:
 
 ## What changed in this update
 
+- **2026-08-05 — The two ignores swapped places.** The button under Buy used to
+  retire a product permanently and the `⋯` menu used to hold the weekly snooze;
+  they traded. The button is now **Ignore 1wk** (snoozes the ingredient until
+  Monday, undoable) and the menu holds **Ignore for good** (retires the product
+  for every ingredient, no undo, confirms first and is the only red control on the
+  page). Neither behaviour changed — only which control triggers it. The
+  reversible correction is the reachable one because it is the one used most; the
+  irreversible one now takes two taps.
 - **2026-08-05 — Everything the guide had not caught up with.** The guide had
   drifted: it described the daily scan accurately but knew nothing about the
   write-back half of the system, which is now most of it. Added in this pass:
