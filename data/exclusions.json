@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-03T00:54:34.769Z",
+  "updatedAt": "2026-08-05T06:08:37.181Z",
   "terms": [],
   "products": [
     {
@@ -11,6 +11,15 @@
       "name": "Apple Cider vinegar (Unpasteurized)",
       "note": "close, but not confirmed",
       "addedAt": "2026-08-03T00:54:34.769Z"
+    },
+    {
+      "key": "*",
+      "store": "Sheng Siong",
+      "product": "Light Soya Sauce",
+      "url": "https://shengsiong.com.sg/product/golden-summit-light-soya-sauce-5-l",
+      "name": "Soy Sauce (light)",
+      "note": "ignored from the deals page",
+      "addedAt": "2026-08-05T06:08:37.181Z"
     }
   ]
 }
