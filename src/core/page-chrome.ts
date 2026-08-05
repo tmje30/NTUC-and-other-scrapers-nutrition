@@ -72,8 +72,10 @@ export const PAGE_CSS = `
     transition: transform .05s ease; }
   .act:active { transform: scale(.94); }
   .act[data-state="done"] { color: #067647; background: #ecfdf3; border-color: #a6f4c5; }
-  /* Ignore 1wk: sits under Buy, so it takes that column's size — but keeps the
-     neutral .act grey. Reversible things are not painted red on this page.
+  /* Ignore 1wk: sits under Buy, so it takes that column's size, and is RED like the
+     permanent one (asked for 2026-08-05). Both ignores therefore read as "this
+     removes something" and the difference is the label and the two taps, not the
+     colour — red no longer means "no undo" on its own.
      ⚠️ It WRAPS, overriding .act's nowrap, and that is the whole point. The .cta
      column is stretch-sized by its widest child, so a one-line "Ignore 1wk" widened
      it by ~45px and took that straight out of the product name on a phone — the
@@ -81,11 +83,10 @@ export const PAGE_CSS = `
      the column at Buy's width and cost nothing but a few pixels of height. */
   .act.week { min-height: 34px; font-size: .85rem; font-weight: 700;
     white-space: normal; line-height: 1.15; padding: 4px 8px; text-align: center; }
-  /* Ignore for good: red, because it is the only control on this page that throws
-     something away with no undo. It lives in the ⋯ menu (since 2026-08-05), where
-     .panel .act already sizes it; the colour is all this rule is for. Its "done"
-     stays red rather than turning green — the outcome is a removal, not an
-     addition. */
+  /* Ignore, both of them: red, because they take something off the page. The
+     permanent one lives in the ⋯ menu (since 2026-08-05), where .panel .act sizes
+     it; colour is all this rule is for. "done" stays red rather than turning green
+     — the outcome is a removal, not an addition. */
   .act.ignore { color: #b42318; background: #fef3f2; border-color: #fecdca;
     font-weight: 700; }
   .act.ignore[data-state="done"] { color: #fff; background: #b42318; border-color: #b42318; }

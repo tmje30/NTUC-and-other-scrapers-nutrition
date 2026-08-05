@@ -118,22 +118,31 @@ check("the grocery issue prefix is still Add:", html.includes(encodeURIComponent
  * "Ignore", both settle on "✓ ignored", and the difference only shows up days later
  * as a product that never comes back. The pairing that must hold is:
  *
- *   reachable (one tap, CTA column)  →  ignore-week    →  reversible, not red
- *   behind the ⋯ menu (two taps)     →  ignore-product →  no undo, red, confirms
+ *   reachable (one tap, CTA column)  →  ignore-week    →  reversible, undoable
+ *   behind the ⋯ menu (two taps)     →  ignore-product →  no undo, confirms
+ *
+ * ⚠️ Both are RED (asked for 2026-08-05), so colour no longer tells them apart —
+ * the label, the action and the confirm dialog do. That makes these cases more
+ * load-bearing than they were, not less.
  */
 describe("deals page — the two ignores");
 
-// The CTA column's lower button. `.act week` is the sizing class it took when it
-// stopped being red; if it reads `.act ignore` here, the swap has been undone.
-check("the CTA button is the weekly one", /class="act week"[^>]*>[\s\S]*?Ignore 1wk/.test(html));
+// The CTA column's lower button. `week` sizes it and lets the label wrap; `ignore`
+// is the shared red paint.
+check("the CTA button is the weekly one", /class="act week ignore"[^>]*>[\s\S]*?Ignore 1wk/.test(html));
 check("the CTA button emits ignore-week", html.includes("&quot;action&quot;:&quot;ignore-week&quot;"));
-check("the weekly button is not painted red", !/class="act week ignore"|class="act ignore week"/.test(html));
 
-// The menu entry. Red, and it must keep the dialog — it is the only control on the
-// page with no undo.
+// The menu entry. Red too, and it must keep the dialog — it is the only control on
+// the page with no undo.
 check("the menu holds the permanent one", html.includes(">Ignore for good<"));
 check("the menu entry emits ignore-product", html.includes("&quot;action&quot;:&quot;ignore-product&quot;"));
 check("the permanent one is still red", /class="act ignore"/.test(html));
+check("the weekly one is red as well", /class="act week ignore"/.test(html));
+
+// ⚠️ The weekly button must NOT pick up the confirm dialog just because it now
+// shares a class with the permanent one. Colour is shared; behaviour is not.
+const weekTag = html.match(/<a class="act week ignore"[^>]*>/)?.[0] ?? "";
+check("the weekly one does not confirm", !weekTag.includes("data-confirm"));
 
 // ⚠️ The confirm has to travel WITH the permanent action, not stay on the button
 // that used to hold it. A permanent block that fires without asking is the exact
@@ -212,3 +221,40 @@ const commodityPage = renderDealsPage(
 	{ repo: "tmje30/NTUC-and-other-scrapers-nutrition" },
 );
 check("a fresh commodity ships no photographs", !commodityPage.includes("_BXL1_"));
+
+/**
+ * `Weekly Buy` has to survive the trip from Notion to the workflow.
+ *
+ * The tag is read in `readGroceryTargets`, put into the payload at page-build time
+ * by `addPayload`, and only read again days later when someone taps Buy and
+ * `planCooldown` runs in Actions. Nothing in between would fail if the field were
+ * dropped — the add still works, the row still lands, and the only symptom is a
+ * banana that goes quiet for six weeks. So the wiring is pinned here.
+ */
+describe("deals page — Weekly Buy reaches the payload");
+
+const weeklyPage = renderDealsPage(
+	[
+		deal(
+			target({
+				name: "Banana (Fruit)",
+				weeklyBuy: true,
+				search: { searchTerm: "banana", mustMatch: [], properties: [], keywords: [] },
+			}),
+			product({ name: "Fresh Bananas", nutritionHtml: null, onSale: false, listPriceSgd: null }),
+			22,
+		),
+	],
+	[],
+	new Date(),
+	[],
+	{ repo: "tmje30/NTUC-and-other-scrapers-nutrition" },
+);
+
+check("the flag is in the one-tap JSON", weeklyPage.includes("&quot;weeklyBuy&quot;:true"));
+check("and in the two-tap issue body", weeklyPage.includes(encodeURIComponent('"weeklyBuy": true')));
+
+// ⚠️ An untagged item must not carry a truthy flag — every other row on the page
+// would otherwise take the 5-day route and the whole cooldown formula would be dead
+// code that still typechecks.
+check("an untagged item does not claim the flag", !html.includes("&quot;weeklyBuy&quot;:true"));

@@ -122,6 +122,10 @@ function addPayload(t: PlanTarget, p: StoreProduct, ingredient = t.name): AddPay
 		packSizeG: boughtG,
 		volumetric: p.volumetric,
 		monthlyAmount: t.monthlyAmountG,
+		// Rides in the payload rather than being looked up when the workflow runs:
+		// the cooldown is worked out from what the card SHOWED, and the tag is part
+		// of that. It also keeps `add-to-list` free of a second Notion read.
+		weeklyBuy: t.weeklyBuy,
 		url: p.url,
 	};
 }
@@ -238,8 +242,11 @@ function actionButton(
  * The reversible one is out here on purpose now: it is the correction reached for
  * most often ("not wrong, just not this week"), it is undone from the list at the
  * foot of the page, and putting it a single tap away costs nothing if mis-tapped.
- * It is deliberately NOT red — red on this page means "no undo", which is now the
- * menu's `Ignore for good`, not this.
+ *
+ * It is **red**, sharing `.act.ignore`'s paint with the permanent one (asked for
+ * 2026-08-05). So red no longer means "no undo" by itself — it means "this takes
+ * something off the page", and what separates the two ignores is the label and the
+ * menu's extra tap, not the colour.
  *
  * Scope: the INGREDIENT, not the product. Nothing is searched for it until the
  * start of next week; every product still competes for it when it comes back.
@@ -260,9 +267,10 @@ function ignoreWeekButton(t: PlanTarget, p: StoreProduct, o: PageOptions): strin
 		{
 			label: "Ignore 1wk",
 			done: "✓ ignored",
-			// Sizes it to match Buy above it. Carries no colour of its own — the
-			// neutral `.act` grey is the point, against Buy's green and the menu's red.
-			cls: "week",
+			// `week` sizes it to match Buy and lets the label wrap; `ignore` is the
+			// shared red paint, reused rather than copied so the two ignores cannot
+			// drift to different reds in light or dark mode.
+			cls: "week ignore",
 			aria: `Ignore ${t.name} until the start of next week`,
 			prose:
 				`Ignoring **${t.name}** from the deals page: don't search for it again ` +

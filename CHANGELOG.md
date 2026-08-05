@@ -307,7 +307,32 @@ All notable changes to this project are documented here. Format based on
   commodity gate spends real money. Equivalent suites had been written and thrown
   away with the session four times before this.
 
+### Added
+- **`Weekly Buy` now sets the cooldown** (2026-08-05). The tag was read off the
+  Notion row and used by nothing. A tagged ingredient now goes quiet for a flat
+  **5 days** after a Buy, whatever the pack size — bananas are a weekly shop
+  whether you came home with three or a dozen.
+  ⚠️ Checked **before** the `pack ÷ usage × 0.75` sum, not after: the tag means
+  "ignore the arithmetic", not "adjust it". Left to the formula, a 2 kg buy against
+  1 kg/month goes quiet for 46 days — six weeks of not being shown a weekly fruit.
+  Five and not seven for the same reason the sum keeps its 25% haircut: the item is
+  back in the scan a couple of days before the next shop.
+  ⚠️ It is a **cooldown** rule, not a matching rule — a weekly item is searched,
+  scored and priced exactly like any other.
+  The flag rides in `AddPayload.weeklyBuy` (optional, so an issue still open from
+  an older page parses and takes the old route), set at page-build time from
+  `PlanTarget.weeklyBuy`. `planCooldown` moved its trailing booleans into a
+  `CooldownOptions` object — `planCooldown(a, b, now, true, true)` is a call nobody
+  can read. New `src/tests/cooldown.test.ts` (13 cases) pins both failure
+  directions, since dropping the flag hides a staple for six weeks and applying it
+  too widely collapses every cooldown to 5 days, and neither announces itself.
+
 ### Changed
+- **`Ignore 1wk` is red** (2026-08-05, by request), sharing `.act.ignore` with the
+  permanent one rather than the neutral grey it briefly shipped with. Red now marks
+  "this takes something off the page"; the label, the action and the menu's extra
+  tap are what distinguish the two. ⚠️ The weekly button must not inherit the
+  confirm dialog along with the class — there is a test for that.
 - **The two ignores traded places** (2026-08-05, by request). The button under Buy
   was the permanent product block and the `⋯` menu held the weekly snooze; now the
   button is **`Ignore 1wk`** and the menu holds **`Ignore for good`**. Both actions

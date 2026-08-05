@@ -80,7 +80,10 @@ const payload = readPayload();
 const now = new Date();
 
 // Cooldown first, so the numbers appear in the log even on a dry run.
-const cd = planCooldown(payload.packSizeG, payload.monthlyAmount, now, payload.volumetric);
+const cd = planCooldown(payload.packSizeG, payload.monthlyAmount, now, {
+	volumetric: payload.volumetric,
+	weeklyBuy: payload.weeklyBuy,
+});
 console.error(`Cooldown: ${cd.days} days (${cd.basis}) — key "${payload.key}"`);
 
 if (dryRun) {

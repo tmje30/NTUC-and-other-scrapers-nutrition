@@ -212,7 +212,25 @@ machinery too would have broken every in-flight issue for nothing, so don't.
 **Cooldown = `pack size ÷ monthly usage × 0.75`** — the 25% haircut brings the
 item back before the cupboard is empty, leaving a window to catch a deal. 1 kg
 of garlic at 500 g/month → 2 months of cover → **46 days**. No monthly usage
-(anything outside the active plan) → flat **14 days**. Entries are keyed on the
+(anything outside the active plan) → flat **14 days**.
+
+⚠️ **Unless the row is tagged `Weekly Buy` (added 2026-08-05), which is checked
+FIRST and skips the sum entirely: flat 5 days, whatever was bought.** Some things
+are bought on a rhythm rather than when they run out — bananas are a weekly shop
+whether you came home with three or a dozen — so a bigger pack must not buy more
+silence. Left to the formula, a 2 kg buy against 1 kg/month goes quiet for 46
+days: six weeks of not being shown a fruit the user buys every week. Five and not
+seven for the same reason the sum keeps its haircut.
+
+The tag rides in the `AddPayload` (`weeklyBuy`, optional so an issue still open
+from an older page parses and simply takes the old route), set by `addPayload()`
+at page-build time from `PlanTarget.weeklyBuy`. It is **not** a matching rule — a
+weekly item is searched, scored and priced exactly like any other. `planCooldown`
+now takes its flags as an options object rather than a fourth and fifth positional
+boolean, because `planCooldown(a, b, now, true, true)` is a call nobody can read.
+⚠️ The failure mode here is silent in both directions: dropped, the pack size wins
+and a staple disappears for six weeks; applied too widely, every cooldown collapses
+to 5 days. `src/tests/cooldown.test.ts` pins both ends. Entries are keyed on the
 stemmed base noun (`onion`), so one entry covers "Onion (White)", "Onions" etc.
 — but deliberately NOT "Garlic Powder" when you bought "Garlic". `runOnce()`
 drops snoozed targets *before* collecting search terms, so neither the cloud nor
@@ -340,8 +358,16 @@ user sets by hand in Notion.
 
 The reasoning for the swap: the reversible correction is the one reached for most
 often, so it belongs one tap away; the irreversible one belongs behind the
-`<details>`, where it takes two. **Red now means "no undo"** on this page and
-nothing else — the weekly button is deliberately the neutral `.act` grey.
+`<details>`, where it takes two.
+
+⚠️ **Both are RED** (asked for the same day, after the weekly button briefly
+shipped grey). So colour does NOT distinguish them — red marks "this takes
+something off the page", and what separates the two is the label, the action and
+the menu's extra tap. The weekly button carries `class="act week ignore"`: `week`
+sizes it and lets the label wrap, `ignore` is the shared paint, reused rather than
+copied so the two cannot drift to different reds in light or dark mode. It must
+**not** pick up the confirm dialog along with the class — there is a test for
+exactly that.
 
 ⚠️ **`.cta { max-width: 78px }` is load-bearing.** The column is stretch-sized by
 its widest child, so "Ignore 1wk" on one line widened it by ~45px and took that
@@ -957,9 +983,10 @@ panel, legible and carrying its own Per-100g column. `shengSiongPackShots` retur
   both cost and behaviour). `--image` is repeatable and takes the shop's URLs **unfiltered**, exactly as
   the extension hands them over; the line it prints says how many of them `packShotsFor` actually attached,
   so "3 image URLs given, 1 attached" is the gate working.
-- **`npm test` — 178 offline cases, free and in the repo** (`src/tests/`). Six suites: pack-shot selection
+- **`npm test` — 195 offline cases, free and in the repo** (`src/tests/`). Seven suites: pack-shot selection
   and its commodity gate, nutrition-panel parsing, macro-reply parsing, name derivation, marketplace size
-  parsing, and the deals page's markup (including the two ignores — see above). No test
+  parsing, cooldown length (including the Weekly Buy route), and the deals page's markup
+  (including the two ignores — see above). No test
   runner and no new dependency — each file registers cases into `harness.ts` and `run.ts` sets the exit code.
   Nothing here calls Notion, a shop or Anthropic: a test that costs 29 cents is a test nobody runs.
   ⚠️ They cover exactly the functions where being *quietly* wrong is the danger — a misread serving size is
@@ -1106,7 +1133,7 @@ Both made a bad deal look good — the same family as the 32 g serving read as 1
   size? Writes nothing. `--only a,b`, `--browser`, `--headed`, `--login shopee`.
   ⚠️ Prints its egress IP first — a 403 from a datacenter address means nothing.
 - `npm run check` — typecheck.
-- `npm test` — **178** offline cases (`src/tests/`). Free, fast, no network.
+- `npm test` — **195** offline cases (`src/tests/`). Free, fast, no network.
 
 ## Key technical facts (details in LEARNINGS.md)
 

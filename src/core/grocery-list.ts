@@ -126,6 +126,16 @@ export interface AddPayload {
 	volumetric: boolean;
 	/** Monthly usage of the ingredient, grams/ml. 0 when it isn't in the plan. */
 	monthlyAmount: number;
+	/**
+	 * The ingredient is tagged `Weekly Buy` in Notion: the cooldown is a flat 5
+	 * days and `packSizeG` is ignored.
+	 *
+	 * Optional, like `myPriceSgd`: a payload built before this field existed (an
+	 * issue still open from an earlier page) parses fine and simply takes the old
+	 * pack-size route. Absent is not the same as false in meaning, but it is in
+	 * effect, and losing an in-flight add to a schema change would be worse.
+	 */
+	weeklyBuy?: boolean;
 	url: string;
 }
 
@@ -161,6 +171,7 @@ export function parseAddPayload(raw: unknown): AddPayload {
 		packSizeG: packSizeG != null && Number.isFinite(packSizeG) ? packSizeG : null,
 		volumetric: Boolean(o.volumetric),
 		monthlyAmount: Number.isFinite(Number(o.monthlyAmount)) ? Number(o.monthlyAmount) : 0,
+		weeklyBuy: Boolean(o.weeklyBuy),
 		url: typeof o.url === "string" ? o.url : "",
 	};
 }

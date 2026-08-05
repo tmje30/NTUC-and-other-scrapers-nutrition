@@ -15,6 +15,10 @@ import { normSynonyms, stem } from "./match.js";
  * full price. The user's worked example: 1 kg of garlic, 500 g used a month →
  * 2 months of cover → search again in 1.5 months.
  *
+ * ⚠️ Rows tagged **`Weekly Buy`** opt out of that sum altogether and take a flat
+ * 5 days — see `WEEKLY_BUY_COOLDOWN_DAYS`. Some things are bought on a rhythm
+ * rather than when they run out.
+ *
  * This module is pure (no I/O) so both the Node scripts and any future
  * serverless handler can share the same arithmetic. File persistence lives in
  * `cooldown-file.ts`.
@@ -31,6 +35,22 @@ const HEADROOM = 0.75;
  * where `pack ÷ usage` has no usage to divide by. Chosen by the user.
  */
 export const NO_USAGE_COOLDOWN_DAYS = 14;
+
+/**
+ * Items tagged `Weekly Buy` in Notion are re-bought on a rhythm, not when the pack
+ * runs out — bananas are a weekly shop whether you came home with three or a dozen.
+ * So the pack-size sum is skipped entirely and the item comes back after 5 days.
+ *
+ * ⚠️ **This overrides the pack/usage arithmetic rather than adjusting it**, which
+ * is the whole point of the tag: buying a bigger bunch must NOT buy more silence.
+ * Left to the formula, a 2 kg buy against 1 kg/month would have gone quiet for
+ * 46 days — six weeks of not being shown a fruit the user buys every week.
+ *
+ * Five and not seven, for the same reason the pack sum keeps a 25% haircut: the
+ * item is back in the scan a couple of days before the next shop, so a deal can
+ * actually be caught rather than found the day after it was needed.
+ */
+export const WEEKLY_BUY_COOLDOWN_DAYS = 5;
 
 /** Guard rails against nonsense pack/usage data producing a decade-long silence. */
 const MIN_DAYS = 1;
@@ -140,6 +160,18 @@ function packLabel(g: number, volumetric: boolean): string {
 	return g >= 1000 ? `${+(g / 1000).toFixed(2)}${big}` : `${Math.round(g)}${small}`;
 }
 
+/** The flags that change how a cooldown is worked out. */
+export interface CooldownOptions {
+	/** Litres/ml rather than kg/g — display only, it does not change the sum. */
+	volumetric?: boolean;
+	/**
+	 * The row is tagged `Weekly Buy`. Skips the pack/usage sum entirely — see
+	 * `WEEKLY_BUY_COOLDOWN_DAYS`. An options object rather than a fifth positional
+	 * argument on purpose: two adjacent booleans is a call nobody can read.
+	 */
+	weeklyBuy?: boolean;
+}
+
 /**
  * How long to stay quiet about an item after buying `packSizeG` of it.
  *
@@ -147,17 +179,31 @@ function packLabel(g: number, volumetric: boolean): string {
  * the user's usual pack — buying a 5 kg sack should buy more silence than the
  * 1 kg one they normally get. Falls back to a flat 14 days whenever the sum
  * can't be done (no monthly usage, or an unknown pack size).
+ *
+ * Three routes, and the order is deliberate:
+ *
+ *   1. `Weekly Buy`      → flat 5 days, whatever was bought
+ *   2. pack ÷ usage      → the cover, less a 25% haircut
+ *   3. neither is known  → flat 14 days
+ *
+ * The tag is checked FIRST because it means "ignore the arithmetic", not "adjust
+ * it". Checking it later would let a big pack of a weekly item win a long silence
+ * before the tag was ever consulted.
  */
 export function planCooldown(
 	packSizeG: number | null,
 	monthlyAmount: number,
 	from: Date = new Date(),
-	volumetric = false,
+	opts: CooldownOptions = {},
 ): CooldownPlan {
+	const { volumetric = false, weeklyBuy = false } = opts;
 	let days: number;
 	let basis: string;
 
-	if (packSizeG && packSizeG > 0 && monthlyAmount > 0) {
+	if (weeklyBuy) {
+		days = WEEKLY_BUY_COOLDOWN_DAYS;
+		basis = `weekly buy → flat ${WEEKLY_BUY_COOLDOWN_DAYS} days (pack size ignored)`;
+	} else if (packSizeG && packSizeG > 0 && monthlyAmount > 0) {
 		const months = packSizeG / monthlyAmount;
 		days = months * HEADROOM * DAYS_PER_MONTH;
 		basis =

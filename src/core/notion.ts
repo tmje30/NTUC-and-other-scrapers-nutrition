@@ -135,6 +135,15 @@ export interface PlanTarget {
 	qualityItem: boolean;
 	/** True when tagged `Organic/animal welfare`: only certified/welfare products. */
 	organicWelfare: boolean;
+	/**
+	 * True when tagged `Weekly Buy`: bought on a rhythm rather than when the pack
+	 * runs out, so buying more of it does not buy more silence. The cooldown after
+	 * a Buy is a flat 5 days regardless of pack size — see `planCooldown`.
+	 *
+	 * ⚠️ It affects the COOLDOWN only. It is not a matching rule: a weekly item is
+	 * searched, scored and priced exactly like any other.
+	 */
+	weeklyBuy: boolean;
 	/** Whole-pack price (SGD) and pack size (grams for By Gram, count for By Unit). */
 	packPriceSgd: number;
 	packSize: number;
@@ -451,6 +460,7 @@ export async function readGroceryTargets(): Promise<PlanTarget[]> {
 			brandSpecific: hasTag("brand specific"),
 			qualityItem: hasTag("quality item"),
 			organicWelfare: hasTag("organic/animal welfare"),
+			weeklyBuy: hasTag("weekly buy"),
 			packPriceSgd,
 			packSize,
 			packWeightG,
