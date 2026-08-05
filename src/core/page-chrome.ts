@@ -39,11 +39,18 @@ export const PAGE_CSS = `
   .body:active { transform: scale(.995); }
   /* Add: pushes the item onto the Notion grocery list. Deliberately chunky — it's
      the one thing on this page you tap on purpose rather than to read more. */
-  /* Add, and Ignore beneath it. A column of its own, with a real gap: Ignore is
-     permanent and has no undo button, so it must never sit a mis-tap away from
-     the one control you press on purpose. Stretched, so the two match in width. */
+  /* Buy, and Ignore 1wk beneath it. A column of its own, with a real gap so the
+     two are never a mis-tap apart. Stretched, so they match in width.
+     ⚠️ The gap used to be there because the lower button was permanent; since
+     2026-08-05 it is the WEEKLY snooze (undoable from the list at the foot of the
+     page) and the permanent one lives in the ⋯ menu. The gap stays anyway — a
+     mis-tapped snooze still costs you a week of not being offered the item. */
+  /* ⚠️ The max-width is load-bearing, not cosmetic. This column is stretch-sized by
+     its widest child, so "Ignore 1wk" on one line widened it by ~45px and took that
+     out of the product name on a phone. Capped, the label wraps to two short lines
+     and the column stays at Buy's width. Widen this and every card loses text. */
   .cta { flex: 0 0 auto; align-self: flex-start; display: flex; flex-direction: column;
-    align-items: stretch; gap: 12px; }
+    align-items: stretch; gap: 12px; max-width: 78px; }
   .add { flex: 0 0 auto; display: inline-flex; align-items: center;
     justify-content: center; min-width: 52px; min-height: 34px; padding: 0 12px; font: inherit;
     font-size: .85rem; font-weight: 700; text-decoration: none; cursor: pointer;
@@ -65,11 +72,22 @@ export const PAGE_CSS = `
     transition: transform .05s ease; }
   .act:active { transform: scale(.94); }
   .act[data-state="done"] { color: #067647; background: #ecfdf3; border-color: #a6f4c5; }
-  /* Ignore: red, because it is the only button here that throws something away for
-     good. Same height as Add so the pair reads as one column. Its "done" stays red
-     rather than turning green — the outcome is a removal, not an addition. */
-  .act.ignore { min-height: 34px; font-size: .85rem; font-weight: 700; color: #b42318;
-    background: #fef3f2; border-color: #fecdca; }
+  /* Ignore 1wk: sits under Buy, so it takes that column's size — but keeps the
+     neutral .act grey. Reversible things are not painted red on this page.
+     ⚠️ It WRAPS, overriding .act's nowrap, and that is the whole point. The .cta
+     column is stretch-sized by its widest child, so a one-line "Ignore 1wk" widened
+     it by ~45px and took that straight out of the product name on a phone — the
+     same width the four-row card split was made to win back. Two short lines keep
+     the column at Buy's width and cost nothing but a few pixels of height. */
+  .act.week { min-height: 34px; font-size: .85rem; font-weight: 700;
+    white-space: normal; line-height: 1.15; padding: 4px 8px; text-align: center; }
+  /* Ignore for good: red, because it is the only control on this page that throws
+     something away with no undo. It lives in the ⋯ menu (since 2026-08-05), where
+     .panel .act already sizes it; the colour is all this rule is for. Its "done"
+     stays red rather than turning green — the outcome is a removal, not an
+     addition. */
+  .act.ignore { color: #b42318; background: #fef3f2; border-color: #fecdca;
+    font-weight: 700; }
   .act.ignore[data-state="done"] { color: #fff; background: #b42318; border-color: #b42318; }
   .row1 { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
   .name { font-weight: 650; font-size: 1.05rem; }

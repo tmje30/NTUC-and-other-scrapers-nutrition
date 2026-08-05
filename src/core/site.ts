@@ -228,22 +228,71 @@ function actionButton(
 }
 
 /**
- * "Ignore" — the red button under Add. Retires the PRODUCT on this card from
- * every future search, permanently.
+ * "Ignore 1wk" — the button under Buy. Snoozes this ITEM until Monday.
  *
- * Deliberately not in the ⋯ menu with the other corrections, and deliberately not
- * a variation on them: the menu is for "this match was wrong for this item",
- * whereas this is "I never want to see this listing again" — the shop's own
- * repackaged, over-priced or simply unwanted line, which will otherwise come back
- * tomorrow under a different ingredient. So it is scoped to the product and left
- * out of the item's exclusions entirely; the ingredient stays in the plan, still
- * searched, with every other product still competing for it.
+ * ⚠️ **Swapped with the menu's permanent ignore on 2026-08-05, by request.** This
+ * button used to hold `ignore-product` and the menu held `ignore-week`; the two
+ * traded places and nothing about either ACTION changed. If you are reading an
+ * older note that says the button is permanent and red, that note is stale.
  *
- * Confirmed before it fires. There is no button that undoes it — coming back means
- * editing `data/exclusions.json` — so the dialog says what it does and what it
- * does not touch.
+ * The reversible one is out here on purpose now: it is the correction reached for
+ * most often ("not wrong, just not this week"), it is undone from the list at the
+ * foot of the page, and putting it a single tap away costs nothing if mis-tapped.
+ * It is deliberately NOT red — red on this page means "no undo", which is now the
+ * menu's `Ignore for good`, not this.
+ *
+ * Scope: the INGREDIENT, not the product. Nothing is searched for it until the
+ * start of next week; every product still competes for it when it comes back.
  */
-function ignoreButton(t: PlanTarget, p: StoreProduct, o: PageOptions): string {
+function ignoreWeekButton(t: PlanTarget, p: StoreProduct, o: PageOptions): string {
+	return actionButton(
+		{
+			v: 1,
+			action: "ignore-week",
+			key: cooldownKey(t.search.searchTerm),
+			ingredientId: t.ingredientId,
+			name: t.name,
+			store: p.store,
+			product: p.name,
+			url: p.url,
+		},
+		o,
+		{
+			label: "Ignore 1wk",
+			done: "✓ ignored",
+			// Sizes it to match Buy above it. Carries no colour of its own — the
+			// neutral `.act` grey is the point, against Buy's green and the menu's red.
+			cls: "week",
+			aria: `Ignore ${t.name} until the start of next week`,
+			prose:
+				`Ignoring **${t.name}** from the deals page: don't search for it again ` +
+				`until the start of next week.`,
+		},
+	);
+}
+
+/**
+ * "Ignore for good" — the red entry at the top of the ⋯ menu. Retires the PRODUCT
+ * on this card from every future search, permanently.
+ *
+ * ⚠️ **Moved here from the CTA column on 2026-08-05** (see `ignoreWeekButton`).
+ * It keeps its confirm dialog, its red paint and its product scope — only its
+ * position changed. Behind a `<details>` it now takes two taps to reach, which
+ * suits the one control on this page that cannot be undone.
+ *
+ * Deliberately not a variation on the other two corrections beside it: those are
+ * "this match was wrong for this item", whereas this is "I never want to see this
+ * listing again" — the shop's own repackaged, over-priced or simply unwanted line,
+ * which will otherwise come back tomorrow under a different ingredient. So it is
+ * scoped to the product and left out of the item's exclusions entirely; the
+ * ingredient stays in the plan, still searched, with every other product still
+ * competing for it.
+ *
+ * There is no button that undoes it — coming back means editing
+ * `data/exclusions.json` — so the dialog says what it does and what it does not
+ * touch.
+ */
+function ignoreProductButton(t: PlanTarget, p: StoreProduct, o: PageOptions): string {
 	return actionButton(
 		{
 			v: 1,
@@ -257,7 +306,7 @@ function ignoreButton(t: PlanTarget, p: StoreProduct, o: PageOptions): string {
 		},
 		o,
 		{
-			label: "Ignore",
+			label: "Ignore for good",
 			done: "✓ ignored",
 			cls: "ignore",
 			// The issue is about the PRODUCT, so the title says so — every other
@@ -430,14 +479,19 @@ function macroToggle(hasFree: boolean): string {
  *
  * Three corrections, in order of how much they change:
  *
- *  • Ignore 1× week — nothing is wrong with the match, you just don't want to be
- *    asked again this week. Reversible from the list at the bottom of the page.
+ *  • Ignore for good — this PRODUCT is never offered again, for any item. The one
+ *    control on the page with no undo, which is why it is in here rather than out
+ *    beside Buy, why it is red, and why it confirms first. See
+ *    `ignoreProductButton`; it was the CTA-column button until 2026-08-05.
  *  • Mismatch item — the product carries words this item never asked for
  *    ("Instant Coffee" → "Indocafe 3 in 1"). Those words are banned for the item
  *    from the next scan on, so the SEARCH improves rather than just today's page.
  *  • Almost, but no — the right kind of product, but a defining property can't be
  *    confirmed (the item wants unpasteurized; the shop doesn't say). There is no
  *    word to ban, so this one product is blocked and the rest of the shop is not.
+ *
+ * The weekly snooze that used to head this list is now the `Ignore 1wk` button in
+ * the CTA column — the reversible correction is the reachable one.
  *
  * All three go the same way as the Reset/park buttons — a pre-filled GitHub issue,
  * upgraded to one tap where a token is set — because they write to the repo, not
@@ -465,14 +519,7 @@ function actionMenu(t: PlanTarget, p: StoreProduct, o: PageOptions, missing: str
 	const terms = suggestExclusionTerms(itemText, `${p.name} ${p.brand ?? ""}`);
 	const note = missing.length ? `not ${missing.join(", ")}` : "close, but not confirmed";
 
-	const ignore = actionButton({ ...base, action: "ignore-week" }, o, {
-		label: "Ignore 1× week",
-		done: "✓ ignored",
-		aria: `Ignore ${t.name} until the start of next week`,
-		prose:
-			`Ignoring **${t.name}** from the deals page: don't search for it again ` +
-			`until the start of next week.`,
-	});
+	const ignore = ignoreProductButton(t, p, o);
 
 	// Suggested words only — the user edits them before anything is saved. "Extra"
 	// honestly includes the brand, and whether to ban a brand for an item is their
@@ -640,7 +687,7 @@ function dealCard(d: Deal, o: PageOptions): string {
 	// belongs a mis-tap away from three quieter controls.
 	return `
     <div class="card">
-      <div class="cta">${addButton(addPayload(t, p), o)}${ignoreButton(t, p, o)}</div>
+      <div class="cta">${addButton(addPayload(t, p), o)}${ignoreWeekButton(t, p, o)}</div>
       <div class="main">
         <!-- The % saving, the wrong-match menu, then the three Ingredients controls.
              The gap under ⋯ is deliberate: it splits "what this deal is" from
@@ -729,7 +776,7 @@ function recCard(r: ReviewMiss, o: PageOptions): string {
 
 	return `
     <div class="card rec">
-      <div class="cta">${addButton(payload, o)}${ignoreButton(t, p, o)}</div>
+      <div class="cta">${addButton(payload, o)}${ignoreWeekButton(t, p, o)}</div>
       <div class="main">
         <!-- Percentage, the "closest" label, then the menu — this is the section
              where a wrong match is most likely, so the correction sits right under

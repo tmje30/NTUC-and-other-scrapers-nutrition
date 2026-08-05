@@ -308,6 +308,23 @@ All notable changes to this project are documented here. Format based on
   away with the session four times before this.
 
 ### Changed
+- **The two ignores traded places** (2026-08-05, by request). The button under Buy
+  was the permanent product block and the `⋯` menu held the weekly snooze; now the
+  button is **`Ignore 1wk`** and the menu holds **`Ignore for good`**. Both actions
+  (`ignore-week`, `ignore-product`) are unchanged — only which control emits which.
+  The reversible correction is the reachable one because it is the one reached for
+  most often; the irreversible one now takes two taps behind the `<details>`.
+  ⚠️ They are different **scopes**, not two durations of one thing: the button
+  snoozes the *ingredient* until Monday, the menu entry retires a *product* for
+  every ingredient, permanently.
+  ⚠️ Red now means "no undo" and nothing else — the weekly button is the neutral
+  `.act` grey, and `.act.ignore` became colour-only (`.panel .act` sizes it).
+  ⚠️ `.cta { max-width: 78px }` is load-bearing: the column is stretch-sized by its
+  widest child, so "Ignore 1wk" on one line widened it ~45px and took that out of
+  the product name on a phone. Capped, the label wraps to two lines.
+  New `deals page — the two ignores` suite (11 cases) pins the pairing, the confirm
+  dialog staying with the permanent action, and the issue titles naming the product
+  and the ingredient respectively — getting it backwards is otherwise invisible.
 - **Nothing spends money unasked.** No button on any surface starts a paid
   nutrition lookup on its own any more. Adding a row used to look macros up
   automatically whenever the four boxes were empty, so an ordinary tap could

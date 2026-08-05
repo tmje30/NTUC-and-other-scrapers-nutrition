@@ -108,6 +108,56 @@ check("Replace asks before it fires", html.includes("data-confirm"));
 check("the grocery issue prefix is still Add:", html.includes(encodeURIComponent("Add: ")) || html.includes("Add%3A"));
 
 /**
+ * The two ignores, and which one is reachable.
+ *
+ * ⚠️ They traded places on 2026-08-05: the CTA button under Buy was the PERMANENT
+ * product block and the ⋯ menu held the weekly snooze; now it is the other way
+ * round. Both actions are unchanged — only which control emits which.
+ *
+ * This is worth a test because getting it backwards is invisible. Both buttons say
+ * "Ignore", both settle on "✓ ignored", and the difference only shows up days later
+ * as a product that never comes back. The pairing that must hold is:
+ *
+ *   reachable (one tap, CTA column)  →  ignore-week    →  reversible, not red
+ *   behind the ⋯ menu (two taps)     →  ignore-product →  no undo, red, confirms
+ */
+describe("deals page — the two ignores");
+
+// The CTA column's lower button. `.act week` is the sizing class it took when it
+// stopped being red; if it reads `.act ignore` here, the swap has been undone.
+check("the CTA button is the weekly one", /class="act week"[^>]*>[\s\S]*?Ignore 1wk/.test(html));
+check("the CTA button emits ignore-week", html.includes("&quot;action&quot;:&quot;ignore-week&quot;"));
+check("the weekly button is not painted red", !/class="act week ignore"|class="act ignore week"/.test(html));
+
+// The menu entry. Red, and it must keep the dialog — it is the only control on the
+// page with no undo.
+check("the menu holds the permanent one", html.includes(">Ignore for good<"));
+check("the menu entry emits ignore-product", html.includes("&quot;action&quot;:&quot;ignore-product&quot;"));
+check("the permanent one is still red", /class="act ignore"/.test(html));
+
+// ⚠️ The confirm has to travel WITH the permanent action, not stay on the button
+// that used to hold it. A permanent block that fires without asking is the exact
+// failure this guards.
+const ignoreTag = html.match(/<a class="act ignore"[^>]*>/)?.[0] ?? "";
+check("the permanent one still confirms first", ignoreTag.includes("data-confirm"));
+check("its confirm still says 'for good'", ignoreTag.includes("for good"));
+
+// The issue title names the PRODUCT for the permanent block and the INGREDIENT for
+// the weekly one — they are different scopes and the title is how you tell after
+// the fact.
+check(
+	"the permanent issue names the product",
+	html.includes(encodeURIComponent("Item: Ignore for good — Skippy Peanut Butter Spread")),
+);
+check(
+	"the weekly issue names the ingredient",
+	html.includes(encodeURIComponent("Item: Ignore 1wk — Peanut Butter, Smooth")),
+);
+
+// Neither may have gone missing in the move.
+eq("every card has both", (html.match(/ignore-week/g) ?? []).length, (html.match(/ignore-product/g) ?? []).length);
+
+/**
  * Pack shots have to reach the payload, or the + Macros toggle buys the expensive
  * lookup instead of the cheap one.
  *

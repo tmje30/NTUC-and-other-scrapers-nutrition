@@ -302,11 +302,9 @@ The `⋯` button under the percentage on every deal card (and under *closest* on
 close match) holds three actions. The point of all three is that they **teach the
 matcher**, rather than just hiding today's card:
 
-- **Ignore 1× week** — a cooldown until Monday 00:00 SGT (`startOfNextWeek`),
-  tagged `reason: "ignored"` so the page lists it under "Ignored this week"
-  instead of claiming it was recently bought. Under a day of cover rolls to the
-  Monday after, or the item is back on the next morning's scan. Never shortens a
-  cooldown already in place.
+- **Ignore for good** — the permanent product block described in "Ignore" below.
+  ⚠️ **It moved here from the CTA column on 2026-08-05** and the weekly snooze
+  moved out to the button, by request; see that section.
 - **Mismatch item** — bans words for that item, permanently. The page proposes
   the title's words the item never asked for (`suggestExclusionTerms`), and the
   user edits the list before anything is saved — because "extra" honestly
@@ -323,10 +321,47 @@ applied in `findDeal`/`findReview` and keyed by `cooldownKey`, so a correction o
 catches "Tissues". A **phrase** uses a separator-tolerant regex instead, because
 stemming "3 in 1" yields "in" — which would have excluded most of the shop.
 
-### Ignore — retiring a product outright (added 2026-08-03)
+### The two ignores, and which is which (swapped 2026-08-05)
 
-The red **Ignore** button, directly under **Add** on every card. Unlike everything
-in the `⋯` menu, it is scoped to the **product**, not the ingredient: this listing
+⚠️ **These two traded places on 2026-08-05, at the user's request.** Both *actions*
+are exactly as they were — only the control that emits each one changed. Any older
+note saying "the red Ignore button is permanent" describes the layout before this.
+
+| control | action | scope | undo |
+| --- | --- | --- | --- |
+| **`Ignore 1wk`** — the button under Buy | `ignore-week` | the **ingredient** | Reset, from the foot of the page |
+| **`Ignore for good`** — top of the `⋯` menu, red | `ignore-product` | the **product**, for every item | **none** — edit `data/exclusions.json` |
+
+⚠️ **They are different scopes, not two durations of one thing.** The button
+snoozes the *ingredient* (nothing is searched for it until Monday); the menu entry
+retires a *product* (that listing never appears again, under any ingredient). A
+permanent ingredient-level ignore is not this — that is the `Don't Search` tag the
+user sets by hand in Notion.
+
+The reasoning for the swap: the reversible correction is the one reached for most
+often, so it belongs one tap away; the irreversible one belongs behind the
+`<details>`, where it takes two. **Red now means "no undo"** on this page and
+nothing else — the weekly button is deliberately the neutral `.act` grey.
+
+⚠️ **`.cta { max-width: 78px }` is load-bearing.** The column is stretch-sized by
+its widest child, so "Ignore 1wk" on one line widened it by ~45px and took that
+straight out of the product name on a phone — the same width the four-row card
+split was made to win back. Capped, the label wraps to two short lines. Widen it
+and every card loses text. `.act.week` carries the `white-space: normal` that lets
+it wrap; `.act.ignore` is now colour only, since `.panel .act` sizes it.
+
+`src/tests/deals-page.test.ts` has a `deals page — the two ignores` suite that
+pins the pairing: which control emits which action, that only the permanent one is
+red and confirms, and that the issue titles name the product and the ingredient
+respectively. Getting this backwards is invisible — both say "Ignore", both settle
+on "✓ ignored", and the difference only surfaces days later as a product that
+never comes back.
+
+### Ignore for good — retiring a product outright (added 2026-08-03)
+
+The red **Ignore for good** entry at the top of the `⋯` menu (the CTA-column
+button until 2026-08-05). Unlike the other two corrections beside it, it is scoped
+to the **product**, not the ingredient: this listing
 is never offered again, **for any item**, permanently. The ingredient is untouched
 — still in the plan, still searched, and every other product still competes for
 it. That distinction is the whole point of the button, so it is repeated in the
@@ -348,17 +383,21 @@ The card grew from "here is a cheaper price, want it on the list?" to "…and is
 this what the ingredient should BE?". Five controls, in two groups:
 
 ```
-[Buy]     Peanut Butter, Smooth                          −31%
-[Ignore]  [500g] Price $8.20                               ⋯
-          FairPrice · Skippy Peanut Butter Spread        [Add]
-          [500g] $5.65 on sale (−15%)                [Replace]
-          $11.30/kg vs $16.40/kg                     [Macros]
-          uses ~400g/month                      has macro
+[Buy]      Peanut Butter, Smooth                         −31%
+[Ignore    [500g] Price $8.20                              ⋯
+ 1wk]      FairPrice · Skippy Peanut Butter Spread       [Add]
+           [500g] $5.65 on sale (−15%)               [Replace]
+           $11.30/kg vs $16.40/kg                    [Macros]
+           uses ~400g/month                     has macro
 ```
 
-- **Buy** / **Ignore** — left column, unchanged in meaning. Buy is the one button
-  pressed on purpose; Ignore is the one with no undo. Neither belongs beside the
-  three quieter controls, which is why they stay in their own column.
+- **Buy** / **Ignore 1wk** — left column. Buy is the one button pressed on
+  purpose; the snooze beneath it is the correction reached for most often. Neither
+  belongs beside the three quieter controls, which is why they stay in their own
+  column, and the 12px gap stays even though the lower button is now reversible —
+  a mis-tap still costs a week of not being offered the item.
+  ⚠️ **Until 2026-08-05 the lower button was the permanent `Ignore`.** See "The two
+  ignores" above.
 - **Add** — file today's match into **Ingredients** as a NEW row.
 - **Replace** — re-base the ingredient that *seeded* this search on today's match.
   Writes `Name` (a generic name derived from the product), `Price,SGD`,
@@ -918,8 +957,9 @@ panel, legible and carrying its own Per-100g column. `shengSiongPackShots` retur
   both cost and behaviour). `--image` is repeatable and takes the shop's URLs **unfiltered**, exactly as
   the extension hands them over; the line it prints says how many of them `packShotsFor` actually attached,
   so "3 image URLs given, 1 attached" is the gate working.
-- **`npm test` — 109 offline cases, free and in the repo** (`src/tests/`). Four suites: pack-shot selection
-  and its commodity gate, nutrition-panel parsing, macro-reply parsing, and the deals page's markup. No test
+- **`npm test` — 178 offline cases, free and in the repo** (`src/tests/`). Six suites: pack-shot selection
+  and its commodity gate, nutrition-panel parsing, macro-reply parsing, name derivation, marketplace size
+  parsing, and the deals page's markup (including the two ignores — see above). No test
   runner and no new dependency — each file registers cases into `harness.ts` and `run.ts` sets the exit code.
   Nothing here calls Notion, a shop or Anthropic: a test that costs 29 cents is a test nobody runs.
   ⚠️ They cover exactly the functions where being *quietly* wrong is the danger — a misread serving size is
@@ -1066,7 +1106,7 @@ Both made a bad deal look good — the same family as the 32 g serving read as 1
   size? Writes nothing. `--only a,b`, `--browser`, `--headed`, `--login shopee`.
   ⚠️ Prints its egress IP first — a 403 from a datacenter address means nothing.
 - `npm run check` — typecheck.
-- `npm test` — **167** offline cases (`src/tests/`). Free, fast, no network.
+- `npm test` — **178** offline cases (`src/tests/`). Free, fast, no network.
 
 ## Key technical facts (details in LEARNINGS.md)
 
