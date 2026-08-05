@@ -307,6 +307,30 @@ All notable changes to this project are documented here. Format based on
   commodity gate spends real money. Equivalent suites had been written and thrown
   away with the session four times before this.
 
+### Fixed
+- **Two taps at once no longer lose one of them** (2026-08-05). Both write
+  workflows commit a JSON data file and push, so presses a few seconds apart race
+  and the second push is rejected. The recovery was `git pull --rebase`, which
+  **replays the commit** — and two entries appended to the same JSON array seconds
+  apart is a content conflict it cannot resolve, so the run died *after* the page
+  had already shown "✓ ignored".
+  ⚠️ Measured damage: on 2026-08-05, **3 of 9 item-action runs failed and three
+  real corrections were silently lost** (two `Ignore for good`, one `Mismatch`).
+  Nothing surfaced it — the entries simply were not in `data/exclusions.json`.
+  The retry now resets to the new remote and re-applies this run's own change on
+  top, via `src/core/merge-data.ts` (pure) + `src/scripts/merge-data.ts`.
+  ⚠️ **Three-way merge, not a union.** These files are not append-only — `reset`
+  removes a cooldown, `never-buy` settles a purchase — so a union would resurrect
+  exactly what someone just removed. Start from theirs, drop what I removed, upsert
+  what I added or changed. Where they removed what I merely edited, removal wins.
+  ⚠️ A blocked product's identity is `(key, url)`, not `key`: every
+  `Ignore for good` writes `key: "*"`, and keying on that alone collapses two
+  different products into one. That was one of the three losses.
+  ⚠️ A `concurrency` group is still not the fix — GitHub keeps one run pending per
+  group and cancels the rest, losing the middle of a burst (LEARNINGS 2026-07-30).
+  21-case suite replaying the real collision; its first run caught a genuine bug in
+  the merge (the append pass resurrected entries the other run had removed).
+
 ### Added
 - **`Weekly Buy` now sets the cooldown** (2026-08-05). The tag was read off the
   Notion row and used by nothing. A tagged ingredient now goes quiet for a flat

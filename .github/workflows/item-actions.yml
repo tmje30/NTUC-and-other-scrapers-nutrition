@@ -47,6 +47,14 @@ jobs:
 
       - run: npm ci
 
+      # The data files exactly as this run found them. If the push is rejected
+      # because another tap landed first, this is the "base" of the three-way
+      # merge that re-applies our change onto theirs — see the commit step.
+      - name: Snapshot the data files
+        run: |
+          mkdir -p /tmp/data-base
+          cp data/*.json /tmp/data-base/ 2>/dev/null || true
+
       - name: Apply the action
         id: act
         run: npm run item-action
@@ -74,12 +82,37 @@ jobs:
             exit 0
           fi
           git commit -m "item action: applied from the deals page"
+
+          # What this run meant to end up with. Captured ONCE, before the retry
+          # loop: every attempt re-applies this same intent onto the newest
+          # remote, so a third run landing mid-retry can't be mistaken for ours.
+          mkdir -p /tmp/data-mine
+          cp data/*.json /tmp/data-mine/ 2>/dev/null || true
+
+          # ⚠️ Do NOT go back to `git pull --rebase` here. It replays our commit,
+          # and two entries appended to the same JSON array seconds apart is a
+          # content conflict it cannot resolve — the run then dies AFTER the page
+          # has already said "✓ ignored". That lost three real corrections on
+          # 2026-08-05. Instead: take the new remote wholesale, re-apply our own
+          # change on top of it, and commit that. See src/core/merge-data.ts.
+          #
+          # A `concurrency` group is not the answer either: GitHub keeps only one
+          # run pending per group and cancels the rest, so a burst of taps would
+          # lose the middle ones outright (LEARNINGS 2026-07-30).
           for attempt in 1 2 3 4 5; do
             if git push; then
               exit 0
             fi
-            echo "push rejected — rebasing and retrying (attempt $attempt)"
-            git pull --rebase --autostash origin "${{ github.ref_name }}"
+            echo "push rejected — re-merging onto the new remote (attempt $attempt)"
+            git fetch origin "${{ github.ref_name }}"
+            git reset --hard "origin/${{ github.ref_name }}"
+            npx tsx src/scripts/merge-data.ts /tmp/data-base /tmp/data-mine data
+            git add data/cooldowns.json data/exclusions.json data/purchases.json
+            if git diff --staged --quiet; then
+              echo "already applied upstream — nothing left to push"
+              exit 0
+            fi
+            git commit -m "item action: applied from the deals page"
           done
           echo "::error::could not push the data change after 5 attempts"
           exit 1

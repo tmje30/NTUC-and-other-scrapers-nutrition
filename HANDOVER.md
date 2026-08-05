@@ -249,6 +249,48 @@ token lives only in that browser's localStorage. Any failure (no token,
 revoked, JS off) falls back to the two-tap issue flow. See
 `docs/one-tap-add.md`.
 
+### ⚠️ Two taps at once — how the data files stay merged (fixed 2026-08-05)
+
+Both write workflows commit a JSON file and push. Tap twice within a few seconds
+— which is exactly how the page gets used — and the second push is rejected.
+
+**The old recovery was `git pull --rebase`, and it did not work.** Rebasing
+replays the commit, and two entries appended to the same JSON array seconds apart
+is a *content* conflict, so the rebase died and took the run with it — **after**
+the page had already shown "✓ ignored". Measured damage on 2026-08-05: 3 of 9
+item-action runs failed and three real corrections were silently lost (two
+`Ignore for good`, one `Mismatch`). Nothing surfaced it; the entries simply were
+not in `data/exclusions.json` afterwards.
+
+The retry now takes the new remote **wholesale** and re-applies this run's own
+change on top:
+
+```
+push rejected → git fetch && git reset --hard origin/main
+              → npx tsx src/scripts/merge-data.ts /tmp/data-base /tmp/data-mine data
+              → commit, push again (5 attempts)
+```
+
+- `/tmp/data-base` is snapshotted **before** the apply step, `/tmp/data-mine`
+  **once** after the commit — not per attempt, or a third run landing mid-retry
+  gets picked up as if it were ours.
+- ⚠️ **It is a three-way merge, not a union.** These files are not append-only:
+  `reset` removes a cooldown and `never-buy` settles a purchase. A union would
+  resurrect exactly what someone just removed. Rule: start from theirs, drop what
+  I removed, upsert what I added or changed, leave the rest alone. Where they
+  removed something I merely edited, the **removal wins** — re-adding a cooldown
+  the user just cleared re-silences an item they asked to see again.
+- ⚠️ **A `concurrency` group is still not the answer.** GitHub keeps only *one*
+  run pending per group and cancels the rest, so a burst of taps would lose the
+  middle ones outright (LEARNINGS 2026-07-30). That note stands.
+- Identity per list lives in `DATA_FILES` in `src/core/merge-data.ts`. ⚠️ A
+  blocked product is `(key, url)` — **not** `key` alone, because every
+  `Ignore for good` writes `key: "*"` and keying on that would collapse two
+  different products into one. That was the second correction lost that morning.
+- `src/tests/merge-data.test.ts` (21 cases) replays the real 06:17 collision.
+  The first run of it caught a genuine bug: the "append mine" pass resurrected
+  entries the *other* run had removed.
+
 **Two people share this** (the user + partner: same Telegram chat, same grocery
 List DB, same page link). The partner needs **no GitHub account** — send her
 `…/#add-token=TOKEN` and one tap sets her up (the page stores it and strips the
@@ -983,9 +1025,9 @@ panel, legible and carrying its own Per-100g column. `shengSiongPackShots` retur
   both cost and behaviour). `--image` is repeatable and takes the shop's URLs **unfiltered**, exactly as
   the extension hands them over; the line it prints says how many of them `packShotsFor` actually attached,
   so "3 image URLs given, 1 attached" is the gate working.
-- **`npm test` — 195 offline cases, free and in the repo** (`src/tests/`). Seven suites: pack-shot selection
+- **`npm test` — 216 offline cases, free and in the repo** (`src/tests/`). Eight suites: pack-shot selection
   and its commodity gate, nutrition-panel parsing, macro-reply parsing, name derivation, marketplace size
-  parsing, cooldown length (including the Weekly Buy route), and the deals page's markup
+  parsing, cooldown length (including the Weekly Buy route), the concurrent-write merge, and the deals page's markup
   (including the two ignores — see above). No test
   runner and no new dependency — each file registers cases into `harness.ts` and `run.ts` sets the exit code.
   Nothing here calls Notion, a shop or Anthropic: a test that costs 29 cents is a test nobody runs.
@@ -1133,7 +1175,7 @@ Both made a bad deal look good — the same family as the 32 g serving read as 1
   size? Writes nothing. `--only a,b`, `--browser`, `--headed`, `--login shopee`.
   ⚠️ Prints its egress IP first — a 403 from a datacenter address means nothing.
 - `npm run check` — typecheck.
-- `npm test` — **195** offline cases (`src/tests/`). Free, fast, no network.
+- `npm test` — **216** offline cases (`src/tests/`). Free, fast, no network.
 
 ## Key technical facts (details in LEARNINGS.md)
 

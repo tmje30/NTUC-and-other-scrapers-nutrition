@@ -47,6 +47,13 @@ jobs:
 
       - run: npm ci
 
+      # The data files exactly as this run found them — the "base" of the
+      # three-way merge used when a push is rejected. See the commit step.
+      - name: Snapshot the data files
+        run: |
+          mkdir -p /tmp/data-base
+          cp data/*.json /tmp/data-base/ 2>/dev/null || true
+
       - name: Write the Notion row and start the cooldown
         id: add
         run: npm run add
@@ -56,8 +63,8 @@ jobs:
           ADD_PAYLOAD: ${{ toJSON(github.event.client_payload) }}
 
       # Two adds landing together both push to main. Rather than serialising the
-      # whole workflow (which loses adds — see above), let them collide and
-      # rebase: the loser replays its one-entry change on top and pushes again.
+      # whole workflow (which loses adds — see above), let them collide: the loser
+      # takes the winner's commit wholesale and re-applies its own change on top.
       - name: Commit the cooldown
         run: |
           git config user.name "github-actions[bot]"
@@ -71,12 +78,32 @@ jobs:
             exit 0
           fi
           git commit -m "add: snoozed and logged the purchase"
+
+          # What this run meant to end up with. Captured ONCE, before the retry
+          # loop, so every attempt re-applies this same intent onto the newest
+          # remote rather than picking up a third run's work as if it were ours.
+          mkdir -p /tmp/data-mine
+          cp data/*.json /tmp/data-mine/ 2>/dev/null || true
+
+          # ⚠️ Do NOT go back to `git pull --rebase` here — it replays our commit,
+          # and two entries appended to the same JSON array is a content conflict
+          # it cannot resolve. The run then fails after the Notion row has ALREADY
+          # been written, leaving an item on the grocery list with no cooldown and
+          # no purchase-log row. See src/core/merge-data.ts.
           for attempt in 1 2 3 4 5; do
             if git push; then
               exit 0
             fi
-            echo "push rejected — rebasing and retrying (attempt $attempt)"
-            git pull --rebase --autostash origin "${{ github.ref_name }}"
+            echo "push rejected — re-merging onto the new remote (attempt $attempt)"
+            git fetch origin "${{ github.ref_name }}"
+            git reset --hard "origin/${{ github.ref_name }}"
+            npx tsx src/scripts/merge-data.ts /tmp/data-base /tmp/data-mine data
+            git add data/cooldowns.json data/purchases.json
+            if git diff --staged --quiet; then
+              echo "already applied upstream — nothing left to push"
+              exit 0
+            fi
+            git commit -m "add: snoozed and logged the purchase"
           done
           echo "::error::could not push the cooldown after 5 attempts"
           exit 1
