@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-05T06:16:32.200Z",
+  "updatedAt": "2026-08-05T06:20:16.468Z",
   "entries": [
     {
       "key": "oil",
@@ -13,20 +13,6 @@
       "basis": "ignored from the deals page until the start of next week (Mon, SGT)",
       "store": "Sheng Siong",
       "product": "Rice Bran Oil",
-      "packSizeG": null,
-      "monthlyAmount": 0
-    },
-    {
-      "key": "appl cider vinegar",
-      "ingredientId": "34b69a18-4fe7-80cd-ba18-dcc51da93d01",
-      "ingredientName": "Apple Cider vinegar (Unpasteurized)",
-      "reason": "ignored",
-      "addedAt": "2026-08-03T09:24:01.107Z",
-      "until": "2026-08-09T16:00:00.000Z",
-      "days": 6,
-      "basis": "ignored from the deals page until the start of next week (Mon, SGT)",
-      "store": "FairPrice",
-      "product": "Heinz Vinegar - Apple Cider",
       "packSizeG": null,
       "monthlyAmount": 0
     },
