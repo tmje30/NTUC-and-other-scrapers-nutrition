@@ -15,6 +15,7 @@ import "./nutrition-panel.test.js";
 import "./macro-reply.test.js";
 import "./naming.test.js";
 import "./deals-page.test.js";
+import "./marketplace-size.test.js";
 import { report } from "./harness.js";
 
 report();
