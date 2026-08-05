@@ -3,25 +3,24 @@
 Read this first, then `LEARNINGS.md` (deep technical detail + gotchas) and
 `CHANGELOG.md` (what shipped). Memory files also auto-load via `MEMORY.md`.
 
-*Last reviewed 2026-08-04. The system is live and self-running. The parts most
+*Last reviewed 2026-08-05. The system is live and self-running. The parts most
 likely to bite a newcomer, all flagged ⚠️ below: the Incapsula browser mint, the
 two comparison dimensions, and — for the Chrome extension — the fact that
 FairPrice's JSON-LD is invalid on **every** product while Sheng Siong publishes
 no readable data at all.*
 
-*If you are picking this up, skip to **"Next session — pick up here"** first —
-**there is uncommitted work in the tree, including some from a different session
-than the one that wrote this**, and you need to know that before you stage
-anything.*
+*⚠️ **Before you diagnose ANY shop as blocked, read "Your IP decides what you can
+scrape" below.** On 2026-08-05 a whole afternoon's conclusions about Watsons were
+wrong because the machine was on a VPN. The same probe, same minute, gives
+opposite answers from a datacenter address and a residential one.*
 
-*Short version of where things are: the three-item macro plan is finished (#1
-pack-shot images and #3 shipped, #2 measured and rejected), and on 2026-08-04 the
-deal card was redesigned around one rule — **nothing spends money unasked**.
-Adding a row no longer looks nutrition up on its own anywhere; a per-card
-**+ Macros** toggle and the extension's **Find Macros** button are the only ways
-to start a paid lookup. **What's left is using it for real**: none of the new
-buttons, the extension, or the nutrition lookup has yet been pressed in anger by a
-human on an actual shopping trip.*
+*Short version of where things are. The macro work is finished and committed. The
+2026-08-05 session did **no** feature work: it scoped the multi-vendor question
+(searching shops beyond FairPrice/Sheng Siong), built a probe to answer it with
+measurements instead of guesses, and found two live faults in the running system
+— see "Infrastructure truths" below. **What's still outstanding is the same thing
+it was yesterday**: nobody has yet pressed the extension, the nutrition lookup or
+the four deal-card buttons in anger on a real shopping trip.*
 
 ## TL;DR
 
@@ -63,8 +62,11 @@ the page and in the daily Telegram message.
   searched". Cards show `Item [packsize] Price $x  −%`, the found product, price
   per kg/L **or per piece**, and `uses ~X/month`. A ⚠️ banner under the header
   means a shop was missing from the scan.
-- **Cloud schedule:** GitHub Actions `.github/workflows/daily.yml`. **10:00 SGT**
-  (`cron: "0 2 * * *"` = 02:00 UTC), plus manual `workflow_dispatch`.
+- **Cloud schedule:** GitHub Actions `.github/workflows/daily.yml`,
+  `cron: "0 2 * * *"` = 02:00 UTC, plus manual `workflow_dispatch`.
+  ⚠️ **It nominally means 10:00 SGT and actually delivers ~13:20–13:50 SGT** —
+  GitHub queues scheduled runs on free public repos by ~3.5 h, measured every day
+  01–04 Aug. See "Infrastructure truths". "It didn't run" is usually "not yet".
 - **Telegram:** reuses the user's Notion-Worker bot **@Big_Notion_Bot**, chat
   `7626546412`. Secrets `NOTION_TOKEN`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`
   are GitHub Actions secrets. Locally they live in `.env` (gitignored).
@@ -706,25 +708,93 @@ One such helper was written and never wired up; it was deleted on 2026-08-04. Do
 rows add exactly as before. Needs `https://api.anthropic.com/*` in `host_permissions` plus the
 `anthropic-dangerous-direct-browser-access` header (a service worker sends a browser `Origin`).
 
-## Next session — pick up here (as of 2026-08-04)
+## Infrastructure truths (found 2026-08-05 — read before diagnosing anything)
 
-### Uncommitted, and read this before you commit anything
+Three facts about how this system actually runs, all of which contradicted the
+docs or a reasonable assumption. None was a code bug; all three cost real time.
 
-The deals-page redesign and the "nothing spends money unasked" change are **built,
-typechecked and rendered, but NOT committed.** Verified: `npm run check` clean,
-`npm run ext:build` clean, 30 offline pack-shot cases pass, 10 markup assertions
-against a real rendered page pass. Not yet done: `CHANGELOG.md`, `extension/README.md`.
+### ⚠️ Your IP decides what you can scrape
 
-⚠️ **The working tree also holds work from a PARALLEL session that is not this
-one** — a plan-selection feature: `src/core/notion.ts` (+170 lines, resolving the
-active plan from Meal prep's `Current Plan` tagged `Main` instead of the
-`Used 'N' Plan` formula), plus `LEARNINGS.md`, `SYSTEM-GUIDE.md` and four scripts
-switching their banner to "Main plan". **`git add -A` would sweep it up.** Stage
-by path.
+The user's laptop was on a **VPN** (`AS212238 Datacamp Limited`, geolocated
+Singapore). That address is a *datacenter* address, and shops treat it as one:
 
-⚠️ There is also an orphaned worktree at `.claude/worktrees/goofy-satoshi-6d2419`
-(detached at `f4eef22`), left by a background task that was deleted. It changed
-nothing. `git worktree remove` when convenient.
+| | on the VPN | on the real line (`AS4773 MobileOne`) |
+| --- | --- | --- |
+| Watsons | **403** on every URL, incl. `robots.txt` | **200** |
+| FairPrice / Guardian | 200 | 200 |
+
+Watsons was denied at the **Akamai edge** — a 296-byte `errors.edgesuite.net`
+"Access Denied", and crucially **no `_abck`/`bm_sz` cookies were ever set**, so
+Bot Manager never even scored the request. A real headed Chrome was refused
+identically. That combination means *the address*, not the client.
+
+⚠️ **A headed-Chrome/cookie trick cannot fix an address-based deny.** An early
+version of this note said "reuse `incapsula.ts`" and that was wrong.
+
+⚠️ **The client matters too, independently.** On the *same* residential IP,
+`curl` gets 403 from Watsons while Node's `fetch` gets 200. So "blocked" needs
+both variables pinned before it means anything. `npm run vendor-probe` now prints
+its own egress IP and flags datacenter addresses for exactly this reason.
+
+This also puts a question mark over the 2026-07-30 entry claiming "Incapsula now
+challenges *residential* IPs too". That may simply have been the VPN. Not
+re-tested; treat the claim as unconfirmed.
+
+### ⚠️ The daily job runs ~3.5 hours late, every day
+
+`daily.yml` is `cron: "0 2 * * *"` and every doc says **10:00 SGT**. Measured
+actual firing times:
+
+| date | fired (UTC) | late by |
+| --- | --- | --- |
+| 08-01 | 05:30 | +3h30 |
+| 08-02 | 05:31 | +3h31 |
+| 08-03 | 05:46 | +3h46 |
+| 08-04 | 05:18 | +3h18 |
+
+So the Telegram digest actually lands about **13:20–13:50 SGT**. This is ordinary
+GitHub Actions queueing on a free public repo, not a fault — but "it didn't run"
+is almost always "it hasn't run *yet*". **To land near 10:00 SGT the cron would
+have to be ~`30 22 * * *`** (the previous day). Not changed; the user's call.
+
+### ⚠️ The laptop runner scans into a doomed push when the network is late
+
+Real failure, 2026-08-05 07:23. `run.cmd` does `git pull` then `npm run push-ss`
+and **ignores the pull's exit code**:
+
+```
+fatal: unable to access 'https://github.com/…': Could not resolve host: github.com
+```
+
+The laptop had woken before DNS was up. The pull failed, the scan then ran fine
+(58 terms, 0 errors), committed — and the push was **rejected** because the clone
+was 12 commits behind. Today's Sheng Siong data sat stranded locally; the cloud
+build went FairPrice-only. Recovered by hand with `git pull --rebase && git push`.
+
+**Not yet fixed.** Two changes are wanted, neither made:
+1. `gitPush` in `push-shengsiong.ts` should rebase-and-retry on rejection — the
+   pattern `add-to-list.yml` already uses for cooldown pushes.
+2. `run.cmd` should not scan when the pull failed.
+
+⚠️ **The Rescan button cannot help here.** It only renders inside the ⚠️ banner,
+which only appears when a shop is **missing from a build that happened**. "No
+build at all" has no button. Its absence on a healthy page is correct behaviour,
+not a bug — that confused the user on 2026-08-05.
+
+## Next session — pick up here (as of 2026-08-05)
+
+### Uncommitted
+
+The whole 2026-08-05 vendor investigation: `src/core/browser-cdp.ts`,
+`src/core/marketplace-size.ts`, `src/scripts/vendor-probe.ts`,
+`src/tests/marketplace-size.test.ts`, `docs/vendor-scoping.md`, plus the
+`vendor-probe` line in `package.json` and one import in `src/tests/run.ts`.
+`npm run check` clean, **`npm test` 167 passing** (was 109). The tree is rebased
+onto `58ce49c`.
+
+Everything the previous handover listed as uncommitted **is now committed and
+pushed**, the orphaned worktree is gone, and `CHANGELOG.md` / `extension/README.md`
+have caught up. Old item 18 is closed.
 
 ### The three-item macro plan
 
@@ -860,6 +930,122 @@ panel, legible and carrying its own Per-100g column. `shengSiongPackShots` retur
 - ⚠️ A lookup costs real money. The account ran out of credit mid-session on 2026-08-04. Budget ~$0.30 per
   tools-path call, **~$0.03 per pack-shot call**, ~$0.003 per commodity call.
 
+## Searching shops beyond FairPrice and Sheng Siong (scoped 2026-08-05)
+
+Full detail in **`docs/vendor-scoping.md`** — that file governs; this is the
+orientation. Nothing here is built beyond the probe.
+
+### The Notion side, and what the columns mean
+
+A **Website Used** DB exists (database `3b169a18-4fe7-80b3-a7d6-f8359719b1df`,
+data source `3b169a18-4fe7-80ad-b5f9-000b8824812f`): `Name`, `URL`,
+`URL - discount related `, `Text`. Both URL columns were **empty until
+2026-08-05**, when all nine rows were filled (NTUC, Sheng Siong, Watsons,
+Guardian, Iherb, Shopee, Carousell, Google Search, and a **My Protein** row
+added that day).
+
+⚠️ **Two different prices live on every Ingredients row and they must never be
+conflated** (stated by the user, 2026-08-05):
+
+| | columns | meaning |
+| --- | --- | --- |
+| **baseline** | `Price,SGD` + `Weight /Units of New Product ` + `Vendor, Current ` | what the user **actually pays**, and where. Every discovery is measured against this |
+| **price book** | `Vendor 1/2/3` + `Price [Vendor n]` + `Size[Vendor n]` + `Vendor n URL` | where else it can be found and what **that shop** charges. NOT what the user pays |
+
+Measured over 94 rows: `Price,SGD` 71/94, `Vendor, Current ` **7/94**, `Vendor 1`
+52/94, and `Price [Vendor n]` / `Size[Vendor n]` **0/94 — never filled, ever**.
+Filling the price book is the point of the feature.
+
+Rules for any writer:
+1. **Match the vendor by NAME to find the index.** The mapping is per-row —
+   `Vendor 1` is Shopee on `Whey [Titan]` and Watsons on the CereVe lotion.
+2. **If no index names that shop, write nothing.** Never claim a free slot.
+3. **Never write `Vendor, Current ` from a scan.** Moving the baseline is a
+   deliberate act — that is what *Replace* is for.
+
+⚠️ **`Vendor 3` has no `Vendor 3 URL` property and that is deliberate** — it is
+the *open* slot (Google, Amazon), and an undirected search has no fixed shop to
+link. Do not add the property.
+
+⚠️ **A live bug, not yet fixed:** `ingredient-write.ts:107` writes the captured
+product's URL into `Vendor 1 URL` unconditionally — the slot belonging to whatever
+shop `Vendor 1` names. Capture from Guardian and a Guardian URL lands in the
+Watsons slot. 52 rows are exposed. Both writers (extension *Add*, page *Add*).
+
+### Searches must be DIRECTED
+
+Don't look for bread at Watsons or a face lotion at NTUC. Routing is `Vendor[n]`
+tags first, then **`Catagory`** as the default for the 89 rows with no useful tag:
+grocery categories → FairPrice + Sheng Siong; **`Suppliments` (30 rows) → iHerb +
+MyProtein**; **`Household Supplies` (7 rows) → Watsons + Guardian**.
+
+⚠️ This **retires the deny-list question** (old item 20). Neither category is
+excluded — each is asked at the right kind of shop instead. `Suppliments` is the
+**largest category in the DB and the scan has never looked at one of them**.
+
+⚠️ **`Sheng Siong` is tagged on ZERO rows.** So the tags mean "*also* look here",
+never "only look here" — code that treats an empty tag as "don't search" would
+silently kill the FairPrice scan on 42 rows.
+
+### `npm run vendor-probe` — measure, don't guess
+
+```shell
+npm run vendor-probe -- "whey protein"                      # fetch tier, all shops
+npm run vendor-probe -- "vitamin c" --only watsons,guardian # narrow it
+npm run vendor-probe -- "whey protein" --browser --headed   # + real Chrome over CDP
+npm run vendor-probe -- "whey protein" --browser --headed --login shopee
+```
+
+Writes nothing anywhere. Reports, per shop, whether a **price AND a pack size**
+can be had — and what to do about it if not. Prints its own egress IP first.
+
+| shop | status, 2026-08-05 | note |
+| --- | --- | --- |
+| **Carousell** | ✅ works end to end | **headed** browser for search (headless renders 0 — detected), plain `fetch` for the listing page, whose JSON-LD carries price + machine-readable `itemCondition` |
+| **Guardian** | ✅ browser tier renders prices | no anti-bot at all, just an SPA. Next step is pinning the card selector; its `/graphql` is the cheaper long-term route |
+| **MyProtein** | 🟠 28 products, 28 priced, **0 with a size** | names are "Impact Whey Protein + Collagen"; size lives in an on-page **Amount** variant. Needs a second fetch per product |
+| **iHerb** | 🔴 403 even from residential | genuinely client-side. Sibling project's fix: CDP + `SEARCH_OVERRIDES` (`/search?kw=`, `resultHrefRe:/\/pr\//`, **name is in the link's `title` attribute**) |
+| **Watsons** | 🔴 park it | reachable from residential, but an Angular SAP-Commerce SPA whose product API is behind Akamai Bot Manager. Guessed OCC paths 404 with a sensor script injected; a real browser renders only the footer. **Payoff is ONE row** in a category you may not want |
+| **Shopee** | 🔑 auth wall | every anonymous route → `error 90309999` / `is_login:false`; the browser is redirected to a "Login Required" page. Needs a **hand** sign-in once in a persisted profile. ⚠️ Nothing in this repo may type a credential |
+
+### ⚠️ The marketplace result nobody expected
+
+Carousell works — and on whey it found **nothing worth buying**:
+
+```
+cheapest PLAUSIBLE on Carousell   $3.400/100g
+baseline, Whey [Titan]            $2.500/100g
+baseline, whey [Atlas]            $2.620/100g
+```
+
+**36% worse than what the user already pays.** The three listings that *did* beat
+the baseline (ON Gold Standard 5 lbs at S$37 and S$38, Dymatize ISO100 5LBS at
+S$40 — against ~S$120 retail) are exactly the ones the plausibility gate rejects.
+
+⚠️ **Never take the minimum on a marketplace — the minimum is usually the scam.**
+`cheapestPlausible` clusters candidates and drops anything below ~55% of the
+median. One term on one day is not a verdict, but **probe more items before
+building any marketplace adapter**: the premise has not paid off yet.
+
+### `marketplace-size.ts` — and two bugs it already caught
+
+Reading a size out of free text a stranger typed. Of 47 real Carousell listings:
+100% carried a price, **62% a size**; the rest are dropped (no size = no data).
+
+⚠️ `lbs` dominates ("5 lbs", "5LBS", "5Lb", "1.58LBS"). `stores/weight.ts` knows
+only g/kg/ml/L, so without lb/oz every supplement reads as sizeless. This module
+is **separate from `weight.ts` on purpose** — that one parses a size a supermarket
+published as a field; this one parses a sentence, where every failure flatters.
+
+Two bugs found in the first live run, both now covered by tests:
+- `"…Protein 1.6-5 LBS"` — a **range sharing one unit** read as a flat 5 LBS.
+  Only the second number carries the unit, so the multi-size check couldn't see
+  it. Now rejected as `range`.
+- `"2 X MuscleBlaze … - 2lb"` — read as 2 lb, not 4, because the multiplier-to-unit
+  gap was 46 chars against a 40-char limit. Was $9.04/100g, now $4.52.
+
+Both made a bad deal look good — the same family as the 32 g serving read as 100 g.
+
 ## Commands (run from repo root, needs `.env`)
 
 - `npm run push-ss` — residential runner: fetch terms → SS scan → write
@@ -876,8 +1062,11 @@ panel, legible and carrying its own Per-100g column. `shengSiongPackShots` retur
   `{"v":1,"action":"reset"|"park","key":"…","ingredientId":"…","name":"…"}`.
   `--dry-run` reads Notion but writes nothing.
 - `npm run ext:build` — rebuild the Chrome extension's `dist/` (see above).
+- `npm run vendor-probe -- "<term>"` — can each shop yield a price AND a pack
+  size? Writes nothing. `--only a,b`, `--browser`, `--headed`, `--login shopee`.
+  ⚠️ Prints its egress IP first — a 403 from a datacenter address means nothing.
 - `npm run check` — typecheck.
-- `npm test` — 109 offline cases (`src/tests/`). Free, fast, no network.
+- `npm test` — **167** offline cases (`src/tests/`). Free, fast, no network.
 
 ## Key technical facts (details in LEARNINGS.md)
 
@@ -941,7 +1130,11 @@ panel, legible and carrying its own Per-100g column. `shengSiongPackShots` retur
 - **Adding items** is pure Notion: the runner has no hardcoded list — it fetches
   terms live from the Pages `targets.json` (which the cloud rebuilds from Notion).
 
-## Remaining work (all optional)
+## Remaining work
+
+*Mostly optional — but **22 is not**: the laptop runner can currently scan
+successfully and still lose the data. Items 22–27 were added 2026-08-05 and are
+listed first because they are the live ones.*
 
 1. ~~Schedule → 10:00 SGT~~ **done** — `daily.yml` runs `cron: "0 2 * * *"`
    (02:00 UTC = 10:00 SGT), which also gives the laptop more morning windows to
@@ -1009,7 +1202,25 @@ panel, legible and carrying its own Per-100g column. `shengSiongPackShots` retur
     deals are chosen — a couple of dozen products, not the 1,100-odd the scan
     returns — deduped by key and wrapped so a failure can never stop the page
     building.
-20. **`Household Supplies` is being searched, and probably should not be.**
+22. **Fix the runner's push (2026-08-05).** Rebase-and-retry in `gitPush`, and
+    stop `run.cmd` scanning when `git pull` failed. See "Infrastructure truths".
+    **This is the highest-value item here — it protects the live system.**
+23. **Fix the `Vendor 1 URL` misfile** (`ingredient-write.ts:107`) — writes the
+    captured URL into slot 1 whatever shop `Vendor 1` names. 52 rows exposed.
+    Small and self-contained.
+24. **Decide the category→vendor routing** (see the vendor section). The one with
+    the most upside: `Suppliments` is 30 rows the scan has never looked at.
+25. **Correct the documented schedule**, or move the cron. Everything says 10:00
+    SGT; it actually delivers ~13:20–13:50.
+26. **Marketplace adapters are NOT cleared to build.** Carousell works
+    mechanically but found nothing cheaper than the baseline. Probe more items
+    first — `npm run vendor-probe` is free.
+27. **Shopee needs a one-time hand sign-in** before it can be probed at all.
+20. ~~`Household Supplies` is being searched, and probably should not be~~
+    **superseded by routing** (item 24) — it is not excluded, it is asked at a
+    pharmacy instead. Original note follows.
+
+    **`Household Supplies` is being searched, and probably should not be.**
     `NON_GROCERY_CATEGORIES` in `notion.ts` is a DENY-list of exactly two
     (`Suppliments`, `Filler`), so any new `Catagory` option is scanned by
     default. The live options now include `Household Supplies` — priced per 100 g
