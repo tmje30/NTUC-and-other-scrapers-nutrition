@@ -1,6 +1,6 @@
 # Grocery Deal Scraper — System Guide
 
-*Last updated: 2026-08-05 · Covers changes through commit f09a505*
+*Last updated: 2026-08-05 · Covers changes through commit bab9d8c*
 
 ## What this is
 
@@ -212,7 +212,7 @@ top hits. `Szechuan pepper` went from 1 product to 5 (3 accepted).
 | `Brand Specific` | Only the `[bracketed]` brand may match; any other brand is a hard miss. |
 | `Quality item` | Rejects a cheaper **grade**. A candidate whose **normal (undiscounted)** price per 100 is below `QUALITY_FLOOR` (75%) of what you pay at full price is a budget line, not a bargain. The **sale** price is ignored on purpose — a quality product may be discounted as deeply as it likes. Skipped when there's no baseline or no pack weight, so missing data never rejects. |
 | `Organic/animal welfare` | The product must be **store-certified organic** (structured `Dietary Attributes`) or name a welfare rearing method (free range, cage free, grass fed, pasture raised, barn laid, RSPCA). |
-| `Weekly Buy` | Not used by the matcher — user's own bookkeeping. |
+| `Weekly Buy` | Not a matching rule — it changes the **cooldown**. After a Buy the item goes quiet for a flat **5 days** regardless of how much was bought, because it's re-bought on a rhythm rather than when the pack runs out. See "Cooldowns" below. |
 
 **Organic is read from structured data, never from the name.** FairPrice publishes
 `metaData["Dietary Attributes"]` (`Organic`, `Halal`, `Vegetarian`, `Healthier
@@ -358,7 +358,9 @@ rail — plus a `⋯` correction menu:
   they drift.
 - **Ignore 1wk** — snoozes this **ingredient** until Monday 00:00 SGT. Nothing is
   searched for it until then, and it's undone with **Reset** from the list at the
-  foot of the page. Deliberately not red: on this page red means "no undo".
+  foot of the page. Red, like the permanent ignore in the menu: red marks the
+  controls that take something off the page, and the label and the menu's extra tap
+  are what separate the two.
 - **Add** — files today's match into **Ingredients** as a new row.
 - **Replace** — re-bases the ingredient that *seeded* the search onto today's
   match: `Name`, `Price,SGD`, `Weight /Units of New Product `, `Unit type ` and
@@ -370,7 +372,7 @@ rail — plus a `⋯` correction menu:
 - **has macro / no macro** — whether this listing's nutrition is free to file.
 
 The `⋯` menu holds the three corrections: **Ignore for good** (retires this
-**product** for every ingredient, permanently — red, confirms first, and the one
+**product** for every ingredient, permanently — confirms first, and the one
 control on the page with no undo; coming back means editing
 `data/exclusions.json`), **Mismatch item** (bans words for that ingredient
 permanently — the page proposes the words and you edit the list before anything is
@@ -393,13 +395,31 @@ Corrections live in `src/core/exclusions.ts` (pure) + `exclusions-file.ts` →
 
 ### Cooldowns and the purchase log
 
-- **`src/core/cooldowns.ts`** + `data/cooldowns.json`. A cooldown is
-  **`pack size ÷ monthly usage × 0.75`** — the 25% haircut brings the item back
-  before the cupboard is empty, leaving a window to catch a deal. 1 kg of garlic
-  at 500 g/month → 2 months of cover → **46 days**. No monthly usage (anything
-  outside the active plan) → a flat **14 days**. Entries are keyed on the stemmed
-  base noun (`onion`), so one entry covers "Onion (White)" and "Onions" but
-  deliberately not "Garlic Powder" when you bought "Garlic".
+- **`src/core/cooldown.ts`** + `data/cooldowns.json`. Three routes, checked in
+  this order:
+
+  | # | when | length |
+  |---|---|---|
+  | 1 | the ingredient is tagged **`Weekly Buy`** | flat **5 days**, whatever was bought |
+  | 2 | pack size and monthly usage are both known | `pack ÷ usage × 0.75` |
+  | 3 | neither | flat **14 days** |
+
+  Route 2's 25% haircut brings the item back before the cupboard is empty, leaving
+  a window to catch a deal. 1 kg of garlic at 500 g/month → 2 months of cover →
+  **46 days**.
+
+  ⚠️ **`Weekly Buy` is checked first because it means "ignore the arithmetic", not
+  "adjust it".** Some things are bought on a rhythm rather than when they run out —
+  bananas are a weekly shop whether you came home with three or a dozen — so a
+  bigger pack must not buy more silence. Left to route 2, a 2 kg buy against
+  1 kg/month would have gone quiet for 46 days: six weeks of not being shown a
+  fruit you buy every week. Five days rather than seven for the same reason route 2
+  keeps its haircut — the item is back in the scan a couple of days before the next
+  shop, so a deal can actually be caught.
+
+  Entries are keyed on the stemmed base noun (`onion`), so one entry covers
+  "Onion (White)" and "Onions" but deliberately not "Garlic Powder" when you bought
+  "Garlic".
 - `runOnce()` drops snoozed targets **before** collecting search terms, so neither
   the cloud nor the Sheng Siong runner even looks for them.
 - **`data/cooldowns.json` is not a history** — both write paths drop expired
@@ -634,9 +654,10 @@ under `src/` imports from `extension/`.
 
 ### Tests — `npm test`
 
-**178 offline cases in `src/tests/`**, free and fast. Six suites: pack-shot
+**195 offline cases in `src/tests/`**, free and fast. Seven suites: pack-shot
 selection and its commodity gate, nutrition-panel parsing, macro-reply parsing,
-name derivation, the deals page's markup, and marketplace size parsing.
+name derivation, the deals page's markup, marketplace size parsing, and cooldown
+length.
 
 There is **no test runner and no new dependency** — each file registers its cases
 into `harness.ts`, and `run.ts` imports every suite and sets the exit code.
@@ -756,7 +777,7 @@ why `vendor-probe` prints its egress IP and flags datacenter addresses.
   address means nothing.
 - **`npm run ext:build`** — rebuild the Chrome extension's `dist/`. Required after
   editing `synonyms.json`.
-- **`npm test`** — the 178 offline cases. Free, fast, no network.
+- **`npm test`** — the 195 offline cases. Free, fast, no network.
 - **`npm run check`** — TypeScript type-check (no emit). **`npm run build`** emits
   `dist/`.
 
@@ -916,14 +937,20 @@ Other requirements:
 
 ## What changed in this update
 
+- **2026-08-05 — `Weekly Buy` now sets the cooldown.** The tag was read from
+  Notion and used by nothing. An ingredient carrying it goes quiet for a flat
+  **5 days** after a Buy, regardless of how much was bought — bananas are a weekly
+  shop whether you came home with three or a dozen, and the pack ÷ usage sum would
+  have silenced a 2 kg buy for six weeks. Checked before that sum, not after.
 - **2026-08-05 — The two ignores swapped places.** The button under Buy used to
   retire a product permanently and the `⋯` menu used to hold the weekly snooze;
   they traded. The button is now **Ignore 1wk** (snoozes the ingredient until
   Monday, undoable) and the menu holds **Ignore for good** (retires the product
-  for every ingredient, no undo, confirms first and is the only red control on the
-  page). Neither behaviour changed — only which control triggers it. The
-  reversible correction is the reachable one because it is the one used most; the
-  irreversible one now takes two taps.
+  for every ingredient, no undo, confirms first). Neither behaviour changed — only
+  which control triggers it. The reversible correction is the reachable one
+  because it is the one used most; the irreversible one now takes two taps. Both
+  are red: red marks what takes something off the page, and the label and the
+  extra tap are what separate them.
 - **2026-08-05 — Everything the guide had not caught up with.** The guide had
   drifted: it described the daily scan accurately but knew nothing about the
   write-back half of the system, which is now most of it. Added in this pass:
