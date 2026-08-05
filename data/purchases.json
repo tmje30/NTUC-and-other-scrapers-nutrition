@@ -1,7 +1,22 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-05T06:04:17.778Z",
+  "updatedAt": "2026-08-05T06:09:03.470Z",
   "entries": [
+    {
+      "id": "banana-sheng-siong-malaysia-pisang-berangan-bana-202608050609",
+      "ingredientId": "34b69a18-4fe7-80c7-9de6-fa3234a2a9d8",
+      "ingredientName": "Banana (Fruit)",
+      "key": "banana",
+      "store": "Sheng Siong",
+      "product": "Malaysia Pisang Berangan Banana",
+      "priceSgd": 3.75,
+      "packSizeG": 1500,
+      "volumetric": false,
+      "url": "https://shengsiong.com.sg/product/malaysia-pisang-berangan-banana-12-15-kg",
+      "listTitle": "[Sheng Siong] Banana (Fruit)",
+      "addedAt": "2026-08-05T06:09:03.470Z",
+      "outcome": "open"
+    },
     {
       "id": "rice-wine-sheng-siong-gourmet-rice-cooking-wine--202608050604",
       "ingredientId": "34c69a18-4fe7-8012-9dcf-cce78ff534fc",
