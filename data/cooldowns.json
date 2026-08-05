@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-05T06:09:03.470Z",
+  "updatedAt": "2026-08-05T06:16:32.200Z",
   "entries": [
     {
       "key": "oil",
@@ -81,6 +81,19 @@
       "product": "Gourmet Rice Cooking Wine - 16% Alcohol",
       "packSizeG": 640,
       "monthlyAmount": 200
+    },
+    {
+      "key": "fish sauc",
+      "ingredientId": "34c69a18-4fe7-80f9-9c89-ccba7ca767e0",
+      "ingredientName": "Fish Sauce",
+      "addedAt": "2026-08-05T06:16:32.200Z",
+      "until": "2027-08-05T06:16:32.200Z",
+      "days": 365,
+      "basis": "750ml ÷ 40ml/month = 18.75 months × 0.75 = 14.06 months (capped at 365 days)",
+      "store": "FairPrice",
+      "product": "Knife Brand Thai Fish Sauce",
+      "packSizeG": 750,
+      "monthlyAmount": 40
     }
   ]
 }

@@ -1,7 +1,22 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-05T06:09:03.470Z",
+  "updatedAt": "2026-08-05T06:16:32.200Z",
   "entries": [
+    {
+      "id": "fish-sauc-fairprice-knife-brand-thai-fish-sauce-202608050616",
+      "ingredientId": "34c69a18-4fe7-80f9-9c89-ccba7ca767e0",
+      "ingredientName": "Fish Sauce",
+      "key": "fish sauc",
+      "store": "NTUC",
+      "product": "Knife Brand Thai Fish Sauce",
+      "priceSgd": 2.29,
+      "packSizeG": 750,
+      "volumetric": true,
+      "url": "https://www.fairprice.com.sg/product/knife-thai-fish-sauce-750ml-10366882",
+      "listTitle": "[NTUC] Fish Sauce",
+      "addedAt": "2026-08-05T06:16:32.200Z",
+      "outcome": "open"
+    },
     {
       "id": "banana-sheng-siong-malaysia-pisang-berangan-bana-202608050609",
       "ingredientId": "34b69a18-4fe7-80c7-9de6-fa3234a2a9d8",
