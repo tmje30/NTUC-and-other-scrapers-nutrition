@@ -1,5 +1,21 @@
 {
   "version": 1,
-  "updatedAt": "",
-  "entries": []
+  "updatedAt": "2026-08-05T06:04:17.778Z",
+  "entries": [
+    {
+      "id": "rice-wine-sheng-siong-gourmet-rice-cooking-wine--202608050604",
+      "ingredientId": "34c69a18-4fe7-8012-9dcf-cce78ff534fc",
+      "ingredientName": "Rice Wine(Cooking)",
+      "key": "rice wine",
+      "store": "Sheng Siong",
+      "product": "Gourmet Rice Cooking Wine - 16% Alcohol",
+      "priceSgd": 2.8,
+      "packSizeG": 640,
+      "volumetric": true,
+      "url": "https://shengsiong.com.sg/product/castle-gourmet-rice-cooking-wine-16-alcohol-640-ml",
+      "listTitle": "[Sheng Siong] Rice Wine(Cooking)",
+      "addedAt": "2026-08-05T06:04:17.778Z",
+      "outcome": "open"
+    }
+  ]
 }

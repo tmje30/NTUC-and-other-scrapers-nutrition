@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-03T09:24:01.107Z",
+  "updatedAt": "2026-08-05T06:04:17.778Z",
   "entries": [
     {
       "key": "oil",
@@ -55,6 +55,19 @@
       "product": "Peanut Butter - Crunchy",
       "packSizeG": 510,
       "monthlyAmount": 0
+    },
+    {
+      "key": "rice wine",
+      "ingredientId": "34c69a18-4fe7-8012-9dcf-cce78ff534fc",
+      "ingredientName": "Rice Wine(Cooking)",
+      "addedAt": "2026-08-05T06:04:17.778Z",
+      "until": "2026-10-17T06:04:17.778Z",
+      "days": 73,
+      "basis": "640ml ÷ 200ml/month = 3.20 months × 0.75 = 2.40 months",
+      "store": "Sheng Siong",
+      "product": "Gourmet Rice Cooking Wine - 16% Alcohol",
+      "packSizeG": 640,
+      "monthlyAmount": 200
     }
   ]
 }
