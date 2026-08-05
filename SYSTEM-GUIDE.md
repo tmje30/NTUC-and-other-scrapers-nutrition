@@ -1,6 +1,6 @@
 # Grocery Deal Scraper — System Guide
 
-*Last updated: 2026-08-05 · Covers changes through commit bab9d8c*
+*Last updated: 2026-08-05 · Covers changes through commit c3d89c9*
 
 ## What this is
 
@@ -654,10 +654,10 @@ under `src/` imports from `extension/`.
 
 ### Tests — `npm test`
 
-**195 offline cases in `src/tests/`**, free and fast. Seven suites: pack-shot
+**216 offline cases in `src/tests/`**, free and fast. Eight suites: pack-shot
 selection and its commodity gate, nutrition-panel parsing, macro-reply parsing,
-name derivation, the deals page's markup, marketplace size parsing, and cooldown
-length.
+name derivation, the deals page's markup, marketplace size parsing, cooldown
+length, and the concurrent-write merge.
 
 There is **no test runner and no new dependency** — each file registers its cases
 into `harness.ts`, and `run.ts` imports every suite and sets the exit code.
@@ -777,7 +777,7 @@ why `vendor-probe` prints its egress IP and flags datacenter addresses.
   address means nothing.
 - **`npm run ext:build`** — rebuild the Chrome extension's `dist/`. Required after
   editing `synonyms.json`.
-- **`npm test`** — the 195 offline cases. Free, fast, no network.
+- **`npm test`** — the 216 offline cases. Free, fast, no network.
 - **`npm run check`** — TypeScript type-check (no emit). **`npm run build`** emits
   `dist/`.
 
@@ -815,14 +815,31 @@ Three GitHub Actions workflows:
   button: writes the grocery-list row, records the cooldown, appends to the
   purchase log, comments the result on the issue and closes it. No Telegram ping —
   the user gets one daily digest and doesn't want adds narrating themselves. It
-  deliberately has **no `concurrency` group**: that would cancel pending runs and
-  lose adds when two people add at once. The cooldown push rebases and retries
-  instead.
+  deliberately has **no `concurrency` group**: GitHub keeps only one run pending
+  per group and cancels the rest, so a burst of taps would lose the middle ones.
+  Colliding pushes are handled by re-merging instead (below).
 - **`.github/workflows/item-actions.yml`** — Reset, Not in use, Add, Replace and
   Ignore. Kept separate from the above because undoing a snooze has a different
   blast radius from writing to Notion. Issue titles use a fixed `Item: ` prefix,
   which is what the workflow's allowlist matches, so renaming a button on the page
   cannot break the two-tap path.
+
+**When two taps land together** — `src/core/merge-data.ts` + `src/scripts/merge-data.ts`.
+Each tap is its own workflow run, and each commits a JSON data file and pushes, so
+two presses a few seconds apart race: the second push is rejected. The loser then
+takes the winner's version of the repo wholesale and **re-applies its own change on
+top**, up to five times.
+
+⚠️ It is a proper three-way merge (what the run started from, what it produced,
+what landed upstream), not a union — these files are not append-only, since
+**Reset** removes a cooldown and **Never buy again** settles a purchase row, and a
+union would put back exactly what someone had just removed. Where the two sides
+disagree, a removal beats an edit.
+
+⚠️ The previous approach — replaying the commit with `git pull --rebase` — could
+not do this: two entries appended to the same JSON array is a content conflict, so
+the run died *after* the page had already reported success. It silently lost three
+real corrections on 2026-08-05, which is what prompted the change.
 
 **One-tap.** Tapping "⚡ enable one-tap" at the foot of the page and pasting a
 fine-grained PAT (this repo, Contents: read/write) lets the page fire
