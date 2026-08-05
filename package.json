@@ -20,6 +20,7 @@
 		"add": "tsx src/scripts/add-to-list.ts",
 		"item-action": "tsx src/scripts/item-action.ts",
 		"macro-test": "tsx src/scripts/macro-test.ts",
+		"vendor-probe": "tsx src/scripts/vendor-probe.ts",
 		"push-ss": "tsx src/scripts/push-shengsiong.ts",
 		"ext:build": "node extension/build.mjs",
 		"test": "tsx src/tests/run.ts"
