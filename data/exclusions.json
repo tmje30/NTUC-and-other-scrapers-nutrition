@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-05T06:19:19.730Z",
+  "updatedAt": "2026-08-05T06:19:49.174Z",
   "terms": [
     {
       "key": "instant coffe",
@@ -49,6 +49,15 @@
       "name": "Soy Sauce (light)",
       "note": "ignored from the deals page",
       "addedAt": "2026-08-05T06:08:37.181Z"
+    },
+    {
+      "key": "*",
+      "store": "Sheng Siong",
+      "product": "China Old Ginger",
+      "url": "https://shengsiong.com.sg/product/china-old-ginger-400g",
+      "name": "Ginger (Bentong)",
+      "note": "ignored from the deals page",
+      "addedAt": "2026-08-05T06:19:49.174Z"
     }
   ]
 }
