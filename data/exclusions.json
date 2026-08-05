@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-05T06:17:38.121Z",
+  "updatedAt": "2026-08-05T06:19:19.730Z",
   "terms": [
     {
       "key": "instant coffe",
@@ -8,6 +8,27 @@
       "name": "Instant Coffee (plain)",
       "product": "Nescafe Instant Ipoh White Coffee - Gao Siew Dai",
       "addedAt": "2026-08-05T06:17:38.121Z"
+    },
+    {
+      "key": "toothpast multi care",
+      "term": "double",
+      "name": "Toothpaste  - Multi Care [Sensodyne]",
+      "product": "Darlie Double Action Freshness Toothpaste - Multi Care",
+      "addedAt": "2026-08-05T06:19:19.730Z"
+    },
+    {
+      "key": "toothpast multi care",
+      "term": "action",
+      "name": "Toothpaste  - Multi Care [Sensodyne]",
+      "product": "Darlie Double Action Freshness Toothpaste - Multi Care",
+      "addedAt": "2026-08-05T06:19:19.730Z"
+    },
+    {
+      "key": "toothpast multi care",
+      "term": "freshness",
+      "name": "Toothpaste  - Multi Care [Sensodyne]",
+      "product": "Darlie Double Action Freshness Toothpaste - Multi Care",
+      "addedAt": "2026-08-05T06:19:19.730Z"
     }
   ],
   "products": [
