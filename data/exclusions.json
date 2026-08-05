@@ -1,7 +1,15 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-05T06:08:37.181Z",
-  "terms": [],
+  "updatedAt": "2026-08-05T06:17:38.121Z",
+  "terms": [
+    {
+      "key": "instant coffe",
+      "term": "white",
+      "name": "Instant Coffee (plain)",
+      "product": "Nescafe Instant Ipoh White Coffee - Gao Siew Dai",
+      "addedAt": "2026-08-05T06:17:38.121Z"
+    }
+  ],
   "products": [
     {
       "key": "appl cider vinegar",
