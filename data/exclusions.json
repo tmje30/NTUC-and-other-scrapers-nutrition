@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-06T05:32:02.229Z",
+  "updatedAt": "2026-08-06T05:32:25.229Z",
   "terms": [
     {
       "key": "instant coffe",
@@ -76,6 +76,15 @@
       "name": "Soy Sauce (light)",
       "note": "ignored from the deals page",
       "addedAt": "2026-08-06T05:32:02.229Z"
+    },
+    {
+      "key": "*",
+      "store": "Sheng Siong",
+      "product": "Fragrant Sesame Oil",
+      "url": "https://shengsiong.com.sg/product/fen-xiang-fragrant-sesame-oil-2-l",
+      "name": "Sesame Oil",
+      "note": "ignored from the deals page",
+      "addedAt": "2026-08-06T05:32:25.229Z"
     }
   ]
 }
