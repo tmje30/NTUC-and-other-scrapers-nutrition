@@ -151,7 +151,7 @@ function addPayload(t: PlanTarget, p: StoreProduct, ingredient = t.name): AddPay
  * so a missing or revoked token degrades to two taps rather than to nothing.
  */
 function addButton(p: AddPayload, o: PageOptions): string {
-	const label = groceryRowTitle(p.store, p.ingredient);
+	const label = groceryRowTitle(p.ingredient);
 	const payload = esc(JSON.stringify(p));
 	// The issue title keeps the "Add: " prefix the workflow's allowlist matches on.
 	// Same reason `actionButton` fixes "Item: ": a label is a display string and must
@@ -777,7 +777,7 @@ function recCard(r: ReviewMiss, o: PageOptions): string {
 		: `<div class="why">close match — check before buying</div>`;
 
 	// The row title names the product, not just the ingredient: this is explicitly
-	// NOT the thing you asked for, so a bare "[NTUC] Organic Rolled Oats" would
+	// NOT the thing you asked for, so a bare "Organic Rolled Oats" would
 	// send you hunting at the shop for something the store doesn't stock at that
 	// price. Adding it still snoozes the ingredient — you came home with oats.
 	const payload = addPayload(t, p, `${t.name} ≈ ${p.name}`);

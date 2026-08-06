@@ -49,7 +49,7 @@ export interface PurchaseEntry {
 	packSizeG: number | null;
 	volumetric: boolean;
 	url: string;
-	/** The grocery-list row title this created ("[NTUC] Milk"). */
+	/** The grocery-list row title this created ("Milk" — the vendor is its own column). */
 	listTitle: string;
 	addedAt: string;
 	outcome: PurchaseOutcome;
@@ -103,7 +103,7 @@ export function purchaseFromAdd(p: AddPayload, now: Date = new Date()): Purchase
 		packSizeG: p.packSizeG,
 		volumetric: p.volumetric,
 		url: p.url,
-		listTitle: groceryRowTitle(p.store, p.ingredient),
+		listTitle: groceryRowTitle(p.ingredient),
 		addedAt,
 		outcome: "open",
 	};

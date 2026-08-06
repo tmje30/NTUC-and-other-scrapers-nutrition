@@ -18,6 +18,7 @@ import "./deals-page.test.js";
 import "./marketplace-size.test.js";
 import "./cooldown.test.js";
 import "./merge-data.test.js";
+import "./grocery-list.test.js";
 import { report } from "./harness.js";
 
 report();

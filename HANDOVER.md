@@ -188,8 +188,8 @@ laptop now covers the runner role, this is optional. To finish later:
 ## Add to grocery list (+ cooldowns)
 
 Each deal card has a **Buy** button on the left. The page is static, so it
-can't hold a Notion token: Buy opens a **pre-filled GitHub issue** ("Add: [NTUC]
-Milk", payload in a ```json block), you tap Submit, and
+can't hold a Notion token: Buy opens a **pre-filled GitHub issue** ("Add: Milk",
+payload in a ```json block), you tap Submit, and
 `.github/workflows/add-to-list.yml` does the privileged half —
 
 ⚠️ **It was called "Add" until 2026-08-04, and only the LABEL changed.** The CSS
@@ -200,11 +200,20 @@ on the same card and writes to **Ingredients** instead — two buttons saying "A
 that hit different databases is exactly the mis-tap worth a rename. Renaming the
 machinery too would have broken every in-flight issue for nothing, so don't.
 
-1. writes the row to the Notion **grocery List** DB: Name `[NTUC] Milk`,
+1. writes the row to the Notion **grocery List** DB: Name `Milk`,
    `Price , To Buy ` = the discounted price, `Current Price ` = what you pay for
-   your own pack, Vendor = the store, **Amount left empty**. Column names are
+   your own pack, `Vendor ` = the store, **Amount left empty**. Column names are
    resolved from the live schema, not hardcoded — they drift (see LEARNINGS
-   2026-07-29);
+   2026-07-29).
+   ⚠️ **Name carried a `[NTUC] ` prefix until 2026-08-06.** The shop was always
+   written to `Vendor ` as well, so the prefix only duplicated it; the list reads
+   better as a column of names beside a column of shops. Two consequences worth
+   knowing: the shop is now recorded in **exactly one place**, so a `Vendor `
+   column that stopped resolving would lose it silently (only a console warning —
+   it used to survive in the title); and `findOpenRow` now matches **across
+   shops**, so an ingredient already on the list blocks a second row for it from
+   another shop, and the first shop added keeps the Vendor cell. That is right for
+   a shopping list, and the cooldown means the second card is usually gone anyway;
 2. records a **cooldown** in `data/cooldowns.json` and commits it;
 3. comments the result on the issue and closes it. **No Telegram ping** — the
    user gets one daily digest and doesn't want adds narrating themselves.
@@ -1025,9 +1034,9 @@ panel, legible and carrying its own Per-100g column. `shengSiongPackShots` retur
   both cost and behaviour). `--image` is repeatable and takes the shop's URLs **unfiltered**, exactly as
   the extension hands them over; the line it prints says how many of them `packShotsFor` actually attached,
   so "3 image URLs given, 1 attached" is the gate working.
-- **`npm test` — 216 offline cases, free and in the repo** (`src/tests/`). Eight suites: pack-shot selection
+- **`npm test` — 230 offline cases, free and in the repo** (`src/tests/`). Nine suites: pack-shot selection
   and its commodity gate, nutrition-panel parsing, macro-reply parsing, name derivation, marketplace size
-  parsing, cooldown length (including the Weekly Buy route), the concurrent-write merge, and the deals page's markup
+  parsing, cooldown length (including the Weekly Buy route), the concurrent-write merge, the grocery-list row, and the deals page's markup
   (including the two ignores — see above). No test
   runner and no new dependency — each file registers cases into `harness.ts` and `run.ts` sets the exit code.
   Nothing here calls Notion, a shop or Anthropic: a test that costs 29 cents is a test nobody runs.
@@ -1175,7 +1184,7 @@ Both made a bad deal look good — the same family as the 32 g serving read as 1
   size? Writes nothing. `--only a,b`, `--browser`, `--headed`, `--login shopee`.
   ⚠️ Prints its egress IP first — a 403 from a datacenter address means nothing.
 - `npm run check` — typecheck.
-- `npm test` — **216** offline cases (`src/tests/`). Free, fast, no network.
+- `npm test` — **230** offline cases (`src/tests/`). Free, fast, no network.
 
 ## Key technical facts (details in LEARNINGS.md)
 

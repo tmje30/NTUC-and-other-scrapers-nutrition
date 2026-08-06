@@ -4,11 +4,15 @@ import { Client } from "@notionhq/client";
  * Pushing a deal onto the user's Notion **grocery List** database.
  *
  * The row is deliberately minimal, per the user's spec:
- *   Name    "[NTUC] Milk"  — vendor tag + the INGREDIENT name (what they shop
- *                            for), not the store's marketing name for it
+ *   Name    "Milk"  — the INGREDIENT name (what they shop for), not the store's
+ *                     marketing name for it
  *   Price   the discounted price actually being offered
  *   Vendor  the store, in the same words the Ingredients DB uses
  *   Amount  left empty — the user fills that in themselves
+ *
+ * ⚠️ Name carried a "[NTUC] " prefix until 2026-08-06. The shop was always in the
+ * Vendor column too; the prefix duplicated it, and the list reads better as a
+ * plain column of names beside a column of shops.
  *
  * Everything here is plain `@notionhq/client`, no filesystem and no repo
  * knowledge, so it runs the same in a script or a serverless handler.
@@ -80,8 +84,7 @@ async function listProps(client: Client): Promise<ListProps> {
 
 /**
  * Store module name → the vendor wording the user's own Notion uses. FairPrice
- * is "NTUC" everywhere in the Ingredients DB (and in the user's example,
- * "[NTUC] Milk"), so the grocery list says NTUC too.
+ * is "NTUC" everywhere in the Ingredients DB, so the grocery list says NTUC too.
  */
 const VENDOR_LABELS: Record<string, string> = {
 	FairPrice: "NTUC",
@@ -92,9 +95,24 @@ export function vendorLabel(store: string): string {
 	return VENDOR_LABELS[store] ?? store;
 }
 
-/** The row title: "[NTUC] Milk". */
-export function groceryRowTitle(store: string, ingredientName: string): string {
-	return `[${vendorLabel(store)}] ${ingredientName}`;
+/**
+ * The row title — the ingredient's own name, and nothing else.
+ *
+ * ⚠️ **It carried a `[NTUC] ` prefix until 2026-08-06.** The shop now goes in the
+ * list's own `Vendor ` column instead (it always did as well; the prefix was a
+ * duplicate of it), because a shopping list reads better as a column of names.
+ *
+ * ⚠️ **The shop is therefore recorded in exactly one place now.** If
+ * `resolveListProps` ever fails to find the vendor column — it looks for a
+ * `rich_text` property whose name contains "vendor" — the shop is lost silently,
+ * with only a console warning. It used to survive in the title. Live schema as of
+ * 2026-08-06 has `"Vendor "` (rich_text, trailing space) and resolves fine.
+ *
+ * Takes no `store`: the name is the whole title, and a parameter that no longer
+ * affects the result is the kind that quietly grows a second meaning later.
+ */
+export function groceryRowTitle(ingredientName: string): string {
+	return ingredientName;
 }
 
 /**
@@ -186,6 +204,15 @@ export interface AddResult {
 /**
  * Look for an outstanding (un-ticked) row with this exact title, so a double-tap
  * on the Add button doesn't leave two identical lines on the shopping list.
+ *
+ * ⚠️ **Since the title lost its `[NTUC] ` prefix (2026-08-06) this matches across
+ * shops.** "Banana (Fruit)" already on the list from Sheng Siong now blocks a
+ * second row for the same ingredient from NTUC, where before the two titles
+ * differed and you got both. That is the right behaviour for a shopping list —
+ * one line per thing to buy — but it means the FIRST shop to be added wins the
+ * `Vendor ` column, and a later, better deal reports "already listed" without
+ * updating it. In practice the cooldown fires on the first add, so the second
+ * card is gone from the page anyway.
  */
 async function findOpenRow(client: Client, props: ListProps, title: string): Promise<string | null> {
 	const filters: any[] = [{ property: props.title, title: { equals: title } }];
@@ -203,7 +230,7 @@ const money = (n: number) => Math.round(n * 100) / 100;
 /** Creates the grocery-list row (or reports the one that's already there). */
 export async function addToGroceryList(client: Client, p: AddPayload): Promise<AddResult> {
 	const props = await listProps(client);
-	const title = groceryRowTitle(p.store, p.ingredient);
+	const title = groceryRowTitle(p.ingredient);
 
 	const existing = await findOpenRow(client, props, title).catch(() => null);
 	if (existing) return { title, pageId: existing, alreadyListed: true };

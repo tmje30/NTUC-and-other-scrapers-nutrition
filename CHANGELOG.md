@@ -307,6 +307,25 @@ All notable changes to this project are documented here. Format based on
   commodity gate spends real money. Equivalent suites had been written and thrown
   away with the session four times before this.
 
+### Changed
+- **The grocery-list row title is the ingredient name alone** (2026-08-06, by
+  request). `[Sheng Siong] Banana (Fruit)` is now `Banana (Fruit)`, with the shop
+  in the list's own `Vendor ` column — which it was always written to as well, so
+  the prefix only duplicated it. Nothing else about the row moved.
+  ⚠️ The shop is now recorded in **exactly one place**. `resolveListProps` finds
+  the vendor column by type + keyword (live schema has `"Vendor "`, rich_text,
+  trailing space — verified against Notion on 2026-08-06); if that ever stopped
+  resolving, the writer skips it by design and the shop would be lost with only a
+  console warning. It used to survive in the title.
+  ⚠️ `findOpenRow` now matches **across shops**: an ingredient already on the list
+  blocks a second row for it from another shop, where the two titles used to
+  differ and you got both. Right for a shopping list, and the cooldown means the
+  second card is usually gone from the page anyway — but the first shop added
+  keeps the Vendor cell.
+  `groceryRowTitle` lost its `store` parameter rather than keeping one that no
+  longer affects the result. New 14-case suite covering the title, the vendor
+  labels and the live column resolution.
+
 ### Fixed
 - **Two taps at once no longer lose one of them** (2026-08-05). Both write
   workflows commit a JSON data file and push, so presses a few seconds apart race

@@ -88,7 +88,7 @@ console.error(`Cooldown: ${cd.days} days (${cd.basis}) — key "${payload.key}"`
 
 if (dryRun) {
 	await report(
-		`DRY RUN — would add "${groceryRowTitle(payload.store, payload.ingredient)}" at ` +
+		`DRY RUN — would add "${groceryRowTitle(payload.ingredient)}" at ` +
 			`$${payload.priceSgd.toFixed(2)} and snooze "${payload.key}" for ${cd.days} days.`,
 	);
 	process.exit(0);
