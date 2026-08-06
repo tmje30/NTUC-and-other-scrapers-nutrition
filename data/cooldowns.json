@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-06T05:30:20.361Z",
+  "updatedAt": "2026-08-06T05:30:24.417Z",
   "entries": [
     {
       "key": "oil",
@@ -94,6 +94,20 @@
       "product": "Knife Brand Thai Fish Sauce",
       "packSizeG": 750,
       "monthlyAmount": 40
+    },
+    {
+      "key": "thai red rice",
+      "ingredientId": "37e69a18-4fe7-8006-9304-f71180f91df6",
+      "ingredientName": "Thai Red rice",
+      "reason": "ignored",
+      "addedAt": "2026-08-06T05:30:24.417Z",
+      "until": "2026-08-09T16:00:00.000Z",
+      "days": 3,
+      "basis": "ignored from the deals page until the start of next week (Mon, SGT)",
+      "store": "FairPrice",
+      "product": "PaddyKing Thai Red Cargo Rice",
+      "packSizeG": null,
+      "monthlyAmount": 0
     }
   ]
 }
