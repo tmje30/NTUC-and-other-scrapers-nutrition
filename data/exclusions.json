@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-06T05:33:26.634Z",
+  "updatedAt": "2026-08-06T05:33:55.551Z",
   "terms": [
     {
       "key": "instant coffe",
@@ -29,6 +29,13 @@
       "name": "Toothpaste  - Multi Care [Sensodyne]",
       "product": "Darlie Double Action Freshness Toothpaste - Multi Care",
       "addedAt": "2026-08-05T06:19:19.730Z"
+    },
+    {
+      "key": "ginger",
+      "term": "slice",
+      "name": "Ginger (Bentong)",
+      "product": "Ginger Slice",
+      "addedAt": "2026-08-06T05:33:55.551Z"
     }
   ],
   "products": [
