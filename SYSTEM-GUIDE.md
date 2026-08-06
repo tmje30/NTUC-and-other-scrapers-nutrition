@@ -1,6 +1,6 @@
 # Grocery Deal Scraper — System Guide
 
-*Last updated: 2026-08-05 · Covers changes through commit c3d89c9*
+*Last updated: 2026-08-06 · Covers changes through commit 35de1a4*
 
 ## What this is
 
@@ -351,11 +351,20 @@ rail — plus a `⋯` correction menu:
            uses ~400g/month                     has macro
 ```
 
-- **Buy** — writes the row to the Notion **grocery List** (Name `[NTUC] Milk`,
-  the discounted price, what you currently pay, the vendor; Amount deliberately
-  left empty), records a cooldown, and appends to the purchase log. Column names
-  are resolved from the live Notion schema at write time, never hardcoded, because
-  they drift.
+- **Buy** — writes the row to the Notion **grocery List** and records a cooldown,
+  then appends to the purchase log. The row is:
+
+  | Name | Price , To Buy | Current Price | Vendor | Amount |
+  |---|---|---|---|---|
+  | `Banana (Fruit)` | the discounted price | what you pay today | `Sheng Siong` | *left empty, you fill it in* |
+
+  The **shop goes in its own `Vendor ` column**, not in the name. Column names are
+  resolved from the live Notion schema at write time, never hardcoded, because they
+  drift.
+  ⚠️ Name carried a `[NTUC] ` prefix until 2026-08-06, duplicating the Vendor
+  column. Two consequences: the shop is now recorded in exactly one place, and a
+  second add of the same ingredient from a *different* shop now finds the existing
+  row and reports "already listed" rather than making a second line.
 - **Ignore 1wk** — snoozes this **ingredient** until Monday 00:00 SGT. Nothing is
   searched for it until then, and it's undone with **Reset** from the list at the
   foot of the page. Red, like the permanent ignore in the menu: red marks the
@@ -654,10 +663,10 @@ under `src/` imports from `extension/`.
 
 ### Tests — `npm test`
 
-**216 offline cases in `src/tests/`**, free and fast. Eight suites: pack-shot
+**230 offline cases in `src/tests/`**, free and fast. Nine suites: pack-shot
 selection and its commodity gate, nutrition-panel parsing, macro-reply parsing,
 name derivation, the deals page's markup, marketplace size parsing, cooldown
-length, and the concurrent-write merge.
+length, the concurrent-write merge, and the grocery-list row.
 
 There is **no test runner and no new dependency** — each file registers its cases
 into `harness.ts`, and `run.ts` imports every suite and sets the exit code.
@@ -777,7 +786,7 @@ why `vendor-probe` prints its egress IP and flags datacenter addresses.
   address means nothing.
 - **`npm run ext:build`** — rebuild the Chrome extension's `dist/`. Required after
   editing `synonyms.json`.
-- **`npm test`** — the 216 offline cases. Free, fast, no network.
+- **`npm test`** — the 230 offline cases. Free, fast, no network.
 - **`npm run check`** — TypeScript type-check (no emit). **`npm run build`** emits
   `dist/`.
 
@@ -954,6 +963,18 @@ Other requirements:
 
 ## What changed in this update
 
+- **2026-08-06 — The grocery-list Name no longer carries the shop.**
+  `[Sheng Siong] Banana (Fruit)` is now just `Banana (Fruit)`, with the shop in
+  the list's own `Vendor ` column — which every add already wrote to, so the
+  prefix was only a duplicate of it. Two consequences: the shop is now recorded in
+  exactly one place, and adding the same ingredient from a second shop finds the
+  existing row rather than making a second line.
+- **2026-08-05 — Two taps at once no longer lose one of them.** Each button press
+  is its own workflow run, and two a few seconds apart raced to commit the same
+  data file; the loser's recovery replayed its commit, hit a conflict, and failed
+  *after* the page had reported success. Three real corrections were lost that way
+  before it was found. The loser now takes the winner's version and re-applies its
+  own change on top.
 - **2026-08-05 — `Weekly Buy` now sets the cooldown.** The tag was read from
   Notion and used by nothing. An ingredient carrying it goes quiet for a flat
   **5 days** after a Buy, regardless of how much was bought — bananas are a weekly
