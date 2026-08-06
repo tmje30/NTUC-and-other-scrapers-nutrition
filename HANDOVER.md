@@ -200,20 +200,37 @@ on the same card and writes to **Ingredients** instead — two buttons saying "A
 that hit different databases is exactly the mis-tap worth a rename. Renaming the
 machinery too would have broken every in-flight issue for nothing, so don't.
 
-1. writes the row to the Notion **grocery List** DB: Name `Milk`,
+1. writes the row to the Notion **grocery List** DB: Name
+   `Fish Sauce, Knife Brand, 750ml` — the ingredient, then the BRAND and PACK
+   SIZE of the listing on offer, which is how you pick it off the shelf —
    `Price , To Buy ` = the discounted price, `Current Price ` = what you pay for
    your own pack, `Vendor ` = the store, **Amount left empty**. Column names are
    resolved from the live schema, not hardcoded — they drift (see LEARNINGS
    2026-07-29).
+   ⚠️ **Brand and size were added to the Name on 2026-08-06**, from `p.brand` and
+   a shelf label built in `shelfSize()`. Both are optional segments: a shop
+   publishing no brand (~4% of Sheng Siong listings) still gives a clean line, and
+   an in-flight issue raised before the fields existed produces the shorter title
+   rather than throwing. ⚠️ The brand is verbatim — **never** with "brand"
+   appended, because `Tiger Brand`, `Snow Brand` and `House Brand` are real brand
+   names. ⚠️ A brand the ingredient name already states is not repeated, so
+   `Fish Sauce [Knife]` does not become "Fish Sauce [Knife], Knife, 750ml".
+   ⚠️ A counted pack reads `30 pcs`, not the grams `packSizeG` holds for the
+   cooldown.
    ⚠️ **Name carried a `[NTUC] ` prefix until 2026-08-06.** The shop was always
    written to `Vendor ` as well, so the prefix only duplicated it; the list reads
-   better as a column of names beside a column of shops. Two consequences worth
-   knowing: the shop is now recorded in **exactly one place**, so a `Vendor `
-   column that stopped resolving would lose it silently (only a console warning —
-   it used to survive in the title); and `findOpenRow` now matches **across
-   shops**, so an ingredient already on the list blocks a second row for it from
-   another shop, and the first shop added keeps the Vendor cell. That is right for
-   a shopping list, and the cooldown means the second card is usually gone anyway;
+   better as a column of names beside a column of shops. Consequence: the shop is
+   now recorded in **exactly one place**, so a `Vendor ` column that stopped
+   resolving would lose it silently (only a console warning — it used to survive
+   in the title).
+   ⚠️ **What `findOpenRow` dedupes on moved twice in one day, so read it here
+   rather than assuming.** It matches the whole title. Dropping the vendor prefix
+   briefly made that "one row per ingredient, across shops"; adding brand and size
+   narrowed it again to **one row per (ingredient, brand, pack size)**. So the same
+   listing tapped twice still collapses to one row — which is the double-tap this
+   guard exists for — while two genuinely different packs list separately, which is
+   right: they are different things to buy. Only a shop that publishes neither
+   brand nor size falls back to ingredient-only matching;
 2. records a **cooldown** in `data/cooldowns.json` and commits it;
 3. comments the result on the issue and closes it. **No Telegram ping** — the
    user gets one daily digest and doesn't want adds narrating themselves.
@@ -1034,7 +1051,7 @@ panel, legible and carrying its own Per-100g column. `shengSiongPackShots` retur
   both cost and behaviour). `--image` is repeatable and takes the shop's URLs **unfiltered**, exactly as
   the extension hands them over; the line it prints says how many of them `packShotsFor` actually attached,
   so "3 image URLs given, 1 attached" is the gate working.
-- **`npm test` — 230 offline cases, free and in the repo** (`src/tests/`). Nine suites: pack-shot selection
+- **`npm test` — 241 offline cases, free and in the repo** (`src/tests/`). Nine suites: pack-shot selection
   and its commodity gate, nutrition-panel parsing, macro-reply parsing, name derivation, marketplace size
   parsing, cooldown length (including the Weekly Buy route), the concurrent-write merge, the grocery-list row, and the deals page's markup
   (including the two ignores — see above). No test
@@ -1184,7 +1201,7 @@ Both made a bad deal look good — the same family as the 32 g serving read as 1
   size? Writes nothing. `--only a,b`, `--browser`, `--headed`, `--login shopee`.
   ⚠️ Prints its egress IP first — a 403 from a datacenter address means nothing.
 - `npm run check` — typecheck.
-- `npm test` — **230** offline cases (`src/tests/`). Free, fast, no network.
+- `npm test` — **241** offline cases (`src/tests/`). Free, fast, no network.
 
 ## Key technical facts (details in LEARNINGS.md)
 

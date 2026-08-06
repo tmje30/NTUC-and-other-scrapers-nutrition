@@ -91,12 +91,28 @@ function countTag(name: string, count: number | null | undefined): string {
 }
 
 /**
+ * The offered pack as it should read on a shopping list — "750ml", "1.5kg",
+ * "30 pcs", or nothing when the shop published neither.
+ *
+ * ⚠️ A counted pack reports its COUNT, not the grams the cooldown converted it to.
+ * "30 pcs" is what you look for; "1650g" of eggs is a number no carton prints.
+ * That is why this reads `p.unitCount` / `p.packWeightG` rather than the
+ * `packSizeG` sitting beside it in the payload.
+ */
+function shelfSize(p: StoreProduct): string | undefined {
+	if (p.unitCount && p.unitCount > 0) return `${p.unitCount} pcs`;
+	if (p.packWeightG && p.packWeightG > 0) return packLabel(p.packWeightG, p.volumetric);
+	return undefined;
+}
+
+/**
  * What the Add button ships to the workflow: enough to write the row AND set the
  * cooldown.
  *
- * `ingredient` becomes the grocery-list row title, so it's a parameter rather
- * than always `target.name`: a close match needs to say which product it actually
- * is (see `recCard`), while a confident deal is simply the ingredient.
+ * `ingredient` becomes the first segment of the grocery-list row title, so it's a
+ * parameter rather than always `target.name`: a close match needs to say which
+ * product it actually is (see `recCard`), while a confident deal is simply the
+ * ingredient. Brand and size are appended to it by `groceryRowTitle`.
  */
 function addPayload(t: PlanTarget, p: StoreProduct, ingredient = t.name): AddPayload {
 	// How much was actually bought, in grams — the cooldown's whole input. A pack
@@ -115,6 +131,11 @@ function addPayload(t: PlanTarget, p: StoreProduct, ingredient = t.name): AddPay
 		key: cooldownKey(t.search.searchTerm),
 		store: p.store,
 		product: p.name,
+		// Brand and size go on the shopping-list row itself — they are how you pick
+		// the right pack off the shelf. The SHOP's, not the ingredient's: this row
+		// exists because this particular pack is on offer.
+		brand: p.brand ?? undefined,
+		size: shelfSize(p),
 		priceSgd: p.priceSgd,
 		myPriceSgd: t.packPriceSgd,
 		// Both figures are grams — never `packSize`/`monthlyAmount`, which are piece
@@ -151,7 +172,7 @@ function addPayload(t: PlanTarget, p: StoreProduct, ingredient = t.name): AddPay
  * so a missing or revoked token degrades to two taps rather than to nothing.
  */
 function addButton(p: AddPayload, o: PageOptions): string {
-	const label = groceryRowTitle(p.ingredient);
+	const label = groceryRowTitle(p);
 	const payload = esc(JSON.stringify(p));
 	// The issue title keeps the "Add: " prefix the workflow's allowlist matches on.
 	// Same reason `actionButton` fixes "Item: ": a label is a display string and must

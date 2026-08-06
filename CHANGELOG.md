@@ -308,8 +308,23 @@ All notable changes to this project are documented here. Format based on
   away with the session four times before this.
 
 ### Changed
-- **The grocery-list row title is the ingredient name alone** (2026-08-06, by
-  request). `[Sheng Siong] Banana (Fruit)` is now `Banana (Fruit)`, with the shop
+- **The grocery-list row title names the pack you have to find** (2026-08-06, by
+  request): `Fish Sauce, Knife Brand, 750ml`. The ingredient, then the brand and
+  pack size of the listing actually on offer, both carried in the Buy payload
+  (`brand`, `size`) since nothing downstream can recover them — `add-to-list`
+  never sees the product.
+  ⚠️ The brand is **verbatim, never suffixed with "brand"**: `Tiger Brand`,
+  `Snow Brand` and `House Brand` are real brand names (5 of 264 in one scan), and
+  a naive template reads "Snow Brand brand".
+  ⚠️ A brand the ingredient's own name already states is not repeated, so
+  `Fish Sauce [Knife]` does not become "Fish Sauce [Knife], Knife, 750ml".
+  ⚠️ A counted pack reads `30 pcs`, not the grams `packSizeG` carries for the
+  cooldown's sake — no egg carton prints "1650g".
+  Segments are individually optional, so a brandless listing (~4% of Sheng Siong)
+  still reads cleanly and an issue raised before the fields existed produces the
+  shorter title rather than throwing.
+- **The grocery-list row title lost its vendor prefix** (2026-08-06, by request).
+  `[Sheng Siong] Banana (Fruit)` is now `Banana (Fruit)`, with the shop
   in the list's own `Vendor ` column — which it was always written to as well, so
   the prefix only duplicated it. Nothing else about the row moved.
   ⚠️ The shop is now recorded in **exactly one place**. `resolveListProps` finds
@@ -317,14 +332,15 @@ All notable changes to this project are documented here. Format based on
   trailing space — verified against Notion on 2026-08-06); if that ever stopped
   resolving, the writer skips it by design and the shop would be lost with only a
   console warning. It used to survive in the title.
-  ⚠️ `findOpenRow` now matches **across shops**: an ingredient already on the list
-  blocks a second row for it from another shop, where the two titles used to
-  differ and you got both. Right for a shopping list, and the cooldown means the
-  second card is usually gone from the page anyway — but the first shop added
-  keeps the Vendor cell.
+  ⚠️ `findOpenRow` matches the whole title, so what it dedupes on moved twice in
+  one day: dropping the prefix briefly made it one row per ingredient across
+  shops, and adding brand and size (above) settled it at **one row per
+  (ingredient, brand, pack size)**. The same listing tapped twice still collapses
+  to one row — the double-tap this guard exists for — while two genuinely
+  different packs list separately.
   `groceryRowTitle` lost its `store` parameter rather than keeping one that no
-  longer affects the result. New 14-case suite covering the title, the vendor
-  labels and the live column resolution.
+  longer affects the result. New suite covering the title, the vendor labels and
+  column resolution against the real schema.
 
 ### Fixed
 - **Two taps at once no longer lose one of them** (2026-08-05). Both write

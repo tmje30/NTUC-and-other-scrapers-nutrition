@@ -258,3 +258,44 @@ check("and in the two-tap issue body", weeklyPage.includes(encodeURIComponent('"
 // would otherwise take the 5-day route and the whole cooldown formula would be dead
 // code that still typechecks.
 check("an untagged item does not claim the flag", !html.includes("&quot;weeklyBuy&quot;:true"));
+
+/**
+ * The shopping-list row is assembled at page-build time, not in the workflow, so
+ * the brand and pack size have to be IN the payload. Nothing downstream can
+ * recover them: `add-to-list` never sees the product, only what the card sent.
+ */
+describe("deals page — brand and size reach the Buy payload");
+
+const shelf = renderDealsPage(
+	[
+		deal(
+			target({ name: "Fish Sauce", search: { searchTerm: "fish sauce", mustMatch: [], properties: [], keywords: [] } }),
+			product({ name: "Fish Sauce", brand: "Knife Brand", packWeightG: 750, volumetric: true, nutritionHtml: null }),
+			25,
+		),
+	],
+	[],
+	new Date(),
+	[],
+	{ repo: "tmje30/NTUC-and-other-scrapers-nutrition" },
+);
+
+check("the brand rides along", shelf.includes("&quot;brand&quot;:&quot;Knife Brand&quot;"));
+check("the size is a shelf label, not grams", shelf.includes("&quot;size&quot;:&quot;750ml&quot;"));
+
+// ⚠️ A counted pack must report its COUNT. `packSizeG` beside it is the grams the
+// cooldown needs; "1650g" of eggs is a number no carton prints.
+const counted = renderDealsPage(
+	[
+		deal(
+			target({ name: "Eggs", packSize: 10, packWeightG: 550, search: { searchTerm: "eggs", mustMatch: [], properties: [], keywords: [] } }),
+			product({ name: "Fresh Eggs", brand: "Seng Choon", packWeightG: null, unitCount: 30, nutritionHtml: null }),
+			15,
+		),
+	],
+	[],
+	new Date(),
+	[],
+	{ repo: "tmje30/NTUC-and-other-scrapers-nutrition" },
+);
+check("a counted pack reads in pieces", counted.includes("&quot;size&quot;:&quot;30 pcs&quot;"));

@@ -103,7 +103,7 @@ export function purchaseFromAdd(p: AddPayload, now: Date = new Date()): Purchase
 		packSizeG: p.packSizeG,
 		volumetric: p.volumetric,
 		url: p.url,
-		listTitle: groceryRowTitle(p.ingredient),
+		listTitle: groceryRowTitle(p),
 		addedAt,
 		outcome: "open",
 	};

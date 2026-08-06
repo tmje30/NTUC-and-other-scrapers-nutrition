@@ -4,8 +4,9 @@ import { Client } from "@notionhq/client";
  * Pushing a deal onto the user's Notion **grocery List** database.
  *
  * The row is deliberately minimal, per the user's spec:
- *   Name    "Milk"  — the INGREDIENT name (what they shop for), not the store's
- *                     marketing name for it
+ *   Name    "Fish Sauce, Knife Brand, 750ml" — the INGREDIENT name (what they
+ *           shop for, never the store's marketing name), then the brand and pack
+ *           size of the listing that is actually on offer
  *   Price   the discounted price actually being offered
  *   Vendor  the store, in the same words the Ingredients DB uses
  *   Amount  left empty — the user fills that in themselves
@@ -96,9 +97,26 @@ export function vendorLabel(store: string): string {
 }
 
 /**
- * The row title — the ingredient's own name, and nothing else.
+ * The row title — what you actually have to find in the shop:
  *
- * ⚠️ **It carried a `[NTUC] ` prefix until 2026-08-06.** The shop now goes in the
+ *     Fish Sauce, Knife Brand, 750ml
+ *     ↑ ingredient  ↑ brand     ↑ the pack being offered
+ *
+ * Brand and size are the STORE's, not the ingredient's: this row exists because a
+ * particular pack is on offer, and the brand and size are how you pick it off the
+ * shelf. Both are optional and each segment is dropped when it is missing, so a
+ * shop that publishes no brand still gives a usable line rather than a stray comma.
+ *
+ * ⚠️ **The brand is used verbatim, never with the word "brand" appended.** Many
+ * real brands already end in it — `Tiger Brand`, `Snow Brand`, `House Brand`, five
+ * of the 264 in one Sheng Siong scan — and "Snow Brand brand" is how that would
+ * read.
+ *
+ * ⚠️ **A brand the ingredient's own name already states is not repeated.** An
+ * ingredient written in the bracket standard as `Fish Sauce [Knife]` would
+ * otherwise produce "Fish Sauce [Knife], Knife, 750ml".
+ *
+ * ⚠️ **It carried a `[NTUC] ` prefix until 2026-08-06.** The shop goes in the
  * list's own `Vendor ` column instead (it always did as well; the prefix was a
  * duplicate of it), because a shopping list reads better as a column of names.
  *
@@ -107,12 +125,16 @@ export function vendorLabel(store: string): string {
  * `rich_text` property whose name contains "vendor" — the shop is lost silently,
  * with only a console warning. It used to survive in the title. Live schema as of
  * 2026-08-06 has `"Vendor "` (rich_text, trailing space) and resolves fine.
- *
- * Takes no `store`: the name is the whole title, and a parameter that no longer
- * affects the result is the kind that quietly grows a second meaning later.
  */
-export function groceryRowTitle(ingredientName: string): string {
-	return ingredientName;
+export function groceryRowTitle(p: { ingredient: string; brand?: string; size?: string }): string {
+	const name = p.ingredient.trim();
+	const brand = (p.brand ?? "").trim();
+	const size = (p.size ?? "").trim();
+
+	const parts = [name];
+	if (brand && !name.toLowerCase().includes(brand.toLowerCase())) parts.push(brand);
+	if (size) parts.push(size);
+	return parts.join(", ");
 }
 
 /**
@@ -131,6 +153,19 @@ export interface AddPayload {
 	store: string;
 	/** The store's product name — kept for the cooldown log, not for the row. */
 	product: string;
+	/**
+	 * The store's brand, verbatim, for the row title ("Knife Brand"). Optional:
+	 * roughly 4% of Sheng Siong listings publish none, and a payload built before
+	 * this field existed simply produces the older, shorter title.
+	 */
+	brand?: string;
+	/**
+	 * The offered pack, as it should READ on a shopping list — "750ml", "1.5kg",
+	 * "30 pcs". A formatted string rather than a number because the unit is the
+	 * point: a counted pack has no weight to show, and `packSizeG` has already
+	 * converted one for the cooldown's sake.
+	 */
+	size?: string;
 	/** Discounted (current) price of the store pack, SGD. */
 	priceSgd: number;
 	/**
@@ -184,6 +219,10 @@ export function parseAddPayload(raw: unknown): AddPayload {
 		key: str("key"),
 		store: str("store"),
 		product: str("product", false),
+		// ⚠️ Not `str(k, false)` — that still demands a string and would throw on an
+		// issue raised before these fields existed. Absent means "older payload".
+		brand: typeof o.brand === "string" && o.brand.trim() ? o.brand : undefined,
+		size: typeof o.size === "string" && o.size.trim() ? o.size : undefined,
 		priceSgd,
 		myPriceSgd: Number.isFinite(myPrice) && myPrice > 0 ? myPrice : undefined,
 		packSizeG: packSizeG != null && Number.isFinite(packSizeG) ? packSizeG : null,
@@ -205,14 +244,15 @@ export interface AddResult {
  * Look for an outstanding (un-ticked) row with this exact title, so a double-tap
  * on the Add button doesn't leave two identical lines on the shopping list.
  *
- * ⚠️ **Since the title lost its `[NTUC] ` prefix (2026-08-06) this matches across
- * shops.** "Banana (Fruit)" already on the list from Sheng Siong now blocks a
- * second row for the same ingredient from NTUC, where before the two titles
- * differed and you got both. That is the right behaviour for a shopping list —
- * one line per thing to buy — but it means the FIRST shop to be added wins the
- * `Vendor ` column, and a later, better deal reports "already listed" without
- * updating it. In practice the cooldown fires on the first add, so the second
- * card is gone from the page anyway.
+ * ⚠️ **What this dedupes on changed twice on 2026-08-06** — it matches the whole
+ * title, and the title's contents moved. Dropping the `[NTUC] ` prefix briefly
+ * made it "one row per ingredient, across shops"; adding brand and size narrowed
+ * it to **one row per (ingredient, brand, pack size)**.
+ *
+ * That is the right granularity: the same listing tapped twice collapses to one
+ * row, which is the double-tap this exists to stop, while two genuinely different
+ * packs list separately because they are different things to buy. A shop that
+ * publishes neither brand nor size falls back to matching on the ingredient alone.
  */
 async function findOpenRow(client: Client, props: ListProps, title: string): Promise<string | null> {
 	const filters: any[] = [{ property: props.title, title: { equals: title } }];
@@ -230,7 +270,7 @@ const money = (n: number) => Math.round(n * 100) / 100;
 /** Creates the grocery-list row (or reports the one that's already there). */
 export async function addToGroceryList(client: Client, p: AddPayload): Promise<AddResult> {
 	const props = await listProps(client);
-	const title = groceryRowTitle(p.ingredient);
+	const title = groceryRowTitle(p);
 
 	const existing = await findOpenRow(client, props, title).catch(() => null);
 	if (existing) return { title, pageId: existing, alreadyListed: true };
