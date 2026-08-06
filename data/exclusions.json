@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-06T05:31:16.736Z",
+  "updatedAt": "2026-08-06T05:32:02.229Z",
   "terms": [
     {
       "key": "instant coffe",
@@ -67,6 +67,15 @@
       "name": "Apple Cider vinegar (Unpasteurized)",
       "note": "close, but not confirmed",
       "addedAt": "2026-08-06T05:31:16.736Z"
+    },
+    {
+      "key": "*",
+      "store": "Sheng Siong",
+      "product": "Light Soya Sauce Grade 6",
+      "url": "https://shengsiong.com.sg/product/kwong-cheong-thye-light-soya-sauce-grade-6-5-l",
+      "name": "Soy Sauce (light)",
+      "note": "ignored from the deals page",
+      "addedAt": "2026-08-06T05:32:02.229Z"
     }
   ]
 }
