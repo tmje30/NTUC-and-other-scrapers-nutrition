@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-06T05:32:25.229Z",
+  "updatedAt": "2026-08-06T05:33:26.634Z",
   "terms": [
     {
       "key": "instant coffe",
@@ -85,6 +85,15 @@
       "name": "Sesame Oil",
       "note": "ignored from the deals page",
       "addedAt": "2026-08-06T05:32:25.229Z"
+    },
+    {
+      "key": "*",
+      "store": "Sheng Siong",
+      "product": "Australia Carrot",
+      "url": "https://shengsiong.com.sg/product/australia-carrot-10-kg",
+      "name": "carrots, Normal",
+      "note": "ignored from the deals page",
+      "addedAt": "2026-08-06T05:33:26.634Z"
     }
   ]
 }
