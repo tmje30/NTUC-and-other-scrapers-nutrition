@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-06T05:30:36.052Z",
+  "updatedAt": "2026-08-06T05:33:51.758Z",
   "entries": [
     {
       "key": "oil",
@@ -27,6 +27,48 @@
       "basis": "ignored from the deals page until the start of next week (Mon, SGT)",
       "store": "Sheng Siong",
       "product": "Green Tea",
+      "packSizeG": null,
+      "monthlyAmount": 0
+    },
+    {
+      "key": "thai red rice",
+      "ingredientId": "37e69a18-4fe7-8006-9304-f71180f91df6",
+      "ingredientName": "Thai Red rice",
+      "reason": "ignored",
+      "addedAt": "2026-08-06T05:30:24.417Z",
+      "until": "2026-08-09T16:00:00.000Z",
+      "days": 3,
+      "basis": "ignored from the deals page until the start of next week (Mon, SGT)",
+      "store": "FairPrice",
+      "product": "PaddyKing Thai Red Cargo Rice",
+      "packSizeG": null,
+      "monthlyAmount": 0
+    },
+    {
+      "key": "tofu",
+      "ingredientId": "34c69a18-4fe7-80f2-9d0c-eab7c0daa2bf",
+      "ingredientName": "Tau Kwa (Tofu)",
+      "reason": "ignored",
+      "addedAt": "2026-08-06T05:30:36.052Z",
+      "until": "2026-08-09T16:00:00.000Z",
+      "days": 3,
+      "basis": "ignored from the deals page until the start of next week (Mon, SGT)",
+      "store": "Sheng Siong",
+      "product": "Tau Kwa",
+      "packSizeG": null,
+      "monthlyAmount": 0
+    },
+    {
+      "key": "ginger",
+      "ingredientId": "34e69a18-4fe7-80ba-a84f-c9e6a8eb9d1c",
+      "ingredientName": "Ginger (Bentong)",
+      "reason": "ignored",
+      "addedAt": "2026-08-06T05:33:51.758Z",
+      "until": "2026-08-09T16:00:00.000Z",
+      "days": 3,
+      "basis": "ignored from the deals page until the start of next week (Mon, SGT)",
+      "store": "Sheng Siong",
+      "product": "Ginger Slice",
       "packSizeG": null,
       "monthlyAmount": 0
     },
@@ -94,34 +136,6 @@
       "product": "Knife Brand Thai Fish Sauce",
       "packSizeG": 750,
       "monthlyAmount": 40
-    },
-    {
-      "key": "thai red rice",
-      "ingredientId": "37e69a18-4fe7-8006-9304-f71180f91df6",
-      "ingredientName": "Thai Red rice",
-      "reason": "ignored",
-      "addedAt": "2026-08-06T05:30:24.417Z",
-      "until": "2026-08-09T16:00:00.000Z",
-      "days": 3,
-      "basis": "ignored from the deals page until the start of next week (Mon, SGT)",
-      "store": "FairPrice",
-      "product": "PaddyKing Thai Red Cargo Rice",
-      "packSizeG": null,
-      "monthlyAmount": 0
-    },
-    {
-      "key": "tofu",
-      "ingredientId": "34c69a18-4fe7-80f2-9d0c-eab7c0daa2bf",
-      "ingredientName": "Tau Kwa (Tofu)",
-      "reason": "ignored",
-      "addedAt": "2026-08-06T05:30:36.052Z",
-      "until": "2026-08-09T16:00:00.000Z",
-      "days": 3,
-      "basis": "ignored from the deals page until the start of next week (Mon, SGT)",
-      "store": "Sheng Siong",
-      "product": "Tau Kwa",
-      "packSizeG": null,
-      "monthlyAmount": 0
     }
   ]
 }
