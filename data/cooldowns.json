@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-06T05:33:51.758Z",
+  "updatedAt": "2026-08-06T05:34:09.979Z",
   "entries": [
     {
       "key": "oil",
@@ -97,19 +97,6 @@
       "product": "Peanut Butter - Crunchy",
       "packSizeG": 510,
       "monthlyAmount": 0
-    },
-    {
-      "key": "banana",
-      "ingredientId": "34b69a18-4fe7-80c7-9de6-fa3234a2a9d8",
-      "ingredientName": "Banana (Fruit)",
-      "addedAt": "2026-08-05T06:09:03.470Z",
-      "until": "2026-08-28T06:09:03.470Z",
-      "days": 23,
-      "basis": "1.5kg ÷ 1.5kg/month = 1.00 months × 0.75 = 0.75 months",
-      "store": "Sheng Siong",
-      "product": "Malaysia Pisang Berangan Banana",
-      "packSizeG": 1500,
-      "monthlyAmount": 1500
     },
     {
       "key": "rice wine",
