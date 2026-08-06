@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-05T06:19:49.174Z",
+  "updatedAt": "2026-08-06T05:31:16.736Z",
   "terms": [
     {
       "key": "instant coffe",
@@ -58,6 +58,15 @@
       "name": "Ginger (Bentong)",
       "note": "ignored from the deals page",
       "addedAt": "2026-08-05T06:19:49.174Z"
+    },
+    {
+      "key": "appl cider vinegar",
+      "store": "FairPrice",
+      "product": "RedMan Cider Apple Vinegar",
+      "url": "https://www.fairprice.com.sg/product/redman-cider-apple-vinegar",
+      "name": "Apple Cider vinegar (Unpasteurized)",
+      "note": "close, but not confirmed",
+      "addedAt": "2026-08-06T05:31:16.736Z"
     }
   ]
 }
