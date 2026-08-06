@@ -1,6 +1,6 @@
 # Grocery Deal Scraper — System Guide
 
-*Last updated: 2026-08-06 · Covers changes through commit 35de1a4*
+*Last updated: 2026-08-06 · Covers changes through commit 8af53e6*
 
 ## What this is
 
@@ -356,15 +356,25 @@ rail — plus a `⋯` correction menu:
 
   | Name | Price , To Buy | Current Price | Vendor | Amount |
   |---|---|---|---|---|
-  | `Banana (Fruit)` | the discounted price | what you pay today | `Sheng Siong` | *left empty, you fill it in* |
+  | `Fish Sauce, Knife Brand, 750ml` | the discounted price | what you pay today | `Sheng Siong` | *left empty, you fill it in* |
 
-  The **shop goes in its own `Vendor ` column**, not in the name. Column names are
-  resolved from the live Notion schema at write time, never hardcoded, because they
-  drift.
+  The Name is **the ingredient, then the brand and pack size of the listing that's
+  actually on offer** — what you need in order to pick the right thing off the
+  shelf. The **shop goes in its own `Vendor ` column**, not in the name. Column
+  names are resolved from the live Notion schema at write time, never hardcoded,
+  because they drift.
+
+  Each segment is dropped when the shop didn't publish it, so a brandless listing
+  still reads cleanly. A counted pack says `30 pcs` rather than a weight. The brand
+  is used exactly as published and never has the word "brand" appended — `Tiger
+  Brand` and `Snow Brand` are real brand names — and a brand the ingredient's own
+  name already states isn't repeated.
+
   ⚠️ Name carried a `[NTUC] ` prefix until 2026-08-06, duplicating the Vendor
-  column. Two consequences: the shop is now recorded in exactly one place, and a
-  second add of the same ingredient from a *different* shop now finds the existing
-  row and reports "already listed" rather than making a second line.
+  column, so the shop is now recorded in exactly one place. Duplicate detection
+  matches the whole title, which means **one row per (ingredient, brand, size)**:
+  tapping the same card twice makes one row, while two genuinely different packs
+  list separately.
 - **Ignore 1wk** — snoozes this **ingredient** until Monday 00:00 SGT. Nothing is
   searched for it until then, and it's undone with **Reset** from the list at the
   foot of the page. Red, like the permanent ignore in the menu: red marks the
@@ -663,7 +673,7 @@ under `src/` imports from `extension/`.
 
 ### Tests — `npm test`
 
-**230 offline cases in `src/tests/`**, free and fast. Nine suites: pack-shot
+**241 offline cases in `src/tests/`**, free and fast. Nine suites: pack-shot
 selection and its commodity gate, nutrition-panel parsing, macro-reply parsing,
 name derivation, the deals page's markup, marketplace size parsing, cooldown
 length, the concurrent-write merge, and the grocery-list row.
@@ -786,7 +796,7 @@ why `vendor-probe` prints its egress IP and flags datacenter addresses.
   address means nothing.
 - **`npm run ext:build`** — rebuild the Chrome extension's `dist/`. Required after
   editing `synonyms.json`.
-- **`npm test`** — the 230 offline cases. Free, fast, no network.
+- **`npm test`** — the 241 offline cases. Free, fast, no network.
 - **`npm run check`** — TypeScript type-check (no emit). **`npm run build`** emits
   `dist/`.
 
@@ -963,6 +973,11 @@ Other requirements:
 
 ## What changed in this update
 
+- **2026-08-06 — The grocery-list Name says which pack to look for.**
+  `Fish Sauce` is now `Fish Sauce, Knife Brand, 750ml` — the ingredient, then the
+  brand and pack size of the listing actually on offer, which is what you need
+  standing in the aisle. Each segment is dropped when the shop published none, a
+  counted pack reads `30 pcs`, and the brand is used exactly as published.
 - **2026-08-06 — The grocery-list Name no longer carries the shop.**
   `[Sheng Siong] Banana (Fruit)` is now just `Banana (Fruit)`, with the shop in
   the list's own `Vendor ` column — which every add already wrote to, so the
