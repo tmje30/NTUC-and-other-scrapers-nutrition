@@ -52,6 +52,24 @@ launches Chrome briefly to earn a session cookie when (and only when) it gets
 blocked. See "Incapsula" below. A missing shop is no longer silent: it shows on
 the page and in the daily Telegram message.
 
+⚠️ **Changed 2026-08-09 — where a price is stored moved entirely.** The Ingredients
+DB's baseline columns (`Price,SGD`, `Weight /Units of New Product `,
+`Vendor, Current `) are gone or renamed `… - Delete? `, and the **price book**
+(`Vendor 1..4` + `Price [Vendor n]` + `Size[Vendor n]` + `URL [Vendor n]`) is now the
+only record of any price, with `Price,SGD [Cheapest]` and friends as formulas over
+it. Every Add/Replace writes a vendor slot. This had already broken the daily scan
+silently — it was finding **zero** targets. Full story:
+**[`docs/session-2026-08-09-price-book.md`](docs/session-2026-08-09-price-book.md)**;
+rules in `src/core/vendor-slots.ts`.
+
+### Session notes
+
+Deep dives on one session each, kept for the *why*:
+
+- [`docs/session-2026-08-09-price-book.md`](docs/session-2026-08-09-price-book.md) — the price book replaces the baseline
+- [`docs/session-2026-08-03-extension.md`](docs/session-2026-08-03-extension.md) — the Chrome extension
+- [`docs/vendor-scoping.md`](docs/vendor-scoping.md) — searching shops beyond FairPrice and Sheng Siong ⚠️ column inventory partly superseded
+
 ## Live system
 
 - **Repo:** https://github.com/tmje30/NTUC-and-other-scrapers-nutrition — **PUBLIC**
