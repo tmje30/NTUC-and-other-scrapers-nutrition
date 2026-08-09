@@ -135,6 +135,12 @@ const back = new Date(cd.until).toLocaleDateString("en-SG", {
 });
 await report(
 	`${added.alreadyListed ? "Already on the list" : "Added"}: **${added.title}** — ` +
-		`$${payload.priceSgd.toFixed(2)}.\n` +
+		`$${payload.priceSgd.toFixed(2)}` +
+		(added.amount == null
+			? ""
+			: added.alreadyListed
+				? `, Amount now **${added.amount}**`
+				: `, Amount **1**`) +
+		`.\n` +
 		`Snoozed for **${cd.days} days** (back ${back}) — ${cd.basis}.`,
 );

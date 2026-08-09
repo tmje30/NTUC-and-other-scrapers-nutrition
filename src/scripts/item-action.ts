@@ -16,6 +16,7 @@ import { parkIngredient, unparkIngredient } from "../core/park.js";
 import { PARKED_TAG } from "../core/notion.js";
 import {
 	createIngredient,
+	describeSlotDecision,
 	fieldsFromPurchase,
 	rebaseIngredient,
 	replaceIngredientPrice,
@@ -507,8 +508,9 @@ if (payload.action === "replace-ingredient") {
 
 	if (dryRun) {
 		await report(
-			`DRY RUN — would set **${label}** to $${price?.toFixed(2) ?? "—"}` +
-				`${size ? ` / ${size}${payload.volumetric ? "ml" : "g"}` : ""} from ${payload.store}.`,
+			`DRY RUN — would record $${price?.toFixed(2) ?? "—"}` +
+				`${size ? ` / ${size}${payload.volumetric ? "ml" : "g"}` : ""} from ${payload.store} ` +
+				`in **${label}**'s ${payload.store} vendor slot.`,
 		);
 		process.exit(0);
 	}
@@ -522,16 +524,30 @@ if (payload.action === "replace-ingredient") {
 		url: payload.url || undefined,
 	});
 
+	// A refusal is a legitimate outcome — "every slot is taken and this isn't cheaper",
+	// "that shop has no Vendor option" — so the log records what actually happened
+	// rather than claiming a replacement.
+	//
+	// ⚠️ **The test is the SLOT decision, not the written list.** A refused replace
+	// still writes `Unit type `, so counting written properties reported an
+	// unrecognised shop as "Replaced: … now records $1.00 from Cold Storage" while
+	// the price was correctly skipped — caught by a live test on 2026-08-09. Only the
+	// price book landing counts as a replacement.
+	const priced = res.slot != null && res.slot.kind !== "none";
 	await settlePurchase(
 		payload.purchaseId ?? "",
 		"replaced",
-		`price/size written onto ${label}`,
+		priced ? `price/size written onto ${label}` : `nothing written to ${label}'s price book`,
 	);
 
+	const why = describeSlotDecision(res.slot);
 	await report(
-		`Replaced: **${label}** now reads $${price?.toFixed(2) ?? "—"}` +
-			`${size ? ` for ${size}${payload.volumetric ? "ml" : "g"}` : ""} from ${payload.store}.\n` +
-			`Wrote: ${res.written.join(", ") || "nothing"}.` +
+		(priced
+			? `Replaced: **${label}** now records $${price?.toFixed(2) ?? "—"}` +
+				`${size ? ` for ${size}${payload.volumetric ? "ml" : "g"}` : ""} from ${payload.store}.`
+			: `**${label}**'s price book was NOT changed.`) +
+			(why ? `\n${why}` : "") +
+			`\nWrote: ${res.written.join(", ") || "nothing"}.` +
 			(res.skipped.length ? `\nSkipped: ${res.skipped.join("; ")}.` : "") +
 			`\nNutrition, tags and plan formulas were left alone.`,
 	);
@@ -544,6 +560,7 @@ if (payload.action === "add-ingredient") {
 		store: payload.store ?? "",
 		priceSgd: payload.priceSgd ?? 0,
 		packSizeG: payload.packSizeG ?? null,
+		unitCount: payload.unitCount ?? null,
 		volumetric: Boolean(payload.volumetric),
 		url: payload.url ?? "",
 		ingredientName: payload.name ?? "",
@@ -575,7 +592,7 @@ if (payload.action === "add-ingredient") {
 	await report(
 		`Added to Ingredients: **${fields.name}** — "${fields.exactName}", ` +
 			`$${(fields.priceSgd ?? 0).toFixed(2)} for ${fields.size ?? "?"} (${fields.unitType}), ` +
-			`vendor ${fields.vendor}.\n${nutrition}\n` +
+			`vendor ${fields.vendor}.\n${describeSlotDecision(res.slot)}\n${nutrition}\n` +
 			`Wrote: ${res.written.join(", ")}.` +
 			(res.skipped.length ? `\nSkipped: ${res.skipped.join("; ")}.` : ""),
 	);
@@ -600,6 +617,7 @@ if (payload.action === "rebase-ingredient") {
 		store: payload.store ?? "",
 		priceSgd: payload.priceSgd ?? 0,
 		packSizeG: payload.packSizeG ?? null,
+		unitCount: payload.unitCount ?? null,
 		volumetric: Boolean(payload.volumetric),
 		url: payload.url ?? "",
 		ingredientName: payload.name ?? "",
@@ -608,9 +626,10 @@ if (payload.action === "rebase-ingredient") {
 	if (dryRun) {
 		await report(
 			`DRY RUN — would re-base **${payload.name}** on "${payload.product}": ` +
-				`Name → ${fields.name}, Price,SGD → $${(fields.priceSgd ?? 0).toFixed(2)}, ` +
-				`Weight /Units → ${fields.size ?? "?"} (${fields.unitType}), Vendor → ${fields.vendor}. ` +
-				`URL and every other column left alone.`,
+				`Name → ${fields.name}, and $${(fields.priceSgd ?? 0).toFixed(2)} for ` +
+				`${fields.size ?? "?"} (${fields.unitType}) into ${fields.vendor}'s vendor slot ` +
+				`— whichever slot that shop owns, or the first free one, or the dearest one if it beats it. ` +
+				`Every other column left alone.`,
 		);
 		process.exit(0);
 	}
@@ -624,6 +643,9 @@ if (payload.action === "rebase-ingredient") {
 		size: fields.size,
 		unitType: fields.unitType,
 		vendor: fields.vendor,
+		// Written since 2026-08-09: it lands in `URL [Vendor n]` for the slot that
+		// names THIS shop, so the misfiling that kept it out before can't happen.
+		url: fields.url,
 		// Only ever set when the shop published a panel or the toggle was on; otherwise
 		// the row keeps whatever nutrition it already had, which is the right default
 		// for a row the user maintains.
@@ -632,10 +654,11 @@ if (payload.action === "rebase-ingredient") {
 
 	await report(
 		`Re-based **${payload.name}** on "${payload.product}" (${payload.store}).\n` +
+			`${describeSlotDecision(res.slot)}\n` +
 			`Wrote: ${res.written.join(", ") || "nothing"}.` +
 			(res.skipped.length ? `\nSkipped: ${res.skipped.join("; ")}.` : "") +
 			`\n${macroNote(payload, macros)}\n` +
-			`The product URL, tags and plan formulas were left alone.`,
+			`Tags and plan formulas were left alone.`,
 	);
 	process.exit(0);
 }

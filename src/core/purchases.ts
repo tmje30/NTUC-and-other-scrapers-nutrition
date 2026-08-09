@@ -47,6 +47,15 @@ export interface PurchaseEntry {
 	priceSgd: number;
 	/** Pack size in grams/ml. Null when the shop published neither. */
 	packSizeG: number | null;
+	/**
+	 * Pieces in the pack, when the shop counted instead of weighing (a 30-egg tray).
+	 *
+	 * ⚠️ **Optional, and absent on every row logged before 2026-08-09.** An older
+	 * entry simply falls back to parsing the product name for its size, exactly as
+	 * it did before this field existed — losing a purchase to a schema addition
+	 * would be far worse than an occasional re-parse.
+	 */
+	unitCount?: number | null;
 	volumetric: boolean;
 	url: string;
 	/** The grocery-list row title this created ("Milk" — the vendor is its own column). */
@@ -101,6 +110,7 @@ export function purchaseFromAdd(p: AddPayload, now: Date = new Date()): Purchase
 		product: p.product,
 		priceSgd: p.priceSgd,
 		packSizeG: p.packSizeG,
+		unitCount: p.unitCount ?? null,
 		volumetric: p.volumetric,
 		url: p.url,
 		listTitle: groceryRowTitle(p),

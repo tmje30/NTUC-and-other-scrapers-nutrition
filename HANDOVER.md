@@ -1271,6 +1271,30 @@ Both made a bad deal look good — the same family as the 32 g serving read as 1
 successfully and still lose the data. Items 22–27 were added 2026-08-05 and are
 listed first because they are the live ones.*
 
+**0. ⚠️ Five By-Unit rows state no pack weight in their `Name` — a job for Notion,
+not for code.** A counted row is compared **per piece**, and counting doesn't
+normalise size, so a smaller piece wins on price every time. The guard against that
+is the pack weight written into the row's own name, which lets the comparison fall
+back to price-per-gram (see "Counted packs" in SYSTEM-GUIDE.md). Measured
+2026-08-09, of 9 By-Unit targets:
+
+| row | states a weight |
+| --- | --- |
+| `Pu Erh (Tea bags) (100 x 2g)` | ✅ 200 g (2.0 g/piece) |
+| `Bread, Wholemeal, [FairPrice] (600g)` | ✅ 600 g (30.0 g/piece) |
+| `egg  (Omega 3 Enriched) (550g)` | ✅ 550 g (55.0 g/piece) |
+| `Green Tea (50 x 2g)` | ✅ 100 g (2.0 g/piece) |
+| **`Eggs, Whole, small, {cheap}`** | ❌ — **this is the quail-egg exposure** |
+| **`Bread, Whole grain (Low GI), [Gardinier]`** | ❌ |
+| **`Razor Cartridge Refill - Hydro 5 [Schick]`** | ❌ |
+| **`Bathroom Tissue Roll - 4 Ply`** | ❌ |
+| **`chicken soup cube`** | ❌ |
+
+Fix by renaming in Notion — `Eggs, Whole, small, 350g, {cheap}` or
+`Eggs, Whole, small (350g), {cheap}`; both parse, parentheses win if you write both.
+The last four matter less (nobody sells a half-size toilet roll), but the eggs row is
+exactly the case that motivated the rule.
+
 1. ~~Schedule → 10:00 SGT~~ **done** — `daily.yml` runs `cron: "0 2 * * *"`
    (02:00 UTC = 10:00 SGT), which also gives the laptop more morning windows to
    push before the cloud reads.

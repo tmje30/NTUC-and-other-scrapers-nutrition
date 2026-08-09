@@ -9,7 +9,14 @@ import { Client } from "@notionhq/client";
  *           size of the listing that is actually on offer
  *   Price   the discounted price actually being offered
  *   Vendor  the store, in the same words the Ingredients DB uses
- *   Amount  left empty — the user fills that in themselves
+ *   Amount  how many to buy — 1 on a new row, +1 on each further tap
+ *
+ * ⚠️ **`Amount ` was left empty for the user to fill in until 2026-08-09.** Buy now
+ * counts: the first tap writes 1, and a second tap on a row still outstanding makes
+ * it 2 rather than doing nothing at all. That second tap used to be a deliberate
+ * no-op — the dedupe existed so a double-tap couldn't leave two identical lines on
+ * the list — and the change keeps that guarantee while giving the repeat press the
+ * only meaning it can sensibly have: I want two of these.
  *
  * ⚠️ Name carried a "[NTUC] " prefix until 2026-08-06. The shop was always in the
  * Vendor column too; the prefix duplicated it, and the list reads better as a
@@ -42,6 +49,8 @@ export interface ListProps {
 	currentPrice: string | null;
 	vendor: string | null;
 	done: string | null;
+	/** How many to buy. Live name is `"Amount "` — trailing space, like half this DB. */
+	amount: string | null;
 }
 
 /** Trim, collapse runs of whitespace, lower-case — the shape renames don't change. */
@@ -64,6 +73,9 @@ export function resolveListProps(schema: Record<string, { type: string }>): List
 			numbers.filter((n) => n !== currentPrice),
 			(n) => n.includes("price"),
 		);
+	// Claimed last, and excluded from the price candidates above by name rather than
+	// by order: "Amount" contains neither "buy" nor "price", so the two can't collide.
+	const amount = pick(numbers, (n) => n === "amount" || n.startsWith("amount"));
 
 	return {
 		title: byType("title")[0] ?? "Name",
@@ -71,6 +83,7 @@ export function resolveListProps(schema: Record<string, { type: string }>): List
 		currentPrice,
 		vendor: pick(byType("rich_text"), (n) => n.includes("vendor")),
 		done: byType("checkbox")[0] ?? null,
+		amount,
 	};
 }
 
@@ -176,6 +189,17 @@ export interface AddPayload {
 	myPriceSgd?: number;
 	/** Size of the pack being bought, in grams/ml. Drives the cooldown length. */
 	packSizeG: number | null;
+	/**
+	 * Pieces in the pack, where the shop counts instead of weighing (a 30-egg tray).
+	 *
+	 * ⚠️ **Carried separately from `packSizeG` on purpose, and they are not the same
+	 * number.** `packSizeG` above is a *cooldown* figure and is deliberately
+	 * converted to grams for a counted pack (30 eggs at 55 g each → 1650 g), because
+	 * "how long until I need more" is a question about quantity consumed. The
+	 * Ingredients row wants the opposite: the count itself, `By Unit`. Deriving one
+	 * from the other in either direction is how a 30-egg tray gets filed as 1650 g.
+	 */
+	unitCount?: number | null;
 	volumetric: boolean;
 	/** Monthly usage of the ingredient, grams/ml. 0 when it isn't in the plan. */
 	monthlyAmount: number;
@@ -226,6 +250,9 @@ export function parseAddPayload(raw: unknown): AddPayload {
 		priceSgd,
 		myPriceSgd: Number.isFinite(myPrice) && myPrice > 0 ? myPrice : undefined,
 		packSizeG: packSizeG != null && Number.isFinite(packSizeG) ? packSizeG : null,
+		// Same leniency as `brand` and `size`: absent means an older payload, not an
+		// error. An issue raised before this field existed must still parse.
+		unitCount: Number.isFinite(Number(o.unitCount)) && Number(o.unitCount) > 0 ? Number(o.unitCount) : null,
 		volumetric: Boolean(o.volumetric),
 		monthlyAmount: Number.isFinite(Number(o.monthlyAmount)) ? Number(o.monthlyAmount) : 0,
 		weeklyBuy: Boolean(o.weeklyBuy),
@@ -236,8 +263,10 @@ export function parseAddPayload(raw: unknown): AddPayload {
 export interface AddResult {
 	title: string;
 	pageId: string;
-	/** True when an identical un-ticked row was already there and we left it alone. */
+	/** True when an identical un-ticked row was already there — its `Amount ` went up by 1. */
 	alreadyListed: boolean;
+	/** What `Amount ` now reads. Null when the list has no Amount column. */
+	amount: number | null;
 }
 
 /**
@@ -254,7 +283,7 @@ export interface AddResult {
  * packs list separately because they are different things to buy. A shop that
  * publishes neither brand nor size falls back to matching on the ingredient alone.
  */
-async function findOpenRow(client: Client, props: ListProps, title: string): Promise<string | null> {
+async function findOpenRow(client: Client, props: ListProps, title: string): Promise<any | null> {
 	const filters: any[] = [{ property: props.title, title: { equals: title } }];
 	if (props.done) filters.push({ property: props.done, checkbox: { equals: false } });
 	const res = (await client.dataSources.query({
@@ -262,7 +291,9 @@ async function findOpenRow(client: Client, props: ListProps, title: string): Pro
 		page_size: 25,
 		filter: filters.length > 1 ? { and: filters } : filters[0],
 	} as any)) as any;
-	return res.results[0]?.id ?? null;
+	// The whole page, not just its id: the repeat tap now bumps `Amount `, and it can
+	// only add 1 to a number it has read.
+	return res.results[0] ?? null;
 }
 
 const money = (n: number) => Math.round(n * 100) / 100;
@@ -273,7 +304,19 @@ export async function addToGroceryList(client: Client, p: AddPayload): Promise<A
 	const title = groceryRowTitle(p);
 
 	const existing = await findOpenRow(client, props, title).catch(() => null);
-	if (existing) return { title, pageId: existing, alreadyListed: true };
+	if (existing) {
+		// A repeat tap means "make it two". Read-then-add rather than a blind write, so
+		// an Amount the user set by hand ("get 3") is added to, never overwritten — the
+		// same reasoning as every other write in this project: their column, their value.
+		if (!props.amount) return { title, pageId: existing.id, alreadyListed: true, amount: null };
+		const before = existing.properties?.[props.amount]?.number;
+		const amount = (typeof before === "number" && Number.isFinite(before) ? before : 0) + 1;
+		await client.pages.update({
+			page_id: existing.id,
+			properties: { [props.amount]: { number: amount } },
+		} as any);
+		return { title, pageId: existing.id, alreadyListed: true, amount };
+	}
 
 	// Built up conditionally: a column the schema no longer has is skipped, not
 	// sent — Notion rejects the whole request for one unknown property name.
@@ -287,12 +330,13 @@ export async function addToGroceryList(client: Client, p: AddPayload): Promise<A
 	if (props.vendor) {
 		properties[props.vendor] = { rich_text: [{ text: { content: vendorLabel(p.store) } }] };
 	}
-	// Amount is intentionally left unset — the user fills it in.
+	// One pack, because that is what pressing Buy once means.
+	if (props.amount) properties[props.amount] = { number: 1 };
 
 	const page = (await client.pages.create({
 		parent: { type: "data_source_id", data_source_id: GROCERY_LIST_DS },
 		properties,
 	} as any)) as any;
 
-	return { title, pageId: page.id, alreadyListed: false };
+	return { title, pageId: page.id, alreadyListed: false, amount: props.amount ? 1 : null };
 }

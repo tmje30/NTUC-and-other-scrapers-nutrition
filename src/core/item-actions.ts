@@ -88,6 +88,16 @@ export interface ActionPayload {
 	priceSgd?: number | null;
 	/** Pack size in grams/ml, or null when the shop published neither. */
 	packSizeG?: number | null;
+	/**
+	 * Pieces in the pack, where the shop counts instead of weighing — a 30-egg tray.
+	 *
+	 * Only used when `packSizeG` is absent: a pack stating both ("10 x 100ml") is a
+	 * weight, and reading its count first would file a litre of milk as 10 units.
+	 * When it IS used, the row is written `By Unit` with the count as its size, and
+	 * the pack's weight is expected in the ingredient's own Name ("Egg tray, 350g")
+	 * — which is what lets a quail-egg tray be compared against hen's eggs by weight.
+	 */
+	unitCount?: number | null;
 	/** True when the pack was measured by volume — decides By ml vs By Gram. */
 	volumetric?: boolean;
 
@@ -244,6 +254,7 @@ export function parseActionPayload(raw: unknown): ActionPayload {
 		purchaseId: str("purchaseId", false),
 		priceSgd: num("priceSgd"),
 		packSizeG: num("packSizeG"),
+		unitCount: num("unitCount"),
 		volumetric: Boolean(o.volumetric),
 		macros: freeMacros(o.macros),
 		findMacros: Boolean(o.findMacros),

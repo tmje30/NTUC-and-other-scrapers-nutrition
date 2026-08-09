@@ -176,6 +176,28 @@ export function parseName(raw: string): ParsedName {
 		return " ";
 	});
 
+	// A comma segment that is NOTHING BUT a pack size — "Egg tray, 350g" — states the
+	// weight too.
+	//
+	// ⚠️ Added 2026-08-09, when the user wrote the convention that way. Until then
+	// only the parenthesised form worked, and a comma-stated weight was silently
+	// dropped: the row lost the one figure that lets a counted pack be compared by
+	// weight, with nothing to show for it. It never *broke* a search — a comma
+	// segment isn't a must-match — which is exactly why it could sit there unnoticed.
+	//
+	// The same `SIZE_ONLY_RE` gate as the parenthesised form, so only a segment that
+	// is purely a size qualifies. `( )` wins where a name states both, being the
+	// older and more explicit convention.
+	if ((size as ParsedWeight | null) === null) {
+		for (const part of work.split(",").slice(1)) {
+			const v = collapse(part).toLowerCase();
+			if (v && SIZE_ONLY_RE.test(v)) {
+				size = parseWeight(v) ?? size;
+				if (size) break;
+			}
+		}
+	}
+
 	// Must-match keywords are read from what's LEFT (brand and {notes} removed) plus
 	// the declared properties — never from an ignored note.
 	//

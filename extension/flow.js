@@ -246,13 +246,19 @@ function showSimilar(items, tab) {
       if (!fields.name) return setStatus("Give it a name first.", "error");
       // Replacing overwrites a row the user curates by hand, and there is no undo — so it asks, naming both
       // sides. Everything not listed (nutrition, plan formulas, tags) is left untouched.
+      //
+      // ⚠️ The price line no longer promises a column, because which one it lands in isn't known until the
+      // row is read: this shop's existing slot, the first free slot, or — if all four are taken — the
+      // dearest slot, and only when this product beats it per kg. Naming "Price,SGD" here would be a
+      // promise about a column that no longer exists.
       const ok = confirm(
         `Replace "${row.name}" with this product?\n\n` +
-        `  Name            ${row.name}  →  ${fields.name}\n` +
-        `  Items Exact Name  →  ${fields.exactName || "(blank)"}\n` +
-        `  Price,SGD       ${row.price ?? "—"}  →  ${fields.priceText || "(unchanged)"}\n` +
-        `  Weight /Units   ${row.size ?? "—"}  →  ${fields.sizeText || "(unchanged)"}\n` +
-        `  Vendor, Current ${row.vendor || "—"}  →  ${fields.vendor || "(unchanged)"}\n\n` +
+        `  Name              ${row.name}  →  ${fields.name}\n` +
+        `  Items Exact Name    →  ${fields.exactName || "(blank)"}\n` +
+        `  Price / size / URL  →  ${fields.priceText || "—"} for ${fields.sizeText || "—"} ` +
+        `into ${fields.vendor || "this shop"}'s Vendor slot\n` +
+        `  (cheapest now: ${row.vendor || "—"} at ${row.price ?? "—"} for ${row.size ?? "—"})\n\n` +
+        `If every Vendor slot is taken, this only replaces the dearest one — and only if it is cheaper per kg.\n` +
         `Nutrition, plan formulas and tags are left alone.`
       );
       if (!ok) return;
@@ -261,7 +267,11 @@ function showSimilar(items, tab) {
       try {
         const res = await send({ type: "replace-item", pageId: row.id, ...fields });
         setStatus("Replaced ✓", "ok");
-        finish(`"${res.updated.before.name || row.name}" now points at this product.`, res.updated.notionUrl);
+        const box = finish(`"${res.updated.before.name || row.name}" now points at this product.`, res.updated.notionUrl);
+        // Which slot took the price — or why none did. Never silent: "all four vendors are taken and this
+        // isn't cheaper" is a real outcome, and a button that appears to work and wrote nothing is worse
+        // than one that says so.
+        if (res.updated.slotNote) box.append(el("div", { className: "muted", textContent: res.updated.slotNote }));
       } catch (err) {
         setStatus(err.message, "error");
         btn.disabled = false;
@@ -500,6 +510,16 @@ export async function render(tab, alive = () => true) {
       if (res.duplicate) { setStatus("Already added from this page.", "ok"); $("form").hidden = true; return showExisting(res.duplicate); }
       setStatus("Added ✓", "ok");
       const box = finish(`Added "${fields.name}" to Ingredients.`, res.created.notionUrl);
+
+      // Which Vendor slot took the price. On a new row this is always Vendor 1, but it says so anyway —
+      // the one case that matters is the shop having no Vendor option at all, where the row is created
+      // and the PRICE is not, and the user needs to know that before they close the panel.
+      if (res.created.slotNote) {
+        box.append(el("div", {
+          className: res.created.slotNote.startsWith("Tagged") ? "ok" : "muted",
+          textContent: res.created.slotNote,
+        }));
+      }
 
       // Figures that were already in the boxes went in WITH the row — nothing more to do, and nothing to
       // pay for. This is the whole point of reading the shop's panel at render time.

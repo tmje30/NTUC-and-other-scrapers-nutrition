@@ -99,6 +99,26 @@ eq("the buy price wins over the formula", live.price, "Price , To Buy ");
 eq("current price is claimed separately", live.currentPrice, "Current Price ");
 eq("the done checkbox is found", live.done, "Checkbox");
 
+// ⚠️ `Amount ` became load-bearing on 2026-08-09: Buy writes 1 into it, and a second
+// tap on the same outstanding row makes it 2. Two ways this goes quietly wrong, and
+// both are covered here — the column not being found (every tap silently writes no
+// quantity), and it being mistaken for a price (a tap sets the shopping price to 1).
+eq("the amount column is found, trailing space and all", live.amount, "Amount ");
+check("and it is not confused with either price", live.amount !== live.price && live.amount !== live.currentPrice);
+eq(
+	"a list with no Amount column resolves to null, so the write skips it",
+	resolveListProps({ Name: { type: "title" }, "Price , To Buy ": { type: "number" } }).amount,
+	null,
+);
+// The column drifted from `Vendor ` to `Vendor %` between 2026-08-06 and 2026-08-09
+// without anything breaking — which is the whole case for resolving by keyword.
+const { "Vendor ": _v, ...withoutVendorCol } = LIVE;
+eq(
+	"the vendor column survived being renamed to Vendor %",
+	resolveListProps({ ...withoutVendorCol, "Vendor %": { type: "rich_text" } }).vendor,
+	"Vendor %",
+);
+
 // A rename that keeps the word still resolves — the whole point of matching on a
 // keyword and a type rather than an exact string.
 const { "Vendor ": _dropped, ...withoutVendor } = LIVE;

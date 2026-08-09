@@ -152,8 +152,26 @@ All commands run from the repo root and read secrets from `.env` (see Setup).
 - **Key detail:** uses the Notion SDK **v5** `dataSources.query` (not
   `databases.query`). Skips the `Suppliments` and `Filler` categories. Notion
   property names contain real typos/trailing spaces and must be matched exactly:
-  `Price,SGD`, `Catagory`, `Unit type `, `Weight /Units of New Product `,
-  `Price per 100g `, `Used '1'/'2'/'3' Plan`.
+  `Catagory`, `Unit type `, `Vendor 1..4`, `Price [Vendor n]`, `Size[Vendor n]`,
+  `URL [Vendor n]`, `Used '1'/'2'/'3' Plan`. Note `Price [Vendor 2] ` has a
+  trailing space and `Price [Vendor 1]` does not, and `Size[Vendor n]` has no
+  space after "Size" — which is why the vendor columns are resolved from the live
+  schema rather than listed in code.
+- **The baseline is the cheapest vendor slot**, since 2026-08-09. It used to be
+  `Price,SGD` + `Weight /Units of New Product `; those columns were retired in
+  Notion and the scan, still reading them, silently found **zero** targets. It now
+  takes the lowest `Price [Vendor n] / Size[Vendor n] * 1000` — the same rule as
+  Notion's own `Price,SGD [Cheapest]` and `Cheapest Vendor ` formulas, computed
+  locally because the scan needs the price, the size **and** the vendor from the
+  same slot, and separate formulas can only agree by luck. Verified identical to
+  `Price,SGD [Cheapest]` + `Size of Cheapest Vendor` on **95 of 95 live rows**
+  (2026-08-09) — re-run that check if either formula is edited.
+  ⚠️ `Price per 100g ` is **not** read. It briefly returned 0 on every row (built
+  on the retired columns) and the user repaired it the same day with a new
+  `Size of Cheapest Vendor` formula — but it still counts per 100 **units** on a
+  By-Unit row, which is the original reason it was never a safe weight baseline.
+  The per-100g figure is computed here instead, from the weight in the row's name
+  for By-Unit items.
 - **Output:** array of `PlanTarget` (name, parsed search term, category, pack
   price/size, `baselinePer100g`, monthly amount/packs/cost, `inActivePlan`).
 
@@ -203,6 +221,42 @@ Form 1 always runs, so nothing that used to be found is lost; the extra forms ca
 only find more. Measured: `Frozen Veg (Mixed)` went from **0 accepted to 5** —
 form 1 returns edamame and broccoli, form 3 returns the real mixed-veg products as
 top hits. `Szechuan pepper` went from 1 product to 5 (3 accepted).
+
+#### Counted packs — eggs, slices, rolls, tea bags
+
+An item priced by the piece (`Unit type ` = **By Unit**) is compared **per piece**,
+not per 100 g. `Size[Vendor n]` holds the count: a 30-egg tray is `30`, not a weight.
+Add and Replace write that automatically from the shop's own count — but ⚠️ **only
+when the shop published no weight.** A pack stating both (`10 x 100ml`) is a weight;
+taking its count first would file a litre of milk as ten units and price it per bottle.
+
+⚠️ **Counting does not normalise size, and that is the trap.** A quail egg, a hen's
+egg and a jumbo egg are all "1", so a per-piece price always flatters the smallest
+thing. The defence is **the pack weight written into the row's own `Name`**:
+
+```
+Egg tray (350g)      ← the older convention, used by four live rows
+Egg tray, 350g       ← also accepted since 2026-08-09
+```
+
+⚠️ **The weight never narrows the search.** It is not a demand for a 300 g pack —
+a `(300g)` egg row matches a 10-pack and a 30-pack alike, and what decides between
+them is price per kg (or per piece). This is worth stating because everything *else*
+inside `( )` is a hard requirement: `Onion (White)` really does demand the word
+"white" in a candidate's title. A size-only parenthetical is deliberately kept out of
+those requirements — no shop writes your pack size in its product name, so treating
+it as one would match nothing and the row would simply go quiet.
+
+Both forms work; parentheses win if a name carries both. With that weight present,
+`compare.ts` computes grams-per-piece for both sides and refuses a per-piece
+comparison when they differ by more than **2.5×** — which passes small-vs-large hen
+eggs (53 g vs 68 g) and rejects a quail egg against a hen's (9 g vs 55 g) — then
+falls through to comparing **per gram** instead. That is what lets 30 quail eggs be
+judged honestly against 10 chicken eggs.
+
+Without a weight in the name there is no such check, and a smaller piece wins on
+price every time. As at 2026-08-09, **4 of 9** By-Unit rows state one; see the
+handover note for which five do not.
 
 #### The `Select` tags (Notion multi-select)
 
@@ -356,7 +410,7 @@ rail — plus a `⋯` correction menu:
 
   | Name | Price , To Buy | Current Price | Vendor | Amount |
   |---|---|---|---|---|
-  | `Fish Sauce, Knife Brand, 750ml` | the discounted price | what you pay today | `Sheng Siong` | *left empty, you fill it in* |
+  | `Fish Sauce, Knife Brand, 750ml` | the discounted price | what you pay today | `Sheng Siong` | `1`, and **+1 on each further tap** |
 
   The Name is **the ingredient, then the brand and pack size of the listing that's
   actually on offer** — what you need in order to pick the right thing off the
@@ -375,17 +429,42 @@ rail — plus a `⋯` correction menu:
   matches the whole title, which means **one row per (ingredient, brand, size)**:
   tapping the same card twice makes one row, while two genuinely different packs
   list separately.
+
+  ⚠️ Since 2026-08-09 that second tap is no longer a no-op — it adds 1 to
+  `Amount `. The row still doesn't duplicate; it says you want two. The count is
+  read before it is written, so an Amount you set by hand ("get 3") is added to
+  rather than overwritten.
 - **Ignore 1wk** — snoozes this **ingredient** until Monday 00:00 SGT. Nothing is
   searched for it until then, and it's undone with **Reset** from the list at the
   foot of the page. Red, like the permanent ignore in the menu: red marks the
   controls that take something off the page, and the label and the menu's extra tap
   are what separate the two.
-- **Add** — files today's match into **Ingredients** as a new row.
+- **Add** — files today's match into **Ingredients** as a new row, with this shop
+  in `Vendor 1` and the price, size and URL in `Price [Vendor 1]` /
+  `Size[Vendor 1]` / `URL [Vendor 1]`. It is `Vendor 1` because a new row's four
+  slots are all empty and the shared rule takes the first free one — not because
+  the slot is hardcoded.
 - **Replace** — re-bases the ingredient that *seeded* the search onto today's
-  match: `Name`, `Price,SGD`, `Weight /Units of New Product `, `Unit type ` and
-  `Vendor, Current `. Confirmed first, no undo. `Unit type ` travels with the size
-  by necessity — re-base a 500 g item onto a 1 L bottle and a stale `By Gram`
-  would claim a kilogram of liquid.
+  match: `Name`, `Unit type `, and the price into **one vendor slot**. Confirmed
+  first, no undo. `Unit type ` travels with the size by necessity — re-base a
+  500 g item onto a 1 L bottle and a stale `By Gram` would claim a kilogram of
+  liquid.
+
+  **Which slot** is decided by the row, in this order:
+  1. the slot already tagged with this shop → its price, size and URL are replaced;
+  2. otherwise the first slot with *nothing* in it → tagged with this shop and filled;
+  3. otherwise the slot with the **highest** `Price [Vendor n] / Size[Vendor n] * 1000`
+     gives way — and **only** if this product is cheaper per kg than that. If it
+     isn't, nothing is written and the reply says so.
+
+  ⚠️ "Nothing in it" means vendor, price, size and URL all empty. A slot tagged
+  `Sheng Siong` with no price is that shop's slot (the commonest shape in the live
+  DB), and a price sitting in an *untagged* slot is still a price — neither is
+  free real estate.
+
+  ⚠️ A shop with no matching `Vendor n` **option** — Cold Storage, Giant, RedMart,
+  Lazada, Amazon SG today — is reported and skipped. Writing it would make Notion
+  invent the option, which this tool never does. Add the option in Notion first.
 - **+ Macros** — a per-card toggle, off by default, that arms a paid nutrition
   lookup for that card only.
 - **has macro / no macro** — whether this listing's nutrition is free to file.
@@ -616,8 +695,9 @@ own so a Notion hiccup can never take the deals page down with it. Four sections
   otherwise has no listing anywhere. **Reset** removes that one tag, preserving
   every other, and refuses outright on a row that also carries `Don't Search`.
 - **Bought** — the purchase log, with three buttons per row: *Add to Ingredients*
-  (a new row, with nutrition), *Replace Current* (price, size, vendor and URL onto
-  the existing row — and deliberately **not** a rename, unlike the extension's
+  (a new row, with nutrition), *Replace Current* (the price, size and URL into this
+  shop's vendor slot on the existing row, by the same three-step rule the deals
+  page's Replace uses — and deliberately **not** a rename, unlike the extension's
   version), and *Never buy again*.
 - **Already filed** — the same rows once settled, kept as a record.
 - **Never buy again** — the product-wide blocks the red Ignore button writes, read
@@ -633,8 +713,11 @@ own so a Notion hiccup can never take the deals page down with it. Four sections
   With This* appears beside **each** similar existing row and repoints it at this
   product, asking first and showing before → after.
 - Writes `Name` (generic, in the bracket standard), `Items Exact Name` (the shop's
-  title verbatim), `Price,SGD`, `Weight /Units of New Product `, `Unit type `,
-  `Catagory`, `Vendor, Current `, `Vendor 1 URL`, and the four nutrition columns.
+  title verbatim), `Unit type `, `Catagory`, the four nutrition columns — and the
+  price, size and URL into **one `Vendor n` slot**, chosen by the same rule as the
+  deals page (this shop's slot → first free slot → the dearest, if beaten per kg).
+  ⚠️ A shop with no `Vendor n` option is named in the panel and its price skipped;
+  the row is still written.
 - **Four nutrition boxes** sit under "Per 100g" above the Add button, pre-filled
   and green when the shop published a panel, blank otherwise. Blank boxes stay
   blank until you press **Find Macros**, which fills the *boxes* rather than the
@@ -695,21 +778,30 @@ commodity gate spends real money. None of those announce themselves.
 Scoped but **not built** — only the probe exists. Full detail in
 `docs/vendor-scoping.md`, which governs; this is the orientation.
 
-⚠️ **Two different prices live on every Ingredients row and must never be
-conflated:**
+⚠️ **The baseline and the price book used to be separate sets of columns, and that
+distinction is gone as of 2026-08-09.** The price book is now the *only* record of
+what anything costs, and the baseline is derived from it:
 
 | | columns | meaning |
 | --- | --- | --- |
-| **baseline** | `Price,SGD` + `Weight /Units of New Product ` + `Vendor, Current ` | what the user **actually pays**, and where. Every discovery is measured against this |
-| **price book** | `Vendor 1/2/3` + `Price [Vendor n]` + `Size[Vendor n]` + `Vendor n URL` | where else it can be found and what **that shop** charges. Not what the user pays |
+| **price book** | `Vendor 1..4` + `Price [Vendor n]` + `Size[Vendor n]` + `URL [Vendor n]` | what **each shop** charges. Every write in this project lands here |
+| **baseline** | `Price,SGD [Cheapest]`, `Cheapest Price/Kg `, `Cheapest Vendor ` — **formulas** | the cheapest of the above. Nothing writes these; they fall out |
 
-Measured over 94 rows: `Price,SGD` filled on 71, `Vendor, Current ` on 7,
-`Vendor 1` on 52, and `Price [Vendor n]` / `Size[Vendor n]` on **none, ever**.
-Filling the price book is the point of the feature. Rules for any writer: match
-the vendor **by name** to find the index (the mapping is per-row — `Vendor 1` is
-Shopee on one row and Watsons on another); if no index names that shop, write
-nothing; and never write `Vendor, Current ` from a scan, because moving the
-baseline is a deliberate act and that is what *Replace* is for.
+The old baseline columns (`Price,SGD`, `Weight /Units of New Product `,
+`Vendor, Current `) are deleted or renamed `… - Delete? `. Any code or note
+telling you to write them is stale — and reading them returns nothing, which is
+how the daily scan silently found zero targets until this was fixed.
+
+Rules for any writer, unchanged in spirit and now enforced in
+`src/core/vendor-slots.ts`: match the vendor **by name** to find the index (the
+mapping is per-row — `Vendor 1` is Shopee on one row and Watsons on another); a
+shop with no `Vendor n` **option** is reported, never created; and a slot holding
+anything at all is never silently overwritten.
+
+⚠️ One rule *did* change. "If no index names that shop, write nothing" was the
+right call for a background **scan**, and still is — but the Add and Replace
+buttons are a deliberate human act, so they may claim a free slot, and Replace may
+displace the dearest slot when it beats it per kg. A scan must still not.
 
 **Searches must be directed** — don't look for bread at a pharmacy or a face
 lotion at a supermarket. Routing is `Vendor[n]` tags first, then `Catagory` as the

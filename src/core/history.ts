@@ -157,7 +157,15 @@ function boughtRow(e: PurchaseEntry, o: HistoryOptions): string {
 		url: e.url,
 		purchaseId: e.id,
 		priceSgd: e.priceSgd,
-		packSizeG: e.packSizeG,
+		// ⚠️ **The log's `packSizeG` is a COOLDOWN figure, not a pack size**, and for a
+		// counted pack it is deliberately converted to grams (30 eggs at 55 g each →
+		// 1650 g) because "how long until I need more" is a question about quantity.
+		// Handing that to the Ingredients write would file the tray as 1650 By Gram
+		// instead of 30 By Unit. So where the count is known, the derived weight is
+		// suppressed and the count is sent instead — see `fieldsFromPurchase`, which
+		// otherwise prefers a weight and would take the wrong one.
+		packSizeG: e.unitCount && e.unitCount > 0 ? null : e.packSizeG,
+		unitCount: e.unitCount ?? null,
 		volumetric: e.volumetric,
 	};
 	const size = sizeLabel(e.packSizeG, e.volumetric);

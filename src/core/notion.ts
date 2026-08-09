@@ -1,6 +1,7 @@
 import { Client } from "@notionhq/client";
 import { config } from "./config.js";
 import { parseName, type ParsedName } from "./parse.js";
+import { cheapestVendorSlot, readVendorSlots, resolveVendorSlotProps } from "./vendor-slots.js";
 
 /**
  * Reads the Ingredients data and resolves the "active plan" grocery targets the
@@ -286,18 +287,73 @@ export async function readParkedIngredients(client: Client): Promise<ParkedIngre
 		if (!hasTag(PARKED_TAG)) continue;
 		if (DONT_SEARCH_TAGS.some(hasTag)) continue; // permanent — no Reset button for it
 
+		const baseline = readBaseline(p);
+
 		out.push({
 			ingredientId: row.id,
 			name,
 			category: selectName(p["Catagory"]),
 			unitType: selectName(p["Unit type "]),
-			packPriceSgd: numberOf(p["Price,SGD"]),
-			packSize: numberOf(p["Weight /Units of New Product "]),
-			vendor: richText(p["Vendor, Current "]),
+			packPriceSgd: baseline.priceSgd,
+			packSize: baseline.size,
+			vendor: baseline.vendor,
 			tags,
 		});
 	}
 	return out.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/**
+ * **What the user pays for this ingredient, and where** — read off the price book.
+ *
+ * ⚠️ **This replaced a direct read of three columns on 2026-08-09, and it had to.**
+ * The baseline used to be `Price,SGD` + `Weight /Units of New Product ` +
+ * `Vendor, Current `. The user has retired all three: the first no longer exists,
+ * the other two are renamed `… - Delete? ` and are empty on every row. Left as it
+ * was, this reader returned null for the price of every ingredient in the database,
+ * `?? 0` turned that into $0, and the `packPriceSgd <= 0` guard below then dropped
+ * **every target** — a silent, total failure of the daily scan.
+ *
+ * The baseline is now the **cheapest vendor slot**: the lowest
+ * `Price [Vendor n] / Size[Vendor n] * 1000` among the slots that state both. That
+ * is the same rule Notion's own `Price,SGD [Cheapest]`, `Cheapest Price/Kg ` and
+ * `Cheapest Vendor ` formulas use, so the page and the database agree by
+ * construction rather than by coincidence.
+ *
+ * Computed from the slots rather than read off those formulas because the scan
+ * needs the price, the **size** and the **vendor** together, and reading three
+ * separate formulas leaves them free to disagree. `Price,SGD [Cheapest]` is still
+ * read as the fallback price for a row that states a price with no size.
+ *
+ * ⚠️ A `Size of Cheapest Vendor` formula was added by the user on 2026-08-09 and
+ * does publish the size — so this could now read all three. It deliberately does
+ * not, for the reason above. Verified equivalent on **95 of 95 live rows** that
+ * day; re-check if either formula is edited.
+ */
+function readBaseline(p: Record<string, any>): {
+	priceSgd: number | null;
+	size: number | null;
+	vendor: string;
+} {
+	// Resolved from the ROW rather than from a retrieved schema: a page's
+	// `properties` carry the same names and `type`s, which is all the resolver
+	// needs, and it saves this reader an extra API call per run.
+	const slots = readVendorSlots(p, resolveVendorSlotProps(p as any));
+	const cheapest = cheapestVendorSlot(slots);
+	if (cheapest) {
+		return {
+			priceSgd: cheapest.slot.priceValue,
+			size: cheapest.slot.sizeValue,
+			// The tag can be blank on a slot that still holds a price — the formulas
+			// ignore the tag too, and a price with no shop attached is worth more than
+			// no price at all.
+			vendor: cheapest.slot.vendorName,
+		};
+	}
+	// No slot states both halves. Notion's own formula may still have a price (it
+	// reads the same slots, so in practice this means "price but no size"), and a
+	// priced, sizeless row is exactly what the caller's guard is there to drop.
+	return { priceSgd: numberOf(propByName(p, "Price,SGD [Cheapest]")), size: null, vendor: "" };
 }
 
 /** How much of one ingredient the Main-tagged meals get through. */
@@ -387,9 +443,13 @@ export async function readGroceryTargets(): Promise<PlanTarget[]> {
 		const category = selectName(p["Catagory"]);
 		if (NON_GROCERY_CATEGORIES.has(category)) continue; // groceries only
 
+		// ⚠️ `Unit type ` now says what `Size[Vendor n]` counts (g, ml or pieces).
+		// It used to qualify `Weight /Units of New Product `, which is on its way out;
+		// the values and their meaning are unchanged, only the column they describe.
 		const unitType = (selectName(p["Unit type "]) as UnitType) || "By Gram";
-		const packPriceSgd = numberOf(p["Price,SGD"]) ?? 0;
-		const packSize = numberOf(p["Weight /Units of New Product "]) ?? 0;
+		const baseline = readBaseline(p);
+		const packPriceSgd = baseline.priceSgd ?? 0;
+		const packSize = baseline.size ?? 0;
 		if (packPriceSgd <= 0 || packSize <= 0) continue; // no comparable baseline
 
 		const search = parseName(name);
@@ -400,17 +460,27 @@ export async function readGroceryTargets(): Promise<PlanTarget[]> {
 		// weight and not by the piece.
 		const packWeightG = isByWeight(unitType) ? packSize : (search.size?.grams ?? null);
 
-		// Notion's "Price per 100g" is per 100 UNITS on a By-Unit row (a $2.40 loaf
-		// of 20 slices reads 12, i.e. per 100 slices), so it can't be used as a
-		// weight baseline. Where the name gave a weight, the baseline is computed
-		// from it instead — which is what lets these rows be compared against
-		// weight-priced products at all.
-		const per100 = numberOf(p["Price per 100g "]);
-		const baselinePer100g = isByWeight(unitType)
-			? per100
-			: packWeightG
-				? (packPriceSgd / packWeightG) * 100
-				: null;
+		// **Computed here rather than read from Notion's `Price per 100g `**, and it
+		// stays that way even though that formula works again.
+		//
+		// It briefly did not: it was built on the retired baseline columns and read 0
+		// on every row on 2026-08-09, which would have priced every weight-based
+		// ingredient at nothing and made every deal on the page look like a loss. The
+		// user repaired it the same day with a new `Size of Cheapest Vendor` formula,
+		// which `price per g/unit [SGD]` now divides by.
+		//
+		// Two reasons this still doesn't read it. First, the By-Unit quirk it always
+		// had: it counts per 100 UNITS there (a $2.40 loaf of 20 slices reads 12, i.e.
+		// per 100 slices), so those rows have always needed the weight from the name —
+		// "(600g)" on the loaf — which `packWeightG` is. Second, the scan needs the
+		// price, the size AND the vendor from the SAME slot, and three separate
+		// formulas can only agree by luck. One expression over one slot serves both
+		// cases and cannot disagree with itself.
+		//
+		// Checked against the live database on 2026-08-09: the cheapest slot this
+		// reader picks matches `Price,SGD [Cheapest]` and `Size of Cheapest Vendor` on
+		// **95 of 95 rows**. Re-run that check if either formula is edited.
+		const baselinePer100g = packWeightG ? (packPriceSgd / packWeightG) * 100 : null;
 		const baselinePerUnit = unitType === "By Unit" ? packPriceSgd / packSize : null;
 
 		// By-ml rows render the monthly line without a unit, so the row's own

@@ -537,6 +537,100 @@ All notable changes to this project are documented here. Format based on
   bathroom tissue matching "Green Tea", a butter loaf matching "Butter", and a
   3in1 mix matching "Instant Coffee (plain)".
 
+### Changed — the price book replaces the baseline columns (2026-08-09)
+- **Every captured price now goes into a `Vendor n` slot, not a flat column.**
+  Requested by the user, and forced by their own Notion restructure: `Price,SGD`
+  is gone, `Weight /Units of New Product ` and `Vendor, Current ` are renamed
+  `… - Delete? `, and `Price,SGD [Cheapest]` / `Cheapest Price/Kg ` /
+  `Cheapest Vendor ` are now formulas derived from `Vendor 1..4` +
+  `Price [Vendor n]` + `Size[Vendor n]`. Filling a slot is what gives a row a
+  price at all. `Unit type ` now describes `Size[Vendor n]`.
+- `src/core/vendor-slots.ts` — new, pure, and shared by the Node writers and the
+  Chrome extension (esbuild bundles it), so the two surfaces cannot drift on
+  which shop owns which slot. Column names are resolved off the LIVE schema
+  rather than hardcoded: `Price [Vendor 2] ` has a trailing space and
+  `Price [Vendor 1]` does not, and `Size[Vendor n]` has no space after "Size".
+- **Add** (deals page, history page, extension) writes the capture into the first
+  free slot — always `Vendor 1` on a new row, via the shared rule rather than a
+  hardcoded 1. It never evicts.
+- **Replace / Replacing With This** (all three surfaces) picks the slot in the
+  user's stated order: this shop's own slot if it has one → the first free slot →
+  otherwise the slot with the highest `Price / Size * 1000`, and **only** if this
+  product is cheaper per kg than that. Otherwise nothing is written and the reply
+  says why. A slot is "free" only when its vendor, price, size and URL are all
+  empty, so a price sitting in an untagged slot is never silently overwritten.
+- A shop with no matching `Vendor n` **select option** (Cold Storage, Giant,
+  RedMart, Lazada, Amazon SG today) is reported and dropped — writing it would
+  make Notion invent the option, a schema edit to a live personal workspace.
+  `extension/vendors.js` gained iHerb, MyProtein, Carousell and Shopee mappings
+  spelled the DB's way (`Iherb`, `My Protein`).
+- **Buy now counts.** The grocery-list row gets `Amount ` = 1, and a second tap
+  on a row still outstanding makes it 2 instead of doing nothing. The
+  one-row-per-listing dedupe is unchanged.
+- The deals page's **Replace** now writes the product URL, which it deliberately
+  did not before. The reason it didn't — `Vendor 1 URL` belonging to whatever shop
+  `Vendor 1` named — is gone: the URL lands in `URL [Vendor n]` for the slot that
+  names *this* shop. (The `Vendor 1 URL` misfile logged in `docs/vendor-scoping.md`
+  is fixed by the same change.)
+- Extension form labels: "Price, SGD" → "Price at this shop, SGD",
+  "Weight / Units" → "Pack size", "Vendor, Current" → "Vendor".
+
+### Fixed — three silent, total failures caused by that restructure
+- **The daily scan had stopped finding any target at all.** `readGroceryTargets()`
+  read `Price,SGD` and `Weight /Units of New Product `; both now return null, `?? 0`
+  turned that into $0, and the `packPriceSgd <= 0` guard then dropped every row.
+  The baseline is now the cheapest vendor slot — the same rule the Notion formulas
+  use, computed locally because the scan needs the pack SIZE too and no formula
+  publishes it. Live check: 0 → **26** plan targets.
+- **`Price per 100g ` read 0 on every row** (it was built on the retired columns).
+  It was the weight baseline for every By-Gram ingredient, so every such item
+  priced at $0 per 100 g. Computed locally instead, from the cheapest slot; the old
+  By-Unit branch folds into the same expression.
+  *(The user repaired the formula the same day with a new `Size of Cheapest Vendor`
+  formula for `price per g/unit [SGD]` to divide by. The scan still computes its own,
+  because it needs price + size + vendor from the same slot and `Price per 100g `
+  counts per 100 **units** on By-Unit rows. Verified identical on 95 of 95 rows.)*
+- **The Chrome extension refused to write anything.** `REQUIRED_ING_PROPS` listed
+  three columns that no longer exist, so `setupCheck()` failed on all three and
+  every capture was blocked. The list now covers only Name, Items Exact Name,
+  Catagory and Unit type; the price-book columns are checked separately and report
+  themselves rather than blocking the write.
+- `findByUrl` (the extension's "already added?" check) searched `Vendor 1 URL`, a
+  column that no longer exists, so it silently returned null for every page. It now
+  searches all four `URL [Vendor n]` columns — needed anyway, since a capture can
+  land in any slot.
+- Similar-row cards in the extension showed "no price · no size" for every row,
+  having read the retired columns. They now show the cheapest vendor slot.
+
+### Added — counted packs land as a count (2026-08-09)
+- **A pack the shop counts instead of weighing now writes its piece count.** A
+  30-egg tray lands as `Size[Vendor n] = 30` with `Unit type = By Unit`, instead of
+  leaving the size blank — which, now that the baseline is the cheapest slot, meant
+  the row got no baseline at all. `unitCount` is threaded from `StoreProduct`
+  through the action payload, the purchase log and `fieldsFromPurchase`.
+- ⚠️ **A published pack weight still wins.** Plenty of packs state both, and
+  `10 x 100ml` carries a count of 10 as well as 1000 ml — taking the count first
+  would file a litre of milk as ten units and price it per bottle. The count is used
+  only where there is no weight, which is exactly the egg-tray case.
+- ⚠️ The purchase log's `packSizeG` is a **cooldown** figure and is deliberately
+  converted to grams for a counted pack (30 eggs × 55 g → 1650 g). The history page
+  now suppresses it when a count is known, so a tray isn't filed as 1650 By Gram.
+- `parseName()` accepts a pack weight stated after a **comma** — `Egg tray, 350g` —
+  as well as in parentheses. That weight is what lets a counted row be compared per
+  gram rather than per piece (30 quail eggs vs 10 hen's eggs); the comma form was
+  previously dropped in silence. Parentheses win where a name states both.
+  ⚠️ A size in the name imposes **no** matching requirement — it prices, it never
+  filters — unlike every other parenthetical, which is a hard requirement. Verified
+  end to end: a `(300g)` egg row matches both a 10-pack and a 30-pack, and the
+  winner is decided per kg. Now covered by its own test suite so it stays that way.
+
+### Fixed
+- **A capture with no readable size no longer asserts `Unit type = By Gram`.** It
+  defaulted to that, so a Replace on a By-Unit egg row would silently flip it and
+  leave its piece counts being read as grams. Now that `Unit type ` is what says
+  whether `Size[Vendor n]` is grams or pieces, that default was actively dangerous;
+  no size means no unit type is claimed, and the row keeps what the user set.
+
 ### Pending
 - Read Ingredients DB + active meal plan (default: Plan 1.8k) via Notion.
 - Name parser: strip parentheticals/trailing qualifiers → search term;

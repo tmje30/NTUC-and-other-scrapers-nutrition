@@ -141,6 +141,10 @@ function addPayload(t: PlanTarget, p: StoreProduct, ingredient = t.name): AddPay
 		// Both figures are grams — never `packSize`/`monthlyAmount`, which are piece
 		// counts on a By-Unit item.
 		packSizeG: boughtG,
+		// The raw count, unconverted, so the purchase log can later tell the
+		// Ingredients write "this was 30 pieces" rather than handing it the 1650 g
+		// `boughtG` above and having a 30-egg tray filed as a weight.
+		unitCount: p.unitCount,
 		volumetric: p.volumetric,
 		monthlyAmount: t.monthlyAmountG,
 		// Rides in the payload rather than being looked up when the workflow runs:
@@ -405,6 +409,11 @@ function ingredientPayload(
 		url: p.url,
 		priceSgd: p.priceSgd,
 		packSizeG: p.packWeightG,
+		// The count travels alongside the weight, not instead of it. A shop that
+		// publishes only a count (a 30-egg tray) gets `Size[Vendor n] = 30` and
+		// `Unit type = By Unit`; one that publishes a weight is unaffected, which is
+		// what keeps "10 x 100ml" a litre rather than ten units.
+		unitCount: p.unitCount,
 		volumetric: p.volumetric,
 		// Free figures travel WITH the payload, so the workflow writes them without
 		// calling anything. Only their absence can ever cost money.
@@ -439,6 +448,11 @@ function ingredientPayload(
  * Distinct from **Buy** beside it, which puts the item on the shopping list: this
  * one says "this product should be a thing I track", and it is the same write the
  * history page and the Chrome extension do.
+ *
+ * The price lands in the new row's `Vendor 1` slot — `Price [Vendor 1]`,
+ * `Size[Vendor 1]`, `URL [Vendor 1]`, tagged with the shop it came from. Not
+ * because "1" is special, but because a row created a moment ago has four empty
+ * slots and the shared rule takes the first free one (see `vendor-slots.ts`).
  */
 function dealAddButton(t: PlanTarget, p: StoreProduct, panel: PanelMacros | null, o: PageOptions): string {
 	return actionButton(ingredientPayload(t, p, panel, "add-ingredient"), o, {
@@ -448,7 +462,8 @@ function dealAddButton(t: PlanTarget, p: StoreProduct, panel: PanelMacros | null
 		aria: `Add ${p.name} to Ingredients as a new row`,
 		prose:
 			`Adding **${p.name}** (${p.store}) to the Ingredients DB as a NEW row, from the ` +
-			`deals page. The existing ingredient **${t.name}** is not touched.` +
+			`deals page. Its price, size and URL go into the first free Vendor slot, tagged ` +
+			`${p.store}. The existing ingredient **${t.name}** is not touched.` +
 			(panel ? `\n\nNutrition comes free from the shop's own panel.` : ""),
 	});
 }
@@ -456,10 +471,11 @@ function dealAddButton(t: PlanTarget, p: StoreProduct, panel: PanelMacros | null
 /**
  * **Replace** — repoint the ingredient that SEEDED this search at today's match.
  *
- * Writes `Name` (a generic name derived from the product), `Price,SGD`,
- * `Weight /Units of New Product ` and `Vendor, Current `. Deliberately **not** the
- * URL — see `rebase-ingredient` in `item-actions.ts` for why this and the history
- * page's "Replace Current" are different actions rather than one shared one.
+ * Writes `Name` (a generic name derived from the product) and puts the price into
+ * ONE vendor slot: the one already tagged with this shop, or the first free one,
+ * or — if all four are taken — the dearest one, and only when this product beats
+ * it per kg. It renames the row where the history page's "Replace Current" does
+ * not; see `rebase-ingredient` in `item-actions.ts` for why they stay separate.
  *
  * Confirmed before it fires: it renames a row the user maintains by hand, and
  * there is no undo.
@@ -470,12 +486,13 @@ function dealReplaceButton(t: PlanTarget, p: StoreProduct, panel: PanelMacros | 
 		done: "✓ replaced",
 		aria: `Replace the ingredient ${t.name} with ${p.name}`,
 		confirm:
-			`Re-base "${t.name}" on "${p.name}"? Its name, price, size and vendor are ` +
-			`overwritten, and future scans search for the new name. There is no undo.`,
+			`Re-base "${t.name}" on "${p.name}"? Its name is overwritten and future scans ` +
+			`search for the new name. The price goes into ${p.store}'s Vendor slot — a free ` +
+			`one, or the dearest one if all four are taken and this beats it. There is no undo.`,
 		prose:
 			`Re-basing the ingredient **${t.name}** on **${p.name}** (${p.store}) from the ` +
-			`deals page: overwrite its Name, Price,SGD, Weight /Units and Vendor, Current. ` +
-			`The product URL and every other column are left alone.`,
+			`deals page: overwrite its Name, and write the price, size and URL into ` +
+			`${p.store}'s Vendor slot. Every other column is left alone.`,
 	});
 }
 

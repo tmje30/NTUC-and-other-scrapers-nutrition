@@ -41,6 +41,15 @@ code that treats an empty tag as "don't search" would silently kill the FairPric
 *Stated by the user 2026-08-04, after the first draft of this doc got it wrong. This section
 governs; anything above or below that disagrees with it is stale.*
 
+> ⚠️ **Superseded in part on 2026-08-09.** The two-prices distinction below was real and is
+> exactly what the user has now collapsed: the **baseline columns are being deleted**
+> (`Price,SGD` is gone; `Weight /Units of New Product ` and `Vendor, Current ` are renamed
+> `… - Delete? `), and `Price,SGD [Cheapest]` / `Cheapest Price/Kg ` / `Cheapest Vendor ` are
+> **formulas over the price book**. So the price book is no longer "not what the user pays" —
+> it is the only record of any price, and the baseline is derived from it. The counts below
+> ("filled on none, ever") are the *before* picture; Add and Replace now fill it on every tap.
+> Everything about **routing** — which shop to ask for which category — is unaffected.
+
 There are **two different prices** on every ingredient row, and they answer different questions:
 
 | | column(s) | meaning |
@@ -142,20 +151,24 @@ no route (searched nowhere, reported) rather than being scanned against food by 
    act ("I'm switching to this"), which is what the extension's *Replace With This* and the
    deals page's *Replace* are for. A background scan must never move it.
 
-### ⚠️ A live bug this uncovered
+### ✅ A live bug this uncovered — FIXED 2026-08-09
 
-[`ingredient-write.ts:107`](../src/core/ingredient-write.ts:107) writes the captured product's
-URL into **`Vendor 1 URL`** unconditionally — the slot belonging to whatever shop `Vendor 1`
-names. Capture the CereVe lotion from **Guardian** and a Guardian URL lands in the **Watsons**
-slot. `Vendor 1` is filled on **52** rows, so this can misfile on any of them. Both writers are
+[`ingredient-write.ts`](../src/core/ingredient-write.ts) wrote the captured product's URL into
+**`Vendor 1 URL`** unconditionally — the slot belonging to whatever shop `Vendor 1` names.
+Capture the CereVe lotion from **Guardian** and a Guardian URL landed in the **Watsons** slot.
+`Vendor 1` was filled on **52** rows, so it could misfile on any of them. Both writers were
 affected (extension *Add* and the deals/history page *Add*).
 
-Under rule 1 above the fix is: write `Vendor n URL` only when `Vendor n` names the shop being
-captured, otherwise leave it alone.
+Fixed by [`vendor-slots.ts`](../src/core/vendor-slots.ts), which does exactly what rule 1 above
+demands: the URL goes to `URL [Vendor n]` for the n that names **this** shop, or to a free slot
+tagged with it, and nowhere otherwise.
 
-⚠️ **Schema asymmetry, do not "fix" it without asking:** there is a `Vendor 1 URL` and a
-`Vendor 2 URL` but **no `Vendor 3 URL`**. A writer targeting index 3 has nowhere to put a link
-and must skip it silently. Creating the property is the user's call, not this project's.
+⚠️ **Two schema facts in this section are now out of date.** There are **four** vendor slots,
+not three, and `URL [Vendor 3]` and `URL [Vendor 4]` both exist — so the "`Vendor 3` has no URL
+column, an open search has nowhere to put a link" reasoning elsewhere in this document no longer
+holds as a schema constraint. The columns were also renamed `Vendor n URL` → `URL [Vendor n]`.
+Everything about *routing* and *what to search* below still stands; only the column inventory
+moved.
 
 ## The gate a new vendor has to pass
 

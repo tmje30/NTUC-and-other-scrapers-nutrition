@@ -44,8 +44,10 @@ async function main() {
 			n++;
 			console.log(
 				`\n#${n} ${JSON.stringify(name)}  [${unit}]  plans:${inPlans || "-"}  ` +
-					`price=${num(p["Price,SGD"])} weight=${num(p["Weight /Units of New Product "])} ` +
-					`per100=${num(p["Price per 100g "])}`,
+					// The price book, not the retired baseline columns — `Price,SGD` is gone
+				// and `Price per 100g ` still points at it, so both read as nothing now.
+				`price=${num(p["Price,SGD [Cheapest]"])} ` +
+					`v1=${num(p["Price [Vendor 1]"])}/${num(p["Size[Vendor 1]"])}`,
 			);
 			if (u1) console.log(`   U1: ${JSON.stringify(u1)}`);
 			if (u2) console.log(`   U2: ${JSON.stringify(u2)}`);
