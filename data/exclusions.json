@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-06T05:33:55.551Z",
+  "updatedAt": "2026-08-09T08:05:19.942Z",
   "terms": [
     {
       "key": "instant coffe",
@@ -101,6 +101,15 @@
       "name": "carrots, Normal",
       "note": "ignored from the deals page",
       "addedAt": "2026-08-06T05:33:26.634Z"
+    },
+    {
+      "key": "*",
+      "store": "FairPrice",
+      "product": "Drag60 Cinnamon Powder",
+      "url": "https://www.fairprice.com.sg/product/drag60-cinnamon-powder",
+      "name": "Cinnamon",
+      "note": "ignored from the deals page",
+      "addedAt": "2026-08-09T08:05:19.942Z"
     }
   ]
 }
