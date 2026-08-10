@@ -2,7 +2,9 @@ import { execSync } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
 import { Client } from "@notionhq/client";
 import { config } from "../core/config.js";
+import { commitAndPushData } from "../core/git-data-push.js";
 import { runInbox, type Publisher } from "../core/tg-inbox.js";
+import { useBotToken } from "../core/telegram.js";
 import type { NewItemResult, NewItemsFile } from "../core/new-items.js";
 
 /**
@@ -69,19 +71,20 @@ function dispatch(): void {
 	);
 }
 
-function gitPush(count: number): void {
-	execSync(`git add ${OUT}`, { stdio: "inherit" });
-	try {
-		execSync("git diff --cached --quiet"); // exits 0 = nothing staged
-		console.error("No changes to commit.");
-		return;
-	} catch {
-		/* staged changes present — continue */
-	}
-	execSync(`git commit -m "data: priced ${count} new item(s) from Telegram (${SOURCE})"`, {
-		stdio: "inherit",
+/**
+ * Commit and push the priced new items, retrying a rejected push.
+ *
+ * ⚠️ This one usually runs in the DEV clone (it needs NOTION_TOKEN), so the
+ * retry's working-tree reset is refused outright when anything else is
+ * uncommitted — the file stays committed locally and the error says so. Losing
+ * a session's edits to save one page build is not a trade worth making. See
+ * `src/core/git-data-push.ts`.
+ */
+function gitPush(count: number): Promise<unknown> {
+	return commitAndPushData({
+		file: OUT,
+		message: `data: priced ${count} new item(s) from Telegram (${SOURCE})`,
 	});
-	execSync("git push", { stdio: "inherit" });
 }
 
 const publisher: Publisher = {
@@ -99,10 +102,20 @@ const publisher: Publisher = {
 			console.error("--no-push: skipping git commit/dispatch.");
 			return;
 		}
-		gitPush(results.length);
+		// A throw here is caught by `drainQueue`, which tells the user over
+		// Telegram that the items were priced but the page didn't publish.
+		// Dispatching after a failed push would rebuild the site without the
+		// file it needs, so it deliberately doesn't run.
+		await gitPush(results.length);
 		dispatch();
 	},
 };
+
+// Everything this process sends and receives is as the INBOX bot, not the digest
+// bot — the two must be different, because the digest bot carries the Notion
+// Worker's webhook and Telegram refuses `getUpdates` on a bot that has one. See
+// `config.telegramInboxBotToken`.
+useBotToken(config.telegramInboxBotToken());
 
 const notion = new Client({ auth: config.notionToken() });
 console.error(`Telegram inbox listening (chat ${config.telegramChatId()})${ONCE ? " — once" : ""}…`);

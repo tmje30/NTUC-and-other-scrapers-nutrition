@@ -27,4 +27,12 @@ import "./list-intake.test.js";
 import "./new-items.test.js";
 import { report } from "./harness.js";
 
+// Imported dynamically, and last, because this one suite has to `await` (it
+// drives real git against a temp remote — see its header). A static import
+// would let the other suites' `describe()` calls run inside its await windows,
+// and every case registered after one would be filed under whichever suite name
+// happened to be current. Loading it alone, after the rest, keeps the labels
+// honest.
+await import("./git-data-push.test.js");
+
 report();

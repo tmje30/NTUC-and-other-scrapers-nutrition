@@ -1,5 +1,5 @@
 import { writeFile, readFile, mkdir } from "node:fs/promises";
-import { execSync } from "node:child_process";
+import { commitAndPushData } from "../core/git-data-push.js";
 import { shengsiong } from "../core/stores/shengsiong.js";
 import type { StoreProduct } from "../core/stores/types.js";
 
@@ -54,18 +54,20 @@ async function fetchTerms(): Promise<string[]> {
 	return [...new Set(terms.map((t) => String(t).trim()).filter(Boolean))];
 }
 
-function gitPush(today: string): void {
-	execSync(`git add ${OUT}`, { stdio: "inherit" });
-	try {
-		execSync("git diff --cached --quiet"); // exits 0 = nothing staged
-		console.error("No changes to commit.");
-		return;
-	} catch {
-		/* staged changes present — continue */
-	}
-	execSync(`git commit -m "data: Sheng Siong scan ${today} (${SOURCE})"`, { stdio: "inherit" });
-	execSync("git push", { stdio: "inherit" });
-	console.error("Pushed.");
+/**
+ * Commit and push today's scan.
+ *
+ * ⚠️ A bare `git push` here is how a good scan gets lost: the laptop wakes
+ * before DNS is up, `run.cmd`'s `git pull` fails, the scan runs anyway and the
+ * push is rejected for being behind. `commitAndPushData` re-applies this file
+ * onto the new remote and retries — the file is regenerated in full every run,
+ * so there is nothing to merge. See `src/core/git-data-push.ts`.
+ */
+function gitPush(today: string): Promise<unknown> {
+	return commitAndPushData({
+		file: OUT,
+		message: `data: Sheng Siong scan ${today} (${SOURCE})`,
+	});
 }
 
 async function main(): Promise<void> {
@@ -113,7 +115,7 @@ async function main(): Promise<void> {
 		console.error("--no-push: skipping git commit/push.");
 		return;
 	}
-	gitPush(today);
+	await gitPush(today);
 }
 
 main().catch((e) => {

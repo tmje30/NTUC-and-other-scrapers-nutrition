@@ -11,7 +11,31 @@ set "RUNNER_SOURCE=laptop"
 set "PATH=C:\Users\newuser\scoop\apps\nodejs\current;C:\Users\newuser\scoop\shims;%PATH%"
 echo ==== %DATE% %TIME% : run start ==== >> "%LOG%"
 cd /d "%REPO%"
+
+rem Do NOT scan when the pull failed. On 2026-08-05 the laptop woke before DNS
+rem was up, the pull died with "Could not resolve host", the scan then ran
+rem perfectly (58 terms, 0 errors) and the push was rejected for being 12 commits
+rem behind - a whole day's Sheng Siong data stranded locally while the cloud built
+rem FairPrice-only. push-shengsiong.ts now re-applies and retries a rejected push,
+rem but the cheaper half of the fix is not starting a 5-minute scan into a network
+rem that isn't there yet. A wake-up race is usually over in seconds, so retry
+rem twice before giving up. (ping, not timeout: timeout needs a console and Task
+rem Scheduler doesn't give it one.)
+set /a TRY=0
+:pull
+set /a TRY+=1
 git pull >> "%LOG%" 2>&1
+if not errorlevel 1 goto pulled
+if %TRY% GEQ 3 goto nonetwork
+echo ---- git pull failed (attempt %TRY%) - waiting 20s for the network >> "%LOG%"
+ping -n 21 127.0.0.1 >nul
+goto pull
+:nonetwork
+echo !! git pull failed 3 times - NOT scanning (see above for the git error) >> "%LOG%"
+echo ==== %DATE% %TIME% : run done (exit 1, no scan) ==== >> "%LOG%"
+endlocal & exit /b 1
+:pulled
+
 call npm run push-ss >> "%LOG%" 2>&1
 set "RC=%ERRORLEVEL%"
 echo ==== %DATE% %TIME% : run done (exit %RC%) ==== >> "%LOG%"
