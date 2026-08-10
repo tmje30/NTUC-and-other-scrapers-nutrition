@@ -71,6 +71,14 @@ export interface IngredientFields {
 	vendor?: string;
 	/** The product page at that shop. Lands in `URL [Vendor n]`. */
 	url?: string;
+	/**
+	 * What THIS shop calls the product. Lands in `item Name [Vendor n]`.
+	 *
+	 * Usually the same string as `exactName`, but they are not the same field:
+	 * `Items Exact Name` is row-level and records one shop's wording, while this is
+	 * per-slot, so a row can carry the name each vendor quoted its own price under.
+	 */
+	itemName?: string;
 	/** Only ever set by "Add to Ingredients" — replace leaves nutrition alone. */
 	macros?: Macros | null;
 }
@@ -231,7 +239,7 @@ export function vendorSlotProps(
 
 	const { properties, written } = vendorSlotProperties(
 		decision.slot,
-		{ vendor: option, price: f.priceSgd, size: f.size, url: f.url },
+		{ vendor: option, price: f.priceSgd, size: f.size, url: f.url, itemName: f.itemName },
 		// An evicted slot is re-pointed at a different shop, so anything the previous
 		// one left behind is cleared rather than inherited.
 		{ clearMissing: decision.kind === "evict" },
@@ -302,6 +310,9 @@ export function fieldsFromPurchase(p: {
 	return {
 		name: generic,
 		exactName: p.product,
+		// The shop's own wording, recorded against the slot its price lands in as
+		// well as on the row — see `IngredientFields.itemName`.
+		itemName: p.product,
 		priceSgd: p.priceSgd,
 		size: sized.amount,
 		// ⚠️ **No size, no unit type.** `Unit type ` says what `Size[Vendor n]` counts,
@@ -385,7 +396,7 @@ async function currentProps(client: Client, pageId: string): Promise<Record<stri
 export async function replaceIngredientPrice(
 	client: Client,
 	pageId: string,
-	fields: Pick<IngredientFields, "priceSgd" | "size" | "unitType" | "vendor" | "url">,
+	fields: Pick<IngredientFields, "priceSgd" | "size" | "unitType" | "vendor" | "url" | "itemName">,
 ): Promise<WriteResult> {
 	if (!pageId) throw new Error("no ingredient row to replace");
 	const schema = await schemaOf(client);
@@ -420,6 +431,96 @@ export async function replaceIngredientPrice(
 }
 
 /**
+ * What a background price scan is allowed to write: ONE already-tagged vendor slot.
+ *
+ * ⚠️ **This is deliberately not `replaceIngredientPrice`, and the difference is the
+ * whole safety argument for letting a scan write at all.** That function serves a
+ * button — a person looked at one product and chose it — so it may claim a free slot
+ * and even evict the dearest. A scan has made no such judgement, so it obeys the
+ * stricter rule stated in `docs/vendor-scoping.md` and repeated in `HANDOVER.md`:
+ *
+ *   > Find the index by matching the vendor NAME. **If no index names that shop,
+ *   > write nothing.** Do not add the vendor to a free slot — the tags are the user's
+ *   > statement of where an item can be found.
+ *
+ * So only `chooseVendorSlot`'s `update` case is accepted here. A `fill` means the user
+ * never said this shop sells this item, and an `evict` means throwing away a price they
+ * recorded; both are refusals, with a reason, never a silent no-op.
+ *
+ * ⚠️ **It also writes NOTHING outside the four slot columns — in particular not
+ * `Unit type `.** That column is row-level and says whether every `Size[Vendor n]` on
+ * the row counts grams or pieces. `replaceIngredientPrice` sets it (correctly, for a
+ * human capture); a scan doing the same would let one shop's gram-size silently
+ * re-interpret every other slot's size on the row. A candidate whose unit kind disagrees
+ * with the row is refused by the caller instead.
+ */
+export async function recordVendorPrice(
+	client: Client,
+	pageId: string,
+	capture: {
+		vendor: string;
+		priceSgd?: number | null;
+		size?: number | null;
+		url?: string;
+		itemName?: string;
+	},
+): Promise<WriteResult> {
+	if (!pageId) throw new Error("no ingredient row to record against");
+	const vendor = capture.vendor.trim();
+	if (!vendor) throw new Error("no shop to record against");
+
+	const schema = await schemaOf(client);
+	const slotDefs = resolveVendorSlotProps(schema);
+	if (!slotDefs.length) {
+		return refusal(pageId, `this database has no "Vendor 1" column`);
+	}
+
+	const option = matchVendorOption(vendorOptions(schema, slotDefs), vendor);
+	if (!option) {
+		return refusal(pageId, `"${vendor}" is not an existing "Vendor n" option`);
+	}
+
+	const slots = readVendorSlots(await currentProps(client, pageId), slotDefs);
+	const decision = chooseVendorSlot(
+		slots,
+		{ vendor: option, price: capture.priceSgd ?? null, size: capture.size ?? null },
+		// Never displace a shop the user recorded; a full row simply has no free slot,
+		// and this refuses on anything but `update` regardless.
+		{ allowEvict: false },
+	);
+	if (decision.kind !== "update") {
+		return refusal(
+			pageId,
+			decision.kind === "none"
+				? decision.reason
+				: `no Vendor slot names ${option} on this row (a scan never claims a free slot)`,
+		);
+	}
+
+	const { properties, written } = vendorSlotProperties(decision.slot, {
+		vendor: option,
+		price: capture.priceSgd,
+		size: capture.size,
+		url: capture.url,
+		itemName: capture.itemName,
+	});
+
+	const page = (await client.pages.update({ page_id: pageId, properties } as any)) as any;
+	return { id: page.id, notionUrl: page.url, written, skipped: [], slot: decision };
+}
+
+/** A write that correctly did not happen, reported as an outcome rather than a throw. */
+function refusal(pageId: string, reason: string): WriteResult {
+	return {
+		id: pageId,
+		notionUrl: "",
+		written: [],
+		skipped: [reason],
+		slot: { kind: "none", reason },
+	};
+}
+
+/**
  * "Replace" on the DEALS page — re-base an ingredient on the product that beat it.
  *
  * ⚠️ **This is not `replaceIngredientPrice` above, and merging them would be a
@@ -447,7 +548,7 @@ export async function rebaseIngredient(
 	pageId: string,
 	fields: Pick<
 		IngredientFields,
-		"name" | "priceSgd" | "size" | "unitType" | "vendor" | "url" | "macros"
+		"name" | "priceSgd" | "size" | "unitType" | "vendor" | "url" | "itemName" | "macros"
 	>,
 ): Promise<WriteResult> {
 	if (!pageId) throw new Error("no ingredient row to re-base");

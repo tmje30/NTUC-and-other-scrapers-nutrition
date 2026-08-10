@@ -62,10 +62,33 @@ silently — it was finding **zero** targets. Full story:
 **[`docs/session-2026-08-09-price-book.md`](docs/session-2026-08-09-price-book.md)**;
 rules in `src/core/vendor-slots.ts`.
 
+⚠️ **Also changed 2026-08-09 — Buy now writes `Price per kg/L` and links
+`List [Ingredients]` directly.** Both columns already existed on the live
+`grocery List` schema, unused. Buy now fills `Price per kg/L` with the
+discount listing's own $/kg or $/L (read straight off the deal card, not
+recomputed), and sets `List [Ingredients]` to a relation pointing at the
+**existing** Ingredients page the deals-page matcher already picked — never a
+new page. The row `Name` also changed shape, from `Ingredient, Brand, size` to
+`Ingredient (size) [Brand]`. See "Add to grocery list" below, and
+**[`docs/session-2026-08-09-buy-button-price-per-kg.md`](docs/session-2026-08-09-buy-button-price-per-kg.md)**
+for the full story, including a live write/read-back/archive test.
+
+⚠️ **New 2026-08-10 — the first INBOUND path: text your list to the bot.**
+`npm run tg-poll` long-polls Telegram on the laptop, parses a texted grocery list,
+matches each line to Ingredients, and writes the `grocery List` rows itself. Lines
+it isn't sure about it asks about with inline buttons; lines that match nothing
+get priced at the shops and published as a third page, `new-items.html`. Runs on
+the laptop for the same reason the Sheng Siong scan does — pricing a new item
+means asking Sheng Siong, and Sheng Siong answers a residential IP.
+Everything about it is free: no Notion Worker, no model call, no paid lookup.
+See "Telegram intake" below.
+
 ### Session notes
 
 Deep dives on one session each, kept for the *why*:
 
+- [`docs/session-2026-08-09-vendor-scan.md`](docs/session-2026-08-09-vendor-scan.md) — the price book fills itself from Guardian/MyProtein/Carousell ⚠️ **supersedes four per-vendor claims in `vendor-scoping.md`**
+- [`docs/session-2026-08-09-buy-button-price-per-kg.md`](docs/session-2026-08-09-buy-button-price-per-kg.md) — Buy writes price/kg and links Ingredients directly
 - [`docs/session-2026-08-09-price-book.md`](docs/session-2026-08-09-price-book.md) — the price book replaces the baseline
 - [`docs/session-2026-08-03-extension.md`](docs/session-2026-08-03-extension.md) — the Chrome extension
 - [`docs/vendor-scoping.md`](docs/vendor-scoping.md) — searching shops beyond FairPrice and Sheng Siong ⚠️ column inventory partly superseded
@@ -203,6 +226,109 @@ laptop now covers the runner role, this is optional. To finish later:
   `git remote set-url origin https://tmje30:$T@github.com/tmje30/NTUC-and-other-scrapers-nutrition.git`
   (see PAT gotchas below).
 
+## Telegram intake — texting a grocery list (added 2026-08-10)
+
+```
+  you text:  2kg chicken breast     →  matched ≥0.70  →  grocery List row, with the
+             1L milk                                     ingredient's own price,
+             bananas x6                                   vendor and $/kg, and a
+             harissa paste                                List [Ingredients] relation
+                                    →  0.45–0.70    →  "did you mean X?" + buttons
+                                    →  below 0.45   →  scan the shops → new-items.html
+```
+
+Run it with `npm run tg-poll` (`--once` to drain and exit, `--no-push` to skip the
+commit/dispatch). It long-polls `getUpdates`, so it answers in about a second and
+costs nothing to leave running.
+
+- **Where the pieces are.** `list-parse.ts` (quantity grammar, pure),
+  `list-intake.ts` (Ingredients reader + the three-way verdict),
+  `tg-inbox.ts` (the loop, state, buttons), `new-items.ts` (shop scan + page),
+  `scripts/tg-poll.ts` (git push + `repository_dispatch`).
+  `grocery-list.ts` gained `addTextedItem()` beside `addToGroceryList()`.
+- **Why the laptop and not the cloud.** Pricing a new item means asking Sheng
+  Siong, which challenges datacenter IPs. The cloud could only ever answer
+  FairPrice-only. The laptop already runs the 05:30 scan for exactly this reason.
+  ⚠️ Unlike `push-shengsiong.ts`, this process holds `NOTION_TOKEN` **and**
+  `TELEGRAM_BOT_TOKEN` — it has to, since filing the row is the point. Keep it off
+  the phone runner, which deliberately carries only a narrow GitHub PAT.
+- ⚠️ **A size and a count are different numbers.** `2kg chicken` is one thing
+  weighing two kilos; `chicken x2` is two things. They go to different columns and
+  reading one as the other is silent. `list-parse.test.ts` pins every form.
+  A near-miss of the same kind: `1.5kg flour` had its `1.` stripped as a list
+  number and became `5kg` — the numbering pattern now requires trailing
+  whitespace, and there is a test for it.
+- ⚠️ **`addTextedItem` leaves unknown columns blank, never zero.** An ingredient
+  with an empty price book has no price to quote, and `Price , To Buy ` = $0.00
+  does not read as "unknown", it reads as free. It also adds `count` to `Amount `
+  rather than 1 — texting "eggs x6" twice means twelve.
+- ⚠️ **A near-miss asks one question per message**, not one message with six pairs
+  of buttons. A mis-tap here points `List [Ingredients]` at the wrong ingredient
+  and quotes that ingredient's price — the row then reads perfectly and is about a
+  different food. The buttons are replaced with the outcome once answered, so a
+  settled question can't be tapped again.
+- ⚠️ **The offset is persisted AFTER handling.** Telegram treats a fetch at an
+  offset as an acknowledgement of everything before it: advance early and a crash
+  loses the message, never advance and it replays forever. A crash mid-batch
+  re-runs the batch, which the grocery list's title dedupe absorbs.
+- ⚠️ **Only the configured chat is answered.** The bot token is shared with the
+  user's Notion Worker bot; anything from another chat is dropped in silence.
+- **Nothing here spends money.** No macro lookup, no model call — see "Nothing
+  spends money unasked". Parsing is deterministic and reuses `match.ts`, so the
+  synonyms, exclusions and thresholds are the ones already tuned for the scan.
+
+### `new-items.html` — the third page
+
+⚠️ **A new-item card makes a different claim from a deal card, on purpose.** Every
+deal card is "cheaper than the price you already record"; a new item has no
+recorded price, so there is nothing to be a percentage of. The card shows each
+shop's best listing with its $/kg or $/L, marks the cheapest, and shows a `−%`
+**only** where the shop itself flags a sale against its own list price.
+
+⚠️ **It searches FIVE shops, not the daily scan's two** (added 2026-08-10, same
+day). FairPrice, Sheng Siong, **Guardian, MyProtein and Carousell** — the last
+three already had working store modules but were reachable only through
+`vendor-scan.ts`, which asks a shop *only when an Ingredients row names it in
+`Vendor 1..4`*. A brand-new item has no row, so under that rule it would only ever
+be searched at the two supermarkets — exactly backwards, since an item with no row
+is the one you least know where to buy. The directed-search rule exists to stop an
+automated scan writing a price into a slot the user didn't ask for; this writes
+nothing to Notion, so it doesn't apply. List is `NEW_ITEM_SHOPS` in `new-items.ts`.
+
+⚠️ **Carousell is reduced with `cheapestPlausible`, never with the minimum.** On a
+marketplace the cheapest listing is usually the scam, and here there is no
+recorded price for the item, so `vendor-scan.ts`'s reference floor cannot run —
+the median guard is the only one left. An unpriced marketplace listing is
+**dropped**, not kept as a whole-pack fallback the way a real shop's is: with no
+size there is nothing to take a median over, so it can't be guarded at all. Every
+marketplace offer is labelled `[marketplace listing]` on the card, because a
+stranger's asking price sitting unlabelled beside an NTUC shelf price reads as the
+same kind of number. `src/tests/new-items.test.ts` pins the contrast: the same
+five listings reduce to $2.00 at a real shop and $45.00 on a marketplace.
+
+⚠️ **It uses the LIVE Sheng Siong module, never `shengsiong-file`** — and this was
+a real bug for the few hours between the two commits on 2026-08-10. The file
+reader answers only the terms in that day's committed daily scan, and a new item's
+term is never among them, so Sheng Siong returned **zero results, silently, every
+time**: no error, no warning, just a shop quietly absent from every new-item card.
+The scan only ever runs on the residential runner, which is where the live module
+works. Don't "simplify" this back to `run.ts`'s `STORES`.
+
+⚠️ **It carries no Buy / Add / Replace buttons, and that is not an omission.** All
+three write through an `AddPayload`, which requires the id of an **existing**
+Ingredients page. A new item has none, and the alternative would be making that
+field optional across a live write path. The texted item is already on the grocery
+list by the time the page exists — the bot put it there — so the page's only job is
+to say where to buy it.
+
+Hand-off is the Sheng Siong pattern exactly: the laptop writes
+`data/new-items-latest.json`, commits, pushes, and fires
+`repository_dispatch: newitems` at `daily.yml`; `build-site.ts` renders the page
+alongside the other two. A file not dated today is skipped rather than published —
+a page headed "New items" showing last week's prices is worse than no page. No
+`GITHUB_TOKEN` just means the page waits for the next daily run instead of
+appearing immediately.
+
 ## Add to grocery list (+ cooldowns)
 
 Each deal card has a **Buy** button on the left. The page is static, so it
@@ -219,8 +345,8 @@ that hit different databases is exactly the mis-tap worth a rename. Renaming the
 machinery too would have broken every in-flight issue for nothing, so don't.
 
 1. writes the row to the Notion **grocery List** DB: Name
-   `Fish Sauce, Knife Brand, 750ml` — the ingredient, then the BRAND and PACK
-   SIZE of the listing on offer, which is how you pick it off the shelf —
+   `Fish sauce (750ml) [Knife Brand]` — the ingredient, then the PACK SIZE and
+   BRAND of the listing on offer, which is how you pick it off the shelf —
    `Price , To Buy ` = the discounted price, `Current Price ` = what you pay for
    your own pack, `Vendor ` = the store, **Amount left empty**. Column names are
    resolved from the live schema, not hardcoded — they drift (see LEARNINGS
@@ -232,9 +358,22 @@ machinery too would have broken every in-flight issue for nothing, so don't.
    rather than throwing. ⚠️ The brand is verbatim — **never** with "brand"
    appended, because `Tiger Brand`, `Snow Brand` and `House Brand` are real brand
    names. ⚠️ A brand the ingredient name already states is not repeated, so
-   `Fish Sauce [Knife]` does not become "Fish Sauce [Knife], Knife, 750ml".
+   `Fish Sauce [Knife]` does not become "Fish Sauce [Knife] (750ml) [Knife]".
    ⚠️ A counted pack reads `30 pcs`, not the grams `packSizeG` holds for the
    cooldown.
+   ⚠️ **The title's shape changed again on 2026-08-09**, from the comma-joined
+   `Ingredient, Brand, size` to `Ingredient (size) [Brand]` — parens for the
+   pack, brackets for the brand. Same optionality and de-dup rules as above,
+   just a different separator. See `groceryRowTitle()` in `grocery-list.ts`.
+   ⚠️ **Also since 2026-08-09**, two more columns are written on a new row:
+   `Price per kg/L` — the discount listing's own $/kg or $/L, taken straight
+   off the deal card (`pricePerKgLabel()` in `site.ts`), blank for a
+   piece-priced product — and `List [Ingredients]` — a **relation** to the
+   Ingredients page the deals-page matcher already picked
+   (`AddPayload.ingredientId`). This links to the EXISTING page; it never
+   creates one. Neither is rewritten on a repeat tap (same rule as
+   price/vendor/amount — their column, their value, once set). Full story:
+   [`docs/session-2026-08-09-buy-button-price-per-kg.md`](docs/session-2026-08-09-buy-button-price-per-kg.md).
    ⚠️ **Name carried a `[NTUC] ` prefix until 2026-08-06.** The shop was always
    written to `Vendor ` as well, so the prefix only duplicated it; the list reads
    better as a column of names beside a column of shops. Consequence: the shop is
@@ -1154,9 +1293,9 @@ can be had — and what to do about it if not. Prints its own egress IP first.
 
 | shop | status, 2026-08-05 | note |
 | --- | --- | --- |
-| **Carousell** | ✅ works end to end | **headed** browser for search (headless renders 0 — detected), plain `fetch` for the listing page, whose JSON-LD carries price + machine-readable `itemCondition` |
-| **Guardian** | ✅ browser tier renders prices | no anti-bot at all, just an SPA. Next step is pinning the card selector; its `/graphql` is the cheaper long-term route |
-| **MyProtein** | 🟠 28 products, 28 priced, **0 with a size** | names are "Impact Whey Protein + Collagen"; size lives in an on-page **Amount** variant. Needs a second fetch per product |
+| **Carousell** | ✅ **built** — `stores/carousell.ts` | **headed** browser for search (headless renders 0 — detected). ⚠️ **`itemCondition` is NOT usable** — all 10 listings sampled said `UsedCondition`, incl. ones badged New; gate on the card badge. ⚠️ Rendered text drops every lowercase `s`; ⚠️ the slug drops decimal points (`2.5kg`→`2 5kg`→**5 kg**) |
+| **Guardian** | ✅ **built** — `stores/guardian.ts` | ⚠️ **No browser needed.** `/catalogsearch/` now 302s to the homepage (which is why it looked like an empty SPA); its **`/graphql` answers a plain `fetch`** with price, stock and size-in-name |
+| **MyProtein** | ✅ **built** — `stores/myprotein.ts` | ⚠️ A product page is a `ProductGroup` of **42 variants, $36.91–$611, only 20 stating a weight**. There is no single price; each variant is its own product and one without a weight is dropped |
 | **iHerb** | 🔴 403 even from residential | genuinely client-side. Sibling project's fix: CDP + `SEARCH_OVERRIDES` (`/search?kw=`, `resultHrefRe:/\/pr\//`, **name is in the link's `title` attribute**) |
 | **Watsons** | 🔴 park it | reachable from residential, but an Angular SAP-Commerce SPA whose product API is behind Akamai Bot Manager. Guessed OCC paths 404 with a sensor script injected; a real browser renders only the footer. **Payoff is ONE row** in a category you may not want |
 | **Shopee** | 🔑 auth wall | every anonymous route → `error 90309999` / `is_login:false`; the browser is redirected to a "Login Required" page. Needs a **hand** sign-in once in a persisted profile. ⚠️ Nothing in this repo may type a credential |
@@ -1218,8 +1357,16 @@ Both made a bad deal look good — the same family as the 32 g serving read as 1
 - `npm run vendor-probe -- "<term>"` — can each shop yield a price AND a pack
   size? Writes nothing. `--only a,b`, `--browser`, `--headed`, `--login shopee`.
   ⚠️ Prints its egress IP first — a 403 from a datacenter address means nothing.
+  ⚠️ **Stale for Guardian and Carousell** — it probes Guardian's dead
+  `/catalogsearch/` URL and still trusts Carousell's `itemCondition`. See the
+  vendor-scan session note.
+- `npm run vendor-scan` — search the shops each row TAGS in `Vendor 1..4` and fill
+  `Price/Size/URL/item Name [Vendor n]`. **Report-only; `--write` to record.**
+  `--only guardian,carousell,myprotein`. ⚠️ Only ever UPDATES a slot that already
+  names the shop — never claims a free slot, never evicts, never writes
+  `Unit type `. Carousell opens a real Chrome window.
 - `npm run check` — typecheck.
-- `npm test` — **241** offline cases (`src/tests/`). Free, fast, no network.
+- `npm test` — **376** offline cases (`src/tests/`). Free, fast, no network.
 
 ## Key technical facts (details in LEARNINGS.md)
 

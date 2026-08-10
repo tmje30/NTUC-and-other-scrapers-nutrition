@@ -1,46 +1,48 @@
 {
-	"name": "@notionhq/workers-template",
-	"version": "0.0.0",
-	"private": true,
-	"type": "module",
-	"scripts": {
-		"build": "tsc",
-		"check": "tsc --noEmit",
-		"introspect": "tsx src/scripts/introspect.ts",
-		"sample": "tsx src/scripts/sample-usage.ts",
-		"targets": "tsx src/scripts/plan-targets.ts",
-		"fp": "tsx src/scripts/fp-search.ts",
-		"fp-deals": "tsx src/scripts/fp-deals.ts",
-		"ss": "tsx src/scripts/ss-search.ts",
-		"deals": "tsx src/scripts/deals.ts",
-		"start": "tsx src/github/main.ts",
-		"dry-run": "tsx src/github/main.ts --dry-run",
-		"build-site": "tsx src/scripts/build-site.ts",
-		"notify": "tsx src/scripts/notify.ts",
-		"add": "tsx src/scripts/add-to-list.ts",
-		"item-action": "tsx src/scripts/item-action.ts",
-		"macro-test": "tsx src/scripts/macro-test.ts",
-		"vendor-probe": "tsx src/scripts/vendor-probe.ts",
-		"push-ss": "tsx src/scripts/push-shengsiong.ts",
-		"ext:build": "node extension/build.mjs",
-		"test": "tsx src/tests/run.ts"
-	},
-	"engines": {
-		"node": ">=22.0.0",
-		"npm": ">=10.9.2"
-	},
-	"devDependencies": {
-		"@types/node": "^22.9.0",
-		"esbuild": "^0.28.1",
-		"tsx": "^4.20.6",
-		"typescript": "^5.8.0"
-	},
-	"dependencies": {
-		"@anthropic-ai/sdk": "^0.115.0",
-		"@notionhq/client": "^5.23.2",
-		"@notionhq/workers": ">=0.0.0",
-		"@types/ws": "^8.18.1",
-		"dotenv": "^17.4.2",
-		"ws": "^8.21.1"
-	}
+  "name": "@notionhq/workers-template",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "check": "tsc --noEmit",
+    "introspect": "tsx src/scripts/introspect.ts",
+    "sample": "tsx src/scripts/sample-usage.ts",
+    "targets": "tsx src/scripts/plan-targets.ts",
+    "fp": "tsx src/scripts/fp-search.ts",
+    "fp-deals": "tsx src/scripts/fp-deals.ts",
+    "ss": "tsx src/scripts/ss-search.ts",
+    "deals": "tsx src/scripts/deals.ts",
+    "start": "tsx src/github/main.ts",
+    "dry-run": "tsx src/github/main.ts --dry-run",
+    "build-site": "tsx src/scripts/build-site.ts",
+    "notify": "tsx src/scripts/notify.ts",
+    "add": "tsx src/scripts/add-to-list.ts",
+    "item-action": "tsx src/scripts/item-action.ts",
+    "macro-test": "tsx src/scripts/macro-test.ts",
+    "vendor-probe": "tsx src/scripts/vendor-probe.ts",
+    "vendor-scan": "tsx src/scripts/vendor-scan.ts",
+    "push-ss": "tsx src/scripts/push-shengsiong.ts",
+    "ext:build": "node extension/build.mjs",
+    "test": "tsx src/tests/run.ts",
+    "tg-poll": "tsx src/scripts/tg-poll.ts"
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "npm": ">=10.9.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "esbuild": "^0.28.1",
+    "tsx": "^4.20.6",
+    "typescript": "^5.8.0"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.115.0",
+    "@notionhq/client": "^5.23.2",
+    "@notionhq/workers": ">=0.0.0",
+    "@types/ws": "^8.18.1",
+    "dotenv": "^17.4.2",
+    "ws": "^8.21.1"
+  }
 }

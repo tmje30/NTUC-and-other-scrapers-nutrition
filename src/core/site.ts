@@ -63,6 +63,17 @@ function amount(n: number, v: boolean): string {
 }
 
 /**
+ * The discount listing's own $/kg or $/L, formatted exactly as row 5 of the deal
+ * card shows it (`dealKg` in `dealCard`) — so the number written to Notion always
+ * matches what was on the page when Buy was pressed. `pricePer100g` is null for a
+ * piece-priced product (an egg carton), which has no per-weight figure to give.
+ */
+function pricePerKgLabel(p: StoreProduct): string | undefined {
+	if (p.pricePer100g == null || !Number.isFinite(p.pricePer100g) || p.pricePer100g <= 0) return undefined;
+	return `$${(p.pricePer100g * 10).toFixed(2)}/${bigUnit(p.volumetric)}`;
+}
+
+/**
  * The `[500g]` bracket — omitted when the name it follows already states that
  * size, since "Captain Oats Instant 500g [500g]" is pure noise. Most store names
  * carry their pack size, so this is the common case, not the exception.
@@ -152,6 +163,7 @@ function addPayload(t: PlanTarget, p: StoreProduct, ingredient = t.name): AddPay
 		// of that. It also keeps `add-to-list` free of a second Notion read.
 		weeklyBuy: t.weeklyBuy,
 		url: p.url,
+		pricePerKg: pricePerKgLabel(p),
 	};
 }
 

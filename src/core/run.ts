@@ -19,7 +19,12 @@ import type { StoreModule, StoreProduct } from "./stores/types.js";
 // runner's committed file. Set SHENGSIONG_LIVE=1 to hit the live DDP API instead
 // (local use only). The runner script itself (push-shengsiong.ts) always uses live.
 const ss = process.env.SHENGSIONG_LIVE === "1" ? shengsiong : shengsiongFile;
-const STORES: StoreModule[] = [fairprice, ss];
+/**
+ * Exported so the texted-list scan (`new-items.ts`) searches exactly the shops
+ * the daily run does, under the same `SHENGSIONG_LIVE` switch. Two lists that can
+ * disagree is how one surface quietly stops seeing a shop.
+ */
+export const STORES: StoreModule[] = [fairprice, ss];
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export interface RunResult {

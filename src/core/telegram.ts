@@ -62,23 +62,126 @@ export function formatDeal(deal: Deal): string {
 	);
 }
 
-async function sendMessage(text: string): Promise<void> {
+/** HTML-escape a value before it goes into a Telegram `parse_mode: HTML` message. */
+export const escapeHtml = esc;
+
+/**
+ * One low-level Bot API call. Every method goes through here so the token, the
+ * error shape and the "Telegram answered 200 with ok:false" case are handled in
+ * exactly one place — the API does not use HTTP status alone to report failure.
+ */
+export async function callTelegram<T = any>(method: string, body: unknown): Promise<T> {
 	const token = config.telegramBotToken();
-	const chatId = config.telegramChatId();
-	const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+	const res = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify({
-			chat_id: chatId,
-			text,
-			parse_mode: "HTML",
-			disable_web_page_preview: true,
-		}),
+		body: JSON.stringify(body),
 	});
-	if (!res.ok) {
-		const body = await res.text().catch(() => "");
-		throw new Error(`Telegram sendMessage HTTP ${res.status}: ${body.slice(0, 200)}`);
+	const text = await res.text().catch(() => "");
+	if (!res.ok) throw new Error(`Telegram ${method} HTTP ${res.status}: ${text.slice(0, 200)}`);
+	let json: any;
+	try {
+		json = JSON.parse(text);
+	} catch {
+		throw new Error(`Telegram ${method}: unparseable reply ${text.slice(0, 120)}`);
 	}
+	if (!json.ok) throw new Error(`Telegram ${method}: ${json.description ?? "not ok"}`);
+	return json.result as T;
+}
+
+/** One row of inline-keyboard buttons; `data` comes back as a `callback_query`. */
+export type InlineKeyboard = { text: string; data: string }[][];
+
+function markup(keyboard?: InlineKeyboard) {
+	if (!keyboard?.length) return undefined;
+	return {
+		inline_keyboard: keyboard.map((row) =>
+			row.map((b) => ({ text: b.text, callback_data: b.data })),
+		),
+	};
+}
+
+async function sendMessage(text: string): Promise<void> {
+	await sendHtml(text);
+}
+
+/**
+ * Send an HTML message, optionally with buttons. Returns the message id so a
+ * later edit can replace the buttons with the outcome — a confirmation prompt
+ * that stays tappable after it's been answered invites a second, contradictory tap.
+ */
+export async function sendHtml(
+	text: string,
+	opts: { keyboard?: InlineKeyboard; chatId?: string } = {},
+): Promise<number> {
+	const msg = await callTelegram<{ message_id: number }>("sendMessage", {
+		chat_id: opts.chatId ?? config.telegramChatId(),
+		text,
+		parse_mode: "HTML",
+		disable_web_page_preview: true,
+		reply_markup: markup(opts.keyboard),
+	});
+	return msg.message_id;
+}
+
+/** Replace a message's text (and drop its buttons unless new ones are given). */
+export async function editHtml(
+	messageId: number,
+	text: string,
+	opts: { keyboard?: InlineKeyboard; chatId?: string } = {},
+): Promise<void> {
+	await callTelegram("editMessageText", {
+		chat_id: opts.chatId ?? config.telegramChatId(),
+		message_id: messageId,
+		text,
+		parse_mode: "HTML",
+		disable_web_page_preview: true,
+		reply_markup: markup(opts.keyboard),
+	});
+}
+
+/**
+ * Acknowledge a button tap. Telegram shows a spinner on the button until this is
+ * called, so it must happen even on a path that then fails — an unacknowledged
+ * tap looks to the user like the bot hung.
+ */
+export async function answerCallback(callbackId: string, text?: string): Promise<void> {
+	await callTelegram("answerCallbackQuery", { callback_query_id: callbackId, text });
+}
+
+/** A Telegram update, narrowed to the two kinds this bot acts on. */
+export interface TgUpdate {
+	update_id: number;
+	message?: {
+		message_id: number;
+		chat: { id: number };
+		from?: { id: number };
+		text?: string;
+	};
+	callback_query?: {
+		id: string;
+		from: { id: number };
+		data?: string;
+		message?: { message_id: number; chat: { id: number } };
+	};
+}
+
+/**
+ * Long-poll for updates. `timeoutSec` is Telegram's own hold-open time: the call
+ * blocks server-side until something arrives or the timeout elapses, which is why
+ * this costs nothing to run continuously and still responds in about a second.
+ *
+ * ⚠️ `offset` must be `last update_id + 1`. Telegram treats a fetch at a given
+ * offset as an acknowledgement of everything before it, so an offset that is
+ * never advanced replays the same message forever, and one advanced before the
+ * work is done loses it on a crash. `tg-inbox.ts` persists it after handling.
+ */
+export async function getUpdates(offset: number, timeoutSec = 25): Promise<TgUpdate[]> {
+	return await callTelegram<TgUpdate[]>("getUpdates", {
+		offset,
+		timeout: timeoutSec,
+		allowed_updates: ["message", "callback_query"],
+	});
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));

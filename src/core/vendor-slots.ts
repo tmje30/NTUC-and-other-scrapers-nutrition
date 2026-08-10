@@ -46,6 +46,16 @@ export interface VendorSlotProps {
 	size: string | null;
 	/** URL — the product page at that shop. */
 	url: string | null;
+	/**
+	 * Rich text — what THIS shop calls the product.
+	 *
+	 * Added to the schema by the user on 2026-08-09. It is the per-slot sibling of
+	 * `Items Exact Name`, which records only one shop's wording for the whole row:
+	 * the same ingredient is "Sensodyne Repair & Protect 100g" at one shop and
+	 * "Sensodyne Toothpaste Repair and Protect (100g)" at the next, and a price is
+	 * hard to check months later without the name it was quoted under.
+	 */
+	itemName: string | null;
 }
 
 /** What a slot currently holds. */
@@ -54,6 +64,7 @@ export interface VendorSlot extends VendorSlotProps {
 	priceValue: number | null;
 	sizeValue: number | null;
 	urlValue: string;
+	itemNameValue: string;
 }
 
 type Schema = Record<string, { type: string; select?: { options?: { name: string }[] } }>;
@@ -97,6 +108,10 @@ export function resolveVendorSlotProps(schema: Schema): VendorSlotProps[] {
 			price: findProp(schema, `Price [Vendor ${n}]`, "number"),
 			size: findProp(schema, `Size[Vendor ${n}]`, "number"),
 			url: findProp(schema, `URL [Vendor ${n}]`, "url"),
+			// ⚠️ Live spelling is lowercase `item` — `item Name [Vendor 1]` — and slot 2
+			// carries a trailing space. `findProp` normalises both, which is the whole
+			// reason these are resolved rather than hardcoded.
+			itemName: findProp(schema, `item Name [Vendor ${n}]`, "rich_text"),
 		});
 	}
 	return out;
@@ -127,6 +142,8 @@ export function matchVendorOption(options: string[], vendor: string): string | n
 
 const numberValue = (p: any): number | null => (typeof p?.number === "number" ? p.number : null);
 const urlValue = (p: any): string => (typeof p?.url === "string" ? p.url.trim() : "");
+const richTextValue = (p: any): string =>
+	Array.isArray(p?.rich_text) ? p.rich_text.map((t: any) => t?.plain_text ?? "").join("").trim() : "";
 
 /** What each slot holds on one row, read from a page's `properties`. */
 export function readVendorSlots(
@@ -139,6 +156,7 @@ export function readVendorSlots(
 		priceValue: s.price ? numberValue(pageProps[s.price]) : null,
 		sizeValue: s.size ? numberValue(pageProps[s.size]) : null,
 		urlValue: s.url ? urlValue(pageProps[s.url]) : "",
+		itemNameValue: s.itemName ? richTextValue(pageProps[s.itemName]) : "",
 	}));
 }
 
@@ -157,9 +175,21 @@ export function pricePer1000(price: number | null, size: number | null): number 
 	return (price / size) * 1000;
 }
 
-/** A slot is free only when NOTHING is in it — see rule 3. */
+/**
+ * A slot is free only when NOTHING is in it — see rule 3.
+ *
+ * `itemNameValue` counts for the same reason the other three do: a slot naming a
+ * product someone recorded is not empty space, even if the price beside it has since
+ * been cleared.
+ */
 export function isSlotFree(slot: VendorSlot): boolean {
-	return !slot.vendorName && slot.priceValue == null && slot.sizeValue == null && !slot.urlValue;
+	return (
+		!slot.vendorName &&
+		slot.priceValue == null &&
+		slot.sizeValue == null &&
+		!slot.urlValue &&
+		!slot.itemNameValue
+	);
 }
 
 export type SlotDecision =
@@ -265,7 +295,14 @@ const money = (n: number) => `$${Math.round(n * 100) / 100}`;
  */
 export function vendorSlotProperties(
 	slot: VendorSlotProps,
-	capture: { vendor: string; price?: number | null; size?: number | null; url?: string },
+	capture: {
+		vendor: string;
+		price?: number | null;
+		size?: number | null;
+		url?: string;
+		/** What this shop calls it — lands in `item Name [Vendor n]`. */
+		itemName?: string;
+	},
 	{ clearMissing = false } = {},
 ): { properties: Record<string, unknown>; written: string[] } {
 	const properties: Record<string, unknown> = {};
@@ -281,6 +318,8 @@ export function vendorSlotProperties(
 		? Math.round(capture.size * 1000) / 1000
 		: null;
 	const url = (capture.url ?? "").trim();
+	// Notion's rich_text cap is 2000; the same 1990 headroom the other writers use.
+	const itemName = (capture.itemName ?? "").trim().slice(0, 1990);
 
 	if (slot.price && (price != null || clearMissing)) {
 		properties[slot.price] = { number: price };
@@ -293,6 +332,10 @@ export function vendorSlotProperties(
 	if (slot.url && (url || clearMissing)) {
 		properties[slot.url] = { url: url || null };
 		written.push(url ? slot.url : `${slot.url} cleared`);
+	}
+	if (slot.itemName && (itemName || clearMissing)) {
+		properties[slot.itemName] = { rich_text: itemName ? [{ text: { content: itemName } }] : [] };
+		written.push(itemName ? `${slot.itemName} = ${itemName}` : `${slot.itemName} cleared`);
 	}
 	return { properties, written };
 }

@@ -10,8 +10,13 @@ on:
   # missed Sheng Siong scan when the laptop next wakes, so by mid-morning fresh
   # prices ARE in the repo — but nothing rebuilds the 10:00 page, which sits
   # there FairPrice-only all day. This lets that page rebuild itself on request.
+  # `newitems` is the Telegram poller asking for a rebuild after it has priced
+  # items the user texted and committed data/new-items-latest.json. It runs the
+  # same job — the new-items page is written by build-site alongside the other
+  # two, so there is nothing extra to deploy and no second Pages artifact that
+  # could overwrite the deals page.
   repository_dispatch:
-    types: [rescan]
+    types: [rescan, newitems]
 
 # Needed for the GitHub Pages deploy. `actions: read` is what deploy-pages needs
 # to resolve the uploaded artifact by id (documented from its v4); the run has

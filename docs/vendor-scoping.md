@@ -1,5 +1,14 @@
 # Scoping — searching the shops tagged in `Vendor[n]`
 
+> ⚠️ **Superseded for Guardian, MyProtein and Carousell (2026-08-09).** Those three are
+> built, and **four per-vendor claims below were measured false**: Guardian needs no
+> browser (its `/catalogsearch/` URL is dead and its GraphQL answers a plain fetch),
+> Carousell's `itemCondition` is not a usable filter, its rendered text drops every
+> lowercase `s`, and MyProtein has no single price per product. The **census is also
+> stale** — Guardian is tagged on 5 rows, not 0, and Sheng Siong on 58, not 0. The
+> **routing rules and the three writer rules still govern.** See
+> [`session-2026-08-09-vendor-scan.md`](session-2026-08-09-vendor-scan.md).
+
 *Written 2026-08-04. Nothing here is built. Every verdict below comes from a live probe
 run the same day, and the probe commands are given so they can be re-run when a site
 changes — which they will.*

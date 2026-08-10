@@ -522,6 +522,9 @@ if (payload.action === "replace-ingredient") {
 		unitType: size ? (payload.volumetric ? "By ml" : "By Gram") : undefined,
 		vendor: payload.store || undefined,
 		url: payload.url || undefined,
+		// The shop's own wording for the thing this price was quoted on, recorded
+		// beside the price rather than only on the row.
+		itemName: payload.product || undefined,
 	});
 
 	// A refusal is a legitimate outcome — "every slot is taken and this isn't cheaper",
@@ -646,6 +649,7 @@ if (payload.action === "rebase-ingredient") {
 		// Written since 2026-08-09: it lands in `URL [Vendor n]` for the slot that
 		// names THIS shop, so the misfiling that kept it out before can't happen.
 		url: fields.url,
+		itemName: fields.itemName,
 		// Only ever set when the shop published a panel or the toggle was on; otherwise
 		// the row keeps whatever nutrition it already had, which is the right default
 		// for a row the user maintains.

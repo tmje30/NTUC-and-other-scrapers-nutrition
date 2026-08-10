@@ -2,6 +2,7 @@ import { fieldsFromPurchase, vendorSlotProps } from "../core/ingredient-write.js
 import {
 	cheapestVendorSlot,
 	chooseVendorSlot,
+	isSlotFree,
 	matchVendorOption,
 	pricePer1000,
 	readVendorSlots,
@@ -40,10 +41,15 @@ const SCHEMA: Record<string, any> = {
 	"Price [Vendor 1]": { type: "number" },
 	"Size[Vendor 1]": { type: "number" },
 	"URL [Vendor 1]": { type: "url" },
+	// Live spelling: lowercase `item`, and slot 2 carries a trailing space where 1
+	// does not — the same irregularity the price columns have, mirrored here so the
+	// resolver is tested against the real thing rather than a tidied-up version.
+	"item Name [Vendor 1]": { type: "rich_text" },
 	"Vendor 2": { type: "select", select: { options: [{ name: "NTUC" }, { name: "Sheng Siong" }, { name: "Watsons" }, { name: "Guardian" }, { name: "Iherb" }] } },
 	"Price [Vendor 2] ": { type: "number" },
 	"Size[Vendor 2]": { type: "number" },
 	"URL [Vendor 2]": { type: "url" },
+	"item Name [Vendor 2] ": { type: "rich_text" },
 	"Vendor 3": { type: "select", select: { options: [{ name: "NTUC" }] } },
 	"Price [Vendor 3]": { type: "number" },
 	"Size[Vendor 3]": { type: "number" },
@@ -276,12 +282,63 @@ eq("an eviction clears what it cannot fill", (evicted.properties["Size[Vendor 1]
 eq("and clears the old shop's URL too", (evicted.properties["URL [Vendor 1]"] as any).url, null);
 
 // A schema without a URL column simply records no link, rather than failing.
-const noUrlCol = vendorSlotProperties({ n: 1, vendor: "Vendor 1", price: null, size: null, url: null }, {
+const noUrlCol = vendorSlotProperties({ n: 1, vendor: "Vendor 1", price: null, size: null, url: null, itemName: null }, {
 	vendor: "NTUC",
 	price: 4,
 	url: "https://x",
+	itemName: "Whatever The Shop Calls It",
 });
 eq("a missing column is skipped, never sent", Object.keys(noUrlCol.properties), ["Vendor 1"]);
+
+describe("price book — item Name [Vendor n]");
+
+/**
+ * ⚠️ **The per-slot name is not `Items Exact Name`.** That column is row-level and
+ * records ONE shop's wording; this one is per-slot, so a row can say what each vendor
+ * quoted its own price under. Without it a price found at Guardian months ago cannot be
+ * checked against the shelf, because nothing records which of fifty toothpastes it was.
+ */
+eq("the column is resolved despite the lowercase 'item'", defs[0].itemName, "item Name [Vendor 1]");
+eq("and despite slot 2's trailing space", defs[1].itemName, "item Name [Vendor 2] ");
+
+const named = vendorSlotProperties(defs[0], {
+	vendor: "NTUC",
+	price: 4,
+	itemName: "  Sensodyne Repair & Protect Toothpaste 100g  ",
+});
+eq(
+	"the shop's own title is written, trimmed",
+	((named.properties["item Name [Vendor 1]"] as any).rich_text[0].text.content),
+	"Sensodyne Repair & Protect Toothpaste 100g",
+);
+
+// Same rule as price/size/url: a blank is OMITTED, so a capture that could not read a
+// title never blanks the name a row already carried.
+eq("a blank item name is omitted, not nulled", "item Name [Vendor 1]" in sparse.properties, false);
+
+// …and the same exception on an eviction, where the slot now names a different shop.
+// Leaving the evicted shop's product name under the new shop's tag is exactly the
+// mismatch `clearMissing` exists to prevent.
+eq(
+	"an eviction clears the old shop's item name",
+	((evicted.properties["item Name [Vendor 1]"] as any).rich_text),
+	[],
+);
+
+// A slot holding only a name is NOT free — someone recorded that product, and a price
+// cleared since does not make the slot empty space.
+eq(
+	"a slot holding only an item name is not free",
+	isSlotFree({
+		...defs[0],
+		vendorName: "",
+		priceValue: null,
+		sizeValue: null,
+		urlValue: "",
+		itemNameValue: "Sensodyne Repair & Protect",
+	}),
+	false,
+);
 
 describe("price book — counted packs (the egg tray)");
 

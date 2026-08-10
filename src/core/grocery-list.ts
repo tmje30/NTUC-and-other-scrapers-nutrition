@@ -4,12 +4,17 @@ import { Client } from "@notionhq/client";
  * Pushing a deal onto the user's Notion **grocery List** database.
  *
  * The row is deliberately minimal, per the user's spec:
- *   Name    "Fish Sauce, Knife Brand, 750ml" — the INGREDIENT name (what they
- *           shop for, never the store's marketing name), then the brand and pack
- *           size of the listing that is actually on offer
- *   Price   the discounted price actually being offered
- *   Vendor  the store, in the same words the Ingredients DB uses
- *   Amount  how many to buy — 1 on a new row, +1 on each further tap
+ *   Name              "Fish sauce (750ml) [Knife brand]" — the INGREDIENT name
+ *                      (what they shop for, never the store's marketing name),
+ *                      then the pack size and brand of the listing on offer
+ *   Price              the discounted price actually being offered
+ *   Vendor             the store, in the same words the Ingredients DB uses
+ *   Amount             how many to buy — 1 on a new row, +1 on each further tap
+ *   Price per kg/L     the discount listing's own $/kg or $/L, e.g. "$4.45/kg" —
+ *                      read straight off the deal card, not recomputed here
+ *   List [Ingredients] a relation to the matched row in the Ingredients DB —
+ *                      links to the EXISTING page (`ingredientId`), never
+ *                      creates a new one
  *
  * ⚠️ **`Amount ` was left empty for the user to fill in until 2026-08-09.** Buy now
  * counts: the first tap writes 1, and a second tap on a row still outstanding makes
@@ -51,6 +56,10 @@ export interface ListProps {
 	done: string | null;
 	/** How many to buy. Live name is `"Amount "` — trailing space, like half this DB. */
 	amount: string | null;
+	/** Rich text. Live name is `"Price per kg/L"` — the discount item's own $/kg or $/L. */
+	pricePerKg: string | null;
+	/** Relation to the Ingredients DB. Live name is `"List [Ingredients]"`. */
+	ingredientRelation: string | null;
 }
 
 /** Trim, collapse runs of whitespace, lower-case — the shape renames don't change. */
@@ -84,6 +93,8 @@ export function resolveListProps(schema: Record<string, { type: string }>): List
 		vendor: pick(byType("rich_text"), (n) => n.includes("vendor")),
 		done: byType("checkbox")[0] ?? null,
 		amount,
+		pricePerKg: pick(byType("rich_text"), (n) => n.includes("kg/l") || n.includes("per kg")),
+		ingredientRelation: pick(byType("relation"), (n) => n.includes("ingredient")),
 	};
 }
 
@@ -112,22 +123,22 @@ export function vendorLabel(store: string): string {
 /**
  * The row title — what you actually have to find in the shop:
  *
- *     Fish Sauce, Knife Brand, 750ml
- *     ↑ ingredient  ↑ brand     ↑ the pack being offered
+ *     Fish sauce (750ml) [Knife brand]
+ *     ↑ ingredient  ↑ the pack offered  ↑ brand
  *
  * Brand and size are the STORE's, not the ingredient's: this row exists because a
- * particular pack is on offer, and the brand and size are how you pick it off the
+ * particular pack is on offer, and the size and brand are how you pick it off the
  * shelf. Both are optional and each segment is dropped when it is missing, so a
- * shop that publishes no brand still gives a usable line rather than a stray comma.
+ * shop that publishes no brand still gives a usable line rather than empty brackets.
  *
  * ⚠️ **The brand is used verbatim, never with the word "brand" appended.** Many
  * real brands already end in it — `Tiger Brand`, `Snow Brand`, `House Brand`, five
- * of the 264 in one Sheng Siong scan — and "Snow Brand brand" is how that would
+ * of the 264 in one Sheng Siong scan — and "[Snow Brand brand]" is how that would
  * read.
  *
  * ⚠️ **A brand the ingredient's own name already states is not repeated.** An
  * ingredient written in the bracket standard as `Fish Sauce [Knife]` would
- * otherwise produce "Fish Sauce [Knife], Knife, 750ml".
+ * otherwise produce "Fish Sauce [Knife] (750ml) [Knife]".
  *
  * ⚠️ **It carried a `[NTUC] ` prefix until 2026-08-06.** The shop goes in the
  * list's own `Vendor ` column instead (it always did as well; the prefix was a
@@ -144,10 +155,10 @@ export function groceryRowTitle(p: { ingredient: string; brand?: string; size?: 
 	const brand = (p.brand ?? "").trim();
 	const size = (p.size ?? "").trim();
 
-	const parts = [name];
-	if (brand && !name.toLowerCase().includes(brand.toLowerCase())) parts.push(brand);
-	if (size) parts.push(size);
-	return parts.join(", ");
+	let title = name;
+	if (size) title += ` (${size})`;
+	if (brand && !name.toLowerCase().includes(brand.toLowerCase())) title += ` [${brand}]`;
+	return title;
 }
 
 /**
@@ -214,6 +225,14 @@ export interface AddPayload {
 	 */
 	weeklyBuy?: boolean;
 	url: string;
+	/**
+	 * The discount listing's own price per kg/L (or per L for a liquid), formatted
+	 * exactly as the deal card shows it — e.g. `"$4.45/kg"`. This is the STORE
+	 * product's figure, not the user's own baseline. Undefined for a piece-priced
+	 * product (30 eggs has no per-kg figure to show), and for payloads built before
+	 * this field existed.
+	 */
+	pricePerKg?: string;
 }
 
 /** Narrow an untrusted object (issue body / webhook JSON) into an AddPayload. */
@@ -257,6 +276,7 @@ export function parseAddPayload(raw: unknown): AddPayload {
 		monthlyAmount: Number.isFinite(Number(o.monthlyAmount)) ? Number(o.monthlyAmount) : 0,
 		weeklyBuy: Boolean(o.weeklyBuy),
 		url: typeof o.url === "string" ? o.url : "",
+		pricePerKg: typeof o.pricePerKg === "string" && o.pricePerKg.trim() ? o.pricePerKg : undefined,
 	};
 }
 
@@ -332,6 +352,14 @@ export async function addToGroceryList(client: Client, p: AddPayload): Promise<A
 	}
 	// One pack, because that is what pressing Buy once means.
 	if (props.amount) properties[props.amount] = { number: 1 };
+	if (props.pricePerKg && p.pricePerKg) {
+		properties[props.pricePerKg] = { rich_text: [{ text: { content: p.pricePerKg } }] };
+	}
+	// Links to the ALREADY-MATCHED Ingredients page (chosen upstream by the deals
+	// page's own matching) — never creates one. Relation writes only need the id.
+	if (props.ingredientRelation && p.ingredientId) {
+		properties[props.ingredientRelation] = { relation: [{ id: p.ingredientId }] };
+	}
 
 	const page = (await client.pages.create({
 		parent: { type: "data_source_id", data_source_id: GROCERY_LIST_DS },
@@ -339,4 +367,84 @@ export async function addToGroceryList(client: Client, p: AddPayload): Promise<A
 	} as any)) as any;
 
 	return { title, pageId: page.id, alreadyListed: false, amount: props.amount ? 1 : null };
+}
+
+/**
+ * A line the user texted into Telegram, rather than a deal card they tapped.
+ *
+ * It shares this module's schema resolution and dedupe with `addToGroceryList`
+ * on purpose — two writers to one hand-edited database whose column names drift
+ * is exactly the situation where a second copy of `resolveListProps` goes stale
+ * without anyone noticing.
+ *
+ * ⚠️ **Everything except the name is optional here, and that is the whole
+ * difference from `AddPayload`.** A deal card always knows a discounted price, a
+ * shop and a product; a texted line knows a name and maybe a quantity. The price
+ * and vendor it can offer come from the matched ingredient's own price book, and
+ * a row with an empty price book has neither — so those columns are left ALONE
+ * rather than written as zero. A `Price , To Buy ` of $0.00 is not "unknown", it
+ * reads as free.
+ *
+ * ⚠️ **`Amount ` adds `count`, not 1.** Texting "eggs x6" twice means twelve.
+ * The read-then-add is the same rule as the repeat Buy tap: their column, their
+ * value, added to and never overwritten.
+ */
+export interface TextedItem {
+	/** What goes in the row title — the matched ingredient's name, or as typed. */
+	ingredient: string;
+	/** The matched Ingredients page, when one was matched. Never creates a page. */
+	ingredientId?: string;
+	/** How many to buy. */
+	count: number;
+	/** Pack size the user stated — "500g". Omitted when they didn't say. */
+	size?: string;
+	/** The user's own recorded pack price, from the ingredient's price book. */
+	priceSgd?: number;
+	/** The shop that price came from, in the Ingredients DB's own wording. */
+	vendor?: string;
+	/** Pre-formatted "$4.45/kg" for the `Price per kg/L` column. */
+	pricePerKg?: string;
+}
+
+export async function addTextedItem(client: Client, item: TextedItem): Promise<AddResult> {
+	const props = await listProps(client);
+	const title = groceryRowTitle({ ingredient: item.ingredient, size: item.size });
+	const count = Number.isFinite(item.count) && item.count > 0 ? Math.round(item.count) : 1;
+
+	const existing = await findOpenRow(client, props, title).catch(() => null);
+	if (existing) {
+		if (!props.amount) return { title, pageId: existing.id, alreadyListed: true, amount: null };
+		const before = existing.properties?.[props.amount]?.number;
+		const amount = (typeof before === "number" && Number.isFinite(before) ? before : 0) + count;
+		await client.pages.update({
+			page_id: existing.id,
+			properties: { [props.amount]: { number: amount } },
+		} as any);
+		return { title, pageId: existing.id, alreadyListed: true, amount };
+	}
+
+	const properties: Record<string, unknown> = {
+		[props.title]: { title: [{ text: { content: title } }] },
+	};
+	if (props.amount) properties[props.amount] = { number: count };
+	// Blank stays blank — see the note above on why zero is not "unknown".
+	if (props.price && item.priceSgd && item.priceSgd > 0) {
+		properties[props.price] = { number: money(item.priceSgd) };
+	}
+	if (props.vendor && item.vendor) {
+		properties[props.vendor] = { rich_text: [{ text: { content: vendorLabel(item.vendor) } }] };
+	}
+	if (props.pricePerKg && item.pricePerKg) {
+		properties[props.pricePerKg] = { rich_text: [{ text: { content: item.pricePerKg } }] };
+	}
+	if (props.ingredientRelation && item.ingredientId) {
+		properties[props.ingredientRelation] = { relation: [{ id: item.ingredientId }] };
+	}
+
+	const page = (await client.pages.create({
+		parent: { type: "data_source_id", data_source_id: GROCERY_LIST_DS },
+		properties,
+	} as any)) as any;
+
+	return { title, pageId: page.id, alreadyListed: false, amount: props.amount ? count : null };
 }

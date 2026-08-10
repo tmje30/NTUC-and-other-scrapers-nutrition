@@ -238,7 +238,7 @@ async function buildProps({ name, exactName, category, unitType }, props) {
  * Unlike `buildProps`, an unusable vendor is reported rather than thrown: the row is
  * still worth writing without a price, and a hard failure would lose the capture.
  */
-function slotProps({ price, size, vendor, url }, props, current, { allowEvict }) {
+function slotProps({ price, size, vendor, url, itemName }, props, current, { allowEvict }) {
   const none = { properties: {}, note: "", decision: null };
   if (!vendor || !vendor.trim()) return none;
 
@@ -267,7 +267,7 @@ function slotProps({ price, size, vendor, url }, props, current, { allowEvict })
 
   const { properties } = vendorSlotProperties(
     decision.slot,
-    { vendor: option, price, size, url },
+    { vendor: option, price, size, url, itemName },
     // An evicted slot now names a different shop; the old one's leftovers must not
     // sit under the new one's tag.
     { clearMissing: decision.kind === "evict" },
@@ -299,7 +299,15 @@ export async function createIngredient(fields) {
   if (!fields.name || !fields.name.trim()) throw new Error("A name is required.");
   const props = await getSchema();
   const properties = await buildProps(fields, props);
-  const slot = slotProps(fields, props, null, { allowEvict: false });
+  // The shop's own title fills the per-slot `item Name [Vendor n]` as well as the
+  // row-level `Items Exact Name`. Defaulted here rather than in every caller so
+  // `flow.js` keeps sending exactly the fields it always has.
+  const slot = slotProps(
+    { ...fields, itemName: fields.itemName || fields.exactName },
+    props,
+    null,
+    { allowEvict: false },
+  );
   const macro = macroProperties(fields.macros, props);
   const page = await api("/pages", {
     method: "POST",
@@ -398,7 +406,12 @@ export async function replaceIngredient({ pageId, ...fields }) {
   // Read BEFORE writing: which slot this price belongs in is a fact about the row.
   const existing = await api(`/pages/${pageId}`);
   const before = rowSummary(existing);
-  const slot = slotProps(fields, props, existing.properties || {}, { allowEvict: true });
+  const slot = slotProps(
+    { ...fields, itemName: fields.itemName || fields.exactName },
+    props,
+    existing.properties || {},
+    { allowEvict: true },
+  );
   const page = await api(`/pages/${pageId}`, {
     method: "PATCH",
     body: { properties: { ...properties, ...slot.properties } },

@@ -230,6 +230,13 @@ const GENERIC_FORM_PATTERNS = [
 	// "3in1" / "2 in 1" instant drink mixes — coffee premixed with sugar and
 	// creamer is not the plain coffee the item asked for.
 	"\\d\\s*in\\s*\\d",
+	// A mass GAINER is whey plus a large amount of carbohydrate, not whey. Caught
+	// 2026-08-09 by the vendor scan: "Myprotein Impact Whey Gainer 2.5kg" was the
+	// accepted match for `whey, essential [MyProtein]` at $2.00/100g — cheaper per
+	// 100 g than real whey precisely because most of it is maltodextrin, so it wins
+	// on price while being the wrong product and wrong macros. Same shape as the
+	// butter-loaf and egg-tofu entries above.
+	"gainers?",
 ];
 const GENERIC_FORM_RES = GENERIC_FORM_PATTERNS.map((p) => new RegExp(`\\b${p}\\b`, "i"));
 

@@ -1,9 +1,10 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { Client } from "@notionhq/client";
 import { runOnce } from "../core/run.js";
 import { renderDealsPage } from "../core/site.js";
 import { resolveShengSiongPackShots } from "../core/stores/shengsiong-images.js";
 import { renderHistoryPage } from "../core/history.js";
+import { renderNewItemsPage, type NewItemsFile } from "../core/new-items.js";
 import { readParkedIngredients, type ParkedIngredient } from "../core/notion.js";
 import { readPurchases } from "../core/purchases-file.js";
 import { readExclusions } from "../core/exclusions-file.js";
@@ -187,6 +188,32 @@ try {
 	);
 } catch (e: any) {
 	console.error(`Warning: failed to write public/history.html: ${e.message}`);
+}
+
+/**
+ * The new-items page, from whatever the Telegram poller last committed.
+ *
+ * Same hybrid shape as Sheng Siong: the runner scans on a residential IP and
+ * commits a JSON file, and the cloud only renders it. Also the same freshness
+ * rule — a file from a previous day is not published, because a page headed
+ * "New items" showing last week's prices is worse than no page. Wrapped in its
+ * own try so a malformed file can never take the deals page down with it.
+ */
+try {
+	const raw = JSON.parse(await readFile("data/new-items-latest.json", "utf8")) as NewItemsFile;
+	const today = new Date(Date.now() + 8 * 3600_000).toISOString().slice(0, 10);
+	if (raw?.date === today && Array.isArray(raw.results) && raw.results.length) {
+		await writeFile(
+			"public/new-items.html",
+			renderNewItemsPage(raw.results, new Date(raw.generatedAt)),
+			"utf8",
+		);
+		console.error(`Wrote public/new-items.html (${raw.results.length} items, from ${raw.source})`);
+	} else {
+		console.error(`No fresh new-items file (date ${raw?.date ?? "none"} vs today ${today}).`);
+	}
+} catch (e: any) {
+	if (e?.code !== "ENOENT") console.error(`Warning: new-items page skipped: ${e.message}`);
 }
 
 // Publish the search terms so residential runners (phone/laptop) can fetch them

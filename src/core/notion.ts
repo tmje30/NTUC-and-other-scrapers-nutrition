@@ -176,7 +176,7 @@ export interface PlanTarget {
 	inActivePlan: boolean;
 }
 
-function titleText(p: any): string {
+export function titleText(p: any): string {
 	return (p?.title ?? []).map((r: any) => r.plain_text).join("").trim();
 }
 function numberOf(p: any): number | null {
@@ -184,10 +184,10 @@ function numberOf(p: any): number | null {
 	if (p?.type === "formula" && p.formula?.type === "number") return p.formula.number;
 	return null;
 }
-function selectName(p: any): string {
+export function selectName(p: any): string {
 	return p?.select?.name ?? "";
 }
-function multiSelectNames(p: any): string[] {
+export function multiSelectNames(p: any): string[] {
 	return (p?.multi_select ?? []).map((o: any) => o.name).filter(Boolean);
 }
 function formulaString(p: any): string {
@@ -228,7 +228,7 @@ function planTagText(p: any): string {
 	return "";
 }
 
-async function queryAll(client: Client, dataSourceId: string): Promise<any[]> {
+export async function queryAll(client: Client, dataSourceId: string): Promise<any[]> {
 	const out: any[] = [];
 	let cursor: string | undefined;
 	do {

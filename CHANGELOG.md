@@ -7,6 +7,38 @@ All notable changes to this project are documented here. Format based on
 ## [Unreleased]
 
 ### Added
+- **Telegram grocery-list intake (2026-08-10)** — text a list into the bot and it
+  files into the Notion **grocery List**. `src/core/list-parse.ts` reads the
+  quantity grammar (`2kg chicken breast`, `bananas x6`, `2 x 500g peanut butter`);
+  `src/core/list-intake.ts` matches each line to an Ingredients row using the
+  existing scorer and returns one of three verdicts (link / ask / new);
+  `src/core/grocery-list.ts` gains `addTextedItem()`, which shares schema
+  resolution and dedupe with the Buy button but leaves unknown columns blank
+  instead of writing zero. Near-misses ask in-chat with inline buttons.
+  `src/core/tg-inbox.ts` is the first **inbound** path in the project — chat
+  allow-list, offset persisted after handling, no paid lookups.
+  `npm run tg-poll` runs it on the residential-IP laptop.
+- **New-items discount page** — `src/core/new-items.ts` prices items that aren't
+  in Ingredients yet across **five shops** (FairPrice, Sheng Siong, Guardian,
+  MyProtein, Carousell — `NEW_ITEM_SHOPS`). The last three already had store
+  modules but were reachable only via `vendor-scan.ts`'s directed search, which
+  needs an Ingredients row naming the vendor; a new item has none. Carousell is
+  reduced with `cheapestPlausible` rather than the minimum and labelled
+  `[marketplace listing]` on the card. No baseline exists for a new item, so the
+  card compares shops and shows the shop's own sale %, not a saving against the
+  user's price; it renders
+  `public/new-items.html` through the shared `page-chrome.ts`. Same hybrid
+  hand-off as Sheng Siong: the laptop scans and commits
+  `data/new-items-latest.json`, `repository_dispatch: newitems` rebuilds Pages,
+  and a stale file is skipped rather than published.
+
+### Fixed
+- **New-item pricing was silently missing Sheng Siong.** `scanNewItems` reused
+  `run.ts`'s `STORES`, which defaults to `shengsiong-file` — a reader that answers
+  only the terms in that day's committed scan. A new item's term is never among
+  them, so Sheng Siong returned zero results with no error on every new-item card.
+  `new-items.ts` now holds its own shop list and uses the live DDP module, which is
+  correct because the scan only ever runs on the residential runner.
 - Scaffolded Notion Worker project via `ntn workers new` (template
   makenotion/workers-template).
 - Portable-core architecture: `src/core/` runtime-agnostic; GitHub Actions is

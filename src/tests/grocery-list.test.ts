@@ -11,24 +11,23 @@ import { check, describe, eq } from "./harness.js";
  * so an unknown property can't fail the whole write) and the shop is recorded
  * nowhere at all. A console warning is the only signal, and nobody reads a
  * successful run's log.
+ *
+ * ⚠️ Since 2026-08-09 the title format is `Name (size) [Brand]` — parens for the
+ * pack, brackets for the brand — replacing the earlier comma-joined form.
  */
 describe("grocery list — the row title");
 
 // The shape the user asked for: what you have to find in the shop.
 eq(
-	"ingredient, brand, size",
+	"ingredient (size) [brand]",
 	groceryRowTitle({ ingredient: "Fish Sauce", brand: "Knife Brand", size: "750ml" }),
-	"Fish Sauce, Knife Brand, 750ml",
-);
-check(
-	"no vendor bracket survives",
-	!groceryRowTitle({ ingredient: "Banana (Fruit)", brand: "Dole", size: "1kg" }).includes("["),
+	"Fish Sauce (750ml) [Knife Brand]",
 );
 
 // Each segment is independently optional — a missing one must not leave a stray
-// comma or an empty tail on the row.
-eq("no brand, no gap", groceryRowTitle({ ingredient: "Fish Sauce", size: "750ml" }), "Fish Sauce, 750ml");
-eq("no size", groceryRowTitle({ ingredient: "Fish Sauce", brand: "Knife Brand" }), "Fish Sauce, Knife Brand");
+// paren or bracket on the row.
+eq("no brand, no gap", groceryRowTitle({ ingredient: "Fish Sauce", size: "750ml" }), "Fish Sauce (750ml)");
+eq("no size", groceryRowTitle({ ingredient: "Fish Sauce", brand: "Knife Brand" }), "Fish Sauce [Knife Brand]");
 eq("neither — the old, shorter title", groceryRowTitle({ ingredient: "Fish Sauce" }), "Fish Sauce");
 eq(
 	"an empty string counts as missing",
@@ -38,10 +37,10 @@ eq(
 
 // ⚠️ Never append the word "brand" — real brands already end in it. Five of the
 // 264 in one Sheng Siong scan do (Tiger Brand, Snow Brand, House Brand …), and
-// "Snow Brand brand" is how a naive template would read.
+// "[Snow Brand brand]" is how a naive template would read.
 check(
 	"the brand is verbatim, never suffixed",
-	groceryRowTitle({ ingredient: "Milk", brand: "Snow Brand", size: "1L" }) === "Milk, Snow Brand, 1L",
+	groceryRowTitle({ ingredient: "Milk", brand: "Snow Brand", size: "1L" }) === "Milk (1L) [Snow Brand]",
 );
 
 // ⚠️ The ingredient's OWN brackets are part of its name and must be left alone —
@@ -56,18 +55,18 @@ eq(
 eq(
 	"a brand the name already states is not repeated",
 	groceryRowTitle({ ingredient: "Fish Sauce [Knife]", brand: "Knife", size: "750ml" }),
-	"Fish Sauce [Knife], 750ml",
+	"Fish Sauce [Knife] (750ml)",
 );
 eq(
 	"the check ignores case",
 	groceryRowTitle({ ingredient: "Chicken Breast [BETAGRO]", brand: "Betagro", size: "500g" }),
-	"Chicken Breast [BETAGRO], 500g",
+	"Chicken Breast [BETAGRO] (500g)",
 );
 // A different brand still lands — the guard must not swallow a genuine one.
 eq(
 	"an unrelated brand is kept",
 	groceryRowTitle({ ingredient: "Fish Sauce [Knife]", brand: "Tiparos", size: "750ml" }),
-	"Fish Sauce [Knife], Tiparos, 750ml",
+	"Fish Sauce [Knife] (750ml) [Tiparos]",
 );
 
 describe("grocery list — the vendor column");
@@ -90,6 +89,8 @@ const LIVE = {
 	"Current Price ": { type: "number" },
 	"Vendor ": { type: "rich_text" },
 	Name: { type: "title" },
+	"Price per kg/L": { type: "rich_text" },
+	"List [Ingredients]": { type: "relation" },
 };
 
 const live = resolveListProps(LIVE);
@@ -98,6 +99,26 @@ eq("the title column is found", live.title, "Name");
 eq("the buy price wins over the formula", live.price, "Price , To Buy ");
 eq("current price is claimed separately", live.currentPrice, "Current Price ");
 eq("the done checkbox is found", live.done, "Checkbox");
+eq("the price-per-kg/L column is found", live.pricePerKg, "Price per kg/L");
+eq("the Ingredients relation is found", live.ingredientRelation, "List [Ingredients]");
+
+// ⚠️ Two rich_text columns exist ("Vendor " and "Price per kg/L") — they must not
+// be confused with each other, since only one keyword each is being matched on.
+check(
+	"price-per-kg/L is never mistaken for the vendor column",
+	live.pricePerKg !== live.vendor,
+);
+
+eq(
+	"missing columns resolve to null rather than guessing",
+	resolveListProps({ Name: { type: "title" } }).pricePerKg,
+	null,
+);
+eq(
+	"a missing Ingredients relation resolves to null",
+	resolveListProps({ Name: { type: "title" } }).ingredientRelation,
+	null,
+);
 
 // ⚠️ `Amount ` became load-bearing on 2026-08-09: Buy writes 1 into it, and a second
 // tap on the same outstanding row makes it 2. Two ways this goes quietly wrong, and
