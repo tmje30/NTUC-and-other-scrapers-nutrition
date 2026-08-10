@@ -26,6 +26,34 @@ export const config = {
 	mealPrepDbId: () => optional("MEAL_PREP_DB_ID"),
 	telegramBotToken: () => required("TELEGRAM_BOT_TOKEN"),
 	telegramChatId: () => required("TELEGRAM_CHAT_ID"),
+	/**
+	 * The bot the INBOX poller listens on. Falls back to the outbound bot, which
+	 * since 2026-08-10 is the NORMAL case, not a degraded one.
+	 *
+	 * This project now has a bot of its own — **@Grocery69_bot** — which both
+	 * sends the daily digest and serves the poller. One bot can do both; what a
+	 * bot cannot do is have a webhook AND serve `getUpdates`. So the split this
+	 * variable was created for exists only if those two roles ever land on
+	 * different bots again.
+	 *
+	 * ⚠️ **The trap it was created for, kept because it is still live.** The
+	 * project used to send through the user's `@Big_Notion_Bot`, which has a
+	 * webhook pointing at their deployed Notion Worker — that is how their
+	 * calendar/notes bot receives anything at all. Polling that token returns
+	 * `409 Conflict: can't use getUpdates method while webhook is active` on
+	 * every call, and the chat simply looks dead: messages arrive, they go to
+	 * Notion, and the poller sees nothing. Measured 2026-08-10 — "I wrote the
+	 * list and nothing happened".
+	 *
+	 * ⚠️ **`deleteWebhook` on `@Big_Notion_Bot` is NEVER the fix, and nothing
+	 * here may call it.** It is that worker's only delivery path, in a different
+	 * project, and removing it breaks it silently. Register another bot instead.
+	 *
+	 * The chat id is the same whichever bot is used: `TELEGRAM_CHAT_ID` is
+	 * positive, so it is a private chat, and a private chat's id IS the user's
+	 * Telegram user id — identical for every bot they talk to.
+	 */
+	telegramInboxBotToken: () => optional("TELEGRAM_INBOX_BOT_TOKEN") || required("TELEGRAM_BOT_TOKEN"),
 	/** Public URL of the deployed GitHub Pages deals page. */
 	siteUrl: () =>
 		optional("SITE_URL", "https://tmje30.github.io/NTUC-and-other-scrapers-nutrition/"),

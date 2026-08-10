@@ -70,8 +70,24 @@ export const escapeHtml = esc;
  * error shape and the "Telegram answered 200 with ok:false" case are handled in
  * exactly one place — the API does not use HTTP status alone to report failure.
  */
+/**
+ * Which bot this process talks as. Null = the outbound bot from `TELEGRAM_BOT_TOKEN`.
+ *
+ * Set once at startup by the inbox poller (`tg-poll.ts`), because a poller is a
+ * separate process that only ever acts as the inbox bot — its replies should come
+ * from the same bot the user texted, not from the digest bot. Threading a token
+ * argument through every send/edit/answer call would put the same decision in a
+ * dozen places and get it wrong in one of them.
+ */
+let tokenOverride: string | null = null;
+
+/** Point every subsequent Bot API call in this process at a different bot. */
+export function useBotToken(token: string): void {
+	tokenOverride = token;
+}
+
 export async function callTelegram<T = any>(method: string, body: unknown): Promise<T> {
-	const token = config.telegramBotToken();
+	const token = tokenOverride ?? config.telegramBotToken();
 	const res = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },

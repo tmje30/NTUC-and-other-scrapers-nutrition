@@ -25,7 +25,8 @@
     "push-ss": "tsx src/scripts/push-shengsiong.ts",
     "ext:build": "node extension/build.mjs",
     "test": "tsx src/tests/run.ts",
-    "tg-poll": "tsx src/scripts/tg-poll.ts"
+    "tg-poll": "tsx src/scripts/tg-poll.ts",
+    "tg-diag": "tsx src/scripts/tg-diag.ts"
   },
   "engines": {
     "node": ">=22.0.0",
