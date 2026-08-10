@@ -1146,31 +1146,28 @@ not a bug — that confused the user on 2026-08-05.
 
 ## Next session — pick up here (as of 2026-08-10, evening)
 
-### Uncommitted — nothing from 2026-08-10 has been committed yet
+### Committed and pushed — the tree is clean
+
+Everything from 2026-08-10 is on `main` as three commits:
 
 ```
- M .env.example  CHANGELOG.md  HANDOVER.md  extension/README.md
- M laptop-run.cmd  package.json  src/core/config.ts  src/core/telegram.ts
- M src/scripts/push-shengsiong.ts  src/scripts/tg-poll.ts  src/tests/run.ts
- M docs/session-2026-08-09-vendor-scan.md
- ?? src/core/git-data-push.ts  src/scripts/tg-diag.ts  src/tests/git-data-push.test.ts
+f00ce6f docs: first live run of the inbox, and three faults it exposed
+3e67a0f feat: this project gets its own Telegram bot (@Grocery69_bot)
+793d6fc fix: a rejected push no longer loses the day's scan
 ```
-
-Two unrelated pieces of work sit in the same tree and should be committed
-**separately**:
-
-1. **The runner-push fix** (Remaining work 22, done) — `git-data-push.ts`,
-   `git-data-push.test.ts`, `push-shengsiong.ts`, `tg-poll.ts`'s `gitPush`,
-   `laptop-run.cmd`, `src/tests/run.ts`.
-2. **The inbox bot switch** — `.env.example`, `config.ts`, `telegram.ts`,
-   `tg-diag.ts`, `package.json`, and this file.
 
 `npm run check` clean, **`npm test` 508 passing** (was 496 at the start of the
 day; 376 in the last handover).
 
+⚠️ `src/scripts/tg-poll.ts` sits in the **first** commit because its `gitPush`
+rewrite belongs there, but it also carries the one-line inbox-bot token switch
+from the second — the two could not be split without hunk surgery. Don't read
+`793d6fc` as the whole push fix and nothing else.
+
 ⚠️ **The live `C:\Users\newuser\shengsiong-runner\run.cmd` was edited too**, and
-git does not see it. If `laptop-run.cmd` is ever reverted, revert that by hand as
-well or the two drift.
+git does not see it — it lives outside the repo, so no commit covers it. If
+`laptop-run.cmd` is ever reverted, revert that by hand as well or the two drift.
+The next 05:30 SGT run is the first to use the new pull guard.
 
 ### What 2026-08-10 (evening) actually did
 
