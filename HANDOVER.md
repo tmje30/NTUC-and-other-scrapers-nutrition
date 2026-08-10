@@ -87,7 +87,7 @@ See "Telegram intake" below.
 
 Deep dives on one session each, kept for the *why*:
 
-- [`docs/session-2026-08-09-vendor-scan.md`](docs/session-2026-08-09-vendor-scan.md) — the price book fills itself from Guardian/MyProtein/Carousell ⚠️ **supersedes four per-vendor claims in `vendor-scoping.md`**
+- [`docs/session-2026-08-09-vendor-scan.md`](docs/session-2026-08-09-vendor-scan.md) — **the price book fills itself** from Guardian/MyProtein/Carousell; 7 of 9 tagged slots written live ⚠️ **supersedes four per-vendor claims in `vendor-scoping.md`**
 - [`docs/session-2026-08-09-buy-button-price-per-kg.md`](docs/session-2026-08-09-buy-button-price-per-kg.md) — Buy writes price/kg and links Ingredients directly
 - [`docs/session-2026-08-09-price-book.md`](docs/session-2026-08-09-price-book.md) — the price book replaces the baseline
 - [`docs/session-2026-08-03-extension.md`](docs/session-2026-08-03-extension.md) — the Chrome extension
@@ -241,6 +241,42 @@ Run it with `npm run tg-poll` (`--once` to drain and exit, `--no-push` to skip t
 commit/dispatch). It long-polls `getUpdates`, so it answers in about a second and
 costs nothing to leave running.
 
+⚠️ **This project has its own bot as of 2026-08-10: `@Grocery69_bot`.** It both
+sends the daily digest and serves the poller — one bot, both directions — and
+`TELEGRAM_BOT_TOKEN` alone configures it. `TELEGRAM_INBOX_BOT_TOKEN` exists for
+the case where the two roles need different bots and is normally **blank**;
+`config.telegramInboxBotToken()` falls back to the outbound token, and that
+fallback is the expected path, not a degraded one.
+
+⚠️ **Why it needed a bot of its own.** The project used to send through
+`@Big_Notion_Bot`, and that bot has a webhook pointing at the user's deployed
+Notion Worker (`.../telegramWebhook`) — the only way their calendar/notes bot
+receives anything. A bot can have a webhook **or** serve `getUpdates`, never
+both, so a poller on that token gets `409 Conflict: can't use getUpdates method
+while webhook is active` on every call and the chat simply looks dead: messages
+arrive, they go to Notion, and the poller sees nothing. Discovered the hard way
+on 2026-08-10 — "I wrote the list and nothing happened". **Sending** through a
+webhooked bot was always fine; only polling is refused.
+
+⚠️ **`deleteWebhook` is NOT the fix and must never be run on `@Big_Notion_Bot`.**
+It is the only delivery path the Notion Worker has, and removing it breaks that
+worker silently, in a different project.
+
+⚠️ **The GitHub Actions secret `TELEGRAM_BOT_TOKEN` is a separate copy** — the
+cloud sends the daily digest with whatever is stored there, not with `.env`. Move
+the two together or the digest arrives from a different bot depending on where
+the run happened. (Harmless, just confusing.)
+
+The chat id does not change between bots: `TELEGRAM_CHAT_ID` is positive, so it
+is a private chat, and a private chat's id **is** the user's Telegram user id —
+identical for every bot they talk to. A new bot still has to be **Started** once
+before it may message you first.
+
+`npm run tg-diag` answers "why isn't it seeing my messages" in one command:
+which bot the token belongs to, whether a webhook is stealing the updates, and
+what is queued. It is read-only and peeks at `offset: 0`, so it can never
+acknowledge a message the poller hasn't handled.
+
 - **Where the pieces are.** `list-parse.ts` (quantity grammar, pure),
   `list-intake.ts` (Ingredients reader + the three-way verdict),
   `tg-inbox.ts` (the loop, state, buttons), `new-items.ts` (shop scan + page),
@@ -317,9 +353,15 @@ works. Don't "simplify" this back to `run.ts`'s `STORES`.
 ⚠️ **It carries no Buy / Add / Replace buttons, and that is not an omission.** All
 three write through an `AddPayload`, which requires the id of an **existing**
 Ingredients page. A new item has none, and the alternative would be making that
-field optional across a live write path. The texted item is already on the grocery
-list by the time the page exists — the bot put it there — so the page's only job is
-to say where to buy it.
+field optional across a live write path.
+
+⚠️ **This section used to end "The texted item is already on the grocery list by
+the time the page exists — the bot put it there". THAT IS FALSE** (corrected
+2026-08-10 by reading the code). `handleMessage` writes a grocery-List row only
+for a `linked` verdict; a `new` item goes to `state.queue`, and `drainQueue`
+scans, texts a summary and publishes — it makes no Notion write at all. So a
+texted item the DB doesn't know gets priced on a page and appears on **no list**.
+Whether that changes, and how, is Remaining work 30.
 
 Hand-off is the Sheng Siong pattern exactly: the laptop writes
 `data/new-items-latest.json`, commits, pushes, and fires
@@ -1047,7 +1089,7 @@ GitHub Actions queueing on a free public repo, not a fault — but "it didn't ru
 is almost always "it hasn't run *yet*". **To land near 10:00 SGT the cron would
 have to be ~`30 22 * * *`** (the previous day). Not changed; the user's call.
 
-### ⚠️ The laptop runner scans into a doomed push when the network is late
+### ⚠️ The laptop runner scans into a doomed push when the network is late — FIXED 2026-08-10
 
 Real failure, 2026-08-05 07:23. `run.cmd` does `git pull` then `npm run push-ss`
 and **ignores the pull's exit code**:
@@ -1061,30 +1103,100 @@ The laptop had woken before DNS was up. The pull failed, the scan then ran fine
 was 12 commits behind. Today's Sheng Siong data sat stranded locally; the cloud
 build went FairPrice-only. Recovered by hand with `git pull --rebase && git push`.
 
-**Not yet fixed.** Two changes are wanted, neither made:
-1. `gitPush` in `push-shengsiong.ts` should rebase-and-retry on rejection — the
-   pattern `add-to-list.yml` already uses for cooldown pushes.
-2. `run.cmd` should not scan when the pull failed.
+**Both halves fixed 2026-08-10.**
+
+1. **`src/core/git-data-push.ts`** — `commitAndPushData()`, now used by *both*
+   residential writers (`push-shengsiong.ts` and `tg-poll.ts`, which had the
+   same bare `git push`). On rejection it takes the new remote wholesale
+   (`fetch` + `reset --hard`), writes the file's own bytes back over it,
+   re-commits and pushes again — 5 attempts.
+   ⚠️ **It is a whole-file re-apply, NOT `merge-data.ts`'s three-way merge, and
+   the two must not be unified.** These files are regenerated in full by the run
+   that writes them, so today's scan is the whole truth about today;
+   `cooldowns.json` / `purchases.json` accumulate entries from runs that never
+   see each other, which is the only reason that merge exists.
+   ⚠️ **A dirty clone vetoes the reset.** `tg-poll.ts` runs on the dev machine
+   (it needs `NOTION_TOKEN`), where the tree may hold real work — so anything
+   uncommitted that isn't the data file aborts the recovery with an error naming
+   the files. The scan is still committed locally; land it with
+   `git pull --rebase` by hand. Discarding a session's edits to save one page
+   build is not a trade a script gets to make.
+   ⚠️ **A failed `fetch` throws immediately** rather than burning the other four
+   attempts: that is no network or no credential, not a race, and the user needs
+   to see it.
+2. **`run.cmd` no longer scans when the pull failed.** It retries `git pull`
+   twice (20 s apart — a wake-up race is usually over in seconds), and if it
+   still fails, logs `NOT scanning` and exits 1 without starting a five-minute
+   scan into a network that isn't there. Uses `ping` for the wait, not
+   `timeout`, which needs a console Task Scheduler doesn't give it.
+   **The live `C:\Users\newuser\shengsiong-runner\run.cmd` and the repo's
+   `laptop-run.cmd` were both updated** — they must stay in step.
+
+`src/tests/git-data-push.test.ts` pins all of it against a real bare repo in the
+temp directory — the recovery, the dirty-clone veto, the offline fail-fast and
+both no-op cases. ⚠️ It is the **only** suite that shells out, and the only one
+with top-level `await`; `src/tests/run.ts` therefore imports it dynamically and
+last, or the other suites' `describe()` calls land inside its await windows and
+mislabel their own cases.
 
 ⚠️ **The Rescan button cannot help here.** It only renders inside the ⚠️ banner,
 which only appears when a shop is **missing from a build that happened**. "No
 build at all" has no button. Its absence on a healthy page is correct behaviour,
 not a bug — that confused the user on 2026-08-05.
 
-## Next session — pick up here (as of 2026-08-05)
+## Next session — pick up here (as of 2026-08-10, evening)
 
-### Uncommitted
+### Uncommitted — nothing from 2026-08-10 has been committed yet
 
-The whole 2026-08-05 vendor investigation: `src/core/browser-cdp.ts`,
-`src/core/marketplace-size.ts`, `src/scripts/vendor-probe.ts`,
-`src/tests/marketplace-size.test.ts`, `docs/vendor-scoping.md`, plus the
-`vendor-probe` line in `package.json` and one import in `src/tests/run.ts`.
-`npm run check` clean, **`npm test` 167 passing** (was 109). The tree is rebased
-onto `58ce49c`.
+```
+ M .env.example  CHANGELOG.md  HANDOVER.md  extension/README.md
+ M laptop-run.cmd  package.json  src/core/config.ts  src/core/telegram.ts
+ M src/scripts/push-shengsiong.ts  src/scripts/tg-poll.ts  src/tests/run.ts
+ M docs/session-2026-08-09-vendor-scan.md
+ ?? src/core/git-data-push.ts  src/scripts/tg-diag.ts  src/tests/git-data-push.test.ts
+```
 
-Everything the previous handover listed as uncommitted **is now committed and
-pushed**, the orphaned worktree is gone, and `CHANGELOG.md` / `extension/README.md`
-have caught up. Old item 18 is closed.
+Two unrelated pieces of work sit in the same tree and should be committed
+**separately**:
+
+1. **The runner-push fix** (Remaining work 22, done) — `git-data-push.ts`,
+   `git-data-push.test.ts`, `push-shengsiong.ts`, `tg-poll.ts`'s `gitPush`,
+   `laptop-run.cmd`, `src/tests/run.ts`.
+2. **The inbox bot switch** — `.env.example`, `config.ts`, `telegram.ts`,
+   `tg-diag.ts`, `package.json`, and this file.
+
+`npm run check` clean, **`npm test` 508 passing** (was 496 at the start of the
+day; 376 in the last handover).
+
+⚠️ **The live `C:\Users\newuser\shengsiong-runner\run.cmd` was edited too**, and
+git does not see it. If `laptop-run.cmd` is ever reverted, revert that by hand as
+well or the two drift.
+
+### What 2026-08-10 (evening) actually did
+
+- **Remaining work 22 — fixed** (see "Infrastructure truths"). The highest-value
+  item on the list; the runner could previously scan perfectly and lose the data.
+- **Remaining work 23 — found already fixed** by the 2026-08-09 price book, in
+  both writers. Only the docs still described the bug.
+- **This project now has its own Telegram bot, `@Grocery69_bot`** — it sends the
+  digest and serves the poller. `.env` and the GitHub Actions secret
+  `TELEGRAM_BOT_TOKEN` both hold it (secret updated 2026-08-10 12:13 UTC).
+  `TELEGRAM_INBOX_BOT_TOKEN` is deliberately **blank**; the fallback in
+  `config.ts` is the normal path now. `@Big_Notion_Bot` is untouched.
+- **The inbox ran live, end to end, for the first time.** `/start` answered, a
+  real texted list parsed, matched, and written to the grocery List, and two
+  near-misses asked with buttons. It works — and it turned up the three faults
+  below, which are Remaining work 28–30.
+
+### First real use — what it exposed
+
+⚠️ **Read these three together before touching `tg-inbox.ts`.** All three are the
+same family: the flow *looks* like it worked.
+
+1. A tie between two equally-good rows is invisible (28).
+2. A tap that arrives with nothing polling is acknowledged and thrown away (29).
+3. An item ruled "new" is priced on a page but never reaches the grocery list
+   (30) — and this file claimed the opposite until today.
 
 ### The three-item macro plan
 
@@ -1248,6 +1360,12 @@ Measured over 94 rows: `Price,SGD` 71/94, `Vendor, Current ` **7/94**, `Vendor 1
 52/94, and `Price [Vendor n]` / `Size[Vendor n]` **0/94 — never filled, ever**.
 Filling the price book is the point of the feature.
 
+⚠️ **That last figure is the *before* picture and is now out of date.** Add/Replace fill a
+slot on every tap (2026-08-09), and `npm run vendor-scan` fills them automatically for the
+shops a row tags — 7 slots written on 2026-08-10 across Guardian, MyProtein and Carousell.
+The census is also stale: re-count before quoting it. See
+[`docs/session-2026-08-09-vendor-scan.md`](docs/session-2026-08-09-vendor-scan.md).
+
 Rules for any writer:
 1. **Match the vendor by NAME to find the index.** The mapping is per-row —
    `Vendor 1` is Shopee on `Whey [Titan]` and Watsons on the CereVe lotion.
@@ -1259,10 +1377,13 @@ Rules for any writer:
 the *open* slot (Google, Amazon), and an undirected search has no fixed shop to
 link. Do not add the property.
 
-⚠️ **A live bug, not yet fixed:** `ingredient-write.ts:107` writes the captured
-product's URL into `Vendor 1 URL` unconditionally — the slot belonging to whatever
-shop `Vendor 1` names. Capture from Guardian and a Guardian URL lands in the
-Watsons slot. 52 rows are exposed. Both writers (extension *Add*, page *Add*).
+⚠️ ~~**A live bug:** `ingredient-write.ts:107` writes the captured product's URL
+into `Vendor 1 URL` unconditionally~~ — **fixed by the price book itself**
+(2026-08-09), confirmed 2026-08-10 in both writers. `Vendor 1 URL` no longer
+exists; every capture resolves its slot by matching the shop's NAME against the
+row's own `Vendor 1..4` tags and writes `URL [Vendor n]`, so there is no fixed
+index left to misfile into. `ingredient-write.ts` and the extension's
+`notion-client.js` both route through `vendor-slots.ts` for this.
 
 ### Searches must be DIRECTED
 
@@ -1366,7 +1487,7 @@ Both made a bad deal look good — the same family as the 32 g serving read as 1
   names the shop — never claims a free slot, never evicts, never writes
   `Unit type `. Carousell opens a real Chrome window.
 - `npm run check` — typecheck.
-- `npm test` — **376** offline cases (`src/tests/`). Free, fast, no network.
+- `npm test` — **508** offline cases (`src/tests/`). Free, fast, no network.
 
 ## Key technical facts (details in LEARNINGS.md)
 
@@ -1526,12 +1647,16 @@ exactly the case that motivated the rule.
     deals are chosen — a couple of dozen products, not the 1,100-odd the scan
     returns — deduped by key and wrapped so a failure can never stop the page
     building.
-22. **Fix the runner's push (2026-08-05).** Rebase-and-retry in `gitPush`, and
-    stop `run.cmd` scanning when `git pull` failed. See "Infrastructure truths".
-    **This is the highest-value item here — it protects the live system.**
-23. **Fix the `Vendor 1 URL` misfile** (`ingredient-write.ts:107`) — writes the
-    captured URL into slot 1 whatever shop `Vendor 1` names. 52 rows exposed.
-    Small and self-contained.
+22. ~~Fix the runner's push (2026-08-05)~~ **done** 2026-08-10 —
+    `src/core/git-data-push.ts` re-applies and retries a rejected push (for
+    `tg-poll.ts` as well as `push-shengsiong.ts`), and `run.cmd` now refuses to
+    scan when `git pull` failed. Full story and the three warnings in
+    "Infrastructure truths".
+23. ~~Fix the `Vendor 1 URL` misfile~~ **already done** — closed by the
+    2026-08-09 price book, verified 2026-08-10. Both writers resolve the slot
+    from the row's own `Vendor n` tags and write `URL [Vendor n]`; the column the
+    bug wrote to no longer exists. `extension/README.md` still described the old
+    flat columns and was corrected at the same time.
 24. **Decide the category→vendor routing** (see the vendor section). The one with
     the most upside: `Suppliments` is 30 rows the scan has never looked at.
 25. **Correct the documented schedule**, or move the cron. Everything says 10:00
@@ -1540,6 +1665,108 @@ exactly the case that motivated the rule.
     mechanically but found nothing cheaper than the baseline. Probe more items
     first — `npm run vendor-probe` is free.
 27. **Shopee needs a one-time hand sign-in** before it can be probed at all.
+28. **⚠️ The ask is a yes/no on ONE guess; it should offer every candidate.**
+    *(Asked for by the user, 2026-08-10, after texting `1 x milk` and having it
+    linked silently.)*
+
+    Measured against the live DB that evening — this is a tie, not a
+    near-miss:
+
+    ```
+    "milk"    LINK  1.000  Milk (Low Fat)
+              LINK  1.000  Milk ( Normal)
+    "eggs"    LINK  1.000  egg  (Omega 3 Enriched) (550g)
+              LINK  1.000  Eggs, Whole, small, {cheap}
+    "chicken" LINK  0.850  Chicken thigh, Boneless  [Seara]
+              LINK  0.800  chicken soup cube
+    ```
+
+    ⚠️ **`bestRow` returns the single highest scorer and keeps the FIRST on a
+    tie**, so `1 x milk` linked to `Milk (Low Fat)` only because Notion returned
+    that row earlier. Reorder the query and the same text files against
+    `Milk ( Normal)`. `decideItem` then sees 1.000, clears `ACCEPT` and never
+    asks.
+
+    ⚠️ **The bug is the QUESTION, not the threshold.** The rule asks "is the best
+    match good enough?"; what decides whether to ask is "is there only one?".
+    Those come apart precisely on the short generic words people actually text.
+    Lowering `ACCEPT` would not fix it — 1.000 beats any threshold — and would
+    make every confident single match nag.
+
+    **Wanted:** `bestRow` returns the ranked list, not one row; when the runners-up
+    are within a small margin of the top (a tie certainly, and probably ~0.05),
+    ask **which one** with one button per candidate rather than ✅/🆕.
+
+29. **⚠️ A button tap can be acknowledged and thrown away.** Seen live on
+    2026-08-10:
+
+    ```
+    update 523965592 failed: answerCallbackQuery HTTP 400:
+      "Bad Request: query is too old and response timeout expired…"
+    ```
+
+    `handleCallback` awaits `answerCallback(cb.id)` — which only stops Telegram's
+    spinner — **before** deleting the pending entry and doing the write. The user
+    tapped while no poller was running; by the time one started the query id had
+    expired, the await threw, and the handler aborted before writing anything.
+    `pumpOnce` caught it, logged one line to a console nobody was watching, and
+    **still advanced the offset**, so the tap was consumed and the answer lost.
+
+    **Wanted:** clearing the spinner is cosmetic and must never gate the work —
+    wrap it in its own try/catch and carry on. Then decide, separately, whether a
+    handler that throws should advance the offset at all (a failed Notion write is
+    currently dropped just as silently).
+
+30. **⚠️ A "new" item never reaches the grocery List, and this file said it did.**
+    `handleMessage` writes a row only for `verdict === "linked"`; `"new"` items go
+    to `state.queue`, and `drainQueue` scans the shops, texts a summary and
+    publishes `new-items.html` — **no Notion write anywhere in that path**. The
+    `new-items.html` section above used to claim "The texted item is already on
+    the grocery list by the time the page exists — the bot put it there". It does
+    not. Corrected 2026-08-10.
+
+    So today, texting something you don't already stock gets you a price
+    comparison on a web page and **nothing on the list you shop from**.
+
+    **What the user asked for (2026-08-10) — replace the single 🆕 with TWO
+    buttons**, so the ask offers: the candidate rows (item 28), plus
+
+    - **`No — re-search`** — look again for another similar product and **send a
+      new message** with the option(s) found.
+      ⚠️ **Ambiguous as stated: re-search WHAT?** Either (a) the Ingredients DB,
+      excluding the rows already rejected, offering the next tranche, or (b) the
+      shops. Read in context — it sits beside "new item", and item 28 is about
+      offering more rows — (a) is the likely reading. **Confirm before building.**
+    - **`New item — create in Ingredients`** — create the Ingredients row itself
+      (not just price it), and while creating:
+      - set `Catagory` to the right category — `categorize()` already guesses one
+        and `createIngredient` already validates it against the live options;
+      - set `Unit type ` to whatever suits the item (`By Gram` / `By ml` /
+        `By Unit`) — the texted quantity usually says which (`2L` → By ml, `1kg` →
+        By Gram, `x6` → By Unit), and `fieldsFromPurchase` already does this
+        inference for the history page;
+      - **prefix the `Name` with `(New)`** so it stands out as unreviewed.
+
+    ⚠️ **`(New)` collides head-on with the bracket standard, and silently.**
+    `parseName` reads `( )` as a **defining property — a hard requirement on the
+    product title**. A row called `(New) Harissa Paste` would demand the word
+    "new" in every candidate, match nothing at either shop, and appear in no
+    section of the deals page — while looking perfectly fine in Notion. Three ways
+    out, and this is the user's call:
+    1. use `{New}` instead — braces are the "ignored" bracket, excluded from the
+       search term *and* from every matching decision, which is exactly this job;
+    2. keep `(New)` and add an explicit exemption for it in `parse.ts`;
+    3. keep `(New)` and accept the row isn't scanned until the prefix is removed
+       by hand — which may in fact be the point of marking it.
+
+    ⚠️ Creating a row is the one action here with no undo and it writes to a live
+    personal workspace, so it should confirm, the way *Not in use* and *Replace*
+    do. It must also obey the standing rule: **never create Notion schema** — an
+    unknown `Catagory` option is dropped with a warning, never added.
+
+    ⚠️ The user's list ended with an **empty third bullet**, so a third button may
+    have been intended and not written down. Ask.
+
 20. ~~`Household Supplies` is being searched, and probably should not be~~
     **superseded by routing** (item 24) — it is not excluded, it is asked at a
     pharmacy instead. Original note follows.

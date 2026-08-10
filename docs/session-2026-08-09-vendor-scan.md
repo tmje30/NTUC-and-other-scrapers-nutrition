@@ -1,13 +1,27 @@
-# Session handover — the price book fills itself, 2026-08-09
+# Session handover — the price book fills itself, 2026-08-09/10
 
 The first writer in this project that goes and looks by itself. Everything else — the
 deals page's Add/Replace, the Chrome extension, the history page — is a button pressed by
 someone already looking at one matched product. This one searches the shops each
 Ingredients row names in `Vendor 1..4` and records what they charge.
 
-Kept because most of this is *why*, and because **four things the older docs assert about
-these sites turned out to be false**. Those are in their own section; if you read nothing
-else, read that one.
+## Status: working, live, 7 of 9 slots filled
+
+`npm run vendor-scan` — **report-only by default**, `--write` records. Guardian, MyProtein
+and Carousell are built and proven against the live database. The two unfilled slots are
+correct refusals, not failures, and are explained below.
+
+**Read these three sections first, whatever else you skip:**
+
+1. *"Four things the docs get wrong about these sites"* — the older `vendor-scoping.md`
+   is confidently wrong about Guardian and Carousell, in ways that cost hours.
+2. *"The bug that would have been invisible"* — Carousell's slug eats decimal points, so
+   2.5 kg reads as 5 kg and halves the apparent price per kg.
+3. *"The false diagnosis this nearly shipped with"* — the one worth carrying to other
+   work: a parser that maps "absent" and "negative" to the same value makes every
+   conclusion about *reliability* unfounded.
+
+Kept because most of this is *why*, which a diff cannot tell you.
 
 ---
 
@@ -275,64 +289,105 @@ gainer row still matches. This protects the daily FairPrice/Sheng Siong scan too
 
 ## What was written, live
 
-`npm run vendor-scan -- --write`, 6 of 9 tagged slots filled, 0 failures, read back from
-Notion afterwards:
+`npm run vendor-scan -- --write`. **7 of 9 tagged slots filled, 0 failures**, every one read
+back from Notion afterwards:
 
-| row | shop | price / size |
-| --- | --- | --- |
-| AM facial moisturizing lotion (SPF30) [cerave] | Guardian | $23.90 / 52 ml |
-| Toothpaste - Multi Care [Sensodyne] | Guardian | $7.55 / 100 g |
-| Clinical White - Enamel Strengthening | Guardian | $13.00 / 100 g |
-| Toothpaste - Repair & Protect [Sensodyne] | Guardian | $8.65 / 100 g |
-| Whey [Titan] | Carousell | $60.00 / 2100 g |
-| whey, essential [MyProtein] | Carousell | $85.00 / 2500 g |
+| row | shop | price / size | $/100g |
+| --- | --- | --- | --: |
+| AM facial moisturizing lotion (SPF30) [cerave] | Guardian | $23.90 / 52 ml | 45.96 |
+| Toothpaste - Multi Care [Sensodyne] | Guardian | $7.55 / 100 g | 7.55 |
+| Clinical White - Enamel Strengthening | Guardian | $13.00 / 100 g | 13.00 |
+| Toothpaste - Repair & Protect [Sensodyne] | Guardian | $8.65 / 100 g | 8.65 |
+| Whey [Titan] | Carousell | $60.00 / 2100 g | 2.86 |
+| whey, essential [MyProtein] | Carousell | $85.00 / 2500 g | 3.40 |
+| whey, essential [MyProtein] | My Protein | $190.02 / 2500 g | 7.60 |
+
+Each write sets four columns for that slot: `Price`, `Size`, `URL` and `item Name`.
 
 **The user renamed one row through this tool**: `AM facial moisturizing lotion [cerave]` →
 `… (SPF30) [cerave]`, to pin SPF30 as a defining property. ⚠️ It must be written
 **`(SPF30)`, no space** — `(SPF 30)` matches neither SPF30 nor SPF50, since the property
 folds to the token "spf 30" which no title contains.
 
-### The three that correctly wrote nothing
+### The two that correctly wrote nothing
 
-- **`Sensitivity & Gum Toothpaste - Original`** — Guardian *does* stock it at $8.65, but
-  the listing never says "Original", so `evaluate` holds it at REVIEW. This is the trust
-  rule working; forcing it would be a guess. **A user decision**: either accept the
-  listing by hand, or rename the row if "Original" is not actually required.
-- **`whey [Atlas]`** — Carousell has no Atlas whey. Honest miss.
-- **`whey, essential [MyProtein]` at MyProtein** — every in-stock variant with a stated
-  weight is a *flavoured Diet Whey*, which the basic-range rule excludes (a bare name means
-  the plain range). ⚠️ Note `parseName` drops "essential" after the comma, so the row reads
-  as plain "whey". If MyProtein's Essential range is what is wanted, the row wants
-  `Whey (Essential) [MyProtein]` — a Notion edit, not code.
+- **`Sensitivity & Gum Toothpaste - Original`** — Guardian *does* stock it at $8.65
+  ("Sensodyne Sensitivity & Gum, 100g"), but no listing says **"Original"**, so `evaluate`
+  holds every candidate at REVIEW. This is the trust rule working; forcing it would be a
+  guess. **Still a user decision**: accept the listing by hand, or drop "- Original" from
+  the row name if it is not actually a requirement.
+- **`whey [Atlas]`** — Carousell has no Atlas whey. Honest miss, and the row is left alone.
 
 ---
 
+### ⚠️ Two Notion-side naming traps, both hit in this session
+
+Both cost a wrong answer before they were understood, and both are edits to the row's
+`Name`, not code:
+
+1. **A defining property must be written `(SPF30)` — no space.** The CeraVe row was renamed
+   to `AM facial moisturizing lotion (SPF30) [cerave]` to pin SPF30, and it works: SPF30
+   accepts, SPF50 drops to review. ⚠️ **`(SPF 30)` matches NEITHER**, because the property
+   folds to the token "spf 30" and no shop title contains that.
+2. **A clause after a comma is silently discarded.** `parseName("whey, essential
+   [MyProtein]")` yields `searchTerm: "whey"` — "essential" survives in neither `mustMatch`
+   nor `properties` nor `ignored`. That is why MyProtein was asked for "myprotein whey" and
+   returned *Impact Diet Whey*. Handled in code now (the row's own words are a fallback
+   search term), but a row wanting a hard requirement should say `Whey (Essential)
+   [MyProtein]` rather than relying on the comma.
+
 ## Still outstanding
 
-1. **Nothing is scheduled.** `vendor-scan` is manual. Whether it should join the daily job
-   is undecided — these prices move far more slowly than supermarket promotions, and each
-   Carousell run opens a real Chrome window.
-2. **Carousell needs a HEADED browser** (headless renders zero cards — detected), so it
-   cannot run in the cloud as-is. Guardian and MyProtein are plain `fetch` and could.
-3. **`settleMs` for Carousell is 12 s**; 7 s was measured as not enough and produced an
-   empty harvest, which reads downstream exactly like "this shop has nothing". The module
-   now throws on an empty harvest rather than reporting no stock.
-4. **`vendor-probe.ts` still probes Guardian's dead `/catalogsearch/` URL** and still
-   describes Carousell's `itemCondition` as reliable. It is a diagnostic, not part of the
-   scan, but it will mislead the next person.
-5. **`docs/vendor-scoping.md` has not been rewritten** — its routing advice stands, but
-   its per-vendor verdicts for these three are now superseded by this file.
-6. **The other tagged shops are untouched**: Watsons (5), Iherb (5), Shopee (3),
-   Google Search (3), and **Sheng Siong (58 rows tagged, 0 priced)**.
+**Unproven, in the order it would bite:**
+
+1. ⚠️ **The reputation rescue has never fired inside a scan.** No under-floor candidate has
+   arisen in any run — every match sat above the floor — so the *branch in
+   `vendor-scan.ts` that calls it* is covered by unit tests only. The **lookup itself is
+   proven** (4/4 live, table above); it is the wiring that is untested.
+2. **Nothing is scheduled.** `vendor-scan` is manual, and deliberately so far: these prices
+   move far more slowly than supermarket promotions, and every Carousell run opens a real
+   Chrome window on the user's desktop.
+3. **Carousell cannot run in the cloud.** It needs a **headed** browser — headless renders
+   zero cards and is detected. Guardian and MyProtein are plain `fetch` and could run
+   anywhere, so a cloud schedule would have to be split by vendor.
+
+**Known-stale, will mislead the next person:**
+
+4. **`vendor-probe.ts` is out of date for two of the three shops.** It still probes
+   Guardian's dead `/catalogsearch/` URL and still describes Carousell's `itemCondition` as
+   a reliable filter. It is a diagnostic, not part of the scan, but it reads authoritative.
+5. **`docs/vendor-scoping.md`** keeps its routing advice; its per-vendor verdicts and its
+   census are superseded by this file (it now carries a banner saying so).
+
+**Not attempted:**
+
+6. **The other tagged shops**: Watsons (5 rows), Iherb (5), Shopee (3), Google Search (3),
+   and **Sheng Siong — 58 rows tagged, 0 priced**. The last is the biggest single gap in
+   the price book and is *not* a scraping problem: the daily scan already reads Sheng Siong,
+   it simply never writes what it finds into the slots.
+7. **`Catagory`-based routing** (`Suppliments`→iHerb/MyProtein, `Household Supplies`→
+   Watsons/Guardian) from `vendor-scoping.md` is NOT implemented. This build is
+   **tag-directed only** — a shop is asked only for a row that names it. That table was
+   explicitly the doc author's proposal rather than the user's data, and adopting it would
+   multiply both the row count and the traffic.
 
 ## Files
 
 | file | why |
 | --- | --- |
-| `src/core/vendor-scan.ts` | the reader, the routing, and the two gates |
-| `src/scripts/vendor-scan.ts` | the CLI, the report, and the `--write` path |
+| `src/core/vendor-scan.ts` | the reader, the routing, the gates, the reputation bar |
+| `src/scripts/vendor-scan.ts` | the CLI, the report, the rescue, the `--write` path |
 | `src/core/stores/guardian.ts` | GraphQL; read the header before touching the URL |
 | `src/core/stores/myprotein.ts` | why a variant without a weight is dropped |
-| `src/core/stores/carousell.ts` | the missing `s`, the slug decimal, the condition badge |
+| `src/core/stores/carousell.ts` | the missing `s`, the slug decimal, the badge, the handle |
 | `src/core/ingredient-write.ts` → `recordVendorPrice` | update-only, slot-columns-only |
-| `src/tests/carousell.test.ts`, `src/tests/vendor-scan.test.ts` | 42 cases over exactly the silent failures above |
+| `src/tests/carousell.test.ts`, `src/tests/vendor-scan.test.ts` | ~60 cases over exactly the silent failures above |
+
+## Commands
+
+```bash
+npm run vendor-scan                          # report only — writes NOTHING
+npm run vendor-scan -- --only guardian       # one shop
+npm run vendor-scan -- --write               # record the prices
+npm test                                     # 496 offline cases, free, no network
+```

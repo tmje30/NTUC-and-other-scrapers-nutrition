@@ -32,7 +32,34 @@ All notable changes to this project are documented here. Format based on
   `data/new-items-latest.json`, `repository_dispatch: newitems` rebuilds Pages,
   and a stale file is skipped rather than published.
 
+### Changed
+- **This project has its own Telegram bot (2026-08-10): `@Grocery69_bot`.** It
+  both sends the daily digest and serves the inbox poller, so `@Big_Notion_Bot`
+  goes back to being only the Notion Worker's — no shared bot, no chance of one
+  project's webhook breaking the other's polling. `TELEGRAM_BOT_TOKEN` (in `.env`
+  and as the Actions secret) is the only variable needed;
+  `TELEGRAM_INBOX_BOT_TOKEN` stays blank and `config.telegramInboxBotToken()`'s
+  fallback is now the normal path, not a degraded one. The chat id is unchanged —
+  a private chat's id is the user's own user id, the same for every bot.
+
 ### Fixed
+- **A good scan could be pushed nowhere and nobody would know (2026-08-10).** On
+  2026-08-05 the laptop woke before DNS was up; `run.cmd` ignored the failed
+  `git pull`, the scan ran perfectly (58 terms, 0 errors), and the push was
+  rejected for being 12 commits behind — the day's Sheng Siong data sat stranded
+  locally while the cloud built FairPrice-only. New `src/core/git-data-push.ts`
+  re-applies the file onto the fetched remote and retries (5 attempts), used by
+  **both** residential writers — `push-shengsiong.ts` and `tg-poll.ts`, which
+  carried the same bare `git push`. It is a whole-file re-apply, deliberately not
+  `merge-data.ts`'s three-way merge: these files are regenerated in full each
+  run, unlike the cooldown/purchase lists that merge exists for. A clone holding
+  any *other* uncommitted change refuses the working-tree reset and says so —
+  `tg-poll` runs on the dev machine. A failed `fetch` throws at once instead of
+  retrying, because that is no network, not a race. `run.cmd` (live and the
+  `laptop-run.cmd` copy) now retries the pull twice and, if it still fails, logs
+  `NOT scanning` and exits 1 rather than starting a five-minute scan.
+  `src/tests/git-data-push.test.ts` drives real git against a temp bare repo:
+  12 cases, still offline and free.
 - **New-item pricing was silently missing Sheng Siong.** `scanNewItems` reused
   `run.ts`'s `STORES`, which defaults to `shengsiong-file` — a reader that answers
   only the terms in that day's committed scan. A new item's term is never among

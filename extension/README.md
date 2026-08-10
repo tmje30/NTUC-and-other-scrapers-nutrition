@@ -38,19 +38,42 @@ information the user has to *notice* to fix. Two consequences worth knowing:
 
 ## What else gets written
 
+⚠️ **Where the price goes changed on 2026-08-09.** A capture used to write flat
+columns — `Price,SGD`, `Weight /Units of New Product `, `Vendor, Current `,
+`Vendor 1 URL`. Those are retired (the first no longer exists; the others are
+renamed `… - Delete? `), and the row's price is now a **formula over the price
+book**. So a capture claims one `Vendor n` **slot** and fills that slot's four
+columns. The rules live in `src/core/vendor-slots.ts` and are shared with the
+deals and history pages, so all three doors into Ingredients agree.
+
 | Property | From |
 |---|---|
-| `Price,SGD` | the page price |
-| `Weight /Units of New Product ` | the pack size — grams, ml, or a piece count |
-| `Unit type ` | what that size **is**: `By Gram` / `By ml` / `By Unit` |
+| `Vendor n` | the shop (`fairprice.com.sg` → `NTUC`), matched to a **live** select option |
+| `Price [Vendor n]` | the page price |
+| `Size[Vendor n]` | the pack size — grams, ml, or a piece count |
+| `URL [Vendor n]` | the product page, so a re-visit is recognised as already added |
+| `item Name [Vendor n]` | what this shop calls the product |
+| `Unit type ` | what that size **is**: `By Gram` / `By ml` / `By Unit` (row-level) |
 | `Catagory` | keyword guess (`src/core/categorize.ts`), matched to a **live** option |
-| `Vendor, Current ` | the shop (`fairprice.com.sg` → `NTUC`) |
-| `Vendor 1 URL` | the product page, so a re-visit is recognised as already added |
 
-**Replace** writes the same fields except the URL, and touches **nothing else** — nutrition figures, plan
-formulas, `Select` tags and relations are the user's own work and have nothing to do with which shop a price
-came from. It includes `Items Exact Name` on purpose: the row now describes a different physical product, so
-leaving the old exact name would label it as something it is not.
+⚠️ **Which `n` is a fact about the ROW, never a fixed number.** The slot is found
+by matching the shop's name against the `Vendor 1..4` tags already on the row —
+`Vendor 1` is Shopee on one ingredient and Watsons on another. Writing the
+captured URL into slot 1 regardless is a real bug this code used to have: capture
+from Guardian and a Guardian link landed under the Watsons tag. A brand-new row
+does land in `Vendor 1`, but only because all four slots are empty and the shared
+rule picks the first free one.
+
+⚠️ **An unrecognised shop writes no price at all.** `Vendor n` is a select, so an
+unknown name would make Notion *invent* the option — a schema edit to a live
+personal workspace. Cold Storage, Giant and RedMart are real shops with no option
+today: the capture still creates the row, and says the price was skipped.
+
+**Replace** writes the same slot and touches **nothing else** — nutrition figures,
+plan formulas, `Select` tags and relations are the user's own work and have
+nothing to do with which shop a price came from. It includes `Items Exact Name` on
+purpose: the row now describes a different physical product, so leaving the old
+exact name would label it as something it is not.
 
 ## Nutrition
 
