@@ -28,6 +28,9 @@ import type { StoreModule, StoreProduct } from "./stores/types.js";
 import { guardian } from "./stores/guardian.js";
 import { myprotein } from "./stores/myprotein.js";
 import { carousell } from "./stores/carousell.js";
+import { fairprice } from "./stores/fairprice.js";
+import { shengsiong } from "./stores/shengsiong.js";
+import { shengsiongFile } from "./stores/shengsiong-file.js";
 
 /**
  * Fill the price book by asking the shops each row already names in `Vendor 1..4`.
@@ -68,7 +71,28 @@ export interface VendorRoute {
 	marketplace: boolean;
 }
 
+/**
+ * The same switch the daily scan uses (`run.ts`). Sheng Siong blocks datacenter IPs, so
+ * the cloud reads the residential runner's committed file and only a local run with
+ * `SHENGSIONG_LIVE=1` hits the live API. Two surfaces that can disagree about which
+ * module a shop means is how one of them quietly stops seeing that shop.
+ */
+const ss = process.env.SHENGSIONG_LIVE === "1" ? shengsiong : shengsiongFile;
+
+/**
+ * ⚠️ **`option` must be the live `Vendor n` select option, not the shop's own name.**
+ * `matchVendorOption` compares exactly (normalised), so the supermarket whose module is
+ * called `fairprice` is routed as **"NTUC"** — which is what the database says.
+ *
+ * NTUC and Sheng Siong are here even though the daily deals scan already searches them,
+ * and that is the point: it searched them every day and threw the prices away. Measured
+ * 2026-08-11, before this line existed: 49 rows name Sheng Siong and **not one of them
+ * had a price recorded**, against 57 for NTUC. The shop the runner scrapes daily was the
+ * biggest hole in the price book.
+ */
 export const ROUTES: VendorRoute[] = [
+	{ option: "NTUC", module: fairprice, marketplace: false },
+	{ option: "Sheng Siong", module: ss, marketplace: false },
 	{ option: "Guardian", module: guardian, marketplace: false },
 	{ option: "My Protein", module: myprotein, marketplace: false },
 	{ option: "Carousell", module: carousell, marketplace: true },

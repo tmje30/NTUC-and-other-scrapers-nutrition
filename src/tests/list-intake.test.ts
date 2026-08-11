@@ -31,10 +31,10 @@ const row = (name: string, extra: Partial<IngredientRow> = {}): IngredientRow =>
 
 const ROWS: IngredientRow[] = [
 	row("Peanut Butter Spread [Skippy] {Creamy}", {
-		price: { sgd: 8.2, size: 500, vendor: "NTUC", per1000: 16.4 },
+		price: { sgd: 8.2, size: 500, vendor: "NTUC", per1000: 16.4, perPiece: null },
 	}),
-	row("Milk (Normal)", { price: { sgd: 3.1, size: 1000, vendor: "NTUC", per1000: 3.1 } }),
-	row("Chicken Breast", { price: { sgd: 11.9, size: 1000, vendor: "Sheng Siong", per1000: 11.9 } }),
+	row("Milk (Normal)", { price: { sgd: 3.1, size: 1000, vendor: "NTUC", per1000: 3.1, perPiece: null } }),
+	row("Chicken Breast", { price: { sgd: 11.9, size: 1000, vendor: "Sheng Siong", per1000: 11.9, perPiece: null } }),
 	row("Onion (White)"),
 ];
 
@@ -94,13 +94,13 @@ eq(
 // A By-ml row is priced per litre — the same figure, the honest unit.
 eq(
 	"a By-ml row says /L",
-	pricePerKgLabelFor(row("Oil", { unitType: "By ml", price: { sgd: 5, size: 1000, vendor: "NTUC", per1000: 5 } })),
+	pricePerKgLabelFor(row("Oil", { unitType: "By ml", price: { sgd: 5, size: 1000, vendor: "NTUC", per1000: 5, perPiece: null } })),
 	"$5.00/L",
 );
 // No price book, no label — never a fabricated $0.00/kg.
 eq("an unpriced row gives no label", pricePerKgLabelFor(row("Onion (White)")), undefined);
 eq(
 	"a priced row with no size gives no label",
-	pricePerKgLabelFor(row("Salt", { price: { sgd: 2, size: null, vendor: "NTUC", per1000: null } })),
+	pricePerKgLabelFor(row("Salt", { price: { sgd: 2, size: null, vendor: "NTUC", per1000: null, perPiece: null } })),
 	undefined,
 );

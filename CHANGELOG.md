@@ -19,6 +19,17 @@ All notable changes to this project are documented here. Format based on
   30: a new item used to be priced on a web page and reach no list at all.
   The new row is marked **`{New}`** — braces, the ignored bracket; `(New)` would
   be read as a defining property and match nothing at any shop.
+- **A counted row's price per kg comes from its WEIGHT, not its count
+  (2026-08-11).** Caught by reading the live grocery list back: a $3.99 box of ten
+  eggs had been filed as **$399.00/kg** — `Size[Vendor n]` is a piece count on a
+  By-Unit row and the sum divided by it as if it were grams. New `packWeightOf()`
+  in `notion.ts` is now the single rule for what a pack weighs (row `Name`, then
+  the cheapest slot's `Item Name [Vendor n]`, then null), shared by
+  `readGroceryTargets` and `readIngredientRows` so the deal comparison and the
+  texted list cannot drift. The eggs row now reads **$7.25/kg**; a counted row
+  with no stated weight quotes **per piece** (`$0.40/pc`) instead of nothing.
+  ⚠️ Notion's own `Cheapest Price/Kg ` formula was never wrong — it prints
+  `3.99 /10 pc` on these rows. The bad figure was ours.
 - **Every inbox question carries `✖️ Cancel — typo` (2026-08-11, on request).**
   Forgets the line entirely: it leaves the pricing queue and nothing is written.
   Safe precisely because nothing had been written yet — a near-miss is only

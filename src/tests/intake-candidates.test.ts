@@ -10,6 +10,7 @@ import {
 import { parseItem } from "../core/list-parse.js";
 import { askKeyboard, newIngredientFields, unitTypeFor } from "../core/tg-inbox.js";
 import { parseName } from "../core/parse.js";
+import { packWeightOf } from "../core/notion.js";
 import { check, describe, eq } from "./harness.js";
 
 /**
@@ -122,19 +123,50 @@ describe("texted list — a piece count is not a weight");
  * Wrong by a factor of a hundred-odd, and the worst shape of wrong: nothing is
  * missing, so nothing prompts anyone to check it.
  */
-const priced = (unitType: IngredientRow["unitType"], sgd: number, size: number, per1000: number | null) => ({
+const priced = (
+	unitType: IngredientRow["unitType"],
+	sgd: number,
+	size: number,
+	extra: { per1000?: number | null; perPiece?: number | null } = {},
+): IngredientRow => ({
 	...row("Eggs"),
 	unitType,
-	price: { sgd, size, vendor: "NTUC", per1000 },
+	price: { sgd, size, vendor: "NTUC", per1000: extra.per1000 ?? null, perPiece: extra.perPiece ?? null },
 });
 
+// The real box: $3.99 for 10, and "(550g)" in the row's own name.
 eq(
-	"⚠️ a counted row quotes no price per kg",
-	pricePerKgLabelFor(priced("By Unit", 3.99, 10, 399)),
-	undefined,
+	"⚠️ a counted row quotes its WEIGHT-based price, not its count-based one",
+	pricePerKgLabelFor(priced("By Unit", 3.99, 10, { per1000: (3.99 / 550) * 1000, perPiece: 0.399 })),
+	"$7.25/kg",
 );
-eq("a weighed row still does", pricePerKgLabelFor(priced("By Gram", 8.2, 500, 16.4)), "$16.40/kg");
-eq("and a litre row says litres", pricePerKgLabelFor(priced("By ml", 3.33, 1000, 3.33)), "$3.33/L");
+eq(
+	"…and per piece when nothing states a weight",
+	pricePerKgLabelFor(priced("By Unit", 3.99, 10, { perPiece: 0.399 })),
+	"$0.40/pc",
+);
+check(
+	"⚠️ never the count-as-grams answer that produced $399.00/kg",
+	pricePerKgLabelFor(priced("By Unit", 3.99, 10, { perPiece: 0.399 })) !== "$399.00/kg",
+);
+eq("a weighed row is unchanged", pricePerKgLabelFor(priced("By Gram", 8.2, 500, { per1000: 16.4 })), "$16.40/kg");
+eq("and a litre row says litres", pricePerKgLabelFor(priced("By ml", 3.33, 1000, { per1000: 3.33 })), "$3.33/L");
+eq("a row with no price at all says nothing", pricePerKgLabelFor(row("Eggs")), undefined);
+
+// ⚠️ The rule that feeds the figures above, shared with `readGroceryTargets` so
+// the deal comparison and the texted list cannot disagree about what a pack weighs.
+eq("a weighed row's pack weight IS its size", packWeightOf("By Gram", 500, "Peanut Butter", ""), 500);
+eq("a counted row reads its name", packWeightOf("By Unit", 10, "egg  (Omega 3 Enriched) (550g)", ""), 550);
+eq(
+	"…then the shop's own wording for the pack",
+	packWeightOf("By Unit", 10, "Eggs, Whole, small", "Fresh Eggs (10s) 550g"),
+	550,
+);
+eq(
+	"⚠️ and null when neither says — sold by the piece, not a gap to fill",
+	packWeightOf("By Unit", 4, "Razor Cartridge Refill - Hydro 5 [Schick]", ""),
+	null,
+);
 
 describe("texted list — the keyboard's shape");
 

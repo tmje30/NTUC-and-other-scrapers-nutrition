@@ -6,6 +6,7 @@ import {
 	TAGS_PROPERTY,
 	multiSelectNames,
 	isByWeight,
+	packWeightOf,
 	normTag,
 	queryAll,
 	selectName,
@@ -55,10 +56,17 @@ export interface IngredientRow {
 	/** Cheapest price on the row's price book, or null when it has none yet. */
 	price: {
 		sgd: number;
+		/** `Size[Vendor n]` — grams, ml, or a PIECE COUNT, per `unitType`. */
 		size: number | null;
 		vendor: string;
-		/** SGD per kg/L, for the `Price per kg/L` column. Null when size is unknown. */
+		/**
+		 * SGD per kg/L. Computed from the pack's WEIGHT, which for a counted row
+		 * comes from the name rather than from `size` — see `packWeightOf`. Null
+		 * when nothing states a weight.
+		 */
 		per1000: number | null;
+		/** SGD per piece, for a counted row. Null for weighed ones. */
+		perPiece: number | null;
 	} | null;
 }
 
@@ -90,6 +98,7 @@ export async function readIngredientRows(client: Client): Promise<IngredientRow[
 		const priceSgd = cheapest?.slot.priceValue ?? null;
 		const size = cheapest?.slot.sizeValue ?? null;
 		const unitType = (selectName(p[ING_PROPS.UNIT_TYPE]) as UnitType) || "By Gram";
+		const weightG = packWeightOf(unitType, size, name, cheapest?.slot.itemNameValue ?? "");
 
 		rows.push({
 			pageId: page.id,
@@ -103,15 +112,19 @@ export async function readIngredientRows(client: Client): Promise<IngredientRow[
 							sgd: priceSgd,
 							size,
 							vendor: cheapest?.slot.vendorName ?? "",
-							// ⚠️ **A piece count is not a weight.** `Size[Vendor n]` holds
-							// whatever `Unit type ` says it holds, so on a By-Unit row it is
-							// a number of eggs, not grams — and dividing by it produced
-							// "$399.00/kg" on a $3.99 box of ten, written to the live
-							// grocery list on 2026-08-10 and only caught by reading the rows
-							// back. It looks like a price and is off by a factor of a
-							// hundred-odd, which is the worst kind of wrong: nothing is
-							// missing, so nothing prompts you to check.
-							per1000: isByWeight(unitType) && size && size > 0 ? (priceSgd / size) * 1000 : null,
+							// ⚠️ **A piece count is not a weight**, and the weight is what
+							// this divides by. `Size[Vendor n]` holds whatever `Unit type `
+							// says, so on a By-Unit row it is a number of eggs — dividing by
+							// it produced "$399.00/kg" for a $3.99 box of ten (which is the
+							// price of a *thousand eggs*, wearing a "/kg" label) on the live
+							// grocery list, 2026-08-10. `packWeightOf` reads the real weight
+							// off the row's name, and returns null when the thing is honestly
+							// sold by the piece.
+							per1000: weightG && weightG > 0 ? (priceSgd / weightG) * 1000 : null,
+							// A counted pack with no weight still has a comparable figure —
+							// what one of them costs. That is the number you use at the shelf
+							// between a box of 10 and a box of 30.
+							perPiece: !isByWeight(unitType) && size && size > 0 ? priceSgd / size : null,
 						}
 					: null,
 		});
@@ -269,15 +282,25 @@ export function decideList(items: ParsedItem[], rows: IngredientRow[]): IntakeDe
  * live price — the grocery list's own column means "what this works out at per
  * kilo", and for a texted item the only figure we have is the price book's.
  *
- * ⚠️ **A `By Unit` row has no per-kg figure to give, and this used to fabricate
- * one.** The guard was the falsy check below, and the header of this function
- * claimed the behaviour that `per1000` did not implement: a piece count went in
- * as if it were grams, so a $3.99 box of ten eggs was filed as **$399.00/kg**.
- * The refusal now lives at the source (`readIngredientRows` leaves `per1000`
- * null for counted rows) so the two cannot disagree again.
+ * ⚠️ **A counted row gets a real figure too, and briefly got a fabricated one.**
+ * Until 2026-08-11 this divided by `Size[Vendor n]`, which on a By-Unit row is a
+ * piece count — so a $3.99 box of ten eggs was filed as **$399.00/kg**. Two
+ * different answers were wrong in sequence and the third is the right one:
+ *
+ * | | eggs, $3.99 for 10, `(550g)` in the name |
+ * | --- | --- |
+ * | divide by the count | ❌ `$399.00/kg` — the price of a thousand eggs |
+ * | refuse outright | ⚠️ blank, when the row plainly states 550 g |
+ * | **divide by the weight** | ✅ **`$7.25/kg`** |
+ *
+ * And when nothing states a weight — a razor cartridge, a stock cube — the
+ * comparable figure is **per piece** (`$0.40/pc`), which is what you use at the
+ * shelf between a box of 10 and a box of 30. Notion's own
+ * `Cheapest Price/Kg ` formula reaches the same conclusion and prints
+ * `3.99 /10 pc` on exactly these rows.
  */
 export function pricePerKgLabelFor(row: IngredientRow): string | undefined {
-	if (!isByWeight(row.unitType) || !row.price?.per1000) return undefined;
-	const unit = row.unitType === "By ml" ? "L" : "kg";
-	return `$${row.price.per1000.toFixed(2)}/${unit}`;
+	if (row.price?.per1000) return `$${row.price.per1000.toFixed(2)}/${row.unitType === "By ml" ? "L" : "kg"}`;
+	if (row.price?.perPiece) return `$${row.price.perPiece.toFixed(2)}/pc`;
+	return undefined;
 }

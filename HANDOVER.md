@@ -319,6 +319,43 @@ entry but a half-fact `readBaseline` would have to step over. The shop scan fill
 those in properly. The category is resolved against Notion's **live options** at
 write time and dropped if absent — this tool never invents schema.
 
+### ⚠️ `$399.00/kg` for a box of eggs — a count read as grams (fixed 2026-08-11)
+
+**Caught by reading the live grocery list back**, not by any test. The bot had
+filed `egg (Omega 3 Enriched) (550g)` with `Price per kg/L` = **$399.00/kg**. It
+is a **$3.99 box of ten**.
+
+`Size[Vendor n]` holds whatever `Unit type ` says it holds, so on a By-Unit row it
+is a count of eggs. The sum divided by it as though it were grams:
+`3.99 ÷ 10 × 1000 = 399` — which is genuinely *the price of a thousand eggs*, then
+labelled per kilogram. ⚠️ `pricePerKgLabelFor`'s own header claimed it refused to
+do exactly this; its guard was a falsy check, which a count of `10` sails through.
+**The comment described the intent and the code did the opposite** — worth
+remembering when a doc comment is the only thing asserting a rule.
+
+Three answers, in the order they were tried:
+
+| | eggs, $3.99 for 10, `(550g)` in the name |
+| --- | --- |
+| divide by the count | ❌ `$399.00/kg` |
+| refuse outright | ⚠️ blank, when the row plainly states 550 g |
+| **divide by the weight** | ✅ **`$7.25/kg`** (the user's call) |
+
+So `packWeightOf()` in `notion.ts` is now the one rule for what a pack weighs, and
+**both** readers use it — `readGroceryTargets` for the deal comparison and
+`readIngredientRows` for the texted list. A counted row with no stated weight
+quotes **per piece** instead (`$0.40/pc`), which is the figure you use at the
+shelf between a box of 10 and a box of 30.
+
+⚠️ **Notion's own `Cheapest Price/Kg ` formula was never wrong** — it prints
+`3.99 /10 pc` on these rows, i.e. it already knows they are counted. The bad
+number was this project's, in the grocery List's `Price per kg/L`. Two columns,
+two databases, one of them ours: check which you are looking at before
+diagnosing.
+
+⚠️ **Rows already written keep their bad figure.** Only the eggs row was affected
+(every other list row is By-Gram/By-ml, where `size` really is grams).
+
 ### ⚠️ A parked row is offered here, and picking it wakes it (2026-08-11)
 
 **Found by texting the live bot**: "2L milk, skimmed" came back offering
@@ -1449,7 +1486,7 @@ re-search button and the create button were built against tests and a restarted
 poller; nobody has texted the bot since. Do that first — text something you
 already stock, something ambiguous ("milk"), and something you don't.
 
-`npm test` **562 passing** (was 508 this morning), `npm run check` clean.
+`npm test` **572 passing** (was 508 this morning), `npm run check` clean.
 
 ### The state at 2026-08-10, evening
 
@@ -1791,7 +1828,7 @@ Both made a bad deal look good — the same family as the 32 g serving read as 1
   names the shop — never claims a free slot, never evicts, never writes
   `Unit type `. Carousell opens a real Chrome window.
 - `npm run check` — typecheck.
-- `npm test` — **562** offline cases (`src/tests/`). Free, fast, no network.
+- `npm test` — **572** offline cases (`src/tests/`). Free, fast, no network.
 
 ## Key technical facts (details in LEARNINGS.md)
 
