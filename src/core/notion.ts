@@ -166,6 +166,24 @@ export interface PlanTarget {
 	unitType: UnitType;
 	/** `Select` multi-select tags on the row (e.g. "Brand Specific", "Weekly Buy"). */
 	tags: string[];
+	/**
+	 * Every shop named in this row's `Vendor 1..4` slots — **the routing list.**
+	 *
+	 * ⚠️ **As of 2026-08-11 a shop is searched only when it is named here** (rule
+	 * from the user, after finding the daily scan asking NTUC and Sheng Siong for
+	 * whey protein, which is bought at Shopee, Carousell and MyProtein). The scan
+	 * used to ask both supermarkets for every grocery row regardless.
+	 *
+	 * ⚠️ **The handover's older warning — "the tags mean *also* look here, never
+	 * *only* look here" — described a database that no longer exists.** It was
+	 * written when `Sheng Siong` was tagged on ZERO rows. Re-measured the day this
+	 * changed: **49 of 57 targets name both supermarkets**, because `vendor-scan`
+	 * has been filling the slots since 2026-08-09. The 8 that don't are the three
+	 * whey rows and five iHerb supplements — precisely the rows that should never
+	 * have been searched at a supermarket. Re-measure before widening or narrowing
+	 * this again; the answer has already flipped once.
+	 */
+	vendors: string[];
 	/** True when tagged `Brand Specific`: only the [bracketed] brand may match. */
 	brandSpecific: boolean;
 	/**
@@ -380,6 +398,8 @@ function readBaseline(p: Record<string, any>): {
 	priceSgd: number | null;
 	size: number | null;
 	vendor: string;
+	/** Every shop this row NAMES, across all four slots. Routes the search — see `searchesStore`. */
+	vendors: string[];
 	/**
 	 * `Item Name [Vendor n]` for the slot the price came from — what THAT shop
 	 * calls this product. Read because it is the second place a counted row's pack
@@ -393,7 +413,8 @@ function readBaseline(p: Record<string, any>): {
 	const slots = readVendorSlots(p, resolveVendorSlotProps(p as any));
 	const cheapest = cheapestVendorSlot(slots);
 	/** Does ANY slot name a shop? See the rule below. */
-	const vendorTagged = slots.some((s) => !!s.vendorName);
+	const named = slots.map((s) => s.vendorName).filter(Boolean);
+	const vendorTagged = named.length > 0;
 	if (cheapest) {
 		// ⚠️ **A row naming NO shop in any of its four slots is not searched at all**
 		// (rule from the user, 2026-08-11). This reverses what this function used to
@@ -412,11 +433,12 @@ function readBaseline(p: Record<string, any>): {
 		// an empty tag as "don't look at this shop". This reads *no tag at all, on any
 		// slot* as "there is no recorded price here". A row tagged with one shop is
 		// still searched at every shop.
-		if (!vendorTagged) return { priceSgd: null, size: null, vendor: "", itemName: "" };
+		if (!vendorTagged) return { priceSgd: null, size: null, vendor: "", vendors: [], itemName: "" };
 		return {
 			priceSgd: cheapest.slot.priceValue,
 			size: cheapest.slot.sizeValue,
 			vendor: cheapest.slot.vendorName,
+			vendors: named,
 			itemName: cheapest.slot.itemNameValue,
 		};
 	}
@@ -427,6 +449,7 @@ function readBaseline(p: Record<string, any>): {
 		priceSgd: numberOf(propByName(p, "Price,SGD [Cheapest]")),
 		size: null,
 		vendor: "",
+		vendors: named,
 		itemName: "",
 	};
 }
@@ -618,6 +641,7 @@ export async function readGroceryTargets(): Promise<PlanTarget[]> {
 			category,
 			unitType,
 			tags,
+			vendors: baseline.vendors,
 			brandSpecific: hasTag("brand specific"),
 			qualityItem: hasTag("quality item"),
 			organicWelfare: hasTag("organic/animal welfare"),

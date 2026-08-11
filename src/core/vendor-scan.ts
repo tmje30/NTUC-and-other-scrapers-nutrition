@@ -140,6 +140,10 @@ export function targetFor(row: {
 		name: row.name,
 		search,
 		category: "",
+		// Not the routing list here: vendor-scan is ALREADY directed — it asks a shop
+		// only because a slot names it — so this synthetic target carries no vendors
+		// and nothing reads them on this path.
+		vendors: [],
 		unitType: row.unitType,
 		tags: row.tags,
 		brandSpecific: hasTag("Brand Specific"),

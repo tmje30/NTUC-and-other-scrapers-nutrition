@@ -1,4 +1,5 @@
-import { readGroceryTargets, type PlanTarget } from "./notion.js";
+import { readGroceryTargets, normTag, type PlanTarget } from "./notion.js";
+import { vendorLabel } from "./grocery-list.js";
 import { fairprice } from "./stores/fairprice.js";
 import { shengsiong } from "./stores/shengsiong.js";
 import { shengsiongFile, type ShengSiongStatus } from "./stores/shengsiong-file.js";
@@ -96,6 +97,37 @@ export function queryTerms(searchTerm: string, properties: string[] = []): strin
 	return out;
 }
 
+/**
+ * Whether this target's row asks for this shop.
+ *
+ * ⚠️ **Searches are DIRECTED as of 2026-08-11** (rule from the user, after finding
+ * the daily scan asking NTUC and Sheng Siong for whey protein — bought at Shopee,
+ * Carousell and MyProtein, and named as such on all three whey rows). A shop is
+ * asked only when a `Vendor n` slot names it. Before this, both supermarkets were
+ * asked for every grocery row, and 62 searches a day were run for items no
+ * supermarket stocks.
+ *
+ * ⚠️ **This directly contradicts an older handover warning** — "the tags mean
+ * *also* look here, never *only* look here… code that treats an empty tag as
+ * 'don't search' would silently kill the FairPrice scan on 42 rows". That was true
+ * of a database where `Sheng Siong` appeared on **zero** rows. `vendor-scan` has
+ * been filling the slots since 2026-08-09, and re-measuring the day this changed
+ * gave **49 of 57 targets naming both supermarkets**. The 8 that don't are the
+ * three whey rows and five iHerb supplements.
+ *
+ * ⚠️ **So this is measurement-dependent, and the measurement has already flipped
+ * once.** If a shop ever stops being tagged, this goes quiet in the direction
+ * nobody notices — the page simply has fewer deals. Re-count before assuming.
+ *
+ * The store module's name is not the Notion wording (`FairPrice` is `NTUC` on
+ * every row), so it goes through `vendorLabel` — the same mapping the grocery
+ * list writes with.
+ */
+export function searchesStore(target: PlanTarget, storeName: string): boolean {
+	const want = normTag(vendorLabel(storeName));
+	return target.vendors.some((v) => normTag(v) === want);
+}
+
 async function searchAllStores(
 	target: PlanTarget,
 	errors: RunResult["errors"],
@@ -103,6 +135,7 @@ async function searchAllStores(
 	const all: StoreProduct[] = [];
 	const seen = new Set<string>(); // de-dupe across the two spellings
 	for (const store of STORES) {
+		if (!searchesStore(target, store.name)) continue;
 		for (const term of queryTerms(target.search.searchTerm, target.search.properties)) {
 			try {
 				for (const p of await store.search(term)) {
@@ -152,8 +185,19 @@ export async function runOnce(): Promise<RunResult> {
 	snoozed.sort((a, b) => a.until.localeCompare(b.until));
 
 	// Both spellings, so the Sheng Siong runner scrapes exactly what we search.
+	//
+	// ⚠️ **Only the rows that NAME Sheng Siong**, since 2026-08-11. This file is
+	// consumed by the residential runner and by nothing else, so a term for a row
+	// that doesn't ask for Sheng Siong is a search nobody will ever read the result
+	// of — it costs the runner time and the shop a request. `shengsiong-file` already
+	// returns nothing for a term it wasn't given, so the two ends agree by default.
 	const searchTerms = [
-		...new Set(comparable.flatMap((t) => queryTerms(t.search.searchTerm, t.search.properties)).filter(Boolean)),
+		...new Set(
+			comparable
+				.filter((t) => searchesStore(t, shengsiong.name))
+				.flatMap((t) => queryTerms(t.search.searchTerm, t.search.properties))
+				.filter(Boolean),
+		),
 	];
 
 	// Corrections the user made from the page — words that must never match this
