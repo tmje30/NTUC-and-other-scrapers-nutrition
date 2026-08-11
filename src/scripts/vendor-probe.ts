@@ -240,7 +240,7 @@ async function probeWatsons(term: string): Promise<ProbeResult> {
 				? "Reachable AND parseable from this address. Watsons is a normal fetch-tier shop from residential — no CDP, no cookie minting."
 				: products.length
 					? "Reachable, JSON-LD present, but no size in the titles — likely needs the product page for pack size, same as MyProtein."
-					: `Reachable (${r.body.length}B) but NO products. Investigated 2026-08-05 and this is a dead end for now: the storefront is an Angular SPA on SAP Commerce (\`occ-backend-base-url: https://api.watsons.com.sg\`), the homepage returns 1.5MB of shell, and \`/search?text=\` returns a 6.5KB generic fallback. Guessed OCC paths (/occ/v2/wtcsg/products/search) 404, and that 404 carries an injected Akamai Bot Manager sensor script. A real browser loads the shell and renders only the FOOTER — the product API never yields. So Watsons needs Bot-Manager-valid cookies from an aged/real session (CDP against your own Chrome), not just a residential IP. ⚠️ Weigh that against the payoff: ONE row (Facial Moisturising Lotion [CereVe]), in Household Supplies — a category you may exclude anyway. The Chrome extension already captures it by hand for free.`,
+					: `Reachable (${r.body.length}B) but NO products over plain fetch — the storefront is an Angular SPA on SAP Commerce (\`occ-backend-base-url: https://api.watsons.com.sg\`), so \`/search?text=\` returns a 6.5KB generic fallback and guessed OCC paths (/occ/v2/wtcsg/products/search) 404. **Use the browser tier: \`--browser --headed\` renders it fine** (measured 2026-08-11 from residential: 54 price nodes, 1 ld+json). ⚠️ The 2026-08-05 note here used to call this a dead end — "a real browser renders only the FOOTER, the product API never yields, it needs Bot-Manager-valid cookies from an aged session". **That was drawn from a HEADLESS run and is wrong.** Headless is detected by this site exactly as it is by Carousell; headed clears it with no cookie minting and no login. Next step is the same as any browser-tier shop: pin the product-card selector.`,
 		};
 	}
 
@@ -385,14 +385,28 @@ const CAROUSELL_EXTRACT = `(() => {
   return out.slice(0, 60);
 })()`;
 
-const GENERIC_PROBE = `(() => ({
-  blocked: /verify\\/traffic|login/i.test(location.href),
-  href: location.href,
-  textLen: document.body.innerText.length,
-  head: document.body.innerText.replace(/\\s+/g,' ').slice(0, 240),
-  ldjson: [...document.querySelectorAll('script[type="application/ld+json"]')].length,
-  priceNodes: [...document.querySelectorAll('[class*="price" i],[itemprop="price"]')].length
-}))()`;
+/**
+ * ⚠️ **`blocked` tests the PATH, never the whole href.** It used to be
+ * `/verify\/traffic|login/i.test(location.href)`, which matched the substring "login"
+ * anywhere in the URL — including Shopee's `?is_from_login=true`, the query parameter it
+ * appends when a sign-in SUCCEEDS and it returns you to the page you asked for. So the one
+ * URL that proves the session works was reported as "still bounced", with the user's own
+ * account name visible in the very `head` text printed beside it (measured 2026-08-11).
+ *
+ * A login WALL is a path — `/buyer/login`, `/verify/traffic/error`. A login RESULT is a
+ * query string. Reading only the path keeps the two apart.
+ */
+const GENERIC_PROBE = `(() => {
+  const p = location.pathname;
+  return {
+    blocked: /verify\\/traffic/i.test(p) || /(^|\\/)(login|signin)(\\/|$)/i.test(p),
+    href: location.href,
+    textLen: document.body.innerText.length,
+    head: document.body.innerText.replace(/\\s+/g,' ').slice(0, 240),
+    ldjson: [...document.querySelectorAll('script[type="application/ld+json"]')].length,
+    priceNodes: [...document.querySelectorAll('[class*="price" i],[itemprop="price"]')].length
+  };
+})()`;
 
 async function probeCarousellBrowser(term: string, headed: boolean): Promise<ProbeResult> {
 	const url = `https://www.carousell.sg/search/${encodeURIComponent(term)}`;
@@ -421,7 +435,14 @@ async function probeCarousellBrowser(term: string, headed: boolean): Promise<Pro
 			verdict: cands.length ? "works" : "no-data",
 			fix: cands.length
 				? "Browser for search, plain fetch for the listing page. No login anywhere."
-				: "Rendered but nothing parsed — check the card selector.",
+				: // ⚠️ **Zero cards HEADLESS is the expected answer, not a finding.**
+					// `carousell.ts` measured it and says so: "a headless Chrome renders zero
+					// cards here — it is detected". Reporting "check the card selector" here
+					// sends the next person after a selector that is not broken, which is a
+					// worse outcome than saying nothing. Only a HEADED zero is a real bug.
+					!headed
+					? "You ran HEADLESS, which Carousell detects — zero cards is the known outcome, not a broken selector (see `carousell.ts`). Re-run with --headed before concluding anything."
+					: `${rows.length} card(s) rendered headed but none survived parsing — NOW the card selector is worth checking.`,
 		};
 	} catch (e: any) {
 		return {
@@ -436,9 +457,24 @@ async function probeCarousellBrowser(term: string, headed: boolean): Promise<Pro
 	}
 }
 
-async function probeViaBrowser(vendor: string, url: string, headed: boolean, profile?: string): Promise<ProbeResult> {
+/**
+ * @param settleMs How long the window stays open before the page is read.
+ *
+ * ⚠️ **The login tier needs minutes, not seconds.** `evaluateInPage` sleeps for this long,
+ * reads the page, then kills Chrome — so the 7 s default gave a human no time at all to
+ * sign in, and the tier could never do the one thing it exists for. It would report
+ * "still bounced", which reads as *the site refused us* rather than *we closed the window
+ * before you could type*.
+ */
+async function probeViaBrowser(
+	vendor: string,
+	url: string,
+	headed: boolean,
+	profile?: string,
+	settleMs = 7000,
+): Promise<ProbeResult> {
 	try {
-		const res = await evaluateInPage(url, GENERIC_PROBE, { headed, settleMs: 7000, persistProfile: profile });
+		const res = await evaluateInPage(url, GENERIC_PROBE, { headed, settleMs, persistProfile: profile });
 		const v = res.value as any;
 		return {
 			vendor,
@@ -451,7 +487,14 @@ async function probeViaBrowser(vendor: string, url: string, headed: boolean, pro
 				? `Still bounced: ${v.head.slice(0, 120)}. Sign in by hand in the window this opens (profile persists at .sessions/), then re-run.`
 				: v.priceNodes > 0
 					? "Renders with prices in the DOM — a browser-tier adapter will work. Next step: pin the product-card selector."
-					: "Rendered but no prices found — check the search URL.",
+					: // ⚠️ A near-empty render is a BLOCK wearing the costume of an empty page.
+						// A real search result is tens of kilobytes of text; a bot wall is a few
+						// hundred bytes and no ld+json. Calling that "check the search URL" is
+						// the wrong diagnosis and costs an afternoon.
+						v.textLen < 2000
+						? `Only ${v.textLen}B of text rendered — a challenge, an interstitial or a MAINTENANCE page, not an empty result page. (Check the fetch tier above: a 503 Magento maintenance body means the shop is simply down and there is nothing to fix here.)` +
+							(headed ? " Headed already, so this site wants a warmed profile: try --login." : " Re-run with --headed first; headless is detected by several of these sites.")
+						: "Rendered but no prices found — check the search URL.",
 		};
 	} catch (e: any) {
 		return { vendor, tier: "browser", reachable: false, detail: e.message, candidates: [], verdict: "error", fix: "Browser launch failed — is Chrome installed? Set CHROME_PATH." };
@@ -533,6 +576,12 @@ async function main(): Promise<void> {
 
 	if (useBrowser) {
 		console.log("\n" + "─".repeat(78) + "\nBrowser tier (real Chrome over CDP)\n" + "─".repeat(78));
+		// ⚠️ iHerb was missing from this tier while its OWN fetch-tier `fix` text said
+		// "Re-run with --browser" — an instruction that silently did nothing, because
+		// `--browser` only ever ran the four below. A probe whose advice cannot be
+		// followed is worse than one that gives none: it reads as "tried that, no luck".
+		if (wanted("iherb"))
+			report(await probeViaBrowser("Iherb", `https://sg.iherb.com/search?kw=${encodeURIComponent(term)}`, headed));
 		if (wanted("carousell")) report(await probeCarousellBrowser(term, headed));
 		if (wanted("guardian"))
 			report(await probeViaBrowser("Guardian Pharmacy", `https://www.guardian.com.sg/catalogsearch/result/?q=${encodeURIComponent(term)}`, headed));
@@ -540,11 +589,29 @@ async function main(): Promise<void> {
 			report(await probeViaBrowser("Watsons Pharmacy", `https://www.watsons.com.sg/search?text=${encodeURIComponent(term)}`, headed));
 		if (wanted("shopee")) {
 			const profile = loginVendor === "shopee" ? ".sessions/chrome-shopee" : undefined;
-			if (profile) console.log("\n🔑 Shopee: a Chrome window will open on a PERSISTED profile.\n   Sign in BY HAND if prompted — this script never types credentials. The session is kept for next time.");
-			report(await probeViaBrowser("Shopee", `https://shopee.sg/search?keyword=${encodeURIComponent(term)}`, headed || !!profile, profile));
+			// Generous by default so there is time to sign in by hand; `--hold <seconds>`
+			// overrides it, and a profile that is ALREADY signed in wants the short wait.
+			const holdMs = Number(flag("hold") ?? (profile ? 180 : 7)) * 1000;
+			if (profile) {
+				console.log(
+					`\n🔑 Shopee: a Chrome window is opening on a PERSISTED profile (.sessions/chrome-shopee).` +
+						`\n   Sign in BY HAND if prompted — this script never types credentials.` +
+						`\n   The window stays open ${Math.round(holdMs / 1000)}s, then the page is read and Chrome closes.` +
+						`\n   The session is kept, so later runs need no login and can use --hold 10.`,
+				);
+			}
+			report(
+				await probeViaBrowser(
+					"Shopee",
+					`https://shopee.sg/search?keyword=${encodeURIComponent(term)}`,
+					headed || !!profile,
+					profile,
+					holdMs,
+				),
+			);
 		}
 	} else {
-		console.log("\n(Run again with --browser to test the browser tier: Carousell search, Guardian, Watsons, Shopee.)");
+		console.log("\n(Run again with --browser to test the browser tier: Iherb, Carousell search, Guardian, Watsons, Shopee.)");
 	}
 
 	console.log("\n" + "─".repeat(78));
