@@ -5,6 +5,7 @@ import {
 	PARKED_TAG,
 	TAGS_PROPERTY,
 	multiSelectNames,
+	isByWeight,
 	normTag,
 	queryAll,
 	selectName,
@@ -88,12 +89,13 @@ export async function readIngredientRows(client: Client): Promise<IngredientRow[
 		const cheapest = cheapestVendorSlot(readVendorSlots(p, slotDefs));
 		const priceSgd = cheapest?.slot.priceValue ?? null;
 		const size = cheapest?.slot.sizeValue ?? null;
+		const unitType = (selectName(p[ING_PROPS.UNIT_TYPE]) as UnitType) || "By Gram";
 
 		rows.push({
 			pageId: page.id,
 			name,
 			searchTerm: parseName(name).searchTerm,
-			unitType: (selectName(p[ING_PROPS.UNIT_TYPE]) as UnitType) || "By Gram",
+			unitType,
 			parked: hasTag(PARKED_TAG),
 			price:
 				priceSgd && priceSgd > 0
@@ -101,7 +103,15 @@ export async function readIngredientRows(client: Client): Promise<IngredientRow[
 							sgd: priceSgd,
 							size,
 							vendor: cheapest?.slot.vendorName ?? "",
-							per1000: size && size > 0 ? (priceSgd / size) * 1000 : null,
+							// ⚠️ **A piece count is not a weight.** `Size[Vendor n]` holds
+							// whatever `Unit type ` says it holds, so on a By-Unit row it is
+							// a number of eggs, not grams — and dividing by it produced
+							// "$399.00/kg" on a $3.99 box of ten, written to the live
+							// grocery list on 2026-08-10 and only caught by reading the rows
+							// back. It looks like a price and is off by a factor of a
+							// hundred-odd, which is the worst kind of wrong: nothing is
+							// missing, so nothing prompts you to check.
+							per1000: isByWeight(unitType) && size && size > 0 ? (priceSgd / size) * 1000 : null,
 						}
 					: null,
 		});
@@ -257,12 +267,17 @@ export function decideList(items: ParsedItem[], rows: IngredientRow[]): IntakeDe
  *
  * ⚠️ This is the price the USER already records for the ingredient, not a shop's
  * live price — the grocery list's own column means "what this works out at per
- * kilo", and for a texted item the only figure we have is the price book's. A
- * `By Unit` row has no per-kg figure to give and correctly returns undefined
- * rather than a fabricated one.
+ * kilo", and for a texted item the only figure we have is the price book's.
+ *
+ * ⚠️ **A `By Unit` row has no per-kg figure to give, and this used to fabricate
+ * one.** The guard was the falsy check below, and the header of this function
+ * claimed the behaviour that `per1000` did not implement: a piece count went in
+ * as if it were grams, so a $3.99 box of ten eggs was filed as **$399.00/kg**.
+ * The refusal now lives at the source (`readIngredientRows` leaves `per1000`
+ * null for counted rows) so the two cannot disagree again.
  */
 export function pricePerKgLabelFor(row: IngredientRow): string | undefined {
-	if (!row.price?.per1000) return undefined;
+	if (!isByWeight(row.unitType) || !row.price?.per1000) return undefined;
 	const unit = row.unitType === "By ml" ? "L" : "kg";
 	return `$${row.price.per1000.toFixed(2)}/${unit}`;
 }

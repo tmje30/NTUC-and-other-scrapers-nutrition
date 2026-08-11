@@ -3,6 +3,7 @@ import {
 	candidatesFor,
 	decideItem,
 	nextCandidates,
+	pricePerKgLabelFor,
 	rankRows,
 	type IngredientRow,
 } from "../core/list-intake.js";
@@ -107,6 +108,33 @@ check(
 	nextCandidates("milk", ROWS, rejected).length > 0 || rankRows("milk", ROWS).length === 2,
 );
 eq("re-searching past every row offers nothing", nextCandidates("milk", ROWS, ROWS.map((r) => r.pageId)), []);
+
+describe("texted list — a piece count is not a weight");
+
+/**
+ * ⚠️ **Caught by reading the live grocery list back on 2026-08-11**, not by any
+ * test: a $3.99 box of ten eggs had been filed the day before as
+ * **`$399.00/kg`**. `Size[Vendor n]` holds whatever `Unit type ` says it holds,
+ * so on a By-Unit row it is a count of eggs — and `per1000` divided by it as if
+ * it were grams. `pricePerKgLabelFor`'s own header claimed it refused to do this;
+ * its guard was a falsy check that a count of 10 sails straight through.
+ *
+ * Wrong by a factor of a hundred-odd, and the worst shape of wrong: nothing is
+ * missing, so nothing prompts anyone to check it.
+ */
+const priced = (unitType: IngredientRow["unitType"], sgd: number, size: number, per1000: number | null) => ({
+	...row("Eggs"),
+	unitType,
+	price: { sgd, size, vendor: "NTUC", per1000 },
+});
+
+eq(
+	"⚠️ a counted row quotes no price per kg",
+	pricePerKgLabelFor(priced("By Unit", 3.99, 10, 399)),
+	undefined,
+);
+eq("a weighed row still does", pricePerKgLabelFor(priced("By Gram", 8.2, 500, 16.4)), "$16.40/kg");
+eq("and a litre row says litres", pricePerKgLabelFor(priced("By ml", 3.33, 1000, 3.33)), "$3.33/L");
 
 describe("texted list — the keyboard's shape");
 
