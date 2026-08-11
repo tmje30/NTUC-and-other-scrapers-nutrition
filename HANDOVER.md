@@ -95,6 +95,7 @@ See "Telegram intake" below.
 
 Deep dives on one session each, kept for the *why*:
 
+- [`docs/session-2026-08-11-price-per-kg.md`](docs/session-2026-08-11-price-per-kg.md) — **`$399.00/kg` for a box of eggs**: a piece count read as grams, the `packWeightOf` rule that fixes it, and ⚠️ **two more places in `vendor-scan.ts` still carrying the same fault**
 - [`docs/session-2026-08-09-vendor-scan.md`](docs/session-2026-08-09-vendor-scan.md) — **the price book fills itself** from Guardian/MyProtein/Carousell; 7 of 9 tagged slots written live ⚠️ **supersedes four per-vendor claims in `vendor-scoping.md`**
 - [`docs/session-2026-08-09-buy-button-price-per-kg.md`](docs/session-2026-08-09-buy-button-price-per-kg.md) — Buy writes price/kg and links Ingredients directly
 - [`docs/session-2026-08-09-price-book.md`](docs/session-2026-08-09-price-book.md) — the price book replaces the baseline
@@ -355,6 +356,18 @@ diagnosing.
 
 ⚠️ **Rows already written keep their bad figure.** Only the eggs row was affected
 (every other list row is By-Gram/By-ml, where `size` really is grams).
+
+⚠️ **Two more places still carry the same fault, both in `vendor-scan.ts`, and
+both were left alone because another session is editing that file.**
+`referencePer100g()` divides `pricePer1000` by 10 and calls it a per-100g price —
+`$39.90/100g` against a true `$0.73` on the eggs row, which makes every genuine
+listing fall below the counterfeit floor and be discarded, with an authoritative-
+looking reason. `slotLabel()` in `scripts/vendor-scan.ts` prints `/kg`
+unconditionally in the CLI report. Full detail and the fix in
+[`docs/session-2026-08-11-price-per-kg.md`](docs/session-2026-08-11-price-per-kg.md).
+⚠️ Note `pricePer1000` itself is **not** the bug — its header is careful, and
+comparing slots within one row is valid. The fault is only ever labelling its
+output "/kg" or mixing it with a real per-100g figure.
 
 ### ⚠️ A parked row is offered here, and picking it wakes it (2026-08-11)
 
