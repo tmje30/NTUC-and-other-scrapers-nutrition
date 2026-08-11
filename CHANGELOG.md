@@ -6,6 +6,33 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+### Fixed
+- **The Telegram inbox now has something that starts it (2026-08-11).** Until
+  today nothing ran `npm run tg-poll` — the inbox existed only while someone
+  remembered to launch it by hand, which reads as a broken bot rather than an off
+  one, and is what let a button tap be acknowledged and lost. New
+  `tg-poll-run.cmd` plus a Windows task, `Grocery Telegram Inbox`: at logon, then
+  repeated every 15 min with `IgnoreNew`, so the repetition restarts the poller
+  only if it actually died. No execution time limit — it is meant to run for
+  days. It runs in the **dev** clone, because it needs `NOTION_TOKEN`.
+- **The Sheng Siong runner survives the wake-up DNS race (2026-08-11).** The
+  05:30 task in fact fires on *wake* (~06:47), in the seconds before DNS
+  resolves; the pull guard added on 08-10 correctly refused to scan, but with
+  only 2 retries at 20 s the result was **two consecutive FairPrice-only days**.
+  Now 6 attempts 30 s apart, and `RestartOnFailure` (3 × 10 min) on the task
+  itself — the only cover for 2026-08-11, where the laptop slept mid-wait and
+  Task Scheduler recorded `ERROR_PROCESS_ABORTED`. `ExecutionTimeLimit`
+  `PT15M` → `PT30M`.
+- **A zero-term scan can no longer be written or trusted (2026-08-11).** On
+  08-09 an empty `targets.json` produced `{date: today, terms: 0, results: {}}`,
+  which was committed, pushed and exited 0, and which the cloud reader would have
+  published as fresh with **no ⚠️ banner** and no Sheng Siong prices.
+  `fetchTerms()` now throws on an empty list; `isUsableScan()` in
+  `stores/shengsiong-file.ts` requires a term count as well as today's date, and
+  is used by the reader, the runner's self-gate and the banner alike. The banner
+  reads "today's file arrived empty" rather than "0 days old".
+  `src/tests/scan-file.test.ts`, 10 cases (`npm test` 508 → 518).
+
 ### Added
 - **Telegram grocery-list intake (2026-08-10)** — text a list into the bot and it
   files into the Notion **grocery List**. `src/core/list-parse.ts` reads the

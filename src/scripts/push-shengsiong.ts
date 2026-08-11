@@ -1,5 +1,6 @@
 import { writeFile, readFile, mkdir } from "node:fs/promises";
 import { commitAndPushData } from "../core/git-data-push.js";
+import { isUsableScan } from "../core/stores/shengsiong-file.js";
 import { shengsiong } from "../core/stores/shengsiong.js";
 import type { StoreProduct } from "../core/stores/types.js";
 
@@ -38,8 +39,10 @@ function sgtDate(): string {
 
 async function alreadyFreshToday(today: string): Promise<boolean> {
 	try {
-		const cur = JSON.parse(await readFile(OUT, "utf8"));
-		return cur?.date === today;
+		// `isUsableScan`, not `date === today`: a file dated today that searched no
+		// terms is the 2026-08-09 failure, and self-gating on one would keep the
+		// runner from replacing it for the rest of the day.
+		return isUsableScan(JSON.parse(await readFile(OUT, "utf8")), today);
 	} catch {
 		return false;
 	}
@@ -51,7 +54,15 @@ async function fetchTerms(): Promise<string[]> {
 	const data: any = await res.json();
 	const terms: unknown = Array.isArray(data) ? data : data?.terms;
 	if (!Array.isArray(terms)) throw new Error("targets.json has no terms[] array");
-	return [...new Set(terms.map((t) => String(t).trim()).filter(Boolean))];
+	const unique = [...new Set(terms.map((t) => String(t).trim()).filter(Boolean))];
+	// ⚠️ An empty list is a broken targets.json, never a day with nothing to buy.
+	// On 2026-08-09 this scanned all zero of them, wrote `{terms: 0, results: {}}`,
+	// pushed it, and exited 0 — a green tick on a run that published nothing. The
+	// cheapest place to stop that is before the scan, so it never becomes a file.
+	if (unique.length === 0) {
+		throw new Error(`targets.json lists no terms — refusing to publish an empty scan (${TARGETS_URL})`);
+	}
+	return unique;
 }
 
 /**

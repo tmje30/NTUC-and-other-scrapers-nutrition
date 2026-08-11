@@ -37,6 +37,34 @@ export interface ShengSiongStatus {
 	products: number;
 }
 
+/**
+ * How many terms a scan file claims to have searched.
+ *
+ * `terms` is written as a count by `push-shengsiong.ts`; the fallback to the
+ * number of result keys is for any file written before that field existed.
+ */
+export function scanTermCount(raw: any): number {
+	if (typeof raw?.terms === "number" && Number.isFinite(raw.terms)) return raw.terms;
+	return raw?.results && typeof raw.results === "object" ? Object.keys(raw.results).length : 0;
+}
+
+/**
+ * Whether a scan file is today's and is an actual scan.
+ *
+ * ⚠️ **A file dated today that searched ZERO terms is not a scan, and the date
+ * alone used to be enough.** On 2026-08-09 the runner fetched a `targets.json`
+ * that listed no terms, "scanned" all zero of them, and wrote
+ * `{date: today, terms: 0, results: {}}` — which this reader would have called
+ * fresh, reported as "0 products", and published with **no ⚠️ banner**, while
+ * every Sheng Siong lookup silently returned nothing. Both ends are now guarded:
+ * the runner refuses to write such a file, and this refuses to trust one.
+ */
+export function isUsableScan(raw: any, today: string): boolean {
+	if (raw?.date !== today) return false;
+	if (!raw?.results || typeof raw.results !== "object") return false;
+	return scanTermCount(raw) > 0;
+}
+
 /** Whole days between two YYYY-MM-DD strings. */
 function daysBetween(from: string, to: string): number | null {
 	const a = Date.parse(`${from}T00:00:00Z`);
@@ -64,11 +92,15 @@ class ShengSiongFile implements StoreModule {
 		}
 		const today = sgtDate();
 		this.fileDate = typeof raw?.date === "string" ? raw.date : null;
-		if (raw?.date === today && raw.results && typeof raw.results === "object") {
+		if (isUsableScan(raw, today)) {
 			this.results = raw.results;
 			this.fresh = true;
 			const n = Object.values(this.results).reduce((s, a) => s + (a?.length ?? 0), 0);
 			console.error(`Sheng Siong: using ${DATA_PATH} (${raw.date}, source ${raw.source ?? "?"}, ${n} products).`);
+		} else if (raw?.date === today) {
+			console.error(
+				`Sheng Siong: ${DATA_PATH} is dated today but searched no terms — treating it as missing (FairPrice only).`,
+			);
 		} else {
 			console.error(
 				`Sheng Siong: ${DATA_PATH} not fresh (file ${raw?.date ?? "?"} vs today ${today}) — skipping SS (FairPrice only).`,

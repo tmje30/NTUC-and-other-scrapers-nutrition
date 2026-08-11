@@ -39,9 +39,13 @@ const warning = (() => {
 	const age =
 		shengsiong.staleDays == null
 			? "no data has ever arrived"
-			: shengsiong.staleDays === 1
-				? "yesterday's data is the latest"
-				: `the latest data is ${shengsiong.staleDays} days old`;
+			: shengsiong.staleDays === 0
+				? // Dated today, yet not fresh: the runner wrote a file that searched
+					// nothing. "0 days old" would read as fine — it is the opposite.
+					"today's file arrived empty"
+				: shengsiong.staleDays === 1
+					? "yesterday's data is the latest"
+					: `the latest data is ${shengsiong.staleDays} days old`;
 	return `Sheng Siong is missing from this scan — ${age}. FairPrice prices only.`;
 })();
 const total = planDeals.length + otherDeals.length;

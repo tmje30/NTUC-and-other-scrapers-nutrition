@@ -3,7 +3,15 @@
 Read this first, then `LEARNINGS.md` (deep technical detail + gotchas) and
 `CHANGELOG.md` (what shipped). Memory files also auto-load via `MEMORY.md`.
 
-*Last reviewed 2026-08-05. The system is live and self-running. The parts most
+*⚠️ **Last reviewed 2026-08-11, and the review found three faults the code could
+not show.** The runner had silently not scanned for two days, nothing had ever
+started the Telegram inbox, and an empty scan had been pushed as a success. All
+three are fixed — see "Next session" — but the lesson generalises: **before
+writing any code here, check what actually ran.** `push-ss.log`,
+`Get-ScheduledTaskInfo`, and the `date` inside `data/shengsiong-latest.json`
+answer in under a minute, and a green tick from any one layer means nothing.*
+
+*The system is live and self-running. The parts most
 likely to bite a newcomer, all flagged ⚠️ below: the Incapsula browser mint, the
 two comparison dimensions, and — for the Chrome extension — the fact that
 FairPrice's JSON-LD is invalid on **every** product while Sheng Siong publishes
@@ -240,6 +248,39 @@ laptop now covers the runner role, this is optional. To finish later:
 Run it with `npm run tg-poll` (`--once` to drain and exit, `--no-push` to skip the
 commit/dispatch). It long-polls `getUpdates`, so it answers in about a second and
 costs nothing to leave running.
+
+⚠️ **It now runs as a scheduled task, because until 2026-08-11 nothing started
+it.** The inbox existed only while someone remembered to launch it by hand — and
+a bot that answers only when watched doesn't look off, it looks broken. It is
+also what made fault 29 possible: a button tapped with no poller running is
+answered by nobody, and when one finally starts, Telegram refuses the stale
+callback id and the tap is consumed and lost.
+
+- **Task:** `Grocery Telegram Inbox` → `tg-poll-run.cmd` (in the repo root — see
+  below). Triggered **at logon**, then **repeated every 15 minutes** with
+  `MultipleInstances: IgnoreNew`, so a repeat while the poller is alive does
+  nothing and a repeat after it died starts it again. **That repetition is the
+  supervisor**; there is no other one. `ExecutionTimeLimit` is **0 (none)** — this
+  process is meant to run for days, and any limit would eventually kill it
+  mid-poll. `RestartOnFailure` 3 × 5 min covers a crash between repetitions.
+- ⚠️ **It runs in the DEV clone, not `shengsiong-runner\repo`** — it needs
+  `NOTION_TOKEN` and `TELEGRAM_BOT_TOKEN`, and the `.env` holding them lives
+  there; the Sheng Siong clone deliberately has no `.env` at all. Two
+  consequences: the poller runs whatever source is checked out (a broken tree
+  crash-loops it, visibly, in the log), and `commitAndPushData` refuses to reset
+  a dirty tree, so a session's edits are never sacrificed to publish a page.
+- **Log:** `C:\Users\newuser\shengsiong-runner\tg-poll.log`, beside the scan's,
+  rolled by the wrapper past ~5 MB — a process that retries a dead network every
+  5 s is a slow leak otherwise. `runInbox` catches a failed poll, waits 5 s and
+  carries on, so sleep/wake and dropped Wi-Fi need no help from the scheduler.
+- ⚠️ **`tg-poll-run.cmd` is in the repo and the task points straight at it** —
+  unlike `run.cmd`, there is no live-copy-plus-reference-copy pair to keep in
+  step, because there is only one copy. Don't create a second one.
+
+To check it is up: `Get-ScheduledTaskInfo -TaskName "Grocery Telegram Inbox"`
+(`LastTaskResult` **267009** = still running, which is the healthy state), or look
+for the `tg-poll` node process. `npm run tg-diag` remains the answer to "why isn't
+it seeing my messages".
 
 ⚠️ **This project has its own bot as of 2026-08-10: `@Grocery69_bot`.** It both
 sends the daily digest and serves the poller — one bot, both directions — and
@@ -1125,10 +1166,11 @@ build went FairPrice-only. Recovered by hand with `git pull --rebase && git push
    attempts: that is no network or no credential, not a race, and the user needs
    to see it.
 2. **`run.cmd` no longer scans when the pull failed.** It retries `git pull`
-   twice (20 s apart — a wake-up race is usually over in seconds), and if it
-   still fails, logs `NOT scanning` and exits 1 without starting a five-minute
-   scan into a network that isn't there. Uses `ping` for the wait, not
-   `timeout`, which needs a console Task Scheduler doesn't give it.
+   (⚠️ **six times, 30 s apart since 2026-08-11** — it was twice at 20 s, which
+   was not enough; see the next section), and if it still fails, logs
+   `NOT scanning` and exits 1 without starting a five-minute scan into a network
+   that isn't there. Uses `ping` for the wait, not `timeout`, which needs a
+   console Task Scheduler doesn't give it.
    **The live `C:\Users\newuser\shengsiong-runner\run.cmd` and the repo's
    `laptop-run.cmd` were both updated** — they must stay in step.
 
@@ -1139,12 +1181,128 @@ with top-level `await`; `src/tests/run.ts` therefore imports it dynamically and
 last, or the other suites' `describe()` calls land inside its await windows and
 mislabel their own cases.
 
+### ⚠️ The 05:30 task does not run at 05:30 — it runs on WAKE (found 2026-08-11)
+
+The guard above worked exactly as designed and the system still lost **two days**
+(08-10 and 08-11, both FairPrice-only). The pull failed, so it correctly refused
+to scan — but nothing then got a second chance:
+
+```
+==== Tue 08/11/2026  6:48:48 : run start ====
+fatal: unable to access '…': Could not resolve host: github.com
+---- git pull failed (attempt 1) - waiting 20s for the network
+```
+
+…and the log simply stops there. Three facts, each of which had to be true:
+
+- ⚠️ **The task fires at ~06:47, not 05:30.** `StartWhenAvailable` runs a missed
+  calendar trigger when the machine next wakes, and the laptop is asleep at 05:30
+  — so in practice this job *always* starts in the first seconds after wake,
+  which is precisely when DNS is not up yet. The scheduled time is close to
+  fiction; **assume every run is a wake-up race.**
+- ⚠️ **`RunOnlyIfNetworkAvailable` is already `true` and does not help.** It asks
+  whether an adapter has a connection, not whether DNS resolves, and on wake the
+  adapter comes up first. Don't reach for it as the fix; it is already on.
+- ⚠️ **The process was KILLED mid-wait.** `Get-ScheduledTaskInfo` reported
+  `2147943467` = **1067, `ERROR_PROCESS_ABORTED`** — the laptop went back to
+  sleep during the 20-second `ping`. No in-script retry can survive that, which
+  is why the fix had to be at the task level too.
+
+**Fixed 2026-08-11, in two places:**
+
+1. `run.cmd` / `laptop-run.cmd` — **6 attempts, 30 s apart** (~2.5 minutes of
+   patience) instead of 2 at 20 s.
+2. The **task itself** now carries `RestartOnFailure`: **3 restarts, 10 minutes
+   apart**, plus `ExecutionTimeLimit` raised `PT15M` → `PT30M` to cover the
+   longer retry budget on top of a five-minute scan. This is the half that
+   covers `ERROR_PROCESS_ABORTED`, and it only works because the wrapper hands
+   its real exit code back — a wrapper that always returned 0 would buy no
+   restarts at all. Re-exported to `C:\Users\newuser\shengsiong-runner\task.xml`.
+
+⚠️ **Both fixes live outside the repo and git cannot see either.** `task.xml` and
+the live `run.cmd` are on one machine. The previous `run.cmd` is kept beside it as
+`run.cmd.2026-08-11.bak`.
+
+To check the settings survived:
+
+```bash
+powershell -c "(Get-ScheduledTask -TaskName 'ShengSiong Daily Scan').Settings | Format-List RestartInterval,RestartCount,ExecutionTimeLimit"
+```
+
+### ⚠️ A scan of ZERO terms is not a scan (found 2026-08-11, dating from 08-09)
+
+On 2026-08-09 the runner fetched a `targets.json` that listed **no terms**,
+"scanned" all zero of them, and wrote, committed, pushed and exited 0:
+
+```
+Scanning Sheng Siong for 0 terms…
+Wrote data/shengsiong-latest.json (0 terms, 0 errors).
+```
+
+Every layer agreed it was a success. Task Scheduler saw `0`; the log line reads
+like a clean run; and the cloud reader checked only the **date**, so it would have
+called that file fresh, reported "0 products", published the page with **no ⚠️
+banner**, and returned nothing for every Sheng Siong lookup all day. It survived
+only because the phone happened to push a real scan over it hours later.
+
+Guarded at both ends, and deliberately not just one:
+
+- **Writer** — `fetchTerms()` in `push-shengsiong.ts` throws on an empty list, so
+  the file is never created. The pre-existing `errors === terms.length` guard did
+  not catch this: it is `&& terms.length > 0`, so zero terms slipped straight
+  through it.
+- **Reader** — `isUsableScan()` in `stores/shengsiong-file.ts` requires a term
+  count above zero as well as today's date, so an empty file that somehow exists
+  (an old one in a stale clone, a future regression) reads as **missing** and
+  raises the banner instead of publishing silence.
+- `push-ss`'s own **self-gate** uses the same predicate, or a bad empty file dated
+  today would block the runner from replacing it for the rest of the day.
+- The banner says **"today's file arrived empty"** for this case; `staleDays` is
+  `0`, and "the latest data is 0 days old" reads as healthy.
+
+⚠️ **A term that legitimately found nothing is still a term that was searched.**
+The guard counts *terms*, never products — `Muscovado Sugar: 0` is a normal line
+on a healthy run, and requiring products would throw away good scans.
+`src/tests/scan-file.test.ts` pins both directions.
+
 ⚠️ **The Rescan button cannot help here.** It only renders inside the ⚠️ banner,
 which only appears when a shop is **missing from a build that happened**. "No
 build at all" has no button. Its absence on a healthy page is correct behaviour,
 not a bug — that confused the user on 2026-08-05.
 
-## Next session — pick up here (as of 2026-08-10, evening)
+## Next session — pick up here (as of 2026-08-11, morning)
+
+### What 2026-08-11 did — three live faults, none of them on the list
+
+The session started by checking the running system against this file rather than
+by picking up item 28. All three faults were **operational**, invisible from the
+code, and two of them had been eating the product daily:
+
+1. **The Sheng Siong runner had not scanned for two days** (08-10, 08-11) — the
+   page was FairPrice-only both mornings. Fixed: the wake race now gets ~2.5
+   minutes of retries *and* the task restarts itself 3 times. See "The 05:30 task
+   does not run at 05:30".
+2. **Nothing ever started the Telegram inbox.** It only ran when launched by
+   hand. Fixed: `Grocery Telegram Inbox`, a logon task that repeats every 15
+   minutes and restarts the poller if it died. See "Telegram intake".
+3. **A zero-term scan was written, pushed and reported as success** on 08-09, and
+   the cloud reader would have published it with no warning. Fixed at both ends.
+   See "A scan of ZERO terms is not a scan".
+
+⚠️ **Two of those three fixes are NOT in git** — the live `run.cmd` and both
+scheduled tasks live on one machine. The repo carries `laptop-run.cmd` and
+`tg-poll-run.cmd` as the readable copies; `task.xml` and `tg-poll-task.xml` are
+exported beside them in `C:\Users\newuser\shengsiong-runner\`.
+
+⚠️ **All three are the same shape as the "green tick" gotcha** below: every layer
+reported success while the product got quietly worse. Nothing here was found by a
+test, and nothing here would have been. When picking up this project, **check what
+actually ran before writing code** — `push-ss.log`, `Get-ScheduledTaskInfo`, and
+the date inside `data/shengsiong-latest.json`.
+
+`npm test` **518 passing** (was 508), `npm run check` clean.
+
+### The state at 2026-08-10, evening
 
 ### Committed and pushed — the tree is clean
 
@@ -1550,9 +1708,10 @@ Both made a bad deal look good — the same family as the 32 g serving read as 1
 
 ## Remaining work
 
-*Mostly optional — but **22 is not**: the laptop runner can currently scan
-successfully and still lose the data. Items 22–27 were added 2026-08-05 and are
-listed first because they are the live ones.*
+*Mostly optional. Items 22–27 were added 2026-08-05; 28–30 are the inbox faults
+from its first live use; **31–33 were the operational faults found and fixed on
+2026-08-11** and are recorded as done because the next reader needs to know the
+system has a supervisor now.*
 
 **0. ⚠️ Five By-Unit rows state no pack weight in their `Name` — a job for Notion,
 not for code.** A counted row is compared **per piece**, and counting doesn't
@@ -1763,6 +1922,22 @@ exactly the case that motivated the rule.
 
     ⚠️ The user's list ended with an **empty third bullet**, so a third button may
     have been intended and not written down. Ask.
+
+31. ~~The runner loses a morning to the wake-up DNS race~~ **done 2026-08-11** —
+    6 pull attempts 30 s apart, and `RestartOnFailure` (3 × 10 min) on the task
+    itself, which is the only cover for the process being killed mid-wait.
+    ⚠️ It had already cost **two consecutive days** of FairPrice-only pages
+    before anyone looked. Full story in "The 05:30 task does not run at 05:30".
+32. ~~Nothing starts the Telegram inbox~~ **done 2026-08-11** — the
+    `Grocery Telegram Inbox` task, `tg-poll-run.cmd`, logon + a 15-minute
+    repetition as its supervisor. See "Telegram intake".
+    ⚠️ **This narrows fault 29 but does not fix it.** A tap can still arrive
+    inside the window between the poller dying and the repetition restarting it,
+    and `handleCallback` still lets a failed `answerCallback` abort the write.
+33. ~~A zero-term scan is written and reported as success~~ **done 2026-08-11** —
+    the writer refuses to publish one, the reader refuses to trust one, and
+    `src/tests/scan-file.test.ts` pins both. See "A scan of ZERO terms is not a
+    scan".
 
 20. ~~`Household Supplies` is being searched, and probably should not be~~
     **superseded by routing** (item 24) — it is not excluded, it is asked at a

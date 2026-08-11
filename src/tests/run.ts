@@ -25,6 +25,7 @@ import "./vendor-scan.test.js";
 import "./list-parse.test.js";
 import "./list-intake.test.js";
 import "./new-items.test.js";
+import "./scan-file.test.js";
 import { report } from "./harness.js";
 
 // Imported dynamically, and last, because this one suite has to `await` (it
