@@ -31,8 +31,25 @@ export const ING_PROPS = {
 	NAME: "Name",
 	/** Rich text — the shop's full name plus brand ("Pasar Romaine Lettuce"). */
 	EXACT_NAME: "Items Exact Name",
-	/** Select — "[3] Fruits/Vegetables" etc. Options are read live, never invented. */
-	CATEGORY: "Catagory",
+	/**
+	 * Select — "[3] Fruits/Vegetables" etc. Options are read live, never invented.
+	 *
+	 * ⚠️ **Renamed in Notion `Catagory` → `Category` (the typo was fixed), and this
+	 * file did not follow — found 2026-08-11, silently.** Notion matches property
+	 * names exactly, so every read returned undefined and every category became `""`.
+	 * Nothing errored. What it actually did:
+	 *   • `NON_GROCERY_CATEGORIES` stopped excluding anything, so **five
+	 *     `Suppliments` rows walked into the daily scan** (52 targets → 57);
+	 *   • every new row written by the extension, the deals page and the history
+	 *     page landed **uncategorised**, reported only in `skipped`.
+	 *
+	 * ⚠️ **Use `CATEGORY_ALIASES`, never this constant alone, when READING.** A
+	 * property name is a string in someone else's workspace and can be corrected at
+	 * any time; a reader that accepts both spellings survives it and a reader that
+	 * doesn't fails without a sound. Writing still uses one name — `buildProps`
+	 * resolves it against the live schema and skips what isn't there.
+	 */
+	CATEGORY: "Category",
 	/**
 	 * Select — "By Gram" | "By ml" | "By Unit".
 	 *
@@ -42,6 +59,31 @@ export const ING_PROPS = {
 	 */
 	UNIT_TYPE: "Unit type ",
 } as const;
+
+/**
+ * Every spelling the category column has had, newest first. **Read through this.**
+ *
+ * Same shape, and the same reasoning, as `DONT_SEARCH_TAGS` in `notion.ts`: the
+ * option there was created as `Don'r Search` and renamed by hand the same day, and
+ * both spellings are still listed because a suppression that silently stops
+ * matching is the worst kind of bug. This is that lesson applied to a *property*
+ * rather than an option — the rename here cost five supplement rows walking into
+ * the daily scan and every new row landing uncategorised, for an unknown number of
+ * days, with nothing logged.
+ */
+export const CATEGORY_ALIASES = ["Category", "Catagory"] as const;
+
+/**
+ * The category on a page's properties, whichever spelling the column currently has.
+ * Returns `""` when it genuinely has none — the same answer as an untagged row.
+ */
+export function categoryOf(props: Record<string, any>): string {
+	for (const key of CATEGORY_ALIASES) {
+		const name = props?.[key]?.select?.name;
+		if (name) return name;
+	}
+	return "";
+}
 
 /**
  * The four nutrition columns, per 100 g — filled in by the history page's

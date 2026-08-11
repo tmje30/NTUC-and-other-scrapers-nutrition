@@ -29,7 +29,7 @@ import { parseWeightInText } from "./stores/weight.js";
 // extension share one source of truth — the extension can't import this module
 // (it would pull @notionhq/client into the browser bundle).
 export { INGREDIENTS_DS } from "./ingredients-schema.js";
-import { INGREDIENTS_DS } from "./ingredients-schema.js";
+import { INGREDIENTS_DS, categoryOf } from "./ingredients-schema.js";
 
 /**
  * Meal prep data source — the meal side of the plan. Not in
@@ -338,7 +338,7 @@ export async function readParkedIngredients(client: Client): Promise<ParkedIngre
 		out.push({
 			ingredientId: row.id,
 			name,
-			category: selectName(p["Catagory"]),
+			category: categoryOf(p),
 			unitType: selectName(p["Unit type "]),
 			packPriceSgd: baseline.priceSgd,
 			packSize: baseline.size,
@@ -515,7 +515,7 @@ export async function readGroceryTargets(): Promise<PlanTarget[]> {
 		const name = titleText(p["Name"]);
 		if (!name) continue;
 
-		const category = selectName(p["Catagory"]);
+		const category = categoryOf(p);
 		if (NON_GROCERY_CATEGORIES.has(category)) continue; // groceries only
 
 		// ⚠️ `Unit type ` now says what `Size[Vendor n]` counts (g, ml or pieces).
