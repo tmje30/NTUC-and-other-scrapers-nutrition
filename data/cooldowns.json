@@ -1,77 +1,7 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-06T05:34:09.979Z",
+  "updatedAt": "2026-08-11T01:00:23.233Z",
   "entries": [
-    {
-      "key": "oil",
-      "ingredientId": "34c69a18-4fe7-80a9-af53-cf0c2e5cf7f8",
-      "ingredientName": "Oil (Bran)",
-      "reason": "ignored",
-      "addedAt": "2026-08-03T09:22:12.342Z",
-      "until": "2026-08-09T16:00:00.000Z",
-      "days": 6,
-      "basis": "ignored from the deals page until the start of next week (Mon, SGT)",
-      "store": "Sheng Siong",
-      "product": "Rice Bran Oil",
-      "packSizeG": null,
-      "monthlyAmount": 0
-    },
-    {
-      "key": "green tea",
-      "ingredientId": "34b69a18-4fe7-80f1-8ecb-d764d2abe554",
-      "ingredientName": "Green Tea (50 x 2g)",
-      "reason": "ignored",
-      "addedAt": "2026-08-06T05:30:20.361Z",
-      "until": "2026-08-09T16:00:00.000Z",
-      "days": 3,
-      "basis": "ignored from the deals page until the start of next week (Mon, SGT)",
-      "store": "Sheng Siong",
-      "product": "Green Tea",
-      "packSizeG": null,
-      "monthlyAmount": 0
-    },
-    {
-      "key": "thai red rice",
-      "ingredientId": "37e69a18-4fe7-8006-9304-f71180f91df6",
-      "ingredientName": "Thai Red rice",
-      "reason": "ignored",
-      "addedAt": "2026-08-06T05:30:24.417Z",
-      "until": "2026-08-09T16:00:00.000Z",
-      "days": 3,
-      "basis": "ignored from the deals page until the start of next week (Mon, SGT)",
-      "store": "FairPrice",
-      "product": "PaddyKing Thai Red Cargo Rice",
-      "packSizeG": null,
-      "monthlyAmount": 0
-    },
-    {
-      "key": "tofu",
-      "ingredientId": "34c69a18-4fe7-80f2-9d0c-eab7c0daa2bf",
-      "ingredientName": "Tau Kwa (Tofu)",
-      "reason": "ignored",
-      "addedAt": "2026-08-06T05:30:36.052Z",
-      "until": "2026-08-09T16:00:00.000Z",
-      "days": 3,
-      "basis": "ignored from the deals page until the start of next week (Mon, SGT)",
-      "store": "Sheng Siong",
-      "product": "Tau Kwa",
-      "packSizeG": null,
-      "monthlyAmount": 0
-    },
-    {
-      "key": "ginger",
-      "ingredientId": "34e69a18-4fe7-80ba-a84f-c9e6a8eb9d1c",
-      "ingredientName": "Ginger (Bentong)",
-      "reason": "ignored",
-      "addedAt": "2026-08-06T05:33:51.758Z",
-      "until": "2026-08-09T16:00:00.000Z",
-      "days": 3,
-      "basis": "ignored from the deals page until the start of next week (Mon, SGT)",
-      "store": "Sheng Siong",
-      "product": "Ginger Slice",
-      "packSizeG": null,
-      "monthlyAmount": 0
-    },
     {
       "key": "chicken thigh",
       "ingredientId": "39869a18-4fe7-80c6-abc1-d1713f27ac47",
@@ -96,6 +26,19 @@
       "store": "Sheng Siong",
       "product": "Peanut Butter - Crunchy",
       "packSizeG": 510,
+      "monthlyAmount": 0
+    },
+    {
+      "key": "soy sauc",
+      "ingredientId": "34c69a18-4fe7-80ae-8ff6-e24b8e4e26dc",
+      "ingredientName": "Soy Sauce (light)",
+      "addedAt": "2026-08-11T01:00:23.233Z",
+      "until": "2026-08-25T01:00:23.233Z",
+      "days": 14,
+      "basis": "no monthly usage → flat 14 days",
+      "store": "Sheng Siong",
+      "product": "Premium Less Sodium Light Soy Sauce",
+      "packSizeG": 500,
       "monthlyAmount": 0
     },
     {

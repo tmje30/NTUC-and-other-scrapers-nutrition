@@ -1,7 +1,23 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-06T04:40:34.017Z",
+  "updatedAt": "2026-08-11T01:00:23.233Z",
   "entries": [
+    {
+      "id": "soy-sauc-sheng-siong-premium-less-sodium-light-s-202608110100",
+      "ingredientId": "34c69a18-4fe7-80ae-8ff6-e24b8e4e26dc",
+      "ingredientName": "Soy Sauce (light)",
+      "key": "soy sauc",
+      "store": "Sheng Siong",
+      "product": "Premium Less Sodium Light Soy Sauce",
+      "priceSgd": 1.5,
+      "packSizeG": 500,
+      "unitCount": null,
+      "volumetric": true,
+      "url": "https://shengsiong.com.sg/product/happy-family-premium-less-sodium-light-soy-sauce-500-ml",
+      "listTitle": "Soy Sauce (light)",
+      "addedAt": "2026-08-11T01:00:23.233Z",
+      "outcome": "open"
+    },
     {
       "id": "fish-sauc-fairprice-knife-brand-thai-fish-sauce-202608060440",
       "ingredientId": "34c69a18-4fe7-80f9-9c89-ccba7ca767e0",
