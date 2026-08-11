@@ -2,13 +2,22 @@ name: Daily grocery deal scan
 
 on:
   schedule:
-    # ⚠️ **Set to ARRIVE at 08:00 SGT, not to fire at it.** GitHub queues scheduled
-    # runs on free public repos — measured +3h18 to +3h46 every day 01–04 Aug — so a
-    # cron that says 08:00 delivers around 11:30. Working backwards: 20:30 UTC fires
-    # about 00:00 UTC = 08:00 SGT next morning. Expect 07:48–08:16 SGT in practice.
-    # This is a queue, not a guarantee; if GitHub's backlog changes, re-measure
-    # rather than assuming the number above still holds.
-    - cron: "30 20 * * *"
+    # 00:00 UTC = 08:00 Singapore time. ⚠️ **This is a FLOOR on when the shops are
+    # scraped, and that is the point** (user's call, 2026-08-11): a discount read at
+    # 5am may not be the one on the shelf, so the scan must not run before 08:00.
+    #
+    # ⚠️ **The cron is when the run is REQUESTED; the scrape happens when GitHub
+    # dequeues it.** Free public repos are queued by ~3–3¾ h (measured +3h18 to
+    # +3h46 every day 01–04 Aug; the 08-10 run fired at 02:00 and started 04:00), so
+    # the scrape and the digest both land around **11:30 SGT**. "It didn't run" is
+    # almost always "it hasn't run yet".
+    #
+    # ⚠️ **A cron set EARLY to land at 08:00 was tried and reverted the same day.**
+    # `30 20 * * *` usually produced an 08:00 run — but the delay is a queue, not a
+    # promise, and on a quiet night it would fire the scrape at 04:30. Trading a
+    # guaranteed floor for an average arrival time is the wrong way round when the
+    # data has a shelf life.
+    - cron: "0 0 * * *"
   workflow_dispatch: # allow manual runs from the Actions tab
   # The page's "Rescan" button, shown only when a shop is missing from the scan.
   # The usual cause is the laptop being shut at 05:30: Task Scheduler runs the

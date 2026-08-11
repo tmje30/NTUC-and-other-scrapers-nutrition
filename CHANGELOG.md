@@ -18,13 +18,25 @@ All notable changes to this project are documented here. Format based on
   four boxes and costs nothing. Only **Find Macros** pays.
 
 ### Changed
-- **The daily scan is scheduled to ARRIVE at 08:00 SGT (2026-08-11).**
-  `cron: "0 2 * * *"` → `"30 20 * * *"`. GitHub queues scheduled runs on free
-  public repos by ~3.5 h, so the cron is deliberately set that far early; expect
-  the digest 07:48–08:16 SGT. ⚠️ **The cron no longer reads as the delivery time
-  and must not be "corrected" to one.** ⚠️ It also shrinks the Sheng Siong
-  runner's head start from ~6½ h to ~1¼ h — wake the laptop after 08:00 and the
-  page builds FairPrice-only, recoverable with the page's Rescan button.
+- **The daily scan may not run before 08:00 SGT (2026-08-11).**
+  `cron: "0 2 * * *"` → `"0 0 * * *"`. ⚠️ 08:00 is a **floor on when the shops are
+  scraped**, not a delivery time: a discount read at 5am may not be the one on the
+  shelf. GitHub's queue delays the run's START — and therefore the scrape — so
+  both it and the digest land ~11:30 SGT. ⚠️ An earlier-firing cron aimed at an
+  08:00 *arrival* (`30 20 * * *`) was tried and reverted the same day: the delay
+  is a queue, not a promise, and on a quiet night it would scrape at 04:30.
+- **A shop is searched only when the row names it (2026-08-11).** `PlanTarget`
+  carries `vendors` — every shop its `Vendor 1..4` slots name — and both the store
+  loop and `targets.json` are filtered by it. Whey is bought at Shopee, Carousell
+  and MyProtein, says so on all three rows, and was being asked of a supermarket
+  every day for nothing. ⚠️ This reverses a standing warning that was true when
+  written (`Sheng Siong` was tagged on zero rows); re-measured first — 52 targets →
+  FairPrice 49, Sheng Siong 49, neither 3, and the 3 are the whey rows.
+- **`Catagory` → `Category`** — the typo was fixed in Notion and this repo never
+  followed, so every read returned undefined and every category became `""`,
+  silently. `Suppliments` stopped being excluded (52 targets → 57, so the scan was
+  asking NTUC for Lions mane), and every new row landed uncategorised.
+  `CATEGORY_ALIASES` + `categoryOf()` now accept both spellings.
 - **A row naming no shop in any `Vendor n` slot is no longer a baseline
   (2026-08-11)** and so is not searched. Measured first: 6 of 72 priced rows, 5 of
   them `Suppliments` already outside the scan. ⚠️ Not the same as routing searches

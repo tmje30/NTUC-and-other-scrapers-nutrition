@@ -114,12 +114,12 @@ Deep dives on one session each, kept for the *why*:
   per kg/L **or per piece**, and `uses ~X/month`. A ⚠️ banner under the header
   means a shop was missing from the scan.
 - **Cloud schedule:** GitHub Actions `.github/workflows/daily.yml`,
-  `cron: "30 20 * * *"` = 20:30 UTC, plus manual `workflow_dispatch`.
-  ⚠️ **Set to ARRIVE at 08:00 SGT, not to fire at it** (changed 2026-08-11, was
-  `0 2 * * *` aiming at 10:00 and landing ~13:30). GitHub queues scheduled runs on
-  free public repos by ~3.5 h, measured every day 01–04 Aug, so the cron is set 3.5 h
-  EARLY on purpose. Expect the digest 07:48–08:16 SGT. See "Infrastructure truths".
-  "It didn't run" is usually "not yet".
+  `cron: "0 0 * * *"` = 00:00 UTC = **08:00 SGT**, plus manual `workflow_dispatch`.
+  ⚠️ **08:00 is a FLOOR on when the shops are scraped, not the delivery time**
+  (set 2026-08-11; was `0 2 * * *`). A discount read at 5am may not be the one on
+  the shelf. GitHub queues free-repo crons by ~3–3¾ h and the scrape happens when
+  the run STARTS, so both the scrape and the digest land about **11:30 SGT**.
+  See "Infrastructure truths". "It didn't run" is usually "not yet".
 - **Telegram:** reuses the user's Notion-Worker bot **@Big_Notion_Bot**, chat
   `7626546412`. Secrets `NOTION_TOKEN`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`
   are GitHub Actions secrets. Locally they live in `.env` (gitignored).
@@ -128,7 +128,7 @@ Deep dives on one session each, kept for the *why*:
 ## How the hybrid works
 
 ```
-Laptop (Task Scheduler, 05:30 SGT)        Cloud (Actions, arrives ~08:00 SGT)
+Laptop (Task Scheduler, 05:30 SGT)        Cloud (Actions, runs ~11:30 SGT)
   npm run push-ss:                           npm run build-site:
    - fetch terms from public targets.json     - scan FairPrice live
    - live Sheng Siong scan (residential IP)   - read data/shengsiong-latest.json
@@ -1312,25 +1312,24 @@ So the Telegram digest used to land about **13:20–13:50 SGT**. This is ordinar
 GitHub Actions queueing on a free public repo, not a fault — but "it didn't run"
 is almost always "it hasn't run *yet*".
 
-⚠️ **Changed 2026-08-11: the cron is now set 3.5 h EARLY, to ARRIVE at 08:00 SGT.**
-`cron: "30 20 * * *"` (20:30 UTC) + the queue ≈ 00:00 UTC = **08:00 SGT**, in
-practice 07:48–08:16. So **the cron no longer reads as the delivery time and must
-not be "corrected" to one** — a well-meaning edit to `0 0 * * *` would push
-delivery back to ~11:30. If GitHub's backlog ever changes, re-measure and move the
-cron; don't assume 3.5 h is a constant.
+⚠️ **The delay is in STARTING the run, so it is also when the shops are
+scraped.** This is the fact that decides how to set the cron, and it is easy to
+get backwards. The 08-10 run had `cron: "0 2 * * *"` and its recorded start was
+`04:00:06Z` — everything the workflow does, including the scraping, happened from
+04:00 UTC. The cron is a *request* time, not a run time.
 
-⚠️ **This shrank the runner's head start from ~6½ h to ~1¼ h, and that is the
-cost of the change.** The laptop's Sheng Siong scan does not run at 05:30 either —
-`StartWhenAvailable` fires it on WAKE, ~06:47 on a working morning. Wake the
-laptop after ~08:00 and the cloud will already have built **FairPrice-only** for
-the day. The existing recovery still applies: open the laptop (it scans by
-itself), then press **Rescan** in the page's ⚠️ banner.
-If late wakes turn out to be common, the fix is to have `push-shengsiong.ts` fire
-`repository_dispatch` after a successful push — the pattern `tg-poll.ts` already
-uses. ⚠️ Two things to solve first: the laptop runner deliberately carries **no
-PAT** (it authenticates through Credential Manager, and `dispatch()` needs
-`GITHUB_TOKEN`), and every extra build **re-sends the Telegram digest**, so a
-second daily message would need suppressing.
+⚠️ **Set 2026-08-11 to `cron: "0 0 * * *"` = 08:00 SGT, as a FLOOR on the
+scrape.** The user's reasoning: a discount read at 5am may not be the one on the
+shelf, so the scan must not run early. With the queue on top, the scrape and the
+digest both land about **11:30 SGT**.
+
+⚠️ **The clever version was tried and reverted the same day.** `30 20 * * *` set
+the cron 3½ h early so the run would *start* at 08:00, which usually worked and
+put the digest at breakfast. But the delay is a **queue, not a promise**: on a
+quiet night it would fire the scrape at 04:30, which is exactly what the floor
+exists to prevent. Trading a guaranteed floor for a good average is the wrong way
+round when the data has a shelf life. It also briefly cut the Sheng Siong runner's
+head start from ~6½ h to ~1¼ h; at 11:30 that margin is comfortable again.
 
 ### ⚠️ The laptop runner scans into a doomed push when the network is late — FIXED 2026-08-10
 
@@ -1501,6 +1500,43 @@ reported success while the product got quietly worse. Nothing here was found by 
 test, and nothing here would have been. When picking up this project, **check what
 actually ran before writing code** — `push-ss.log`, `Get-ScheduledTaskInfo`, and
 the date inside `data/shengsiong-latest.json`.
+
+### ⚠️ Start here next session — 5, 10 and 11, in that order
+
+Everything below this heading is history. These three are the work:
+
+**A. Use it for real (Remaining work 11, 13, 16).** Still the biggest untested
+surface in the project and the only item on this list that can't be done by
+reading code. The Chrome extension, the nutrition lookup and the four deal-card
+buttons have all been proven by tests, rendered markup and live page fetches, and
+**not one of them has been pressed on a real shopping trip.** Order, by how badly
+a fault would bite:
+1. **Replace** — renames a hand-maintained row, no undo. Try it on something you
+   don't care about and check the generic name it derives is one you'd have picked.
+2. **The + Macros toggle arms both roads** — one-tap flips `"findMacros":false` in
+   the JSON, two-tap rewrites the URL-encoded copy in the issue body. Both were
+   asserted against markup; neither has been fired at the live workflow.
+3. **A `has macro` card costs nothing** — the run log should say
+   `Nutrition: using the shop's own panel — free, no lookup.` A cost line there
+   means the free path didn't fire.
+
+**B. Shopee needs a one-time hand sign-in** before it can be probed at all
+(Remaining work 27). Nothing else about Shopee is blocked on code.
+
+**C. Cross-check the price book against the user's own formulas.** The user built
+`Size of Cheapest Vendor`, `Price,SGD [Cheapest]` and `Cheapest Vendor ` partly so
+this code wouldn't have to walk the slots. It still walks them — it needs
+`Item Name [Vendor n]` from the *same* slot, and four independently-computed
+formulas can disagree with each other where one slot cannot — but the formulas
+make an excellent **check**: compare what the slot walk picked against what Notion
+published, and complain when they differ.
+⚠️ Measured 2026-08-11 over 72 priced rows: **price 72/72, size 72/72, vendor
+64/72**. The 8 vendor differences are one shape — where the `Vendor 1` select is
+empty, the formula returns the literal string `"Vendor 1"` while the code returns
+blank. **The code is right**; a shopping list saying you bought tissue from a shop
+called "Vendor 1" would be worse than saying nothing. So the check must compare
+price and size strictly and treat that vendor case as expected, or it will cry
+wolf on eight rows every run.
 
 ### Then the inbox faults — 28, 29 and 30 are all done
 
@@ -1865,7 +1901,7 @@ Both made a bad deal look good — the same family as the 32 g serving read as 1
   names the shop — never claims a free slot, never evicts, never writes
   `Unit type `. Carousell opens a real Chrome window.
 - `npm run check` — typecheck.
-- `npm test` — **572** offline cases (`src/tests/`). Free, fast, no network.
+- `npm test` — **615** offline cases (`src/tests/`). Free, fast, no network.
 
 ## Key technical facts (details in LEARNINGS.md)
 
@@ -2061,9 +2097,14 @@ motivated it.
 24. **Decide the category→vendor routing** (see the vendor section). The one with
     the most upside: `Suppliments` is 30 rows the scan has never looked at.
 25. ~~Correct the documented schedule, or move the cron~~ **done 2026-08-11** —
-    moved. `cron: "30 20 * * *"` is set 3.5 h early so the digest ARRIVES at
-    08:00 SGT. ⚠️ The cron no longer reads as the delivery time; see
-    "Infrastructure truths" for why, and for the head-start it costs the runner.
+    `cron: "0 0 * * *"` = 08:00 SGT, chosen as a **floor on when the shops are
+    scraped** rather than as a delivery time. The queue puts the run, and so the
+    scrape and the digest, at ~11:30. ⚠️ An earlier-firing cron aimed at an 08:00
+    arrival was tried and reverted the same day — the delay is a queue, not a
+    promise. See "Infrastructure truths".
+34. **Cross-check the slot walk against the user's own Notion formulas.** See
+    "Start here next session" (C) for the measurement and the one expected
+    difference. Cheap, local, no API cost.
 26. **Marketplace adapters are NOT cleared to build.** Carousell works
     mechanically but found nothing cheaper than the baseline. Probe more items
     first — `npm run vendor-probe` is free.
