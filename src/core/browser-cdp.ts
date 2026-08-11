@@ -91,6 +91,24 @@ export interface BrowserOptions {
 	headed?: boolean;
 	/** Milliseconds to let client-side rendering settle after load. */
 	settleMs?: number;
+	/**
+	 * A JS expression polled until it returns truthy — read the page the moment it is
+	 * ready instead of guessing how long it takes.
+	 *
+	 * ⚠️ **Some of these shops render, then WIPE.** Watsons was measured on 2026-08-11
+	 * rendering 52 prices and 96 product links at 7–16 s, and **484 B of nothing at 22 s**:
+	 * a bot check tears the results down after the fact. A fixed `settleMs` therefore has
+	 * to thread a window with a failure at BOTH ends — too early is an empty shell, too
+	 * late is an empty shell, and the two are indistinguishable in the output. That is
+	 * exactly how this shop collected two independent "dead end, the product API never
+	 * yields" verdicts while working the whole time.
+	 *
+	 * Polling removes the guess: as soon as products exist the page is read, so the wipe
+	 * is never reached. `settleMs` becomes the give-up deadline rather than the plan.
+	 */
+	waitFor?: string;
+	/** How often to test `waitFor`. */
+	pollMs?: number;
 }
 
 export interface PageResult {
@@ -162,11 +180,29 @@ export async function evaluateInPage(
 
 		await send(ws, "Page.enable");
 		await send(ws, "Page.navigate", { url });
-		await sleep(opts.settleMs ?? 6000);
 
 		const read = async (expr: string) =>
 			(await send(ws, "Runtime.evaluate", { expression: expr, returnByValue: true, awaitPromise: true }))
 				?.result?.value;
+
+		const deadline = opts.settleMs ?? 6000;
+		if (opts.waitFor) {
+			// Poll to the deadline, then read regardless — a timeout still returns whatever
+			// is on the page, because "we waited and it never appeared" is a RESULT the
+			// caller needs to see and diagnose, not an exception to swallow.
+			const poll = opts.pollMs ?? 500;
+			const until = Date.now() + deadline;
+			while (Date.now() < until) {
+				try {
+					if (await read(opts.waitFor)) break;
+				} catch {
+					// A page mid-navigation throws; that is not a failure, just "not yet".
+				}
+				await sleep(poll);
+			}
+		} else {
+			await sleep(deadline);
+		}
 
 		return {
 			url: String(await read("location.href")),

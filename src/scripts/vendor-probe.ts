@@ -240,7 +240,9 @@ async function probeWatsons(term: string): Promise<ProbeResult> {
 				? "Reachable AND parseable from this address. Watsons is a normal fetch-tier shop from residential — no CDP, no cookie minting."
 				: products.length
 					? "Reachable, JSON-LD present, but no size in the titles — likely needs the product page for pack size, same as MyProtein."
-					: `Reachable (${r.body.length}B) but NO products over plain fetch — the storefront is an Angular SPA on SAP Commerce (\`occ-backend-base-url: https://api.watsons.com.sg\`), so \`/search?text=\` returns a 6.5KB generic fallback and guessed OCC paths (/occ/v2/wtcsg/products/search) 404. **Use the browser tier: \`--browser --headed\` renders it fine** (measured 2026-08-11 from residential: 54 price nodes, 1 ld+json). ⚠️ The 2026-08-05 note here used to call this a dead end — "a real browser renders only the FOOTER, the product API never yields, it needs Bot-Manager-valid cookies from an aged session". **That was drawn from a HEADLESS run and is wrong.** Headless is detected by this site exactly as it is by Carousell; headed clears it with no cookie minting and no login. Next step is the same as any browser-tier shop: pin the product-card selector.`,
+					: `Reachable (${r.body.length}B) but NO products, and the browser tier does not help. The storefront is an Angular SPA on SAP Commerce (\`occ-backend-base-url: https://api.watsons.com.sg\`); \`/search?text=\` returns a ~6.5KB generic fallback and guessed OCC paths (/occ/v2/wtcsg/products/search) 404 with an injected Akamai Bot Manager sensor script. **A real HEADED Chrome on a residential IP renders only the FOOTER** — re-confirmed 2026-08-11: 782B of text, all of it About Us / Legal / Members, \`<title>\` empty, ZERO price nodes, and the only product-shaped link on the page is the cookie-consent vendor's. So Watsons needs Bot-Manager-valid cookies from an aged real session, not just a residential IP and a visible window.
+⚠️ **A headed run once reported "54 price nodes" here and it was a false positive** — \`[class*="price" i]\` matches skeleton loaders and promo furniture, and 6603B of "rendered" text was within 40B of the empty shell. That is why the verdict now demands prices containing a NUMBER *and* product links. Do not re-open Watsons on a node count alone.
+⚠️ Payoff if it is ever cracked: **5 rows**, all currently unpriced — the CeraVe lotion and the four Sensodyne toothpastes, the same rows Guardian covers. (An older note here said one row; that was wrong.) The Chrome extension already captures them by hand for free.`,
 		};
 	}
 
@@ -398,13 +400,19 @@ const CAROUSELL_EXTRACT = `(() => {
  */
 const GENERIC_PROBE = `(() => {
   const p = location.pathname;
+  const priceNodes = [...document.querySelectorAll('[class*="price" i],[itemprop="price"]')];
   return {
     blocked: /verify\\/traffic/i.test(p) || /(^|\\/)(login|signin)(\\/|$)/i.test(p),
     href: location.href,
+    title: document.title,
     textLen: document.body.innerText.length,
     head: document.body.innerText.replace(/\\s+/g,' ').slice(0, 240),
     ldjson: [...document.querySelectorAll('script[type="application/ld+json"]')].length,
-    priceNodes: [...document.querySelectorAll('[class*="price" i],[itemprop="price"]')].length
+    priceNodes: priceNodes.length,
+    // ⚠️ The count that actually means something — see the note on \`priceNodes\`.
+    pricesWithMoney: priceNodes.filter(n => /\\d/.test(n.innerText || '')).length,
+    productLinks: [...document.querySelectorAll('a[href]')]
+      .filter(a => /\\/(pr|p|product)\\//i.test(a.getAttribute('href') || '')).length
   };
 })()`;
 
@@ -480,9 +488,22 @@ async function probeViaBrowser(
 			vendor,
 			tier: profile ? "login" : "browser",
 			reachable: !v.blocked,
-			detail: `${v.blocked ? "REDIRECTED → " + v.href : "rendered"}; text ${v.textLen}B, ${v.ldjson} ld+json, ${v.priceNodes} price nodes`,
+			detail:
+				`${v.blocked ? "REDIRECTED → " + v.href : "rendered"}; text ${v.textLen}B, ` +
+				`${v.ldjson} ld+json, ${v.priceNodes} price nodes (${v.pricesWithMoney} with a number), ` +
+				`${v.productLinks} product links`,
 			candidates: [],
-			verdict: v.blocked ? "needs-login" : v.priceNodes > 0 || v.ldjson > 0 ? "works" : "no-data",
+			// ⚠️ **`priceNodes` alone is NOT evidence and used to be treated as such.**
+			// `[class*="price" i]` matches skeleton loaders, promo furniture and empty
+			// containers. Watsons scored 54 of them while rendering nothing but its FOOTER,
+			// which read as "works" and sent a session chasing a shop that never yields
+			// (2026-08-11). A product needs a price with a NUMBER in it and a link to
+			// itself; both, or this is a shell.
+			verdict: v.blocked
+				? "needs-login"
+				: v.pricesWithMoney > 0 && v.productLinks > 0
+					? "works"
+					: "no-data",
 			fix: v.blocked
 				? `Still bounced: ${v.head.slice(0, 120)}. Sign in by hand in the window this opens (profile persists at .sessions/), then re-run.`
 				: v.priceNodes > 0

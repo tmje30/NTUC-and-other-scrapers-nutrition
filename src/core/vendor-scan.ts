@@ -28,6 +28,7 @@ import type { StoreModule, StoreProduct } from "./stores/types.js";
 import { guardian } from "./stores/guardian.js";
 import { myprotein } from "./stores/myprotein.js";
 import { carousell } from "./stores/carousell.js";
+import { watsons } from "./stores/watsons.js";
 import { fairprice } from "./stores/fairprice.js";
 import { shengsiong } from "./stores/shengsiong.js";
 import { shengsiongFile } from "./stores/shengsiong-file.js";
@@ -96,6 +97,11 @@ export const ROUTES: VendorRoute[] = [
 	{ option: "Guardian", module: guardian, marketplace: false },
 	{ option: "My Protein", module: myprotein, marketplace: false },
 	{ option: "Carousell", module: carousell, marketplace: true },
+	// ⚠️ **Laptop only.** Watsons needs a real HEADED Chrome (headless renders its footer
+	// and nothing else), so this route cannot run in GitHub Actions — same constraint as
+	// Carousell. Added 2026-08-11 for the 5 rows that named it and had no price at all:
+	// the CeraVe lotion and four Sensodyne toothpastes, the same rows Guardian covers.
+	{ option: "Watsons", module: watsons, marketplace: false },
 ];
 
 /** One Ingredients row, with everything the scan needs to search and to write. */
