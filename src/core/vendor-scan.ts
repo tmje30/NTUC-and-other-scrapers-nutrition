@@ -29,6 +29,7 @@ import { guardian } from "./stores/guardian.js";
 import { myprotein } from "./stores/myprotein.js";
 import { carousell } from "./stores/carousell.js";
 import { watsons } from "./stores/watsons.js";
+import { iherb } from "./stores/iherb.js";
 import { fairprice } from "./stores/fairprice.js";
 import { shengsiong } from "./stores/shengsiong.js";
 import { shengsiongFile } from "./stores/shengsiong-file.js";
@@ -102,6 +103,10 @@ export const ROUTES: VendorRoute[] = [
 	// Carousell. Added 2026-08-11 for the 5 rows that named it and had no price at all:
 	// the CeraVe lotion and four Sensodyne toothpastes, the same rows Guardian covers.
 	{ option: "Watsons", module: watsons, marketplace: false },
+	// ⚠️ Laptop only, same as Watsons and Carousell — plain fetch gets a 403 and headless
+	// is detected. Expect FEW candidates: most of iHerb is capsules, whose titles state a
+	// dose and a count but no pack weight, and those are dropped rather than guessed.
+	{ option: "Iherb", module: iherb, marketplace: false },
 ];
 
 /** One Ingredients row, with everything the scan needs to search and to write. */

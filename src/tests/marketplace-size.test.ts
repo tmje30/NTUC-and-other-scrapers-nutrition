@@ -40,6 +40,29 @@ check("oz supported", near(g("Protein Powder 16 oz"), 453.59));
 check("metric still works", near(g("NOW Sports Whey Protein 2.2kg"), 2200));
 check("grams still work", near(g("Applied Nutrition Critical Whey 825g"), 825));
 
+// --- comma thousands separators: caught live on iHerb, 2026-08-11 ----------
+//
+// ⚠️ The parser treated EVERY comma as a European decimal point, so "1,500 g" became
+// **1.5 g** — a thousandfold error wearing an ordinary-looking number. It matters beyond
+// a bad comparison: `vendor-scan` writes this into `Size[Vendor n]`, so a misread puts
+// 1.5 where 1500 belongs in the price book and every per-kilo figure after it is wrong.
+check("'1,500 g' is 1500 g, not 1.5 g", near(g("Whey Protein 1,500 g"), 1500));
+check("'2,268 g' is 2268 g", near(g("Nutricost Whey Protein Isolate 2,268 g"), 2268));
+// ⚠️ A second comma group ("1,234,567 g") is NOT handled — the size regex matches one
+// group. Left alone deliberately, and left untested: a pack over ~100 kg does not exist in
+// a grocery or supplement catalogue, and widening the regex would give every stray comma
+// another route to becoming a size. Recorded here so the limit is known, not discovered.
+// The European decimal comma this was originally written for must still work.
+check("'1,5 kg' is still 1.5 kg", near(g("Protein 1,5 kg"), 1500));
+// ⚠️ The real title that exposed it. Before the fix "5 lb" (2268 g) and "2,268 g" (2.27 g)
+// disagreed, so the multi-size guard REFUSED the listing — a correct refusal covering for
+// a wrong parse, which is why it went unnoticed as a dropped product rather than a bug.
+check(
+	"'5 lb (2,268 g)' agrees with itself and is no longer refused",
+	near(g("Nutricost, Grass-Fed Whey Protein Isolate, Vanilla, 5 lb (2,268 g)"), 2267.96, 2),
+	`got ${reason("Nutricost, Grass-Fed Whey Protein Isolate, Vanilla, 5 lb (2,268 g)")} / ${g("Nutricost, Grass-Fed Whey Protein Isolate, Vanilla, 5 lb (2,268 g)")}g`,
+);
+
 // --- ranges: caught live, 2026-08-05 ---------------------------------------
 check(
 	"a shared-unit RANGE is rejected, not read as its top end",

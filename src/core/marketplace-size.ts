@@ -65,6 +65,30 @@ function toGrams(n: number, rawUnit: string): { grams: number; volumetric: boole
  */
 const SERVING_RE = /\b\d+\s*(servings?|scoops?|sachets?|caps?|capsules?|tablets?|pills?)\b/i;
 
+/**
+ * A number that may carry a comma, read the way the title meant it.
+ *
+ * ⚠️ **A comma is a thousands separator far more often than a decimal point, and this
+ * used to assume the opposite.** `Number(x.replace(",", "."))` turned **"1,500 g" into
+ * 1.5 g** — a thousandfold error, in a shape that looks like a perfectly ordinary number.
+ *
+ * Caught on 2026-08-11 against real iHerb titles: `"5 lb (2,268 g)"` parsed as 5 lb AND
+ * 2.27 g, which disagreed, so the multi-size guard refused the listing — a correct refusal
+ * hiding a wrong parse, and the product was silently dropped. A title stating **only**
+ * "1,500 g" had nothing to disagree with and would have been believed.
+ *
+ * ⚠️ The danger is not only a bad comparison. `vendor-scan` writes this number into
+ * `Size[Vendor n]`, so a misread here puts 1.5 where 1500 belongs in the price book and
+ * every per-kilo figure derived from it is wrong afterwards.
+ *
+ * The rule: a comma followed by exactly three digits is a separator ("1,500" → 1500);
+ * anything else is the European decimal comma this was written for ("1,5" → 1.5).
+ */
+export function looseNumber(raw: string): number {
+	const s = /,\d{3}(?!\d)/.test(raw) ? raw.replace(/,/g, "") : raw.replace(",", ".");
+	return Number(s);
+}
+
 /** All distinct size mentions in a string, in order of appearance. */
 function allSizes(s: string): { text: string; grams: number; volumetric: boolean }[] {
 	const out: { text: string; grams: number; volumetric: boolean }[] = [];
@@ -73,7 +97,7 @@ function allSizes(s: string): { text: string; grams: number; volumetric: boolean
 		// Skip a match that is really a percentage or a currency amount just before it.
 		const before = s.slice(Math.max(0, m.index! - 2), m.index!);
 		if (/[%$]/.test(before)) continue;
-		const g = toGrams(Number(m[1].replace(",", ".")), m[2]);
+		const g = toGrams(looseNumber(m[1]), m[2]);
 		if (!g) continue;
 		out.push({ text: m[0].trim(), grams: g.grams, volumetric: g.volumetric });
 	}
@@ -114,7 +138,7 @@ export function marketplaceSize(title: string | null | undefined): SizeResult {
 	// separators that would mean a new clause.
 	const multi = s.match(new RegExp(`(\\d+)\\s*[x×]\\s*(?:[^,;(]{0,80}?)(\\d+(?:[.,]\\d+)?)\\s*${UNIT_RE}\\b`, "i"));
 	if (multi) {
-		const each = toGrams(Number(multi[2].replace(",", ".")), multi[3]);
+		const each = toGrams(looseNumber(multi[2]), multi[3]);
 		const count = Number(multi[1]);
 		if (each && count > 0 && count <= 24) {
 			return {
