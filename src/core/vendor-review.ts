@@ -504,7 +504,7 @@ export function renderReviewCard(p: PendingReview): string {
  * It still states what each button does, because the two are **not** opposites and
  * guessing wrong is costly in one direction: "Don't use" is about the price book alone.
  */
-export function renderReviewSummary(count: number, written: number, url: string): string {
+export function renderReviewSummary(count: number, written: number, url?: string): string {
 	if (!count) {
 		return written
 			? `🧾 <b>${written} price${written === 1 ? "" : "s"} recorded.</b> Nothing needed your call.`
@@ -514,7 +514,12 @@ export function renderReviewSummary(count: number, written: number, url: string)
 		`🧾 <b>${count} price${count === 1 ? "" : "s"} need${count === 1 ? "s" : ""} your call</b>` +
 		(written ? ` · ${written} clear one${written === 1 ? "" : "s"} recorded already` : "") +
 		`\n<b>OK</b> records it. <b>Don't use</b> doesn't — the item still shows on your deals page either way.` +
-		`\n<a href="${url}">Tap to review →</a>`
+		// ⚠️ No link when the queue never reached the repo: the published page is built
+		// from the committed file, so a link would open questions that are not there yet.
+		// Saying so is better than sending someone to a page that looks empty.
+		(url
+			? `\n<a href="${url}">Tap to review →</a>`
+			: `\n⚠️ Not published — the queue could not be pushed, so the review page is still showing the previous scan.`)
 	);
 }
 

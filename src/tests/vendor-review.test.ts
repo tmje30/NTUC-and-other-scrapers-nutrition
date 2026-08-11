@@ -223,6 +223,13 @@ check(
 	/50 prices recorded/i.test(renderReviewSummary(0, 50, "https://example.test/review.html")),
 );
 
+// ⚠️ The published page is built from the COMMITTED queue file. If the push failed, a
+// link would open questions that are not there — the message says so instead of sending
+// the user to a page that looks empty and reads as broken.
+const unpublished = renderReviewSummary(4, 2, undefined);
+check("an unpushed queue is not linked", !unpublished.includes("<a href="));
+check("and says why", /not published/i.test(unpublished));
+
 // ── the queue does not grow without bound ───────────────────────────────────────
 
 describe("vendor review — asked once, not every day");

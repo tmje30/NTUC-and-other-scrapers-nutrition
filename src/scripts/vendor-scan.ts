@@ -36,6 +36,7 @@ import { cooldownKey } from "../core/cooldown.js";
 import { renderReviewPage } from "../core/review-page.js";
 import { sendHtml } from "../core/telegram.js";
 import { config } from "../core/config.js";
+import { commitAndPushData } from "../core/git-data-push.js";
 import { mkdir, writeFile } from "node:fs/promises";
 
 /** Where the review page is written. Built into `public/` like every other page. */
@@ -49,6 +50,7 @@ import type { StoreProduct } from "../core/stores/types.js";
  *   npm run vendor-scan -- --only guardian
  *   npm run vendor-scan -- --write               # record the clear ones, ASK about the rest
  *   npm run vendor-scan -- --write --no-ask      # record the clear ones, queue the rest silently
+ *   npm run vendor-scan -- --write --no-push     # queue locally; don't update the live page
  *
  * ⚠️ **Report-only by default, and that is the whole safety posture.** Every other
  * writer in this project is a button someone pressed while looking at one product; this
@@ -76,6 +78,8 @@ const flag = (name: string): string | undefined => {
 const doWrite = argv.includes("--write");
 /** Queue the uncertain picks but send no Telegram message — for an unattended run. */
 const noAsk = argv.includes("--no-ask");
+/** Write the queue locally but don't commit it — the live review page stays as it was. */
+const noPush = argv.includes("--no-push");
 const only = (flag("only") ?? "").toLowerCase().split(",").filter(Boolean);
 const wanted = (r: VendorRoute) => !only.length || only.some((o) => r.option.toLowerCase().replace(/\s+/g, "").includes(o.replace(/\s+/g, "")));
 
@@ -446,8 +450,32 @@ async function askAboutUncertain(
 
 	await writeVendorReview(review);
 
+	// ⚠️ **The queue has to reach the CLOUD or the Telegram link is a lie.** `public/` is
+	// gitignored and rebuilt by the daily workflow, so the page written above is a local
+	// preview; what the phone opens is built from `data/vendor-review.json` in the repo.
+	// Pushing is therefore part of asking, not a separate chore — same shape as the Sheng
+	// Siong runner, and the same `commitAndPushData` that survives a rejected push.
+	let published = false;
+	if (noPush) {
+		console.log(`(--no-push: data/vendor-review.json not committed; the live page will not change.)`);
+	} else {
+		try {
+			await commitAndPushData({
+				file: "data/vendor-review.json",
+				message: `data: ${review.pending.length} price(s) awaiting review`,
+			});
+			published = true;
+		} catch (e) {
+			console.log(`⚠️  Could not push the review queue (${(e as Error).message}).`);
+		}
+	}
+
 	try {
-		await sendHtml(renderReviewSummary(toAsk.length, written, config.reviewUrl()));
+		// ⚠️ Only linked when the queue actually reached the repo. A message pointing at a
+		// page that still shows yesterday's questions is worse than one that says so.
+		await sendHtml(
+			renderReviewSummary(toAsk.length, written, published ? config.reviewUrl() : undefined),
+		);
 		console.log(`📨 Sent one review link to Telegram.`);
 	} catch (e) {
 		console.log(`⚠️  Could not send the review link (${(e as Error).message}).`);

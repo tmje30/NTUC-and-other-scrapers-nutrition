@@ -8,6 +8,9 @@ import { renderNewItemsPage, type NewItemsFile } from "../core/new-items.js";
 import { readParkedIngredients, type ParkedIngredient } from "../core/notion.js";
 import { readPurchases } from "../core/purchases-file.js";
 import { readExclusions } from "../core/exclusions-file.js";
+import { readVendorReview } from "../core/vendor-review-file.js";
+import { prunePending } from "../core/vendor-review.js";
+import { renderReviewPage } from "../core/review-page.js";
 import { config } from "../core/config.js";
 
 /**
@@ -218,6 +221,37 @@ try {
 	}
 } catch (e: any) {
 	if (e?.code !== "ENOENT") console.error(`Warning: new-items page skipped: ${e.message}`);
+}
+
+/**
+ * The review page — every price the vendor scan was unsure about.
+ *
+ * Same hybrid shape as Sheng Siong and new-items: the laptop scan decides and commits
+ * `data/vendor-review.json`, and the cloud only renders it.
+ *
+ * ⚠️ **No freshness gate here, unlike new-items, and the difference is deliberate.** A
+ * new-items page showing last week's prices is worse than no page, because it claims to
+ * be today's shopping. A pending QUESTION is not a claim about today — it is a question
+ * that stays open until answered, and hiding it would silently drop it. Staleness is
+ * handled where it belongs, by `prunePending` (7 days), which is applied here too so the
+ * page never offers a question the next scan would discard.
+ *
+ * ⚠️ **The empty state is rendered, not skipped.** The Telegram message links here
+ * unconditionally, and a 404 reads as "broken", while "nothing waiting" reads as done.
+ */
+try {
+	const review = prunePending(await readVendorReview());
+	await writeFile(
+		"public/review.html",
+		renderReviewPage(review.pending, { repo: config.repo() }),
+		"utf8",
+	);
+	console.error(
+		`Wrote public/review.html (${review.pending.length} awaiting a decision, ` +
+			`${review.rejected.length} standing refusals)`,
+	);
+} catch (e: any) {
+	console.error(`Warning: failed to write public/review.html: ${e.message}`);
 }
 
 // Publish the search terms so residential runners (phone/laptop) can fetch them
