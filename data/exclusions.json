@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-09T08:07:29.182Z",
+  "updatedAt": "2026-08-11T01:45:06.816Z",
   "terms": [
     {
       "key": "instant coffe",
@@ -137,6 +137,15 @@
       "name": "egg  (Omega 3 Enriched) (550g)",
       "note": "not omega 3 enriched",
       "addedAt": "2026-08-09T08:07:29.182Z"
+    },
+    {
+      "key": "*",
+      "store": "FairPrice",
+      "product": "Malika Cinnamon Sticks 500G -- By Dashmesh",
+      "url": "https://www.fairprice.com.sg/product/malika-cinnamon-sticks-500g-by-dashmesh-500-g-90054223",
+      "name": "Cinnamon",
+      "note": "ignored from the deals page",
+      "addedAt": "2026-08-11T01:45:06.816Z"
     }
   ]
 }
