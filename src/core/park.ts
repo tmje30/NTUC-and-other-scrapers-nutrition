@@ -46,6 +46,51 @@ async function parkedOption(client: Client): Promise<string> {
 }
 
 /**
+ * Add ANY existing tag to one ingredient row — the generic form of `parkIngredient`.
+ *
+ * Both of this module's rules apply unchanged, and neither is optional:
+ *
+ *  1. **The tag is ADDED, never assigned.** The whole `multi_select` is read and sent
+ *     back, because a partial write silently destroys the other tags — and those tags
+ *     (`Brand Specific`, `Quality item`, `Organic/animal welfare`) ARE the ingredient's
+ *     search configuration.
+ *  2. **No schema is created.** An unknown name makes Notion invent the option, which is
+ *     a schema edit to a live personal workspace. Instead this returns `false` and the
+ *     caller reports it — the user adds the option themselves if they want it.
+ *
+ * Returns false when the option does not exist, or true once the row carries the tag
+ * (including when it already did).
+ */
+export async function addIngredientTag(
+	client: Client,
+	ingredientId: string,
+	tagName: string,
+): Promise<boolean> {
+	if (!ingredientId) throw new Error("addIngredientTag needs an ingredientId");
+
+	const ds = (await client.dataSources.retrieve({ data_source_id: INGREDIENTS_DS })) as any;
+	const def = ds.properties?.[TAGS_PROPERTY];
+	if (def?.type !== "multi_select") return false;
+	const option: string | undefined = (def.multi_select.options ?? [])
+		.map((o: any) => o.name)
+		.find((o: string) => o?.toLowerCase() === tagName.toLowerCase());
+	if (!option) return false; // rule 2 — reported, never invented
+
+	const page = (await client.pages.retrieve({ page_id: ingredientId })) as any;
+	const current: string[] = (page.properties?.[TAGS_PROPERTY]?.multi_select ?? [])
+		.map((o: any) => o.name)
+		.filter(Boolean);
+	if (current.some((t) => t.toLowerCase() === option.toLowerCase())) return true;
+
+	await client.pages.update({
+		page_id: ingredientId,
+		// Rule 1 — every existing tag carried across.
+		properties: { [TAGS_PROPERTY]: { multi_select: [...current, option].map((name) => ({ name })) } },
+	} as any);
+	return true;
+}
+
+/**
  * Add the parked tag to one ingredient row, preserving its other tags. Idempotent:
  * a row that already carries the tag is left untouched and reported as such.
  */

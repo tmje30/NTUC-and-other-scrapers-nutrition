@@ -2,10 +2,14 @@ import { check, describe, eq } from "./harness.js";
 import {
 	BULK_GRAMS,
 	EMPTY_REVIEW,
+	REJECT_REASONS,
 	findPendingFor,
+	isRejectReason,
 	isRejectedPick,
+	reasonsFor,
+	sizeBoundsFor,
 	prunePending,
-	renderReviewHeader,
+	renderReviewSummary,
 	reviewReasons,
 	reviewToken,
 	statesMultipack,
@@ -201,8 +205,22 @@ eq("a refusal file has no exclusion-shaped keys", Object.keys(rejected()).sort()
 ]);
 
 check(
-	"the header tells the user the deals page is unaffected",
-	/deals page/i.test(renderReviewHeader(3, 2)),
+	"the summary tells the user the deals page is unaffected",
+	/deals page/i.test(renderReviewSummary(3, 2, "https://example.test/review.html")),
+);
+
+// ⚠️ ONE message per scan, linking to the page — never one per pick. 16 notifications
+// from a single run is what prompted this, and a muted bot loses the daily digest too.
+check(
+	"the summary links to the page rather than listing the picks",
+	renderReviewSummary(16, 50, "https://example.test/review.html").includes(
+		'<a href="https://example.test/review.html">',
+	),
+);
+
+check(
+	"nothing to ask about still reports what was recorded",
+	/50 prices recorded/i.test(renderReviewSummary(0, 50, "https://example.test/review.html")),
 );
 
 // ── the queue does not grow without bound ───────────────────────────────────────
@@ -213,6 +231,7 @@ const pending = (over: Partial<PendingReview> = {}): PendingReview => ({
 	token: "abc123",
 	ingredientId: "row-carrots",
 	ingredientName: "carrots, Normal",
+	key: "carrot",
 	unitType: "By Gram",
 	vendor: "Sheng Siong",
 	slotN: 2,
@@ -255,3 +274,85 @@ check("a fresh token avoids the live one", reviewToken(queued) !== "abc123");
 const stale = withPending(EMPTY_REVIEW, pending({ askedAt: "2020-01-01T00:00:00.000Z" }));
 check("a stale question is dropped, not answered", prunePending(stale).pending.length === 0);
 check("a fresh one survives the prune", prunePending(queued).pending.length === 1);
+
+// ── the reasons, and what each one is allowed to do ─────────────────────────────
+
+describe("vendor review — a refusal with a reason");
+
+check(
+	"Wrong brand is offered only when the row names a [brand]",
+	!reasonsFor({}).some((r) => r.key === "wrong-brand") &&
+		reasonsFor({ brand: "Sensodyne" }).some((r) => r.key === "wrong-brand"),
+);
+
+// ⚠️ Exactly ONE reason may reach the deals page — the user's explicit decision. If a
+// second ever gains that power it must be a deliberate edit here, not a quiet default.
+eq(
+	"only wrong-item is allowed to touch the deals page",
+	REJECT_REASONS.filter((r) => r.key === "wrong-item").map((r) => r.key),
+	["wrong-item"],
+);
+
+check("a hand-edited reason is rejected", !isRejectReason("delete-everything"));
+check("a real one is accepted", isRejectReason("too-big"));
+
+// ── size bounds: the difference between skipping a URL and answering the question ──
+
+const refusedBig = withRejectedPick(EMPTY_REVIEW, {
+	ingredientId: "row-carrots",
+	vendor: "Sheng Siong",
+	url: "u1",
+	store: "Sheng Siong",
+	product: "Australia Carrot 10kg",
+	name: "carrots, Normal",
+	why: "bulk",
+	reason: "too-big",
+	packGrams: 10000,
+}).file;
+
+eq("'too big at 10kg' becomes a ceiling", sizeBoundsFor(refusedBig, "row-carrots", "Sheng Siong"), {
+	maxGrams: 10000,
+	minGrams: null,
+});
+
+check(
+	"the ceiling is scoped to that row at that shop",
+	sizeBoundsFor(refusedBig, "row-carrots", "NTUC").maxGrams === null,
+);
+
+// ⚠️ Without this the user is asked the same question every week in a smaller pack:
+// excluding the 10 kg sack alone just promotes the 5 kg one.
+const refusedTwice = withRejectedPick(refusedBig, {
+	ingredientId: "row-carrots",
+	vendor: "Sheng Siong",
+	url: "u2",
+	store: "Sheng Siong",
+	product: "Australia Carrot 5kg",
+	name: "carrots, Normal",
+	why: "bulk",
+	reason: "too-big",
+	packGrams: 5000,
+}).file;
+check(
+	"a second refusal tightens the ceiling rather than replacing it",
+	sizeBoundsFor(refusedTwice, "row-carrots", "Sheng Siong").maxGrams === 5000,
+);
+
+check(
+	"a refusal with no size reason sets no bound",
+	sizeBoundsFor(
+		withRejectedPick(EMPTY_REVIEW, {
+			ingredientId: "r",
+			vendor: "v",
+			url: "u",
+			store: "v",
+			product: "p",
+			name: "n",
+			why: "",
+			reason: "wrong-item",
+			packGrams: 900,
+		}).file,
+		"r",
+		"v",
+	).maxGrams === null,
+);

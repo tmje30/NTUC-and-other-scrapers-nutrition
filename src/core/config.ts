@@ -58,6 +58,12 @@ export const config = {
 	siteUrl: () =>
 		optional("SITE_URL", "https://tmje30.github.io/NTUC-and-other-scrapers-nutrition/"),
 	/**
+	 * The price-review page — every pick the vendor scan was unsure about, on one page.
+	 * Derived from `siteUrl` rather than configured separately so the two cannot drift
+	 * apart when the site moves.
+	 */
+	reviewUrl: () => `${config.siteUrl().replace(/\/+$/, "")}/review.html`,
+	/**
 	 * "owner/repo" — where the Add button files its request. Actions sets
 	 * GITHUB_REPOSITORY for free; the default keeps local page builds working.
 	 */

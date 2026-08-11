@@ -58,7 +58,12 @@ export type ItemAction =
 	| "add-ingredient"
 	| "replace-ingredient"
 	| "rebase-ingredient"
-	| "never-buy";
+	| "never-buy"
+	// The review page's two buttons — see `review-page.ts`. `review-skip` carries a
+	// `reason` from `REJECT_REASONS`, and only its `wrong-item` reason reaches the
+	// deals page; the rest are price-book decisions.
+	| "review-ok"
+	| "review-skip";
 
 export interface ActionPayload {
 	v: 1;
@@ -69,6 +74,26 @@ export interface ActionPayload {
 	ingredientId: string;
 	/** The ingredient's display name, for the log and the issue comment. */
 	name: string;
+	/**
+	 * ⚠️ Fields below carry a REVIEW-PAGE pick (`review-ok` / `review-skip`).
+	 *
+	 * They duplicate `store`/`product` on purpose rather than reusing them. A review card
+	 * is not a deal card: it quotes a price and a pack the user is being asked to approve,
+	 * and the tap must record exactly what the page showed — so the pick travels whole
+	 * rather than being looked up again by token. See `review-page.ts`.
+	 */
+	/** The `Vendor n` option this pick belongs to. */
+	vendor?: string;
+	/** `Size[Vendor n]` as the page showed it — grams, ml, or a count. */
+	size?: number;
+	/** The shop's own wording for the product, bound for `item Name [Vendor n]`. */
+	itemName?: string;
+	/** The queue token, so answering also clears the pending question. */
+	token?: string;
+	/** Which `REJECT_REASONS` button was tapped. */
+	reason?: string;
+	/** The scan's own reasons for asking, carried through for the log. */
+	why?: string;
 	/** The store the card was showing. Evidence on `mismatch`, identity on `almost`/`ignore-product`. */
 	store?: string;
 	/** The product name the card was showing. */
@@ -155,6 +180,8 @@ const ACTIONS = new Set<ItemAction>([
 	"replace-ingredient",
 	"rebase-ingredient",
 	"never-buy",
+	"review-ok",
+	"review-skip",
 ]);
 
 /**
@@ -163,7 +190,16 @@ const ACTIONS = new Set<ItemAction>([
  * a specific product, not a base noun, so they carry no key and none is demanded
  * — requiring one there would mean the page inventing a value nothing reads.
  */
-const NEEDS_KEY = new Set<ItemAction>(["reset", "park", "ignore-week", "mismatch", "almost"]);
+const NEEDS_KEY = new Set<ItemAction>([
+	"reset",
+	"park",
+	"ignore-week",
+	"mismatch",
+	"almost",
+	// `review-skip` can block a product by base noun (its `wrong-item` reason), and a
+	// block with no key would silently apply to nothing.
+	"review-skip",
+]);
 
 /** How many words one tap may exclude — a guard on a hand-edited free-text field. */
 const MAX_TERMS = 12;
@@ -249,6 +285,14 @@ export function parseActionPayload(raw: unknown): ActionPayload {
 		store: str("store", false),
 		product: str("product", false),
 		url: str("url", false),
+		// The review-page pick, travelling whole so the tap records exactly what the
+		// page showed. Every field optional: a deal-card payload carries none of them.
+		vendor: str("vendor", false) || undefined,
+		size: num("size") ?? undefined,
+		itemName: str("itemName", false) || undefined,
+		token: str("token", false) || undefined,
+		reason: str("reason", false) || undefined,
+		why: str("why", false) || undefined,
 		terms,
 		note: str("note", false),
 		purchaseId: str("purchaseId", false),
@@ -279,7 +323,12 @@ export function parseActionPayload(raw: unknown): ActionPayload {
 	// nothing to write to, and guessing from the name is exactly the kind of
 	// almost-right that edits the wrong ingredient.
 	if (
-		(action === "unpark" || action === "replace-ingredient" || action === "rebase-ingredient") &&
+		(action === "unpark" ||
+			action === "replace-ingredient" ||
+			action === "rebase-ingredient" ||
+			// Both review actions write to (or decide about) one specific row.
+			action === "review-ok" ||
+			action === "review-skip") &&
 		!payload.ingredientId
 	) {
 		throw new Error(`payload.ingredientId is required for "${action}"`);

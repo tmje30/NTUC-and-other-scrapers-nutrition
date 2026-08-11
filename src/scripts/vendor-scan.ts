@@ -23,16 +23,23 @@ import { readVendorReview, writeVendorReview } from "../core/vendor-review-file.
 import {
 	findPendingFor,
 	isRejectedPick,
-	renderReviewCard,
-	renderReviewHeader,
+	renderReviewSummary,
 	reviewReasons,
 	reviewToken,
 	prunePending,
+	sizeBoundsFor,
 	withPending,
 	type PendingReview,
 	type ReviewReason,
 } from "../core/vendor-review.js";
+import { cooldownKey } from "../core/cooldown.js";
+import { renderReviewPage } from "../core/review-page.js";
 import { sendHtml } from "../core/telegram.js";
+import { config } from "../core/config.js";
+import { mkdir, writeFile } from "node:fs/promises";
+
+/** Where the review page is written. Built into `public/` like every other page. */
+const REVIEW_PAGE_PATH = "public/review.html";
 import type { StoreProduct } from "../core/stores/types.js";
 
 /**
@@ -185,10 +192,21 @@ async function main(): Promise<void> {
 				// the scan goes on to offer the next-best pack rather than reporting the
 				// refused one and giving up. Refusing the 5 L soy sauce should surface the
 				// 640 ml bottle, not silence the row.
+				//
+				// ⚠️ Size bounds are applied here too, and they are the difference between a
+				// refusal that skips one URL and one that answers the question. Excluding
+				// only the 10 kg sack promotes the 5 kg sack, and the user gets asked again
+				// next week in a smaller size; a ceiling ends it. See `sizeBoundsFor`.
+				const bounds = sizeBoundsFor(review, row.pageId, route.option);
 				const before = products.length;
-				products = products.filter(
-					(p) => !isRejectedPick(review, row.pageId, route.option, p),
-				);
+				products = products.filter((p) => {
+					if (isRejectedPick(review, row.pageId, route.option, p)) return false;
+					const g = packWeightOf(row.unitType, sizeFor(row.unitType, p), row.name, p.name);
+					if (g == null) return true; // no weight is no opinion, as everywhere else
+					if (bounds.maxGrams != null && g >= bounds.maxGrams) return false;
+					if (bounds.minGrams != null && g <= bounds.minGrams) return false;
+					return true;
+				});
 				if (products.length < before) skippedByUser += before - products.length;
 				outcome = pickCandidate(row.target, products, {
 					marketplace: route.marketplace,
@@ -309,9 +327,13 @@ async function main(): Promise<void> {
 					token: outstanding?.token ?? reviewToken(review),
 					ingredientId: row.pageId,
 					ingredientName: row.name,
+					key: cooldownKey(row.target.search.searchTerm),
 					unitType: row.unitType,
 					vendor: route.option,
 					slotN: slot.n,
+					// From `parseName`, so the page offers "Wrong brand" only where a
+					// bracketed brand actually exists to enforce.
+					brand: row.target.search.brand || undefined,
 					priceSgd: p.priceSgd,
 					size: size!,
 					url: p.url,
@@ -413,29 +435,24 @@ async function askAboutUncertain(
 		return;
 	}
 
-	try {
-		await sendHtml(renderReviewHeader(toAsk.length, written));
-		for (const p of toAsk) {
-			const messageId = await sendHtml(renderReviewCard(p), {
-				keyboard: [
-					[
-						{ text: "✅ OK, record it", data: `vy:${p.token}` },
-						{ text: "✖ Don't use", data: `vn:${p.token}` },
-					],
-				],
-			});
-			// Kept so the answer can replace the buttons with the outcome — a prompt that
-			// stays tappable after it has been answered invites a second, contradictory tap.
-			p.messageId = messageId;
-			await sleep(400); // stay under Telegram rate limits
-		}
-		console.log(`\n📨 Sent ${toAsk.length} review card(s) to Telegram.`);
-	} catch (e) {
-		console.log(`\n⚠️  Could not send the review cards (${(e as Error).message}).`);
-		console.log(`   They stay queued in data/vendor-review.json and will be re-sent next run.`);
-	}
+	// ⚠️ **One page, one message — never one message per pick.** The first live run
+	// queued 16 picks and sent 16 separate cards, which is not a review queue, it is a
+	// reason to mute the bot; and a muted bot loses the daily digest with it. The rest of
+	// this project has always been "one Telegram message → one page", and so is this.
+	await mkdir("public", { recursive: true });
+	const page = renderReviewPage(review.pending, { repo: config.repo() });
+	await writeFile(REVIEW_PAGE_PATH, page, "utf8");
+	console.log(`\nWrote ${REVIEW_PAGE_PATH} (${review.pending.length} waiting).`);
 
 	await writeVendorReview(review);
+
+	try {
+		await sendHtml(renderReviewSummary(toAsk.length, written, config.reviewUrl()));
+		console.log(`📨 Sent one review link to Telegram.`);
+	} catch (e) {
+		console.log(`⚠️  Could not send the review link (${(e as Error).message}).`);
+		console.log(`   The picks stay queued in data/vendor-review.json; the page is still written.`);
+	}
 }
 
 main().catch((e) => {

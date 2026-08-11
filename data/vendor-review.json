@@ -1,0 +1,142 @@
+{
+  "version": 1,
+  "updatedAt": "2026-08-11T06:23:39.580Z",
+  "pending": [
+    {
+      "token": "vg3c5h",
+      "ingredientId": "34b69a18-4fe7-8020-b136-ebb02d41c6ef",
+      "ingredientName": "Milk ( Normal)",
+      "unitType": "By ml",
+      "vendor": "Sheng Siong",
+      "slotN": 2,
+      "priceSgd": 22.5,
+      "size": 12000,
+      "url": "https://shengsiong.com.sg/product/cowhead-uht-pure-milk-12-x-1-l",
+      "itemName": "UHT Pure Milk",
+      "perLabel": "$1.88/L",
+      "reasons": [
+        {
+          "kind": "bulk",
+          "grams": 12000,
+          "note": "12L pack — catering size, not a weekly shop"
+        }
+      ],
+      "askedAt": "2026-08-11T06:14:52.304Z",
+      "messageId": 32
+    },
+    {
+      "token": "yquvvd",
+      "ingredientId": "34b69a18-4fe7-8089-bff1-d84e43a7b560",
+      "ingredientName": "Cinnamon",
+      "unitType": "By Gram",
+      "vendor": "Sheng Siong",
+      "slotN": 2,
+      "priceSgd": 2.64,
+      "size": 100,
+      "url": "https://shengsiong.com.sg/product/happy-family-cinnamon-powder-100-g",
+      "itemName": "Cinnamon Powder",
+      "perLabel": "$26.40/kg",
+      "reasons": [
+        {
+          "kind": "outlier",
+          "factor": 0.15147540983606556,
+          "note": "6.6× cheaper than this row's other shop"
+        }
+      ],
+      "askedAt": "2026-08-11T06:15:29.310Z",
+      "messageId": 34
+    }
+  ],
+  "rejected": [
+    {
+      "ingredientId": "34b69a18-4fe7-8089-bff1-d84e43a7b560",
+      "vendor": "NTUC",
+      "url": "https://www.fairprice.com.sg/product/drag60-cinnamon-powder",
+      "store": "NTUC",
+      "product": "Drag60 Cinnamon Powder",
+      "name": "Cinnamon",
+      "why": "25kg pack — catering size, not a weekly shop",
+      "rejectedAt": "2026-08-11T06:17:36.410Z"
+    },
+    {
+      "ingredientId": "34c69a18-4fe7-8016-823e-d941bc6b92f0",
+      "vendor": "Sheng Siong",
+      "url": "https://shengsiong.com.sg/product/fen-xiang-fragrant-sesame-oil-2-l",
+      "store": "Sheng Siong",
+      "product": "Fragrant Sesame Oil",
+      "name": "Sesame Oil",
+      "why": "2L pack — catering size, not a weekly shop",
+      "rejectedAt": "2026-08-11T06:19:19.334Z"
+    },
+    {
+      "ingredientId": "34b69a18-4fe7-80cd-ba18-dcc51da93d01",
+      "vendor": "NTUC",
+      "url": "https://www.fairprice.com.sg/product/redman-cider-apple-vinegar",
+      "store": "NTUC",
+      "product": "RedMan Cider Apple Vinegar",
+      "name": "Apple Cider vinegar (Unpasteurized)",
+      "why": "2L pack — catering size, not a weekly shop",
+      "rejectedAt": "2026-08-11T06:21:38.628Z"
+    },
+    {
+      "ingredientId": "34b69a18-4fe7-80c7-9de6-fa3234a2a9d8",
+      "vendor": "Sheng Siong",
+      "url": "https://shengsiong.com.sg/product/malaysia-pisang-berangan-banana-12-15-kg",
+      "store": "Sheng Siong",
+      "product": "Malaysia Pisang Berangan Banana",
+      "name": "Banana (Fruit)",
+      "why": "the pack size is a RANGE and was read at its top — the real pack may be smaller (and dearer per kg)",
+      "rejectedAt": "2026-08-11T06:21:42.995Z"
+    },
+    {
+      "ingredientId": "39869a18-4fe7-8029-9609-ea147e99672e",
+      "vendor": "Sheng Siong",
+      "url": "https://shengsiong.com.sg/product/australia-carrot-10-kg",
+      "store": "Sheng Siong",
+      "product": "Australia Carrot",
+      "name": "carrots, Normal",
+      "why": "10kg pack — catering size, not a weekly shop",
+      "rejectedAt": "2026-08-11T06:23:01.391Z"
+    },
+    {
+      "ingredientId": "34c69a18-4fe7-80e2-af0a-f43a16115231",
+      "vendor": "Sheng Siong",
+      "url": "https://shengsiong.com.sg/product/sun-brand-sarawak-white-pepper-ground-400-g",
+      "store": "Sheng Siong",
+      "product": "Sarawak White Pepper Ground",
+      "name": "White Pepper",
+      "why": "9.4× cheaper than this row's other shop",
+      "rejectedAt": "2026-08-11T06:23:16.804Z"
+    },
+    {
+      "ingredientId": "34c69a18-4fe7-80ae-8ff6-e24b8e4e26dc",
+      "vendor": "Sheng Siong",
+      "url": "https://shengsiong.com.sg/product/golden-summit-light-soya-sauce-5-l",
+      "store": "Sheng Siong",
+      "product": "Light Soya Sauce",
+      "name": "Soy Sauce (light)",
+      "why": "5L pack — catering size, not a weekly shop; 4.8× cheaper than this row's other shop",
+      "rejectedAt": "2026-08-11T06:23:23.743Z"
+    },
+    {
+      "ingredientId": "34c69a18-4fe7-80a9-af53-cf0c2e5cf7f8",
+      "vendor": "NTUC",
+      "url": "https://www.fairprice.com.sg/product/rice-field-100-pure-rice-bran-oil-5lt-12361874",
+      "store": "NTUC",
+      "product": "Rice Field 100% Pure Rice Bran Oil ",
+      "name": "Oil (Bran)",
+      "why": "5L pack — catering size, not a weekly shop",
+      "rejectedAt": "2026-08-11T06:23:26.835Z"
+    },
+    {
+      "ingredientId": "34c69a18-4fe7-80a9-af53-cf0c2e5cf7f8",
+      "vendor": "Sheng Siong",
+      "url": "https://shengsiong.com.sg/product/happy-family-rice-bran-oil-2-l",
+      "store": "Sheng Siong",
+      "product": "Rice Bran Oil",
+      "name": "Oil (Bran)",
+      "why": "2L pack — catering size, not a weekly shop",
+      "rejectedAt": "2026-08-11T06:23:31.745Z"
+    }
+  ]
+}

@@ -12,13 +12,21 @@ import {
 import { readCooldowns, writeCooldowns } from "../core/cooldown-file.js";
 import { ALL_ITEMS, withBlockedProduct, withExcludedTerms } from "../core/exclusions.js";
 import { readExclusions, writeExclusions } from "../core/exclusions-file.js";
-import { parkIngredient, unparkIngredient } from "../core/park.js";
+import { addIngredientTag, parkIngredient, unparkIngredient } from "../core/park.js";
+import { readVendorReview, writeVendorReview } from "../core/vendor-review-file.js";
+import {
+	REJECT_REASONS,
+	isRejectReason,
+	withRejectedPick,
+	withoutPending,
+} from "../core/vendor-review.js";
 import { PARKED_TAG } from "../core/notion.js";
 import {
 	createIngredient,
 	describeSlotDecision,
 	fieldsFromPurchase,
 	rebaseIngredient,
+	recordVendorPrice,
 	replaceIngredientPrice,
 } from "../core/ingredient-write.js";
 import { lookupMacros, macrosConfigured, type Macros, type MacroResult } from "../core/macros.js";
@@ -663,6 +671,131 @@ if (payload.action === "rebase-ingredient") {
 			(res.skipped.length ? `\nSkipped: ${res.skipped.join("; ")}.` : "") +
 			`\n${macroNote(payload, macros)}\n` +
 			`Tags and plan formulas were left alone.`,
+	);
+	process.exit(0);
+}
+
+/**
+ * **The review page's OK button.** Records a price the scan was unsure about.
+ *
+ * The payload carries the whole pick rather than just a token, so this writes exactly the
+ * price the page showed — see `review-page.ts`. Slot safety is unchanged: `recordVendorPrice`
+ * only ever refreshes a slot that already names this shop.
+ */
+if (payload.action === "review-ok") {
+	if (dryRun) {
+		await report(`DRY RUN — would record $${payload.priceSgd} / ${payload.size} for **${label}** at ${payload.vendor}.`);
+		process.exit(0);
+	}
+	const client = new Client({ auth: config.notionToken() });
+	const res = await recordVendorPrice(client, payload.ingredientId, {
+		vendor: payload.vendor ?? "",
+		priceSgd: payload.priceSgd,
+		size: payload.size,
+		url: payload.url,
+		itemName: payload.itemName,
+	});
+	// ⚠️ The test is the SLOT decision, never "were any properties sent" (live bug,
+	// 2026-08-09). A button reporting a write it did not make is worse than one that fails.
+	const landed = res.slot != null && res.slot.kind !== "none";
+	await writeVendorReview(withoutPending(await readVendorReview(), payload.token ?? ""));
+	await report(
+		landed
+			? `Recorded for **${label}** at ${payload.vendor}: $${payload.priceSgd} / ${payload.size}.\n` +
+					`${describeSlotDecision(res.slot)}\nWrote: ${res.written.join(", ")}.`
+			: `Not written for **${label}**: ${describeSlotDecision(res.slot)}`,
+	);
+	process.exit(0);
+}
+
+/**
+ * **The review page's "Don't use", with its reason.**
+ *
+ * ⚠️ Read `REJECT_REASONS` before changing anything here. Every reason refuses the price
+ * book, and exactly one — `wrong-item` — also reaches the DEALS PAGE, by the user's
+ * explicit decision (2026-08-11). It writes a per-item block keyed to this ingredient,
+ * never `ALL_ITEMS`; "ignore forever" remains the deals page's own red Ignore.
+ */
+if (payload.action === "review-skip") {
+	const reason = typeof payload.reason === "string" && isRejectReason(payload.reason) ? payload.reason : undefined;
+	const meta = REJECT_REASONS.find((r) => r.key === reason);
+
+	if (dryRun) {
+		await report(`DRY RUN — would refuse "${payload.itemName}" for **${label}** (${meta?.label ?? "no reason given"}).`);
+		process.exit(0);
+	}
+
+	const { file: reviewFile } = withRejectedPick(withoutPending(await readVendorReview(), payload.token ?? ""), {
+		ingredientId: payload.ingredientId,
+		vendor: payload.vendor ?? "",
+		url: payload.url ?? "",
+		store: payload.vendor ?? "",
+		product: payload.itemName ?? "",
+		name: label,
+		why: payload.why ?? "",
+		reason,
+		// Bounds the NEXT pick when the complaint was about size — see `sizeBoundsFor`.
+		packGrams: reason === "too-big" || reason === "too-small" ? (payload.size ?? null) : null,
+	});
+	await writeVendorReview(reviewFile);
+
+	const extra: string[] = [];
+
+	if (reason === "wrong-item") {
+		const { file, added } = withBlockedProduct(
+			await readExclusions(),
+			{
+				key: payload.key,
+				store: payload.vendor ?? "",
+				product: payload.itemName ?? "",
+				url: payload.url ?? "",
+				name: label,
+				note: "wrong item, from the review page",
+			},
+			now,
+		);
+		if (added) await writeExclusions(file);
+		extra.push(
+			added
+				? `Also blocked as a DEAL for **${label}** — it will stop appearing on the deals page for this row. ` +
+						`Every other item still competes for it.`
+				: `It was already blocked for **${label}**.`,
+		);
+	}
+
+	if (reason === "wrong-brand") {
+		// ⚠️ Adds an EXISTING tag option to this row. It never creates schema — if the
+		// live `Select` has no "Brand Specific" option, this reports and changes nothing.
+		try {
+			const client = new Client({ auth: config.notionToken() });
+			const tagged = await addIngredientTag(client, payload.ingredientId, "Brand Specific");
+			extra.push(
+				tagged
+					? `Tagged **${label}** \`Brand Specific\` — only the [bracketed] brand will match from now on.`
+					: `Could not tag **${label}** \`Brand Specific\` — that option is not on the live \`Select\` property, and this tool never creates schema. Add it in Notion if you want it.`,
+			);
+		} catch (e: any) {
+			extra.push(`Could not tag **${label}** \`Brand Specific\`: ${e.message}`);
+		}
+	}
+
+	if (reason === "bad-price") {
+		// Not a shopping decision — a parser fault. Said plainly so it is triaged as one.
+		extra.push(
+			`⚠️ Logged as a **parsing fault**, not a preference: $${payload.priceSgd} / ${payload.size} was read from ` +
+				`"${payload.itemName}". Worth checking the size parser against that title.`,
+		);
+	}
+
+	if (meta?.research) {
+		extra.push(`The next scan will look again at ${payload.vendor} and offer the closest pack it can find.`);
+	}
+
+	await report(
+		`Not recorded for **${label}** at ${payload.vendor}: ${payload.itemName}\n` +
+			`Reason: ${meta?.label ?? "not given"}.\n` +
+			(reason === "wrong-item" ? "" : `It still appears on your deals page.\n`) +
+			extra.join("\n"),
 	);
 	process.exit(0);
 }

@@ -180,9 +180,16 @@ export interface PendingReview {
 	token: string;
 	ingredientId: string;
 	ingredientName: string;
+	/** `cooldownKey` of the row's base noun — what `exclusions.ts` keys a block by. */
+	key: string;
 	unitType: string;
 	vendor: string;
 	slotN: number;
+	/**
+	 * The `[bracketed]` brand from the row's Name, when it has one. Decides whether the
+	 * "Wrong brand" reason is offered — `Brand Specific` has nothing to enforce without it.
+	 */
+	brand?: string;
 	/** Exactly what would be written, so the answer records what was actually shown. */
 	priceSgd: number;
 	size: number;
@@ -216,7 +223,42 @@ export interface RejectedPick {
 	name: string;
 	/** Why it was offered at all — the reasons shown when it was refused. */
 	why: string;
+	/** Which button was tapped (`REJECT_REASONS`), when one was. */
+	reason?: string;
+	/**
+	 * What the refused pack weighed, so a size complaint can steer the NEXT pick.
+	 * Null for a piece-priced pack, where there is no weight to bound.
+	 */
+	packGrams?: number | null;
 	rejectedAt: string;
+}
+
+/**
+ * Size bounds this row has earned at this shop, from past "pack too large/small" answers.
+ *
+ * ⚠️ **This is what makes a refusal do more than skip one URL.** Excluding the 10 kg sack
+ * alone just promotes the 5 kg sack — the user would be asked the same question every
+ * week, in decreasing sizes, forever. Recording "too big at 10 kg" as a ceiling makes the
+ * next scan pick something under it and stop asking.
+ *
+ * Both bounds are EXCLUSIVE of the refused pack: "10 kg is too big" says nothing about
+ * whether 9.9 kg is fine, but it does say 10 kg is not, and being wrong in the direction
+ * of asking again is the safe one.
+ */
+export function sizeBoundsFor(
+	file: VendorReviewFile,
+	ingredientId: string,
+	vendor: string,
+): { maxGrams: number | null; minGrams: number | null } {
+	let maxGrams: number | null = null;
+	let minGrams: number | null = null;
+	for (const r of file.rejected ?? []) {
+		if (!same(r.ingredientId, ingredientId) || !same(r.vendor, vendor)) continue;
+		if (r.packGrams == null || r.packGrams <= 0) continue;
+		if (r.reason === "too-big" && (maxGrams == null || r.packGrams < maxGrams)) maxGrams = r.packGrams;
+		if (r.reason === "too-small" && (minGrams == null || r.packGrams > minGrams)) minGrams = r.packGrams;
+	}
+	return { maxGrams, minGrams };
 }
 
 export interface VendorReviewFile {
@@ -353,6 +395,82 @@ export function withoutPending(
  */
 export const PENDING_TTL_DAYS = 7;
 
+/**
+ * Why a pick was refused — and every one of these exists because it changes what the
+ * system does NEXT. A free-text "no" teaches nothing; these each route somewhere.
+ *
+ * ⚠️ **`wrong-item` is the one reason that DOES reach the deals page** — the user's
+ * decision, 2026-08-11, asked explicitly because it is the single exception to their own
+ * rule that "Don't use" is a price-book decision. The reasoning: *"that is not the
+ * product"* is a statement about MATCHING, not about pack size, and a matcher left
+ * uncorrected would go on surfacing the same wrong product as a deal for this row forever.
+ *
+ * It writes a per-item block (`exclusions.withBlockedProduct`, keyed by the ingredient),
+ * **never** `ALL_ITEMS` — that stays reserved for the deals page's own red Ignore button,
+ * which is the user's "ignore forever". So the product keeps competing for every other
+ * item in the database; it just stops being offered for this one.
+ *
+ * Every other reason here leaves the deals page completely untouched.
+ */
+export const REJECT_REASONS = [
+	{
+		key: "too-big",
+		label: "Pack too large",
+		hint: "right product, catering size",
+		/** Re-search preferring packs nearer the row's own size. */
+		research: true,
+	},
+	{
+		key: "too-small",
+		label: "Pack too small",
+		hint: "right product, sample/trial size",
+		research: true,
+	},
+	{
+		key: "wrong-item",
+		label: "Wrong item",
+		hint: "not this product — also stops it appearing as a deal for this row",
+		research: true,
+	},
+	{
+		// ⚠️ Only offered when the row's Name carries a [brand] — `brandOnly` below.
+		// Without a bracketed brand there is nothing for `Brand Specific` to enforce, and
+		// the tag would silently reject every candidate for that row.
+		key: "wrong-brand",
+		label: "Wrong brand",
+		hint: "tags this row Brand Specific, so only the [bracketed] brand matches",
+		research: true,
+		brandOnly: true,
+	},
+	{
+		key: "missing-property",
+		label: "Missing something it needs",
+		hint: "unpasteurized, organic, steel-cut, unflavoured…",
+		research: true,
+	},
+	{
+		// ⚠️ Not a shopping decision — a PARSER bug report. Every size fault this project
+		// has found (the 32 g serving read as 100 g, "2 large" as two litres, a piece count
+		// as grams) looked exactly like a suspiciously good price first.
+		key: "bad-price",
+		label: "Price or size looks misread",
+		hint: "the number is wrong, not the product",
+		research: false,
+	},
+] as const;
+
+export type RejectReasonKey = (typeof REJECT_REASONS)[number]["key"];
+
+/** Reasons offered for this pick — brand-only ones need a `[brand]` in the row's Name. */
+export function reasonsFor(pick: { brand?: string }): readonly (typeof REJECT_REASONS)[number][] {
+	return REJECT_REASONS.filter((r) => !("brandOnly" in r && r.brandOnly) || !!pick.brand);
+}
+
+/** Is this a reason we issued? Guards a payload arriving from a hand-edited issue. */
+export function isRejectReason(k: string): k is RejectReasonKey {
+	return REJECT_REASONS.some((r) => r.key === k);
+}
+
 /** Local HTML escape — this module stays free of the Telegram client. */
 const h = (s: string) =>
 	String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -377,19 +495,26 @@ export function renderReviewCard(p: PendingReview): string {
 }
 
 /**
- * The header that precedes the cards.
+ * The single message that links to the review page.
  *
- * ⚠️ It states what happens on each button, because the two are **not** opposites and
- * guessing wrong is costly in one direction. "Don't use" is about the price book alone;
- * the deals page is untouched either way, and the button that removes something from the
- * deals page is a different one, on the page itself.
+ * ⚠️ **One message for the whole scan, not one per pick.** Sixteen notifications from one
+ * run (measured 2026-08-11) trains a person to mute the bot, and the same bot carries the
+ * daily digest. The cards live on `review.html`; this just says how many and where.
+ *
+ * It still states what each button does, because the two are **not** opposites and
+ * guessing wrong is costly in one direction: "Don't use" is about the price book alone.
  */
-export function renderReviewHeader(count: number, written: number): string {
+export function renderReviewSummary(count: number, written: number, url: string): string {
+	if (!count) {
+		return written
+			? `🧾 <b>${written} price${written === 1 ? "" : "s"} recorded.</b> Nothing needed your call.`
+			: `🧾 Nothing to record and nothing to check.`;
+	}
 	return (
 		`🧾 <b>${count} price${count === 1 ? "" : "s"} need${count === 1 ? "s" : ""} your call</b>` +
 		(written ? ` · ${written} clear one${written === 1 ? "" : "s"} recorded already` : "") +
-		`\n<b>OK</b> records it in the price book. <b>Don't use</b> doesn't.\n` +
-		`<i>Either way it still shows on your deals page — to drop it from there too, use Ignore on the page itself.</i>`
+		`\n<b>OK</b> records it. <b>Don't use</b> doesn't — the item still shows on your deals page either way.` +
+		`\n<a href="${url}">Tap to review →</a>`
 	);
 }
 
