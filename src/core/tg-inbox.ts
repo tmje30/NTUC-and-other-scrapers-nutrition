@@ -21,7 +21,14 @@ import {
 } from "./list-intake.js";
 import { addTextedItem } from "./grocery-list.js";
 import { categorize } from "./categorize.js";
-import { createIngredient, type IngredientFields } from "./ingredient-write.js";
+import {
+	createIngredient,
+	describeSlotDecision,
+	recordVendorPrice,
+	type IngredientFields,
+} from "./ingredient-write.js";
+import { readVendorReview, writeVendorReview } from "./vendor-review-file.js";
+import { withRejectedPick, withoutPending } from "./vendor-review.js";
 import { unparkIngredient } from "./park.js";
 import { PARKED_TAG } from "./notion.js";
 import { scanNewItems, type NewItemResult } from "./new-items.js";
@@ -426,6 +433,93 @@ async function ack(id: string, text?: string): Promise<void> {
 	}
 }
 
+/**
+ * Answer one price-book review card: **OK** records the pick, **Don't use** refuses it.
+ *
+ * ⚠️ **"Don't use" does NOT touch `exclusions.json`, and that is the point of the whole
+ * feature.** The user was explicit (2026-08-11): *"just because it is 'Don't use' does
+ * not mean it should not show up in Discount page. (if i don't want it there either, it
+ * will be put into the 'ignore forever' option.)"* So a refusal here is scoped to one
+ * ingredient at one shop in the price book, and the deals page goes on offering the
+ * product exactly as before. The button that removes something from the deals page is
+ * the red **Ignore** on the page itself, which writes `ALL_ITEMS` — a different store,
+ * a different meaning, deliberately not reachable from here.
+ *
+ * A refusal is remembered so the next scan offers the NEXT-best pack instead of asking
+ * the same question again (`isRejectedPick` is applied before the pick, not after).
+ */
+async function handleReviewCallback(
+	deps: InboxDeps,
+	cb: NonNullable<TgUpdate["callback_query"]>,
+	token: string,
+	accept: boolean,
+): Promise<void> {
+	const file = await readVendorReview();
+	const p = (file.pending ?? []).find((x) => x.token === token);
+	if (!p) {
+		await ack(cb.id, "That question has already been answered.");
+		return;
+	}
+	await ack(cb.id);
+
+	const chatId = String(cb.message?.chat.id ?? p.chatId ?? "");
+	const messageId = cb.message?.message_id ?? p.messageId;
+	const settle = async (text: string) => {
+		if (messageId) {
+			try {
+				await editHtml(messageId, text, { chatId });
+			} catch (e: any) {
+				console.error(`review edit failed (cosmetic, carrying on): ${e?.message ?? e}`);
+			}
+		}
+	};
+
+	if (!accept) {
+		const { file: next } = withRejectedPick(withoutPending(file, token), {
+			ingredientId: p.ingredientId,
+			vendor: p.vendor,
+			url: p.url,
+			store: p.vendor,
+			product: p.itemName,
+			name: p.ingredientName,
+			why: p.reasons.map((r) => r.note).join("; "),
+		});
+		await writeVendorReview(next);
+		await settle(
+			`✖️ <b>${esc(p.ingredientName)}</b> — not recorded at ${esc(p.vendor)}.\n` +
+				`<i>${esc(p.itemName)}</i>\n` +
+				`I won't offer this pack for this row again. It still shows on your deals page.`,
+		);
+		return;
+	}
+
+	let outcome: string;
+	try {
+		const res = await recordVendorPrice(deps.notion, p.ingredientId, {
+			vendor: p.vendor,
+			priceSgd: p.priceSgd,
+			size: p.size,
+			url: p.url,
+			itemName: p.itemName,
+		});
+		// ⚠️ The test is the SLOT decision, never "were any properties sent" — a button
+		// that reports a write it did not make is worse than one that fails loudly
+		// (live bug, 2026-08-09).
+		outcome =
+			res.slot != null && res.slot.kind !== "none"
+				? `✅ <b>${esc(p.ingredientName)}</b> — recorded at ${esc(p.vendor)}.\n` +
+					`<i>${esc(p.itemName)}</i>\n$${p.priceSgd.toFixed(2)}${p.perLabel ? ` · ${esc(p.perLabel)}` : ""}`
+				: `⚠️ <b>${esc(p.ingredientName)}</b> — not written: ${esc(describeSlotDecision(res.slot))}`;
+	} catch (e: any) {
+		outcome = `❌ <b>${esc(p.ingredientName)}</b> — ${esc(e.message)}`;
+	}
+	// Taken off the queue either way: a write that failed for a structural reason (the
+	// slot was retagged, the row was deleted) will fail identically on a second tap, and
+	// the next scan re-queues anything still genuinely uncertain.
+	await writeVendorReview(withoutPending(file, token));
+	await settle(outcome);
+}
+
 /** Handle one button tap. */
 async function handleCallback(
 	deps: InboxDeps,
@@ -433,6 +527,16 @@ async function handleCallback(
 	cb: NonNullable<TgUpdate["callback_query"]>,
 ): Promise<void> {
 	const [verb, t, arg] = (cb.data ?? "").split(":");
+
+	// ⚠️ Price-book review taps are answered from their OWN store, not from the inbox
+	// state file: they are queued by `vendor-scan` (a separate process, possibly days
+	// earlier) and must survive a poller restart. Handled before the inbox lookup below,
+	// which would otherwise reject the token as an already-answered question.
+	if (verb === "vy" || verb === "vn") {
+		await handleReviewCallback(deps, cb, t, verb === "vy");
+		return;
+	}
+
 	const pending = t ? state.pending[t] : undefined;
 
 	// Acknowledge first, always. Telegram spins the button until this lands, so a

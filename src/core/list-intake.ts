@@ -294,13 +294,23 @@ export function decideList(items: ParsedItem[], rows: IngredientRow[]): IntakeDe
  * | **divide by the weight** | ✅ **`$7.25/kg`** |
  *
  * And when nothing states a weight — a razor cartridge, a stock cube — the
- * comparable figure is **per piece** (`$0.40/pc`), which is what you use at the
- * shelf between a box of 10 and a box of 30. Notion's own
- * `Cheapest Price/Kg ` formula reaches the same conclusion and prints
- * `3.99 /10 pc` on exactly these rows.
+ * comparable figure is **per 10 pieces**, which is what you use at the shelf
+ * between a box of 10 and a box of 30.
+ *
+ * ⚠️ **Ten, not one, to match Notion's own `Cheapest Price/Kg ` formula**, which
+ * prints `4.2 /10 pc` on exactly these rows (the user's call, 2026-08-11). It
+ * briefly quoted per ONE piece — the same number, scaled — and two conventions for
+ * one figure sitting in two databases is precisely where someone later assumes a
+ * factor of ten. Whichever is chosen, both places must say the same thing.
  */
 export function pricePerKgLabelFor(row: IngredientRow): string | undefined {
 	if (row.price?.per1000) return `$${row.price.per1000.toFixed(2)}/${row.unitType === "By ml" ? "L" : "kg"}`;
-	if (row.price?.perPiece) return `$${row.price.perPiece.toFixed(2)}/pc`;
+	if (row.price?.perPiece) return `$${(row.price.perPiece * PIECES_PER_QUOTE).toFixed(2)}/${PIECES_PER_QUOTE} pc`;
 	return undefined;
 }
+
+/**
+ * How many pieces a counted row's price is quoted against. Mirrors Notion's
+ * `Cheapest Price/Kg ` formula — change one and change the other.
+ */
+export const PIECES_PER_QUOTE = 10;

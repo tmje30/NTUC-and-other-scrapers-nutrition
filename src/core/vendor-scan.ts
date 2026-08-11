@@ -8,6 +8,7 @@ import {
 	isByWeight,
 	multiSelectNames,
 	normTag,
+	packWeightOf,
 	queryAll,
 	selectName,
 	titleText,
@@ -19,7 +20,6 @@ import { evaluate } from "./match.js";
 import { cheapestPlausible } from "./marketplace-size.js";
 import {
 	cheapestVendorSlot,
-	pricePer1000,
 	readVendorSlots,
 	resolveVendorSlotProps,
 	type VendorSlot,
@@ -394,14 +394,37 @@ export const REPUTATION_BAR = { reviews: MIN_SELLER_REVIEWS, rating: MIN_SELLER_
  * The slot being written is excluded so a scan can never validate a candidate against
  * its own previous answer — otherwise one bad write becomes the reference that justifies
  * the next one.
+ *
+ * ⚠️ **It divides by what the pack WEIGHS, never by `Size[Vendor n]` directly**, and that
+ * distinction is the whole function. `Size[Vendor n]` holds whatever `Unit type ` says it
+ * holds — grams, millilitres, *or a count of eggs* — so the old `pricePer1000(...) / 10`
+ * read a count of 10 as 10 grams and called $3.99 a box **$39.90/100g**, against a true
+ * $0.73. That is 55× too high, and it was not cosmetic: this number becomes
+ * `floor = reference * MIN_FRACTION_OF_KNOWN_PRICE`, so every genuine listing fell *below*
+ * the counterfeit floor and was discarded — a counted row silently yielded no vendor
+ * prices at all, with an authoritative-looking reason quoting the nonsense back.
+ * See `docs/session-2026-08-11-price-per-kg.md`.
+ *
+ * ⚠️ **Each slot is divided by ITS OWN item name's weight**, never another slot's. The
+ * slots describe different packs at different shops; borrowing Guardian's 550 g to divide
+ * FairPrice's price invents a figure that is no shop's.
+ *
+ * A counted row with no stated weight anywhere contributes **nothing** rather than a
+ * guess — null is a real answer here (a razor cartridge has no meaningful weight), and a
+ * row with no weighable reference simply has no floor, which is the safe direction.
  */
-export function referencePer100g(slots: VendorSlot[], excludeSlotN: number): number | null {
+export function referencePer100g(
+	slots: VendorSlot[],
+	excludeSlotN: number,
+	row: { unitType: UnitType; name: string },
+): number | null {
 	let best: number | null = null;
 	for (const slot of slots) {
 		if (slot.n === excludeSlotN) continue;
-		const per1000 = pricePer1000(slot.priceValue, slot.sizeValue);
-		if (per1000 == null) continue;
-		const per100 = per1000 / 10;
+		if (slot.priceValue == null || slot.priceValue <= 0) continue;
+		const grams = packWeightOf(row.unitType, slot.sizeValue, row.name, slot.itemNameValue);
+		if (grams == null || grams <= 0) continue;
+		const per100 = (slot.priceValue / grams) * 100;
 		if (best == null || per100 < best) best = per100;
 	}
 	return best;

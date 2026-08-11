@@ -127,17 +127,26 @@ export function isByWeight(u: UnitType): boolean {
  * 3.99 ÷ 10 × 1000 — the price of a *thousand eggs*, wearing a "/kg" label).
  *
  * For a counted row the weight has to be written down in words, and the rule
- * (from the user, 2026-08-11) is that it lives in the row's own `Name` — the
- * `(550g)` on the eggs — or failing that in `Item Name [Vendor n]`, the shop's
- * own wording for the pack. **Null means the thing is sold by the piece and has
- * no meaningful weight**: a razor cartridge, a tissue roll, a stock cube.
+ * (from the user, 2026-08-11) is: **the shop's own `Item Name [Vendor n]` first,
+ * and the row's general `Name` when that says nothing.** Null when neither does —
+ * meaning the thing is genuinely sold by the piece, and wants no weight invented:
+ * a razor cartridge, a tissue roll, a stock cube.
  *
- * ⚠️ Pass the CHEAPEST slot's item name and no other. This figure divides that
- * slot's price, and the slots describe different packs at different shops.
+ * ⚠️ **The item name is asked first because it describes the pack being
+ * divided.** It comes from the same slot as the price and the size, so the three
+ * are guaranteed to be about one pack at one shop. The row's `Name` is global
+ * across all four slots — "Bread, Wholemeal (600g)" stays 600 g while the cheapest
+ * slot moves between shops selling 400 g and 600 g loaves — so it is the honest
+ * fallback, not the first answer. They only ever disagree when both state a size.
  *
- * One function because two readers need the same answer — `readGroceryTargets`
- * for the deal comparison and `readIngredientRows` for the texted list — and a
- * rule this quiet, implemented twice, drifts.
+ * ⚠️ Pass the item name of the slot whose price you are dividing, and no other.
+ * Borrowing Guardian's pack weight to divide FairPrice's price invents a figure
+ * belonging to neither.
+ *
+ * One function because three readers need the same answer —
+ * `readGroceryTargets` for the deal comparison, `readIngredientRows` for the
+ * texted list, and `referencePer100g` for the vendor scan's counterfeit floor —
+ * and a rule this quiet, implemented three times, drifts.
  */
 export function packWeightOf(
 	unitType: UnitType,
@@ -146,7 +155,7 @@ export function packWeightOf(
 	slotItemName: string,
 ): number | null {
 	if (isByWeight(unitType)) return size;
-	return parseName(name).size?.grams ?? parseWeightInText(slotItemName)?.grams ?? null;
+	return parseWeightInText(slotItemName)?.grams ?? parseName(name).size?.grams ?? null;
 }
 
 export interface PlanTarget {

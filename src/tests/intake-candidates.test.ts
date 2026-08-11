@@ -140,10 +140,18 @@ eq(
 	pricePerKgLabelFor(priced("By Unit", 3.99, 10, { per1000: (3.99 / 550) * 1000, perPiece: 0.399 })),
 	"$7.25/kg",
 );
+// ⚠️ Quoted per TEN pieces, matching Notion's own `Cheapest Price/Kg ` formula,
+// which prints "4.2 /10 pc" on these rows. Two conventions for one figure sitting
+// in two databases is where someone later assumes a factor of ten.
 eq(
-	"…and per piece when nothing states a weight",
+	"…and per 10 pieces when nothing states a weight",
 	pricePerKgLabelFor(priced("By Unit", 3.99, 10, { perPiece: 0.399 })),
-	"$0.40/pc",
+	"$3.99/10 pc",
+);
+eq(
+	"…so a box of 30 at the same unit price reads the same",
+	pricePerKgLabelFor(priced("By Unit", 11.97, 30, { perPiece: 0.399 })),
+	"$3.99/10 pc",
 );
 check(
 	"⚠️ never the count-as-grams answer that produced $399.00/kg",
@@ -156,11 +164,19 @@ eq("a row with no price at all says nothing", pricePerKgLabelFor(row("Eggs")), u
 // ⚠️ The rule that feeds the figures above, shared with `readGroceryTargets` so
 // the deal comparison and the texted list cannot disagree about what a pack weighs.
 eq("a weighed row's pack weight IS its size", packWeightOf("By Gram", 500, "Peanut Butter", ""), 500);
-eq("a counted row reads its name", packWeightOf("By Unit", 10, "egg  (Omega 3 Enriched) (550g)", ""), 550);
+// ⚠️ The shop's own wording wins, because it comes from the SAME slot as the
+// price and the size — one pack, one shop. The row `Name` is global across all
+// four slots, so it is the fallback, not the first answer.
 eq(
-	"…then the shop's own wording for the pack",
-	packWeightOf("By Unit", 10, "Eggs, Whole, small", "Fresh Eggs (10s) 550g"),
-	550,
+	"a counted row reads the shop's wording first",
+	packWeightOf("By Unit", 10, "Bread, Wholemeal (600g)", "Gardenia Wholemeal 400g"),
+	400,
+);
+eq("…and falls back to the row's own Name", packWeightOf("By Unit", 10, "egg  (Omega 3 Enriched) (550g)", ""), 550);
+eq(
+	"…including when the shop's wording states no size at all",
+	packWeightOf("By Unit", 10, "Bread, Wholemeal (600g)", "Gardenia Wholemeal Bread"),
+	600,
 );
 eq(
 	"⚠️ and null when neither says — sold by the piece, not a gap to fill",

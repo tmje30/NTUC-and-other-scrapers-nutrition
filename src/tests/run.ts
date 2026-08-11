@@ -22,6 +22,7 @@ import "./grocery-list.test.js";
 import "./vendor-slots.test.js";
 import "./carousell.test.js";
 import "./vendor-scan.test.js";
+import "./vendor-review.test.js";
 import "./list-parse.test.js";
 import "./list-intake.test.js";
 import "./new-items.test.js";
