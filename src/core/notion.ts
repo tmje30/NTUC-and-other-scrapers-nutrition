@@ -392,13 +392,30 @@ function readBaseline(p: Record<string, any>): {
 	// needs, and it saves this reader an extra API call per run.
 	const slots = readVendorSlots(p, resolveVendorSlotProps(p as any));
 	const cheapest = cheapestVendorSlot(slots);
+	/** Does ANY slot name a shop? See the rule below. */
+	const vendorTagged = slots.some((s) => !!s.vendorName);
 	if (cheapest) {
+		// ⚠️ **A row naming NO shop in any of its four slots is not searched at all**
+		// (rule from the user, 2026-08-11). This reverses what this function used to
+		// do — "a price with no shop attached is worth more than no price at all" —
+		// because a price nobody can be shown to charge is not a baseline: there is
+		// no shelf it came off and nothing to compare a discount against.
+		//
+		// ⚠️ **Measured before changing it, because the blast radius could have been
+		// enormous.** 6 of 72 priced rows name no vendor anywhere, and 5 of those are
+		// `Suppliments` (already outside the scan); the sixth is "Lacto ferment, home
+		// made", which nobody sells. So the daily scan loses ONE row, and that one
+		// should never have been in it.
+		//
+		// ⚠️ **This is NOT the same as routing searches by tag**, which the handover
+		// warns would "silently kill the FairPrice scan on 42 rows". That would read
+		// an empty tag as "don't look at this shop". This reads *no tag at all, on any
+		// slot* as "there is no recorded price here". A row tagged with one shop is
+		// still searched at every shop.
+		if (!vendorTagged) return { priceSgd: null, size: null, vendor: "", itemName: "" };
 		return {
 			priceSgd: cheapest.slot.priceValue,
 			size: cheapest.slot.sizeValue,
-			// The tag can be blank on a slot that still holds a price — the formulas
-			// ignore the tag too, and a price with no shop attached is worth more than
-			// no price at all.
 			vendor: cheapest.slot.vendorName,
 			itemName: cheapest.slot.itemNameValue,
 		};
