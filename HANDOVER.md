@@ -22,6 +22,15 @@ scrape" below.** On 2026-08-05 a whole afternoon's conclusions about Watsons wer
 wrong because the machine was on a VPN. The same probe, same minute, gives
 opposite answers from a datacenter address and a residential one.*
 
+*⚠️ **And read the OTHER half of that lesson, 2026-08-11: a shop can render
+products and then take them away.** Watsons was declared a dead end twice, by two
+sessions, on the honest evidence that a real browser shows only its footer. It
+serves 52 prices and 96 product links at 7–16 s and is **wiped by ~22 s** — so
+too-early and too-late produce the identical empty shell, and "never worked" is
+indistinguishable from "you looked at the wrong moment". Never conclude a shop is
+blocked from a single fixed delay; use `waitFor` (`browser-cdp.ts`). Full story:
+**[`docs/session-2026-08-11-vendors.md`](docs/session-2026-08-11-vendors.md)**.*
+
 *Short version of where things are. The macro work is finished and committed. The
 2026-08-05 session did **no** feature work: it scoped the multi-vendor question
 (searching shops beyond FairPrice/Sheng Siong), built a probe to answer it with
@@ -81,6 +90,21 @@ new page. The row `Name` also changed shape, from `Ingredient, Brand, size` to
 **[`docs/session-2026-08-09-buy-button-price-per-kg.md`](docs/session-2026-08-09-buy-button-price-per-kg.md)**
 for the full story, including a live write/read-back/archive test.
 
+⚠️ **New 2026-08-11 — the price book fills itself, and asks when it isn't sure.**
+`vendor-scan` now routes **NTUC, Sheng Siong, Guardian, My Protein, Carousell,
+Watsons and Iherb** (was three). The first live `--write` recorded **50 prices**
+across NTUC and Sheng Siong on rows that had **none** — 49 Sheng Siong slots were
+tagged and every one was empty. A pick it is uneasy about (a catering pack, a size
+read off a range, a marketplace rescue) is **not written**: it is queued to
+`data/vendor-review.json` and asked about on a **fourth page, `review.html`**, with
+one Telegram message linking to it.
+⚠️ **"Don't use" is a PRICE BOOK decision and does not touch the deals page** — the
+single exception is its `wrong-item` reason, by explicit decision. `ALL_ITEMS`
+("ignore forever") stays the deals page's own red Ignore. See
+**[`docs/session-2026-08-11-vendor-review.md`](docs/session-2026-08-11-vendor-review.md)**.
+⚠️ **Watsons, Iherb, Carousell and Shopee are LAPTOP-ONLY** — headless is detected
+by all four, so they cannot run in GitHub Actions.
+
 ⚠️ **New 2026-08-10 — the first INBOUND path: text your list to the bot.**
 `npm run tg-poll` long-polls Telegram on the laptop, parses a texted grocery list,
 matches each line to Ingredients, and writes the `grocery List` rows itself. Lines
@@ -95,6 +119,7 @@ See "Telegram intake" below.
 
 Deep dives on one session each, kept for the *why*:
 
+- [`docs/session-2026-08-11-vendors.md`](docs/session-2026-08-11-vendors.md) — **Watsons renders, then gets wiped**; the `waitFor` fix, iHerb's capsule counts, Guardian in maintenance, and ⚠️ **the comma that turned `1,500 g` into `1.5 g` in the price book**
 - [`docs/session-2026-08-11-vendor-review.md`](docs/session-2026-08-11-vendor-review.md) — **the daily scan's shops now fill the price book**, and the scan's third answer: *"not sure — you decide"* ⚠️ **"Don't use" ≠ "ignore forever"; never write one into `exclusions.ts`**
 - [`docs/session-2026-08-11-price-per-kg.md`](docs/session-2026-08-11-price-per-kg.md) — **`$399.00/kg` for a box of eggs**: a piece count read as grams, and the `packWeightOf` rule that fixes it (all three sites now fixed)
 - [`docs/session-2026-08-09-vendor-scan.md`](docs/session-2026-08-09-vendor-scan.md) — **the price book fills itself** from Guardian/MyProtein/Carousell; 7 of 9 tagged slots written live ⚠️ **supersedes four per-vendor claims in `vendor-scoping.md`**
@@ -113,6 +138,13 @@ Deep dives on one session each, kept for the *why*:
   searched". Cards show `Item [packsize] Price $x  −%`, the found product, price
   per kg/L **or per piece**, and `uses ~X/month`. A ⚠️ banner under the header
   means a shop was missing from the scan.
+- **Four pages, not one:** `index.html` (deals), `history.html`, `new-items.html`
+  and — since 2026-08-11 — **`review.html`**, every price the vendor scan was
+  unsure about, with OK / Don't-use buttons. ⚠️ Unlike `new-items.html` it has
+  **no freshness gate**: a pending question makes no claim about today and gating
+  it would silently drop it. Staleness is handled per-question by `prunePending`
+  (7 days). The empty state renders rather than 404s, because the Telegram link is
+  unconditional and a 404 reads as broken.
 - **Cloud schedule:** GitHub Actions `.github/workflows/daily.yml`,
   `cron: "0 0 * * *"` = 00:00 UTC = **08:00 SGT**, plus manual `workflow_dispatch`.
   ⚠️ **08:00 is a FLOOR on when the shops are scraped, not the delivery time**
@@ -1296,6 +1328,77 @@ This also puts a question mark over the 2026-07-30 entry claiming "Incapsula now
 challenges *residential* IPs too". That may simply have been the VPN. Not
 re-tested; treat the claim as unconfirmed.
 
+#### ⚠️ OPEN QUESTION (2026-08-11): can a VPN replace the residential runner?
+
+**Nothing here is settled. This section records an experiment in progress, not a
+conclusion.** It exists so the next session doesn't redo the measurements or,
+worse, trust the table above without reading this.
+
+**The question being asked.** Can the laptop stop being load-bearing? Today two
+jobs pin work to it: the 05:30 `push-ss` scan and — the real motivation — the
+`tg-poll` Telegram inbox, which genuinely wants 24/7 and currently only runs while
+the laptop is open. The scan itself does **not** need an always-on box
+(`StartWhenAvailable` catches up a missed run); the inbox does.
+
+The reasoning chain, and where it broke:
+
+1. Rent a cloud VPS → **datacenter IP** → the thing this whole section says is
+   blocked. So: no.
+2. Therefore put a small always-on box (Pi / N100 mini PC) on the **home
+   broadband**, where the IP is genuinely residential.
+3. *"Can the server not just run a VPN?"* — assumed **no**, on the grounds that
+   commercial VPN exits are themselves datacenter ASNs, and this section's own
+   table shows a Datacamp exit getting 403 from Watsons.
+4. **Step 3 was tested on 2026-08-11 and did not hold up.**
+
+**What was measured**, from `AS60068 Datacamp Limited` (89.187.162.213, Singapore
+— a *commercial VPN exit*, flagged by the probe's own datacenter warning):
+
+| shop | this section's record (08-05, `AS212238`) | measured 08-11 (`AS60068`) |
+| --- | --- | --- |
+| **Sheng Siong** | *(never tested on a VPN)* | ✅ **99 products for "milk"** |
+| Watsons | **403**, Akamai edge deny | **200** (still `no-data` — SPA shell) |
+| Guardian | 200 | 503 — ⚠️ **not the VPN, see below** |
+
+⚠️ **The Sheng Siong run was clean.** `.sessions/shengsiong.json` was moved aside
+first, so there was **no cached Incapsula cookie**, and no new one was minted
+(Chrome never launched, `.sessions/` gained nothing). Bare client, datacenter
+address, no session credential, full results. Whatever blocked GitHub Actions did
+not block this.
+
+⚠️ **Note the two Datacamp exits are different networks** — `AS212238` on 08-05,
+`AS60068` on 08-11. "It's Datacamp" is not one address pool, so reasoning from the
+org name (which is what `egress()` matches on) is weaker than it looks.
+
+**Why this is NOT yet a green light**, and the reason is already written above at
+"the runner needs a browser": *the block is intermittent — some hours a bare client
+connects with no cookie at all, so "it worked when I tried it" proves little.*
+That warning was aimed at a one-off success exactly like this one. One term, one
+afternoon, is not a daily 05:30 scan. What would settle it:
+
+- `npm run push-ss -- --force --no-push` over the VPN — all ~44 terms, which is the
+  shape the 2026-07-30 failure took (all 62 searches died at the WebSocket
+  upgrade). One search surviving says much less than a full scan surviving.
+- Then the same thing repeatedly, at the hour it would really run, across several
+  days, read off `push-ss.log` rather than a hand run.
+
+⚠️ **Guardian's 503 is NOT evidence against the VPN — it is site maintenance.**
+This note first recorded it as the VPN's cost ("a VPN'd server trades one shop for
+another"), which was wrong: a concurrent session the same day established Guardian
+is simply down, and the standing action is "re-run when their maintenance ends".
+Worth keeping as a worked example of this section's own lesson — a 503 taken while
+on a VPN reads as an address problem when it is nothing of the sort, and the only
+thing that separated the two was another measurement.
+
+So the honest tally of the VPN's *cost* is: **not yet known.** No shop has been
+shown to break on it. That is different from "it costs nothing", and the whole
+vendor table still needs re-taking off the VPN before any move is decided.
+
+⚠️ **A vendor build was running in a second session while these numbers were
+taken, with the VPN on.** Any shop reachability it recorded on 2026-08-11 is
+subject to this same confound — check its egress before trusting it. This is the
+2026-08-05 mistake repeating itself in a new place.
+
 ### ⚠️ The daily job runs ~3.5 hours late, every day
 
 `daily.yml` is `cron: "0 2 * * *"` and every doc says **10:00 SGT**. Measured
@@ -1471,9 +1574,43 @@ which only appears when a shop is **missing from a build that happened**. "No
 build at all" has no button. Its absence on a healthy page is correct behaviour,
 not a bug — that confused the user on 2026-08-05.
 
-## Next session — pick up here (as of 2026-08-11, morning)
+## Next session — pick up here (as of 2026-08-11, evening)
 
-### What 2026-08-11 did — three live faults, none of them on the list
+### What 2026-08-11 (evening) did — the price book stopped being empty
+
+The daily scan had been searching NTUC and Sheng Siong every day and **throwing the
+prices away**: 49 rows named Sheng Siong and not one had a price. Both shops are now
+`vendor-scan` routes, and the first live `--write` recorded **50 prices, refused 6,
+and queued 16** for review.
+
+**Pick up here, in this order:**
+
+1. **The matcher, not the scrapers.** iHerb returns 43 priced products for its own
+   rows and `evaluate()` accepts none; two Watsons toothpaste rows do the same with
+   23 and 28. Both stores are verified working — this is `evaluate()` being
+   conservative about supplement and personal-care naming. It is the single biggest
+   blocker to the new shops being worth anything.
+2. **Shopee.** Signed in (`.sessions/chrome-shopee`, gitignored) but no module. It
+   is a **marketplace**, so it needs the whole Carousell apparatus —
+   `cheapestPlausible`, the price floor, seller reputation — plus scroll-and-settle
+   for a lazy-loaded grid. Without those it files counterfeits as bargains.
+3. **Schedule `vendor-scan`.** It runs only by hand today. ⚠️ It cannot go in
+   `daily.yml` as-is: Watsons, iHerb and Carousell need a headed browser, so it
+   belongs on the laptop beside the Sheng Siong task. Then lower
+   `PENDING_TTL_DAYS` to 2 **and** add a re-ask counter in the same change — a
+   2-day expiry with no counter re-asks the same pack forever.
+4. **Guardian** — nothing to do; re-run when their maintenance ends.
+5. **The review buttons have never been tapped in anger.** The payloads were
+   verified by pulling them out of the rendered HTML and through the real parser
+   (which is how the missing `key` was caught), but no issue has gone through the
+   workflow yet.
+
+⚠️ **`data/vendor-review.json` is committed on purpose** — the published
+`review.html` is built from it by `build-site.ts`, so a queue that never reaches the
+repo means a Telegram link to questions that are not there. The scan pushes it via
+`commitAndPushData`, and the message omits the link when that push fails.
+
+### What 2026-08-11 (morning) did — three live faults, none of them on the list
 
 The session started by checking the running system against this file rather than
 by picking up item 28. All three faults were **operational**, invisible from the
