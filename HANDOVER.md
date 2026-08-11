@@ -248,7 +248,15 @@ laptop now covers the runner role, this is optional. To finish later:
                                         both asks also carry:
                                           🔎 No — re-search   (the next tranche of rows)
                                           🆕 New item — create in Ingredients
+                                          ✖️ Cancel — typo    (forget the line)
 ```
+
+⚠️ **The keyboard's ORDER is load-bearing, and `src/tests/intake-candidates.test.ts`
+pins it.** Candidates first, one per row; then re-search; then create; then
+**Cancel, always last**. The button that discards a line sits furthest from the
+candidates, so a thumb aiming at the last ingredient cannot land on it. Every ask
+carries all three ways out even when nothing matched at all — a new item still
+needs somewhere to go, and a typo still needs forgetting.
 
 ### ⚠️ The ask asks "which one", not "is this it" (rewritten 2026-08-11)
 
@@ -281,7 +289,15 @@ conversation:
   - **`🆕 New item — create in Ingredients`** — creates the row *and* puts the
     item on the grocery list against it, which is the half that fixes the fault.
     It confirms first, showing exactly what it will write, because creating a row
-    in a live personal workspace has no undo.
+    in a live personal workspace has no undo. ⚠️ **Cancelling that confirm returns
+    to the question**, it does not settle it — "I didn't mean create" and "forget
+    this line" are different statements, and there is a button for each.
+- **`✖️ Cancel — typo`** (added 2026-08-11, on request) — forgets the line
+  entirely: it leaves the pricing queue and nothing is written. ⚠️ Safe to tap
+  precisely *because* nothing has been written yet — a near-miss is only written
+  once answered — so there is nothing to undo, only a queue entry to remove. It is
+  the cheap way out of `chicken tight`, which would otherwise cost a Notion row to
+  delete and a page to un-publish.
 - **Fault 29 — a tap could be acknowledged and thrown away.** See below.
 
 ⚠️ **The new row is marked `{New}`, in BRACES, and the brackets are not
@@ -1433,7 +1449,7 @@ re-search button and the create button were built against tests and a restarted
 poller; nobody has texted the bot since. Do that first — text something you
 already stock, something ambiguous ("milk"), and something you don't.
 
-`npm test` **552 passing** (was 508 this morning), `npm run check` clean.
+`npm test` **562 passing** (was 508 this morning), `npm run check` clean.
 
 ### The state at 2026-08-10, evening
 
@@ -1775,7 +1791,7 @@ Both made a bad deal look good — the same family as the 32 g serving read as 1
   names the shop — never claims a free slot, never evicts, never writes
   `Unit type `. Carousell opens a real Chrome window.
 - `npm run check` — typecheck.
-- `npm test` — **556** offline cases (`src/tests/`). Free, fast, no network.
+- `npm test` — **562** offline cases (`src/tests/`). Free, fast, no network.
 
 ## Key technical facts (details in LEARNINGS.md)
 

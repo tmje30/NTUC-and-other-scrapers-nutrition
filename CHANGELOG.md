@@ -19,6 +19,14 @@ All notable changes to this project are documented here. Format based on
   30: a new item used to be priced on a web page and reach no list at all.
   The new row is marked **`{New}`** — braces, the ignored bracket; `(New)` would
   be read as a defining property and match nothing at any shop.
+- **Every inbox question carries `✖️ Cancel — typo` (2026-08-11, on request).**
+  Forgets the line entirely: it leaves the pricing queue and nothing is written.
+  Safe precisely because nothing had been written yet — a near-miss is only
+  written once answered. It is always the **last** button, furthest from the
+  candidates, so a thumb aiming at the last ingredient cannot reach it; the order
+  is pinned by test. Cancelling the *create confirm* now returns to the question
+  rather than settling it — "I didn't mean create" and "forget this line" are
+  different statements and now have a button each.
 - **The inbox offers parked rows, and picking one wakes it (2026-08-11).** Found
   by texting the live bot: "milk, skimmed" offered two milks that were not it,
   because `Milk (Skimmed)` is tagged `Not in Use ATM` and `readIngredientRows`

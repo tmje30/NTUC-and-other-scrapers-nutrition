@@ -58,7 +58,7 @@ import { scanNewItems, type NewItemResult } from "./new-items.js";
 const STATE_PATH = ".sessions/tg-inbox.json";
 
 /** One row on offer, as it sits on the keyboard. */
-interface AskCandidate {
+export interface AskCandidate {
 	rowId: string;
 	rowName: string;
 	score: number;
@@ -341,7 +341,7 @@ function toCandidates(matches: RowMatch[]): AskCandidate[] {
  * layout is two truncated names on a phone and a coin flip between two different
  * foods.
  */
-function askKeyboard(t: string, candidates: AskCandidate[]): InlineKeyboard {
+export function askKeyboard(t: string, candidates: AskCandidate[]): InlineKeyboard {
 	const keyboard: InlineKeyboard = candidates.map((c, i) => [
 		// 💤 marks a row you parked. It is on the button rather than in the message
 		// because that is where the decision is made — picking it un-parks the row.
@@ -349,6 +349,12 @@ function askKeyboard(t: string, candidates: AskCandidate[]): InlineKeyboard {
 	]);
 	keyboard.push([{ text: "🔎 No — re-search", data: `r:${t}` }]);
 	keyboard.push([{ text: "🆕 New item — create in Ingredients", data: `c:${t}` }]);
+	// ⚠️ **Always last, and always present.** This is the typo escape (asked for by
+	// the user, 2026-08-11): a mistyped line should cost one tap to forget, not a
+	// trip to Notion to delete a row and a page to un-publish. Its position matters
+	// as much as its existence — the destructive-looking button sits furthest from
+	// the candidates, so a fat thumb aiming at the last ingredient cannot reach it.
+	keyboard.push([{ text: "✖️ Cancel — typo", data: `d:${t}` }]);
 	return keyboard;
 }
 
@@ -546,9 +552,20 @@ async function handleCallback(
 		}
 
 		case "x":
-			// Cancelling leaves it exactly as it arrived: queued, priced, and on no
-			// list. Nothing was written, so there is nothing to undo.
-			await settle(`🆕 ${esc(pending.item.name)} — left as a new item; I'll price it at the shops.`);
+			// Backing out of the create CONFIRM, not out of the item. It returns to
+			// the question rather than settling it: "no, I didn't mean create" is not
+			// the same statement as "forget this line", and there is now a Cancel
+			// button that means the second one.
+			pending.awaitingCreate = false;
+			await edit(askText(pending.item, pending.candidates), askKeyboard(t, pending.candidates));
+			break;
+
+		case "d":
+			// The typo escape. Nothing has been written for this item — a near-miss is
+			// only ever written once answered — so dropping it really is a no-op, and
+			// the only thing to undo is its place in the pricing queue.
+			state.queue = state.queue.filter((q) => q.raw !== pending.item.raw);
+			await settle(`✖️ ${esc(pending.item.raw)} — dropped. Nothing written.`);
 			break;
 
 		default:

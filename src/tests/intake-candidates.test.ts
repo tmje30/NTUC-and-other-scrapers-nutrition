@@ -7,7 +7,7 @@ import {
 	type IngredientRow,
 } from "../core/list-intake.js";
 import { parseItem } from "../core/list-parse.js";
-import { newIngredientFields, unitTypeFor } from "../core/tg-inbox.js";
+import { askKeyboard, newIngredientFields, unitTypeFor } from "../core/tg-inbox.js";
 import { parseName } from "../core/parse.js";
 import { check, describe, eq } from "./harness.js";
 
@@ -107,6 +107,32 @@ check(
 	nextCandidates("milk", ROWS, rejected).length > 0 || rankRows("milk", ROWS).length === 2,
 );
 eq("re-searching past every row offers nothing", nextCandidates("milk", ROWS, ROWS.map((r) => r.pageId)), []);
+
+describe("texted list — the keyboard's shape");
+
+const keys = askKeyboard("tok", [
+	{ rowId: "a", rowName: "Milk ( Normal)", score: 1 },
+	{ rowId: "b", rowName: "Milk (Skimmed)", score: 1, parked: true },
+]);
+const verbs = keys.map((r) => r[0].data.split(":")[0]);
+
+// ⚠️ One candidate per ROW, never two side by side: these labels are ingredient
+// names, and Telegram shrinks text to fit, so two columns is two truncated names
+// and a coin flip between two different foods.
+check("every row holds exactly one button", keys.every((r) => r.length === 1));
+eq("candidates first, then the ways out", verbs, ["p", "p", "r", "c", "d"]);
+
+// ⚠️ Cancel is LAST, and that placement is the point: the button that discards
+// the line sits furthest from the candidates, so a thumb aiming at the last
+// ingredient cannot land on it.
+eq("cancel is the final button", keys[keys.length - 1][0].text, "✖️ Cancel — typo");
+check("a parked candidate is marked on the button", keys[1][0].text.startsWith("💤 "));
+check("an active one is not", !keys[0][0].text.startsWith("💤 "));
+
+// Every ask carries both ways out, even when nothing matched at all — a new item
+// still needs somewhere to go, and a typo still needs forgetting.
+const bare = askKeyboard("tok", []).map((r) => r[0].data.split(":")[0]);
+eq("an empty candidate list still offers all three", bare, ["r", "c", "d"]);
 
 describe("texted list — creating the row the user asked for");
 
