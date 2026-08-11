@@ -242,6 +242,17 @@ function actionButton(
 		cls?: string;
 		/** What the issue title is ABOUT. Defaults to the ingredient (`p.name`). */
 		subject?: string;
+		/**
+		 * Take the card off the page once this action is accepted, and which cards:
+		 * `key` clears every card for the INGREDIENT (what `ignore-week` silences),
+		 * `url` every card showing that PRODUCT (what `ignore-product` retires).
+		 *
+		 * One-tap only, and that is deliberate — see `hideCards` in `page-chrome.ts`.
+		 * On the two-tap path the click merely opens a pre-filled issue the user may
+		 * yet abandon, and a card that vanished on a request never submitted would be
+		 * the page lying about what it did.
+		 */
+		hide?: "key" | "url";
 	},
 ): string {
 	const body =
@@ -260,7 +271,7 @@ function actionButton(
 
 	return `<a class="act${ui.cls ? ` ${ui.cls}` : ""}" href="${esc(href)}" target="_blank" rel="noopener"
         data-payload="${esc(JSON.stringify(p))}" data-event="item-action"
-        data-done="${esc(ui.done)}"${ui.confirm ? ` data-confirm="${esc(ui.confirm)}"` : ""}${
+        data-done="${esc(ui.done)}"${ui.hide ? ` data-hide-card="${ui.hide}"` : ""}${ui.confirm ? ` data-confirm="${esc(ui.confirm)}"` : ""}${
 					ui.prompt
 						? ` data-prompt="${esc(ui.prompt)}" data-terms="${esc((p.terms ?? []).join(", "))}"`
 						: ""
@@ -268,52 +279,76 @@ function actionButton(
         aria-label="${esc(ui.aria)}">${esc(ui.label)}</a>`;
 }
 
+/** The durations the Ignore dropdown offers, in weeks. See `MAX_IGNORE_WEEKS`. */
+const IGNORE_WEEKS = [1, 2, 3, 4] as const;
+
 /**
- * "Ignore 1wk" — the button under Buy. Snoozes this ITEM until Monday.
+ * "Ignore ▾" — the control under Buy. Snoozes this ITEM for one to four weeks.
  *
  * ⚠️ **Swapped with the menu's permanent ignore on 2026-08-05, by request.** This
- * button used to hold `ignore-product` and the menu held `ignore-week`; the two
+ * slot used to hold `ignore-product` and the ⋯ menu held `ignore-week`; the two
  * traded places and nothing about either ACTION changed. If you are reading an
  * older note that says the button is permanent and red, that note is stale.
  *
- * The reversible one is out here on purpose now: it is the correction reached for
- * most often ("not wrong, just not this week"), it is undone from the list at the
- * foot of the page, and putting it a single tap away costs nothing if mis-tapped.
+ * ⚠️ **It became a dropdown on 2026-08-11, by request** — it was a single button
+ * meaning exactly one week. Tapping it now opens 1/2/3/4 weeks and the tap that
+ * picks one is the tap that fires, so the cheap correction costs two taps instead
+ * of one. That is the trade the user asked for: "not this week" and "not this
+ * month" are the same thought at different strengths, and the old button could
+ * only say the weakest of them.
+ *
+ * `weeks` counts MONDAYS, not 7-day blocks (see `startOfNextWeek`), so every
+ * option returns the item at the start of a week however deep into one you tap.
  *
  * It is **red**, sharing `.act.ignore`'s paint with the permanent one (asked for
  * 2026-08-05). So red no longer means "no undo" by itself — it means "this takes
- * something off the page", and what separates the two ignores is the label and the
- * menu's extra tap, not the colour.
+ * something off the page", and what separates the two ignores is the label and
+ * the confirm dialog, not the colour.
  *
  * Scope: the INGREDIENT, not the product. Nothing is searched for it until the
- * start of next week; every product still competes for it when it comes back.
+ * chosen week; every product still competes for it when it comes back.
  */
-function ignoreWeekButton(t: PlanTarget, p: StoreProduct, o: PageOptions): string {
-	return actionButton(
-		{
-			v: 1,
-			action: "ignore-week",
-			key: cooldownKey(t.search.searchTerm),
-			ingredientId: t.ingredientId,
-			name: t.name,
-			store: p.store,
-			product: p.name,
-			url: p.url,
-		},
-		o,
-		{
-			label: "Ignore 1wk",
-			done: "✓ ignored",
-			// `week` sizes it to match Buy and lets the label wrap; `ignore` is the
-			// shared red paint, reused rather than copied so the two ignores cannot
-			// drift to different reds in light or dark mode.
-			cls: "week ignore",
-			aria: `Ignore ${t.name} until the start of next week`,
+function ignoreWeekMenu(t: PlanTarget, p: StoreProduct, o: PageOptions): string {
+	const base = {
+		v: 1 as const,
+		action: "ignore-week" as const,
+		key: cooldownKey(t.search.searchTerm),
+		ingredientId: t.ingredientId,
+		name: t.name,
+		store: p.store,
+		product: p.name,
+		url: p.url,
+	};
+
+	const options = IGNORE_WEEKS.map((weeks) => {
+		const spell = `${weeks} week${weeks === 1 ? "" : "s"}`;
+		return actionButton({ ...base, weeks }, o, {
+			label: spell,
+			done: `✓ ${spell}`,
+			cls: "ignore",
+			// Every card for this INGREDIENT goes, not just the one tapped: the whole
+			// point of the action is that nothing is searched for it, so leaving a
+			// second card for the same item on screen would invite a second tap that
+			// changes nothing.
+			hide: "key",
+			aria: `Ignore ${t.name} for ${spell}`,
 			prose:
-				`Ignoring **${t.name}** from the deals page: don't search for it again ` +
-				`until the start of next week.`,
-		},
-	);
+				`Ignoring **${t.name}** from the deals page for ${spell}: don't search for ` +
+				`it again until the start of that week.`,
+		});
+	}).join("");
+
+	// A `<details>` like the ⋯ menu, so it opens, closes, and is keyboard-reachable
+	// with no JavaScript — and `menuScript`'s tap-outside-to-close already covers it
+	// through the shared `menu` class. `weeks` is what moves the panel to the left
+	// edge: this one hangs off the LEFT column, where the ⋯ menu's `right: 0` would
+	// throw it off the side of a phone.
+	return `
+        <details class="menu weeks" data-done="✓ ignored">
+          <summary class="act week ignore"
+            aria-label="Ignore ${esc(t.name)} — choose one to four weeks">Ignore ▾</summary>
+          <div class="panel">${options}</div>
+        </details>`;
 }
 
 /**
@@ -354,6 +389,9 @@ function ignoreProductButton(t: PlanTarget, p: StoreProduct, o: PageOptions): st
 			label: "Ignore for good",
 			done: "✓ ignored",
 			cls: "ignore",
+			// Scoped to the PRODUCT, so every card offering it goes — it may be the
+			// match for more than one ingredient, and it is never offered again.
+			hide: "url",
 			// The issue is about the PRODUCT, so the title says so — every other
 			// button's title names the ingredient, and this one must not be misread
 			// as retiring it.
@@ -743,9 +781,13 @@ function dealCard(d: Deal, o: PageOptions): string {
 	// ⚠️ Buy and Ignore stay in the left `.cta` column, away from the rail. Buy is the
 	// one button pressed on purpose and Ignore is the one with no undo; neither
 	// belongs a mis-tap away from three quieter controls.
+	// `data-key` / `data-url` are what an accepted ignore matches cards on — the
+	// ingredient it silenced, the product it retired. On the card rather than read
+	// back out of a button's JSON so the two scopes are stated once, in the open,
+	// and a card with no buttons could still be cleared.
 	return `
-    <div class="card">
-      <div class="cta">${addButton(addPayload(t, p), o)}${ignoreWeekButton(t, p, o)}</div>
+    <div class="card" data-key="${esc(cooldownKey(t.search.searchTerm))}" data-url="${esc(p.url)}">
+      <div class="cta">${addButton(addPayload(t, p), o)}${ignoreWeekMenu(t, p, o)}</div>
       <div class="main">
         <!-- The % saving, the wrong-match menu, then the three Ingredients controls.
              The gap under ⋯ is deliberate: it splits "what this deal is" from
@@ -832,9 +874,11 @@ function recCard(r: ReviewMiss, o: PageOptions): string {
 	// price. Adding it still snoozes the ingredient — you came home with oats.
 	const payload = addPayload(t, p, `${t.name} ≈ ${p.name}`);
 
+	// Same identity as a deal card — an ignore has to clear the near-miss for the
+	// item too, or dismissing an ingredient leaves its "close match" sitting there.
 	return `
-    <div class="card rec">
-      <div class="cta">${addButton(payload, o)}${ignoreWeekButton(t, p, o)}</div>
+    <div class="card rec" data-key="${esc(cooldownKey(t.search.searchTerm))}" data-url="${esc(p.url)}">
+      <div class="cta">${addButton(payload, o)}${ignoreWeekMenu(t, p, o)}</div>
       <div class="main">
         <!-- Percentage, the "closest" label, then the menu — this is the section
              where a wrong match is most likely, so the correction sits right under
@@ -946,7 +990,10 @@ export function renderDealsPage(
 <body>
   <div class="wrap">
     <h1>🛒 Grocery deals</h1>
-    <p class="sub">${date} · ${total} deal${total === 1 ? "" : "s"} beating your prices</p>
+    <!-- The count is in its own span because cards can now leave the page under
+         you: an accepted ignore removes them, and a line still claiming 12 deals
+         above 11 cards is the page contradicting itself. See hideCards(). -->
+    <p class="sub">${date} · <span id="dealcount">${total} deal${total === 1 ? "" : "s"}</span> beating your prices</p>
     ${
 			o.warning
 				? `<div class="warn">⚠️ ${esc(o.warning)}

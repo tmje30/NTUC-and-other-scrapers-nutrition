@@ -6,6 +6,91 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+### Added
+- **Ignore is a dropdown now: 1, 2, 3 or 4 weeks (2026-08-11).** The button under
+  Buy meant exactly one week; tapping it opens a list and the tap that picks a
+  duration is the tap that fires. `weeks` rides in the payload, is clamped to
+  `MAX_IGNORE_WEEKS` on the way in (it travels through a hand-editable issue body),
+  and `startOfNextWeek` counts **Mondays, not 7-day blocks** — every option returns
+  the item at the start of a week, however deep into one you tapped.
+  ⚠️ The existing "never shorten an existing silence" guard is unchanged, so a
+  1-week ignore over a 6-week cooldown still leaves the cooldown alone.
+- **An accepted ignore takes the card off the page (2026-08-11).** Both ignores did
+  their work in the repo and left the card sitting there, so the only way to see the
+  result was to reload a page that is rebuilt once a day. Each card now carries
+  `data-key` (its ingredient) and `data-url` (its product), and the two ignores clear
+  by the scope they actually mean: *n weeks* clears **every card for the ingredient**,
+  *Ignore for good* **every card offering the product** — one product can be the match
+  for two items. Empty section headings and the deal count in the header go with them.
+  ⚠️ **One-tap only, deliberately.** On the two-tap path the click merely opens a
+  pre-filled issue the user may never submit, and a card that vanished on a request
+  that was then abandoned would be the page lying about what it did.
+- **The Telegram inbox answers from the cloud, in under a minute (2026-08-11).** A
+  list texted at ~18:20 was answered at **21:11** — the laptop entered Modern
+  Standby at 18:26 and Telegram held the message for 2 h 45 m. Nothing was broken;
+  nothing was awake. A ~100-line Cloudflare Worker (`relay/`) now receives the
+  webhook and fires `repository_dispatch` at `.github/workflows/tg-inbox.yml`, which
+  runs the existing inbox unchanged via `npm run tg-handle`.
+  ⚠️ **Telegram cannot call GitHub directly** — `setWebhook` sends its own body to a
+  fixed URL, and `/dispatches` needs an `Authorization` header and an `event_type`;
+  something always-on has to bridge them. ⚠️ **Actions `schedule:` is not an
+  alternative**: free public repos queue cron by ~3–3¾ h, the very latency being
+  removed. Only `repository_dispatch` starts promptly.
+  ⚠️ **A bot has a webhook OR serves `getUpdates`, never both**, so this *replaces*
+  the laptop poller rather than joining it. Switch-over order, secrets and the way
+  back: [`relay/README.md`](relay/README.md).
+  Free: Cloudflare's free tier is always on, and Actions minutes are free on a
+  public repo.
+- **`npm run tg-drain` — the one job that stays on the laptop.** Pricing an item
+  with no Ingredients row means asking Sheng Siong, which challenges datacenter
+  IPs. The cloud sets `deferPricing`, leaves such items on a queue in
+  `data/tg-inbox-state.json` and **says so in the chat**; the laptop prices them
+  every 15 minutes (`tg-drain-run.cmd`, replacing the forever-poller task).
+  ⚠️ The cloud deliberately does **not** scan FairPrice-only instead: a card
+  comparing one shop looks exactly like a card comparing five.
+- **`npm run tg-webhook`** (set/show/delete the webhook) and
+  **`npm run tg-adopt-state`** (carry the poller's open questions into the
+  committed file). ⚠️ `tg-webhook` **refuses to touch `@Big_Notion_Bot`**, checked
+  against the live bot's own name — its webhook is another project's only delivery
+  path, and `TELEGRAM_INBOX_BOT_TOKEN` falling back to `TELEGRAM_BOT_TOKEN` means a
+  mis-set `.env` could genuinely point this at it.
+- **`DataPushOptions.reapply`** — how a run re-applies its change onto a newer
+  remote when the file is not its to overwrite. ⚠️ This does not soften the
+  whole-file rule; it is the exception that rule needed. A scan is regenerated in
+  full, so overwriting is right. `tg-inbox-state.json` is edited by the cloud on
+  every tap, so a runner that wrote its whole copy over the remote would resurrect
+  questions the user had just answered — on screen, with live buttons.
+
+### Changed
+- **The Telegram question's *"No — re-search"* button is gone (2026-08-11, by
+  request).** It offered the next tranche of Ingredients rows, below the review bar;
+  the judgement is that the candidates already on the keyboard are the offer.
+  `nextCandidates` and the ask's `rejected` list went with it. ⚠️ **What it costs:**
+  the keyboard shows the leader plus anything within `CANDIDATE_MARGIN` of it, capped
+  at `MAX_CANDIDATES` — so a right-but-faint row is no longer reachable from the
+  question, and the way to it is *New item* or a better row name. A stale `r:` tap
+  from a keyboard sent before the change re-draws the question rather than falling
+  through to "I didn't understand that button", which would have discarded an
+  unanswered item.
+
+### Fixed
+- **`x` means `*`, and a stranded one is no longer part of the name
+  (2026-08-11).** `Carrots x 1kg` reached the matcher as `"Carrots x"`: the size is
+  stripped first, taking the multiplier's number with it. It scored **0.65** against
+  `carrots, Normal` and asked a question it knew the answer to — `Carrots` scores
+  1.000. ⚠️ Stripped as a **whole word**, never a character: the old rule had `x` in
+  a leading character class, which turns `Xylitol` into `ylitol`.
+- **`Current Price ` never went missing — it became a formula (2026-08-11).** The
+  grocery list emitted `no "currentPrice" column found` once per row, seven times a
+  texted list, about a column sitting in plain sight; the hunt for a rename that had
+  never happened cost a session. Resolving it to null was always **correct** (a
+  formula cannot be written by anyone) — only the story was wrong. `resolveListProps`
+  now keeps its name-matching rules in one table, reused by `computedColumnFor()`, so
+  a null is reported as *gone* (drift, still shouted about — the `Catagory`→`Category`
+  class) or as *present but computed* (the user's own choice, said once per process).
+  ⚠️ No Notion schema was changed. Also recorded while in there: `Vendor ` → `Vendor %`
+  and `Checkbox` → `Tickbox` have both drifted and both still resolve.
+
 ### Removed
 - **The extension's automatic-macro-lookup machinery (2026-08-11).** The worker's
   `macros-for` handler and the `needsLookup` flag from `add-item` had both been

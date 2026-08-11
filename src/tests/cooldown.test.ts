@@ -1,4 +1,10 @@
-import { planCooldown, NO_USAGE_COOLDOWN_DAYS, WEEKLY_BUY_COOLDOWN_DAYS } from "../core/cooldown.js";
+import {
+	planCooldown,
+	startOfNextWeek,
+	MAX_IGNORE_WEEKS,
+	NO_USAGE_COOLDOWN_DAYS,
+	WEEKLY_BUY_COOLDOWN_DAYS,
+} from "../core/cooldown.js";
 import { check, describe, eq } from "./harness.js";
 
 /**
@@ -74,3 +80,60 @@ eq(
 // Absent means "not tagged" — an old payload from a page built before the field
 // existed must take the ordinary route rather than throwing or defaulting to 5.
 eq("no flag at all takes the pack route", planCooldown(1000, 500, now, {}).days, 46);
+
+/**
+ * The Ignore dropdown's durations (1/2/3/4 weeks, added 2026-08-11).
+ *
+ * ⚠️ **Every one of these has to land on a MONDAY at 00:00 SGT.** The item is only
+ * ever brought back by the daily scan reading `until`, so an expiry an hour off in
+ * the wrong direction returns a "4 week" ignore on a Sunday night — and one that
+ * lands mid-week is a snooze the user cannot reason about at all. The maths runs on
+ * a UTC machine against a UTC+8 calendar, which is exactly where that hour goes
+ * missing.
+ */
+describe("cooldown — ignoring an item for one to four weeks");
+
+/** Which weekday `until` falls on in Singapore, and at what hour. */
+const sgt = (d: Date) => {
+	const s = new Date(d.getTime() + 8 * 3_600_000);
+	return { day: s.getUTCDay(), hour: s.getUTCHours() };
+};
+
+// A Wednesday afternoon in Singapore (06:00Z Wed = 14:00 SGT).
+const wed = new Date("2026-08-12T06:00:00.000Z");
+
+for (const weeks of [1, 2, 3, 4]) {
+	const until = startOfNextWeek(wed, weeks);
+	eq(`${weeks} week(s) ends on a Monday`, sgt(until).day, 1);
+	eq(`…at midnight SGT`, sgt(until).hour, 0);
+}
+
+// Each step is exactly one week further out — the whole point of the dropdown.
+const weeksOut = [1, 2, 3, 4].map((w) => startOfNextWeek(wed, w).getTime());
+check(
+	"each option is a week longer than the last",
+	weeksOut.every((t, i) => i === 0 || t - weeksOut[i - 1] === 7 * 86_400_000),
+);
+
+// ⚠️ Absent, zero and nonsense all mean ONE week, never zero weeks: a payload
+// written before the dropdown existed came from a button that said "1wk", and an
+// ignore that expires immediately is a button that does nothing.
+eq("no argument is one week", startOfNextWeek(wed).getTime(), weeksOut[0]);
+eq("zero is one week", startOfNextWeek(wed, 0).getTime(), weeksOut[0]);
+eq("a negative is one week", startOfNextWeek(wed, -3).getTime(), weeksOut[0]);
+// ⚠️ Clamped at the top too — this value reaches here from a hand-editable issue
+// body, and 52 would silence a staple for a year.
+eq("above four is four weeks", startOfNextWeek(wed, 52).getTime(), weeksOut[3]);
+eq("and the ceiling is the menu's own", MAX_IGNORE_WEEKS, 4);
+
+// ⚠️ Tapped late on a Sunday, "1 week" must NOT mean the seven hours until
+// midnight — it rolls to the Monday after, and every longer option counts from
+// that same rolled start. (23:00 SGT Sunday = 15:00Z Sunday.)
+const sun = new Date("2026-08-16T15:00:00.000Z");
+const rolled = startOfNextWeek(sun, 1);
+check("a Sunday-night ignore outlives the next scan", rolled.getTime() - sun.getTime() > 86_400_000);
+eq(
+	"and 3 weeks counts from the rolled Monday, not the skipped one",
+	startOfNextWeek(sun, 3).getTime() - rolled.getTime(),
+	14 * 86_400_000,
+);

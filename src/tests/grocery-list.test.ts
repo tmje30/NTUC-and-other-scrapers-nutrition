@@ -1,4 +1,4 @@
-import { groceryRowTitle, resolveListProps, vendorLabel } from "../core/grocery-list.js";
+import { computedColumnFor, groceryRowTitle, resolveListProps, vendorLabel } from "../core/grocery-list.js";
 import { check, describe, eq } from "./harness.js";
 
 /**
@@ -155,3 +155,67 @@ eq(
 const noVendor = resolveListProps({ Name: { type: "title" }, Checkbox: { type: "checkbox" } });
 eq("a missing vendor column resolves to null", noVendor.vendor, null);
 check("but the title still resolves, so the add still works", noVendor.title === "Name");
+
+describe("grocery list — a column that is present but computed");
+
+/**
+ * The live schema as introspected on **2026-08-11**, five days after `LIVE` above.
+ * Three things moved: `Current Price ` became a **formula**, `Vendor ` became
+ * `Vendor %`, and `Checkbox` became `Tickbox`.
+ *
+ * ⚠️ **The formula is the case this suite exists for.** A texted list emitted
+ * `no "currentPrice" column found` once per row — seven times — about a column
+ * sitting in plain sight, and the hunt for a rename that had never happened cost a
+ * session. Resolving it to null is CORRECT (a formula cannot be written by anyone);
+ * the fault was only ever the story the warning told about why.
+ */
+const LIVE_0811 = {
+	Name: { type: "title" },
+	"Price , To Buy ": { type: "number" },
+	"Current Price ": { type: "formula" },
+	"Price D%/C": { type: "formula" },
+	"Item Name ": { type: "formula" },
+	"Home/Office": { type: "formula" },
+	"Amount ": { type: "number" },
+	Tickbox: { type: "checkbox" },
+	"Vendor %": { type: "rich_text" },
+	"Price per kg/L": { type: "rich_text" },
+	"List [Ingredients]": { type: "relation" },
+	"URL - Current ": { type: "url" },
+	"URL - discount/Cheap ": { type: "url" },
+};
+
+const now = resolveListProps(LIVE_0811);
+eq("a formula Current Price resolves to null, not to itself", now.currentPrice, null);
+// ⚠️ The buy price must NOT slide onto the formula now that "current" claims
+// nothing: a write to a formula column is rejected by Notion, so a Buy that
+// resolved this way would fail outright rather than skip a field.
+eq("the buy price is unaffected", now.price, "Price , To Buy ");
+eq("the renamed checkbox still resolves", now.done, "Tickbox");
+eq("the renamed vendor column still resolves", now.vendor, "Vendor %");
+eq("the amount column is untouched by any of it", now.amount, "Amount ");
+
+// And the null is explained rather than reported as an absence.
+eq(
+	"the formula behind the null is named",
+	computedColumnFor("currentPrice", LIVE_0811)?.name,
+	"Current Price ",
+);
+eq("…with its type", computedColumnFor("currentPrice", LIVE_0811)?.type, "formula");
+
+// ⚠️ The other direction, which must keep shouting: a column that is genuinely
+// GONE has no formula standing in for it, so the warning stays a warning. This is
+// the Catagory→Category class of drift and the whole reason the two are told apart.
+eq(
+	"a column that is truly missing has nothing to blame",
+	computedColumnFor("pricePerKg", { Name: { type: "title" } }),
+	null,
+);
+eq(
+	"a writable column is not reported as computed",
+	computedColumnFor("amount", LIVE_0811),
+	null,
+);
+// A field with no name rule (the title, the checkbox) can't be explained this way,
+// and must return null rather than throwing on the lookup.
+eq("a field with no wording rule is simply unexplained", computedColumnFor("title", LIVE_0811), null);

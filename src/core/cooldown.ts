@@ -132,26 +132,43 @@ const SGT_OFFSET_MS = 8 * 3_600_000;
 const MIN_IGNORE_MS = 86_400_000;
 
 /**
- * Midnight at the start of next week, Singapore time, as a UTC instant.
+ * How many weeks one tap of Ignore may buy. The page's dropdown offers 1–4, and
+ * this is the ceiling the payload is clamped to on the way in — a hand-edited
+ * issue body must not be able to silence an item for a year.
+ */
+export const MAX_IGNORE_WEEKS = 4;
+
+/**
+ * Midnight at the start of the week `weeks` ahead, Singapore time, as a UTC
+ * instant.
  *
  * The week starts on MONDAY, so "ignore this for a week" from a Friday is quiet
  * over the weekend and back on Monday's scan — rather than a rolling seven days
  * that returns the item mid-week. Asked for on a Monday it means the FOLLOWING
- * Monday: a button labelled "1× week" that expired in a few hours would be a
+ * Monday: a button labelled "1 week" that expired in a few hours would be a
  * button that did nothing.
+ *
+ * `weeks` (1–4, from the dropdown under the Ignore button) counts Mondays, not
+ * 7-day blocks: 2 weeks from a Friday is the Monday after next, so however deep
+ * into the week you tap, the item always comes back at the start of one. Extra
+ * weeks are added as flat 7-day steps because Singapore has no DST — an hour of
+ * drift is impossible here, unlike in a calendar-arithmetic version of the same
+ * line.
  *
  * The date maths is done on a shifted clock (UTC getters reading SGT) because
  * the runner is a UTC machine, and "next Monday" there is the wrong Monday for
  * eight hours of every day.
  */
-export function startOfNextWeek(from: Date = new Date()): Date {
+export function startOfNextWeek(from: Date = new Date(), weeks = 1): Date {
+	const n = Math.min(MAX_IGNORE_WEEKS, Math.max(1, Math.round(weeks || 1)));
 	const sgt = new Date(from.getTime() + SGT_OFFSET_MS);
 	const daysAhead = (8 - sgt.getUTCDay()) % 7 || 7; // 0=Sun … 1=Mon; today-Monday ⇒ 7
 	const midnight = (extra: number) =>
 		Date.UTC(sgt.getUTCFullYear(), sgt.getUTCMonth(), sgt.getUTCDate() + daysAhead + extra) -
 		SGT_OFFSET_MS;
 	const soonest = midnight(0);
-	return new Date(soonest - from.getTime() >= MIN_IGNORE_MS ? soonest : midnight(7));
+	const first = soonest - from.getTime() >= MIN_IGNORE_MS ? soonest : midnight(7);
+	return new Date(first + (n - 1) * 7 * 86_400_000);
 }
 
 function packLabel(g: number, volumetric: boolean): string {

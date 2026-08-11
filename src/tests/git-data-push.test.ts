@@ -164,4 +164,58 @@ const onRemote = (dir: string, file: string): string => {
 	check("with no empty commit left behind", git(runner, "status", "--porcelain").trim() === "");
 }
 
+// ── reapply: the file this run does NOT own outright ────────────────────────
+//
+// ⚠️ The default recovery writes our whole file over the new remote, which is right
+// for a scan (today's scan is the whole truth about today) and wrong for the inbox
+// state file: the cloud edits that on every tap, so overwriting it would put back
+// questions the user has answered since we read it — on screen, with live buttons.
+{
+	const { runner, other } = sandbox();
+	// Their newer copy: one question still open, one item still queued.
+	git(other, "pull", "--quiet");
+	writeFileSync(join(other, FILE), JSON.stringify({ asks: [{ token: "theirs" }], queue: ["a", "b"] }));
+	git(other, "add", "-A");
+	git(other, "commit", "--quiet", "-m", "a tap arrived in the cloud");
+	git(other, "push", "--quiet");
+
+	// Our copy is stale — it predates their question — and all we are entitled to
+	// say is "I priced item a".
+	writeFileSync(join(runner, FILE), JSON.stringify({ asks: [], queue: ["b"] }));
+
+	const result = await commitAndPushData({
+		file: FILE,
+		message: "data: priced a queued item",
+		cwd: runner,
+		reapply(theirs) {
+			const file = JSON.parse(theirs ?? "{}");
+			file.queue = (file.queue ?? []).filter((q: string) => q !== "a");
+			return JSON.stringify(file);
+		},
+	});
+
+	eq("the re-applied push lands", result, "pushed");
+	const landed = JSON.parse(onRemote(runner, FILE));
+	check(
+		"the question that arrived meanwhile is NOT resurrected",
+		landed.asks.length === 1 && landed.asks[0].token === "theirs",
+		`got asks: ${JSON.stringify(landed.asks)}`,
+	);
+	eq("and only the priced item left the queue", landed.queue, ["b"]);
+}
+
+{
+	// The default must stay the default: a caller that passes no `reapply` still
+	// overwrites, or every existing runner changes behaviour silently.
+	const { runner, other } = sandbox();
+	remoteMovesAhead(other);
+	writeFileSync(join(runner, FILE), '{"day":1,"from":"laptop"}');
+	await commitAndPushData({ file: FILE, message: "data: scan", cwd: runner });
+	eq(
+		"without reapply, the run's own file still wins wholesale",
+		JSON.parse(onRemote(runner, FILE)).from,
+		"laptop",
+	);
+}
+
 rmSync(root, { recursive: true, force: true });

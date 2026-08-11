@@ -10,7 +10,12 @@
  *     bananas x6                  → 6
  *     3 x eggs                    → 3
  *     2 x 500g peanut butter      → 2 packs of 500 g
+ *     Carrots x 1kg               → 1 pack of 1000 g
  *     - rice                      → 1
+ *
+ * `x` is read as `*` wherever it appears, which is how people write it — including
+ * the `Carrots x 1kg` form, where the number belongs to the unit and the `x` is
+ * left with nothing to multiply. See `STRAY_MULT`.
  *
  * Nothing here talks to Notion, a shop or a model: it is a pure string function
  * so the whole quantity grammar can be pinned by tests that cost nothing to run.
@@ -92,12 +97,33 @@ const MAX_BARE_COUNT = 99;
  */
 const BULLET_RE = /^\s*(?:[-*•·–—]+\s*|\d+[.)]\s+)/;
 
+/** Punctuation and separators the quantity strip can leave at either end. */
+const EDGE_PUNCT = /^[\s,;:.\-–—]+|[\s,;:.\-–—]+$/g;
+
+/**
+ * A multiplier sign left stranded at either end, as a WHOLE WORD.
+ *
+ * ⚠️ **`x` means `*` — it is a multiplier, not a letter to be trimmed.** The size
+ * is taken out first (rule 1 below), so `Carrots x 1kg` reaches here as
+ * `Carrots x` with its number already gone and rule 2 unable to see it. Left in,
+ * the name is `Carrots x`, which scored **0.65** against `carrots, Normal` instead
+ * of 1.000 and made the bot ask a question it knew the answer to (2026-08-11).
+ *
+ * ⚠️ **Whole word, never a character.** The old rule stripped `x` as part of a
+ * leading character class, which quietly turns `Xylitol` into `ylitol` — and `x` is
+ * a letter groceries genuinely start with. Hence the `\s`/`$` anchors on both ends.
+ */
+const STRAY_MULT = /^[x×](?=\s|$)|(?:^|\s)[x×]$/gi;
+
 /** Trim punctuation and stray separators the quantity strip can leave behind. */
 function tidy(s: string): string {
 	return s
 		.replace(/\s+/g, " ")
-		.replace(/^[\s,;:.\-–—x×]+/i, "")
-		.replace(/[\s,;:.\-–—]+$/, "")
+		.replace(EDGE_PUNCT, "")
+		// After the punctuation, so "Carrots - x" loses both, and again afterwards so
+		// "Carrots, x" is not left with its comma.
+		.replace(STRAY_MULT, "")
+		.replace(EDGE_PUNCT, "")
 		.trim();
 }
 

@@ -46,6 +46,30 @@ eq("a trailing xN is a COUNT — no size invented", bananas.amountG, null);
 eq("a leading N x is the same count", p("3 x eggs").count, 3);
 eq("a leading N x leaves a clean name", p("3 x eggs").name, "eggs");
 
+// `x` means `*`, so "Carrots x 1kg" is one 1 kg bag. The size is stripped first and
+// takes the multiplier's number with it, stranding a bare "x" on the end of the
+// name — which is how `Carrots x` came to score 0.65 against `carrots, Normal`
+// instead of 1.000, and made the bot ask a question it knew the answer to.
+const carrots = p("Carrots x 1kg");
+eq("a stranded multiplier leaves the name", carrots.name, "Carrots");
+eq("…the unit's number is a SIZE, not a count", carrots.amountG, 1000);
+eq("…and the count stays 1", carrots.count, 1);
+
+// The same line with something to multiply: 2 bags of 1 kg, not 2 kg.
+const twoBags = p("Carrots 2 x 1kg");
+eq("a real multiplier beside a size — name", twoBags.name, "Carrots");
+eq("a real multiplier beside a size — count", twoBags.count, 2);
+eq("a real multiplier beside a size — size", twoBags.amountG, 1000);
+
+eq("a leading stranded multiplier goes too", p("x 500g rice").name, "rice");
+eq("a stranded multiplier past a comma goes too", p("Carrots, x 1kg").name, "Carrots");
+
+// ⚠️ Whole word, never a character: the old rule stripped `x` as part of a leading
+// character class, and `x` is a letter groceries genuinely start with.
+eq("a name STARTING with x survives", p("Xylitol 500g").name, "Xylitol");
+eq("a name ENDING with x survives", p("2 Weetabix").name, "Weetabix");
+eq("…and keeps its count", p("2 Weetabix").count, 2);
+
 const pb = p("2 x 500g peanut butter");
 eq("count and size together — name", pb.name, "peanut butter");
 eq("count and size together — count", pb.count, 2);

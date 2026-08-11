@@ -124,11 +124,31 @@ means asking Sheng Siong, and Sheng Siong answers a residential IP.
 Everything about it is free: no Notion Worker, no model call, no paid lookup.
 See "Telegram intake" below.
 
+⚠️ **Changed 2026-08-11 — the inbound path moved to a WEBHOOK, and the poller is
+retired.** A list texted at ~18:20 was answered at **21:11**: the laptop entered
+Modern Standby at 18:26 and Telegram held the message for 2 h 45 m. Nothing was
+broken — nothing was awake. A Cloudflare Worker (`relay/`) now takes the webhook and
+fires `repository_dispatch` at `.github/workflows/tg-inbox.yml`, which runs the same
+inbox code via `npm run tg-handle`. Reply in **20–60 s with the laptop shut**.
+⚠️ **A bot has a webhook OR serves `getUpdates`, never both**, so this REPLACES
+`npm run tg-poll` — leave the poller running and it 409s on every call and the chat
+looks dead. ⚠️ **Pricing a brand-new item still needs the laptop** (Sheng Siong
+challenges datacenter IPs): those items queue in `data/tg-inbox-state.json`, the chat
+says so, and `npm run tg-drain` prices them every 15 minutes. Switch-over order,
+secrets, verification and the way back:
+**[`relay/README.md`](relay/README.md)**; the why:
+**[`docs/session-2026-08-11-telegram-webhook.md`](docs/session-2026-08-11-telegram-webhook.md)**.
+⚠️ **Check the sleep log before diagnosing a quiet bot:**
+`Get-WinEvent -ProviderName Microsoft-Windows-Kernel-Power` (506 = entering standby,
+507 = exiting). A sleeping process leaves no trace in any application log — the
+silence looks exactly like an idle poller.
+
 ### Session notes
 
 Deep dives on one session each, kept for the *why*:
 
 - [`docs/session-2026-08-11-vendors.md`](docs/session-2026-08-11-vendors.md) — **Watsons renders, then gets wiped**; the `waitFor` fix, iHerb's capsule counts, Guardian in maintenance, and ⚠️ **the comma that turned `1,500 g` into `1.5 g` in the price book**
+- [`docs/session-2026-08-11-telegram-webhook.md`](docs/session-2026-08-11-telegram-webhook.md) — **the inbox moves to the cloud**: a texted list answered 2 h 45 m late because the laptop slept, and the Cloudflare relay that fixes it ⚠️ **a bot has a webhook OR `getUpdates`, never both — this REPLACES the poller**
 - [`docs/session-2026-08-11-vendor-review.md`](docs/session-2026-08-11-vendor-review.md) — **the daily scan's shops now fill the price book**, and the scan's third answer: *"not sure — you decide"* ⚠️ **"Don't use" ≠ "ignore forever"; never write one into `exclusions.ts`**
 - [`docs/session-2026-08-11-price-per-kg.md`](docs/session-2026-08-11-price-per-kg.md) — **`$399.00/kg` for a box of eggs**: a piece count read as grams, and the `packWeightOf` rule that fixes it (all three sites now fixed)
 - [`docs/session-2026-08-09-vendor-scan.md`](docs/session-2026-08-09-vendor-scan.md) — **the price book fills itself** from Guardian/MyProtein/Carousell; 7 of 9 tagged slots written live ⚠️ **supersedes four per-vendor claims in `vendor-scoping.md`**
@@ -467,8 +487,24 @@ Run it with `npm run tg-poll` (`--once` to drain and exit, `--no-push` to skip t
 commit/dispatch). It long-polls `getUpdates`, so it answers in about a second and
 costs nothing to leave running.
 
-⚠️ **It now runs as a scheduled task, because until 2026-08-11 nothing started
-it.** The inbox existed only while someone remembered to launch it by hand — and
+### ⚠️ The webhook flow supersedes everything in this subsection (2026-08-11)
+
+**Read [`relay/README.md`](relay/README.md) first.** Once the Cloudflare relay holds
+the webhook, `npm run tg-poll` cannot run at all — a bot has a webhook *or* serves
+`getUpdates`, never both, so the poller 409s on every call and the chat looks dead.
+The scheduled task below is **disabled** in that configuration and replaced by
+`Grocery New-Item Pricing` → `tg-drain-run.cmd`, a 15-minute batch job that only
+prices items the cloud couldn't.
+
+Everything below is kept because it is still exactly right for the *poller*, which
+remains the documented way back (`npm run tg-webhook -- delete`, re-enable the task)
+and the way to run the inbox with no Cloudflare account at all. The three things that
+differ in the webhook flow: state lives in **`data/tg-inbox-state.json`** (committed,
+merged) rather than `.sessions/`, there is no offset, and new-item pricing is deferred
+rather than immediate.
+
+⚠️ **The poller ran as a scheduled task from 2026-08-11, because until then nothing
+started it.** The inbox existed only while someone remembered to launch it by hand — and
 a bot that answers only when watched doesn't look off, it looks broken. It is
 also what made fault 29 possible: a button tapped with no poller running is
 answered by nobody, and when one finally starts, Telegram refuses the stale

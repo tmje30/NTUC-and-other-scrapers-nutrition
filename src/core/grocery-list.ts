@@ -65,6 +65,44 @@ export interface ListProps {
 /** Trim, collapse runs of whitespace, lower-case — the shape renames don't change. */
 const norm = (s: string) => s.trim().replace(/\s+/g, " ").toLowerCase();
 
+/**
+ * How each field's column is recognised BY NAME. Type selection stays below; this
+ * is only the wording.
+ *
+ * ⚠️ **A table rather than seven inline lambdas because the warning in `listProps`
+ * has to ask the same question of the columns this function deliberately did not
+ * consider.** A field resolving to null is two very different things — the column
+ * is GONE (drift, the `Catagory`→`Category` class of fault, worth shouting about)
+ * or the column is right there and the user has made it a **formula**, which
+ * matches by name and can never be written by anyone. `Current Price ` became a
+ * formula on this DB and answered the first way, seven times per texted list, while
+ * being perfectly healthy (2026-08-11). Two copies of the wording would drift; one
+ * cannot.
+ */
+const NAMED: Record<string, (n: string) => boolean> = {
+	currentPrice: (n) => n.includes("current"),
+	buyPrice: (n) => n.includes("buy"),
+	price: (n) => n.includes("price"),
+	vendor: (n) => n.includes("vendor"),
+	amount: (n) => n === "amount" || n.startsWith("amount"),
+	pricePerKg: (n) => n.includes("kg/l") || n.includes("per kg"),
+	ingredientRelation: (n) => n.includes("ingredient"),
+};
+
+/**
+ * Types Notion computes for itself. They match by name and are **never writable**,
+ * so resolving one would produce a doomed write rather than a skipped column.
+ */
+const COMPUTED_TYPES = new Set([
+	"formula",
+	"rollup",
+	"created_time",
+	"last_edited_time",
+	"created_by",
+	"last_edited_by",
+	"unique_id",
+]);
+
 export function resolveListProps(schema: Record<string, { type: string }>): ListProps {
 	const entries = Object.entries(schema);
 	const byType = (t: string) => entries.filter(([, d]) => d.type === t).map(([n]) => n);
@@ -72,37 +110,73 @@ export function resolveListProps(schema: Record<string, { type: string }>): List
 
 	const numbers = byType("number");
 	// "Current Price " is claimed first, so it can't be mistaken for the buy price.
-	const currentPrice = pick(numbers, (n) => n.includes("current"));
+	const currentPrice = pick(numbers, NAMED.currentPrice);
 	const price =
 		pick(
 			numbers.filter((n) => n !== currentPrice),
-			(n) => n.includes("buy"),
+			NAMED.buyPrice,
 		) ??
 		pick(
 			numbers.filter((n) => n !== currentPrice),
-			(n) => n.includes("price"),
+			NAMED.price,
 		);
 	// Claimed last, and excluded from the price candidates above by name rather than
 	// by order: "Amount" contains neither "buy" nor "price", so the two can't collide.
-	const amount = pick(numbers, (n) => n === "amount" || n.startsWith("amount"));
+	const amount = pick(numbers, NAMED.amount);
 
 	return {
 		title: byType("title")[0] ?? "Name",
 		price,
 		currentPrice,
-		vendor: pick(byType("rich_text"), (n) => n.includes("vendor")),
+		vendor: pick(byType("rich_text"), NAMED.vendor),
 		done: byType("checkbox")[0] ?? null,
 		amount,
-		pricePerKg: pick(byType("rich_text"), (n) => n.includes("kg/l") || n.includes("per kg")),
-		ingredientRelation: pick(byType("relation"), (n) => n.includes("ingredient")),
+		pricePerKg: pick(byType("rich_text"), NAMED.pricePerKg),
+		ingredientRelation: pick(byType("relation"), NAMED.ingredientRelation),
 	};
 }
 
+/**
+ * The column a null field WOULD have used, if one exists but is computed.
+ *
+ * Answers "gone, or just not writable?" using `NAMED` — the same wording
+ * `resolveListProps` matched on — so the two can never disagree.
+ */
+export function computedColumnFor(
+	field: string,
+	schema: Record<string, { type: string }>,
+): { name: string; type: string } | null {
+	const has = NAMED[field];
+	if (!has) return null;
+	const hit = Object.entries(schema).find(([n, d]) => COMPUTED_TYPES.has(d.type) && has(norm(n)));
+	return hit ? { name: hit[0], type: hit[1].type } : null;
+}
+
+/**
+ * Fields already reported on, so a six-line list doesn't say the same thing six
+ * times. Process-lifetime, which for the Telegram poller is days — deliberately: a
+ * column the user has turned into a formula is a permanent, correct state, and a
+ * warning that repeats forever is a warning nobody reads.
+ */
+const reported = new Set<string>();
+
 async function listProps(client: Client): Promise<ListProps> {
 	const ds = (await client.dataSources.retrieve({ data_source_id: GROCERY_LIST_DS })) as any;
-	const props = resolveListProps(ds.properties ?? {});
+	const schema = ds.properties ?? {};
+	const props = resolveListProps(schema);
 	for (const [field, name] of Object.entries(props)) {
-		if (!name) console.error(`Warning: no "${field}" column found on the grocery list — skipping it.`);
+		if (name || reported.has(field)) continue;
+		reported.add(field);
+		// ⚠️ These two are NOT the same news. One is drift and wants fixing; the other
+		// is the user's own choice and wants leaving alone. Saying "no column found"
+		// about a column that is sitting right there sent a whole session looking for a
+		// rename that had never happened (2026-08-11).
+		const computed = computedColumnFor(field, schema);
+		console.error(
+			computed
+				? `Note: "${computed.name}" is a ${computed.type} on the grocery list, so ${field} is Notion's to fill, not ours — skipping it.`
+				: `Warning: no "${field}" column found on the grocery list — skipping it.`,
+		);
 	}
 	return props;
 }

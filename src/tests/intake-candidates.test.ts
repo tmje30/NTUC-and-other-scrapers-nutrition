@@ -1,8 +1,8 @@
 import {
 	CANDIDATE_MARGIN,
+	MAX_CANDIDATES,
 	candidatesFor,
 	decideItem,
-	nextCandidates,
 	pricePerKgLabelFor,
 	rankRows,
 	type IngredientRow,
@@ -92,23 +92,20 @@ eq("⚠️ a parked row is NEVER linked silently, however well it scores", decid
 check("…and it is still the row on offer", decided.candidates[0]?.row.name === "Harissa Paste");
 check("…which it would have been, unparked", decideItem(parseItem("harissa paste")!, [row("Harissa Paste")]).verdict === "linked");
 
-describe("texted list — re-search offers the next tranche");
+/**
+ * ⚠️ **The re-search tranche is gone** (2026-08-11, by request — the button was
+ * judged redundant against the candidates already on the keyboard). What used to
+ * be a safety net under `candidatesFor` is now nothing, so these cases guard the
+ * only offer there is: it must not be empty when a plausible row exists, and it
+ * must not run past the keyboard's size.
+ */
+describe("texted list — the one offer is the whole offer");
 
 const first = candidatesFor("milk", ROWS);
-const rejected = first.map((m) => m.row.pageId);
-const second = nextCandidates("milk", ROWS, rejected);
 
-check("nothing already offered comes back", second.every((m) => !rejected.includes(m.row.pageId)));
-check("what is left is still ranked", second.every((m, i) => i === 0 || m.score <= second[i - 1].score));
-
-// ⚠️ Below the review bar on purpose: being asked at all means the confident
-// answers were already turned down, so "nothing else is close" is a worse answer
-// than a faint one the user can see and reject.
-check(
-	"a faint match IS offered on re-search",
-	nextCandidates("milk", ROWS, rejected).length > 0 || rankRows("milk", ROWS).length === 2,
-);
-eq("re-searching past every row offers nothing", nextCandidates("milk", ROWS, ROWS.map((r) => r.pageId)), []);
+check("a plausible query still offers something", first.length > 0);
+check("and never more than a keyboard's worth", first.length <= MAX_CANDIDATES);
+check("best first", first.every((m, i) => i === 0 || m.score <= first[i - 1].score));
 
 describe("texted list — a piece count is not a weight");
 
@@ -196,7 +193,11 @@ const verbs = keys.map((r) => r[0].data.split(":")[0]);
 // names, and Telegram shrinks text to fit, so two columns is two truncated names
 // and a coin flip between two different foods.
 check("every row holds exactly one button", keys.every((r) => r.length === 1));
-eq("candidates first, then the ways out", verbs, ["p", "p", "r", "c", "d"]);
+// ⚠️ No "r" — the re-search button was removed on 2026-08-11 as redundant. Its
+// absence is asserted, not merely unmentioned: it is the kind of button that
+// gets re-added by a well-meaning edit, and it would then offer rows the
+// keyboard has already been decided against.
+eq("candidates first, then the two ways out", verbs, ["p", "p", "c", "d"]);
 
 // ⚠️ Cancel is LAST, and that placement is the point: the button that discards
 // the line sits furthest from the candidates, so a thumb aiming at the last
@@ -208,7 +209,7 @@ check("an active one is not", !keys[0][0].text.startsWith("💤 "));
 // Every ask carries both ways out, even when nothing matched at all — a new item
 // still needs somewhere to go, and a typo still needs forgetting.
 const bare = askKeyboard("tok", []).map((r) => r[0].data.split(":")[0]);
-eq("an empty candidate list still offers all three", bare, ["r", "c", "d"]);
+eq("an empty candidate list still offers both", bare, ["c", "d"]);
 
 describe("texted list — creating the row the user asked for");
 

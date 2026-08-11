@@ -32,12 +32,13 @@ import "./intake-candidates.test.js";
 import "./directed-search.test.js";
 import { report } from "./harness.js";
 
-// Imported dynamically, and last, because this one suite has to `await` (it
-// drives real git against a temp remote — see its header). A static import
-// would let the other suites' `describe()` calls run inside its await windows,
-// and every case registered after one would be filed under whichever suite name
-// happened to be current. Loading it alone, after the rest, keeps the labels
-// honest.
+// Imported dynamically, and last, because these suites `await` — one writes real
+// state files to a temp dir, the other drives real git against a temp remote (see
+// their headers). A static import would let the other suites' `describe()` calls
+// run inside their await windows, and every case registered after one would be
+// filed under whichever suite name happened to be current. Loading them alone,
+// after the rest and one at a time, keeps the labels honest.
+await import("./tg-state.test.js");
 await import("./git-data-push.test.js");
 
 report();

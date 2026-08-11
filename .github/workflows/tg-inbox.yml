@@ -1,0 +1,109 @@
+name: Telegram inbox
+
+# One run per Telegram update, delivered by the Cloudflare relay in `relay/`.
+#
+# ⚠️ **This is the cloud half of the texted-list flow, and it exists because the
+# laptop sleeps.** On 2026-08-11 a grocery list texted at ~18:20 was answered at
+# 21:11 — the laptop entered Modern Standby at 18:26 and Telegram held the message
+# for two and three-quarter hours. Parsing a list, matching it to Ingredients and
+# writing the grocery-list row need nothing but the Notion API, so they belong in
+# the cloud where nothing sleeps.
+#
+# ⚠️ **`schedule:` was never an option here.** Free public repos queue cron runs by
+# ~3–3¾ h (measured; HANDOVER "Infrastructure truths") — the exact latency this
+# removes. Only `repository_dispatch` starts promptly, which is why a relay that can
+# send one is needed at all.
+#
+# ⚠️ **Pricing a genuinely NEW item still does not happen here.** That means asking
+# Sheng Siong, which challenges datacenter IPs. New items are left on the queue in
+# `data/tg-inbox-state.json` and the laptop drains them (`npm run tg-drain`).
+on:
+  repository_dispatch:
+    types: [tgupdate]
+
+# NO concurrency group, deliberately — the same rule as `add-to-list.yml`. GitHub
+# keeps only ONE pending run per group and cancels the rest, so a burst of taps
+# would silently lose the middle ones (LEARNINGS 2026-07-30). Two runs writing the
+# state file collide instead, and the three-way merge below resolves it.
+
+jobs:
+  handle:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # commit data/tg-inbox-state.json and data/vendor-review.json
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - run: npm ci
+
+      # The data files exactly as this run found them — the "base" of the three-way
+      # merge used when a push is rejected. See the commit step.
+      - name: Snapshot the data files
+        run: |
+          mkdir -p /tmp/data-base
+          cp data/*.json /tmp/data-base/ 2>/dev/null || true
+
+      - name: Handle the update
+        run: npm run tg-handle
+        env:
+          # The Telegram update, verbatim, exactly as the relay received it.
+          TG_UPDATE: ${{ toJSON(github.event.client_payload.update) }}
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+
+      # ⚠️ `if: always()` — the state file must be committed even when the handler
+      # failed. A run that asked a question and then died would otherwise leave the
+      # question on screen with live buttons and no record of it anywhere, and the
+      # tap would come back to a run that has never heard of the token. The handler
+      # itself never throws for a per-update failure (it reports into the chat), so
+      # reaching here after a failure means something structural — all the more
+      # reason to keep whatever state was written.
+      - name: Commit the inbox state
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # tg-inbox-state.json — outstanding questions + the unpriced queue.
+          # vendor-review.json — price-book review taps answered from the same chat.
+          git add data/tg-inbox-state.json data/vendor-review.json
+          if git diff --staged --quiet; then
+            echo "no data change"
+            exit 0
+          fi
+          git commit -m "data: telegram inbox state"
+
+          # What this run meant to end up with. Captured ONCE, before the retry loop,
+          # so every attempt re-applies this same intent onto the newest remote
+          # rather than picking up a third run's work as if it were ours.
+          mkdir -p /tmp/data-mine
+          cp data/*.json /tmp/data-mine/ 2>/dev/null || true
+
+          # ⚠️ Do NOT replace this with `git pull --rebase`. It replays the commit,
+          # and two runs editing the same JSON list seconds apart is a content
+          # conflict it cannot resolve — the run then dies AFTER the Notion row has
+          # been written and the chat has already said it worked. See
+          # src/core/merge-data.ts, and the three corrections lost on 2026-08-05.
+          for attempt in 1 2 3 4 5; do
+            if git push; then
+              exit 0
+            fi
+            echo "push rejected — re-merging onto the new remote (attempt $attempt)"
+            git fetch origin "${{ github.ref_name }}"
+            git reset --hard "origin/${{ github.ref_name }}"
+            npx tsx src/scripts/merge-data.ts /tmp/data-base /tmp/data-mine data
+            git add data/tg-inbox-state.json data/vendor-review.json
+            if git diff --staged --quiet; then
+              echo "already applied upstream — nothing left to push"
+              exit 0
+            fi
+            git commit -m "data: telegram inbox state"
+          done
+          echo "::error::could not push the inbox state after 5 attempts"
+          exit 1

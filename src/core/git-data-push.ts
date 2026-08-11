@@ -40,6 +40,22 @@ export interface DataPushOptions {
 	attempts?: number;
 	/** The clone to work in. Defaults to the process's own directory. */
 	cwd?: string;
+	/**
+	 * How to re-apply this run's change onto a NEWER remote, when the file is not
+	 * this run's to overwrite. `theirs` is the file as it now stands upstream (null
+	 * if upstream hasn't got one); `mine` is what this run wrote. Return the text to
+	 * commit. Default: `mine`, verbatim.
+	 *
+	 * ⚠️ **This does not soften the rule in the header above; it is the exception the
+	 * rule needs.** `shengsiong-latest.json` and `new-items-latest.json` are
+	 * regenerated in full by the run that writes them, so overwriting is correct and
+	 * a merge would be wrong. `tg-inbox-state.json` is the opposite: the cloud edits
+	 * it on every tap, so a runner that drained the queue and then wrote its whole
+	 * copy over the remote would resurrect questions the user had answered in the
+	 * meantime — with live buttons, as if they had never been touched. Such a caller
+	 * passes a `reapply` that keeps theirs and re-applies only its own change.
+	 */
+	reapply?: (theirs: string | null, mine: string) => string | Promise<string>;
 }
 
 export type DataPushResult = "pushed" | "nothing-to-commit" | "already-upstream";
@@ -146,7 +162,15 @@ export async function commitAndPushData(opts: DataPushOptions): Promise<DataPush
 		}
 
 		execSync(`git reset --hard ${up}`, { stdio: "inherit", cwd });
-		await writeFile(path, mine, "utf8");
+		// The reset has just put THEIRS in the working tree. Read it before writing,
+		// so a caller that has to preserve the other side's edits can see them.
+		let theirs: string | null = null;
+		try {
+			theirs = await readFile(path, "utf8");
+		} catch {
+			theirs = null; // upstream doesn't have this file yet
+		}
+		await writeFile(path, opts.reapply ? await opts.reapply(theirs, mine) : mine, "utf8");
 		execSync(`git add ${file}`, { stdio: "inherit", cwd });
 		if (nothingStaged(cwd)) {
 			console.error("Already applied upstream — nothing left to push.");

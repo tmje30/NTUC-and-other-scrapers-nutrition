@@ -207,21 +207,13 @@ export function candidatesFor(query: string, rows: IngredientRow[], exclude: str
 }
 
 /**
- * The next rows to offer after the user has rejected some — the **re-search**
- * button (fault 30). "A different ingredient that is similar", in the user's own
- * words: it looks again at the Ingredients DB, not at the shops.
- *
- * ⚠️ **The review bar is deliberately NOT applied here.** Being asked at all
- * means the confident answers have already been rejected, so the honest next
- * offer is whatever is left in order, however faint — the alternative is
- * answering "nothing else looks close" while a perfectly good row sits at 0.44.
+ * ⚠️ **There is no `nextCandidates` any more** (removed 2026-08-11, by request).
+ * It served the Telegram question's *"No — re-search"* button, which offered the
+ * next tranche of rows below the review bar; the button was judged redundant
+ * against the candidates already on the keyboard, and the function went with it.
+ * `candidatesFor` above is now the only thing that decides what is offered — see
+ * `askKeyboard` in `tg-inbox.ts` for what that costs.
  */
-export function nextCandidates(query: string, rows: IngredientRow[], exclude: string[]): RowMatch[] {
-	const skip = new Set(exclude);
-	return rankRows(query, rows)
-		.filter((m) => !skip.has(m.row.pageId))
-		.slice(0, MAX_CANDIDATES);
-}
 
 /**
  * What to do with one typed item.

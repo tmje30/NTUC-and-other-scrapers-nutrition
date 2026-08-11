@@ -24,8 +24,12 @@
     "vendor-scan": "tsx src/scripts/vendor-scan.ts",
     "push-ss": "tsx src/scripts/push-shengsiong.ts",
     "ext:build": "node extension/build.mjs",
-    "test": "tsx src/tests/run.ts",
+    "test": "tsx src/tests/run.ts && node relay/worker.test.mjs",
     "tg-poll": "tsx src/scripts/tg-poll.ts",
+    "tg-handle": "tsx src/scripts/tg-handle.ts",
+    "tg-drain": "tsx src/scripts/tg-drain.ts",
+    "tg-webhook": "tsx src/scripts/tg-webhook.ts",
+    "tg-adopt-state": "tsx src/scripts/tg-adopt-state.ts",
     "tg-diag": "tsx src/scripts/tg-diag.ts"
   },
   "engines": {

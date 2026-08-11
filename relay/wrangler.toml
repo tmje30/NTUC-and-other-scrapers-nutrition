@@ -1,0 +1,25 @@
+# Cloudflare Worker config for the Telegram → GitHub relay. See README.md here.
+#
+# `wrangler deploy` from THIS directory. There is no build step and no
+# dependencies: `worker.mjs` is plain ESM and is uploaded as-is.
+
+name = "grocery-telegram-relay"
+main = "worker.mjs"
+compatibility_date = "2026-08-11"
+
+# Non-secret. The repo is public anyway, and having it here rather than in a
+# secret means `wrangler deploy` alone is enough to point the relay at a fork.
+[vars]
+REPO = "tmje30/NTUC-and-other-scrapers-nutrition"
+
+# The other four are SECRETS, set with `wrangler secret put` (see README):
+#   WEBHOOK_SECRET      — shared with Telegram's setWebhook secret_token
+#   TELEGRAM_BOT_TOKEN  — @Grocery69_bot, for the ack / typing / error message
+#   GITHUB_TOKEN        — fine-grained PAT, Contents: read+write on this repo only
+#   ALLOWED_CHAT_ID     — the one chat that is answered
+
+# Nothing is logged persistently and no data is stored: the Worker holds no state
+# between requests. Observability is on so `wrangler tail` can show a live
+# dispatch failure, which is the one thing worth watching here.
+[observability]
+enabled = true

@@ -1,3 +1,5 @@
+import { MAX_IGNORE_WEEKS } from "./cooldown.js";
+
 /**
  * What the buttons in the page's "Recently bought · not searched" section ship
  * back to the repo.
@@ -17,7 +19,7 @@
  * **From the deals page** — about an item and today's match for it:
  *   reset           un-snooze now
  *   park            retire the ingredient in Notion as well
- *   ignore-week     don't search this until the start of next week
+ *   ignore-week     don't search this for `weeks` weeks (1–4, from the dropdown)
  *   mismatch        never match these words for this item again
  *   almost          block this one product for this item
  *   ignore-product  never offer this PRODUCT again, for any item
@@ -100,6 +102,13 @@ export interface ActionPayload {
 	product?: string;
 	/** The product's page URL — how `almost` and `ignore-product` recognise it again. */
 	url?: string;
+	/**
+	 * How many weeks `ignore-week` stays quiet for — the entry tapped in the
+	 * dropdown under the Ignore button. 1–4; anything else is clamped into range,
+	 * and an absent value reads as 1 so a payload written before this existed still
+	 * means what it meant.
+	 */
+	weeks?: number;
 	/** Words to stop matching, for `mismatch`. Suggested by the page, edited by the user. */
 	terms?: string[];
 	/** Free-text reason, for `almost` ("not pasteurized"). */
@@ -274,6 +283,13 @@ export function parseActionPayload(raw: unknown): ActionPayload {
 		return Number.isFinite(n) ? n : null;
 	};
 
+	// The ignore duration, held to the range the dropdown offers. Absent stays
+	// absent — the handler reads that as one week, which is what every payload
+	// written before the dropdown existed meant.
+	const rawWeeks = num("weeks");
+	const weeks =
+		rawWeeks == null ? null : Math.min(MAX_IGNORE_WEEKS, Math.max(1, Math.round(rawWeeks)));
+
 	const payload: ActionPayload = {
 		v: 1,
 		action,
@@ -293,6 +309,9 @@ export function parseActionPayload(raw: unknown): ActionPayload {
 		token: str("token", false) || undefined,
 		reason: str("reason", false) || undefined,
 		why: str("why", false) || undefined,
+		// Clamped, not trusted: this rides in an editable issue body, and the only
+		// thing standing between "4" and "400" there is a keystroke.
+		weeks: weeks ?? undefined,
 		terms,
 		note: str("note", false),
 		purchaseId: str("purchaseId", false),

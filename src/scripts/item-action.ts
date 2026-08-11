@@ -44,7 +44,7 @@ import { readPurchases, writePurchases } from "../core/purchases-file.js";
  *   reset          — delete the item's cooldown so the next daily scan searches it again
  *   park           — tag the Notion ingredient "Not in Use ATM" (and clear its cooldown,
  *                    so a parked item stops appearing under "Recently bought" too)
- *   ignore-week    — snooze the item until the start of next week; nothing was bought
+ *   ignore-week    — snooze the item for 1–4 weeks (`payload.weeks`); nothing was bought
  *   mismatch       — ban words for this item, so every later SEARCH is better
  *   almost         — block one product for this item, leaving the rest of the shop alone
  *   ignore-product — retire one product from every search, for good
@@ -157,7 +157,11 @@ if (payload.action === "reset") {
 }
 
 if (payload.action === "ignore-week") {
-	const until = startOfNextWeek(now);
+	// The dropdown's pick. Absent means one week — every payload written before the
+	// dropdown existed said "1wk" on the button it came from.
+	const weeks = payload.weeks ?? 1;
+	const spell = `${weeks} week${weeks === 1 ? "" : "s"}`;
+	const until = startOfNextWeek(now, weeks);
 	const days = Math.max(1, Math.round((until.getTime() - now.getTime()) / 86_400_000));
 	const file = await readCooldowns();
 
@@ -181,7 +185,7 @@ if (payload.action === "ignore-week") {
 		addedAt: now.toISOString(),
 		until: until.toISOString(),
 		days,
-		basis: "ignored from the deals page until the start of next week (Mon, SGT)",
+		basis: `ignored from the deals page for ${spell} — until the start of that week (Mon, SGT)`,
 		// Not bought — but recording what was on screen says WHY it was dismissed
 		// when this file is read back months later.
 		store: payload.store ?? "",
@@ -191,12 +195,12 @@ if (payload.action === "ignore-week") {
 	};
 
 	if (dryRun) {
-		await report(`DRY RUN — would ignore **${label}** until ${sgtDate(until)}.`);
+		await report(`DRY RUN — would ignore **${label}** for ${spell}, until ${sgtDate(until)}.`);
 		process.exit(0);
 	}
 	await writeCooldowns(withCooldown(file, entry, now));
 	await report(
-		`Ignored: **${label}** is not searched until ${sgtDate(until)} ` +
+		`Ignored for ${spell}: **${label}** is not searched until ${sgtDate(until)} ` +
 			`(${days} day${days === 1 ? "" : "s"}).\n` +
 			`Tap Reset on the page to bring it back sooner.`,
 	);

@@ -1,4 +1,5 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { dirname } from "node:path";
 import { Client } from "@notionhq/client";
 import { config } from "./config.js";
 import {
@@ -13,7 +14,6 @@ import {
 import { parseList, sizeLabel, type ParsedItem } from "./list-parse.js";
 import {
 	decideList,
-	nextCandidates,
 	pricePerKgLabelFor,
 	readIngredientRows,
 	type IngredientRow,
@@ -61,8 +61,30 @@ import { scanNewItems, type NewItemResult } from "./new-items.js";
  *    kind of ordinary action that must not quietly cost 40 cents.
  */
 
-/** Machine-local, gitignored (`.sessions/` holds session-shaped state already). */
+/**
+ * Machine-local, gitignored — the long-polling laptop's own copy (`.sessions/`
+ * holds session-shaped state already).
+ */
 const STATE_PATH = ".sessions/tg-inbox.json";
+
+/**
+ * The webhook flow's state, **committed to the repo**.
+ *
+ * ⚠️ **A webhook has no process to hold state in.** Every update is a fresh
+ * Actions run on a fresh checkout, so a pending question that lives in memory or
+ * in `.sessions/` is a question the user answers into the void — they tap, the run
+ * that reads the tap has never heard of the token, and it replies "already
+ * answered" about something nobody answered. The repo is the only store both the
+ * cloud and the laptop can see, which is the same reasoning that put
+ * `vendor-review.json` here (see `vendor-review-file.ts`).
+ *
+ * ⚠️ **The repo is PUBLIC.** What lands here is grocery-item text, Ingredients row
+ * names and Notion page ids — the same class of thing `vendor-review.json` has
+ * committed since 2026-08-11. A page id is not a credential (it is useless without
+ * the integration token) but it is not nothing either: keep tokens, chat contents
+ * and anything from another chat out of this file.
+ */
+export const COMMITTED_STATE_PATH = "data/tg-inbox-state.json";
 
 /** One row on offer, as it sits on the keyboard. */
 export interface AskCandidate {
@@ -79,11 +101,12 @@ interface PendingAsk {
 	/** The rows currently on the keyboard, in button order. */
 	candidates: AskCandidate[];
 	/**
-	 * Every row already offered and passed over. Re-search never offers these
-	 * again — being shown the same wrong answer twice is how a user learns to stop
-	 * reading the buttons.
+	 * ⚠️ There is no `rejected` list any more (2026-08-11). It existed so
+	 * re-search would not offer a row the user had already passed over; with that
+	 * button gone, the candidates on the keyboard are the whole offer and nothing
+	 * needs remembering. Old state files may still carry the field — harmless,
+	 * since nothing reads it.
 	 */
-	rejected: string[];
 	/** The prompt message, so its buttons can be replaced with the outcome. */
 	messageId: number;
 	chatId: number;
@@ -112,12 +135,51 @@ export interface InboxState {
 
 const EMPTY_STATE: InboxState = { offset: 0, pending: {}, queue: [] };
 
+/**
+ * On disk the asks are an **array**, not the map they are in memory.
+ *
+ * ⚠️ **Because two Actions runs can write this file at once**, and the only merger
+ * this project has — `merge-data.ts`, built for exactly that collision and proven
+ * against the real 06:17 one — merges *lists* identified by a key. A JSON object
+ * keyed by token would need a second merger with its own bugs. So the token moves
+ * from the key into the entry, and `asks` merges like every other data file.
+ */
+interface StoredAsk extends PendingAsk {
+	token: string;
+}
+
+/** The committed/on-disk shape. `updatedAt` is what `mergeDataFile` compares. */
+interface StoredState {
+	version: 1;
+	updatedAt: string;
+	offset: number;
+	asks: StoredAsk[];
+	queue: ParsedItem[];
+}
+
 export async function readState(path = STATE_PATH): Promise<InboxState> {
 	try {
 		const raw = JSON.parse(await readFile(path, "utf8"));
+		const pending: Record<string, PendingAsk> = {};
+		// The array shape, as written below.
+		for (const a of Array.isArray(raw?.asks) ? raw.asks : []) {
+			if (a?.token) {
+				const { token: t, ...ask } = a;
+				pending[t] = ask as PendingAsk;
+			}
+		}
+		// ⚠️ And the ORIGINAL map shape, still read. The laptop poller's live
+		// `.sessions/tg-inbox.json` is in it, and a reader that silently forgot every
+		// outstanding question on upgrade would strand whatever was on screen at the
+		// time — which is precisely the failure this state exists to prevent.
+		if (raw?.pending && typeof raw.pending === "object") {
+			for (const [t, ask] of Object.entries(raw.pending)) {
+				if (ask && typeof ask === "object") pending[t] = ask as PendingAsk;
+			}
+		}
 		return {
 			offset: Number(raw?.offset) || 0,
-			pending: raw?.pending && typeof raw.pending === "object" ? raw.pending : {},
+			pending,
 			queue: Array.isArray(raw?.queue) ? raw.queue : [],
 		};
 	} catch {
@@ -126,8 +188,18 @@ export async function readState(path = STATE_PATH): Promise<InboxState> {
 }
 
 export async function writeState(state: InboxState, path = STATE_PATH): Promise<void> {
-	await mkdir(".sessions", { recursive: true });
-	await writeFile(path, JSON.stringify(state), "utf8");
+	const dir = dirname(path);
+	if (dir && dir !== ".") await mkdir(dir, { recursive: true });
+	const stored: StoredState = {
+		version: 1,
+		updatedAt: new Date().toISOString(),
+		offset: state.offset,
+		asks: Object.entries(state.pending).map(([token, ask]) => ({ token, ...ask })),
+		queue: state.queue,
+	};
+	// Pretty-printed, unlike the machine-local file it replaces: this one lands in
+	// git, and a one-line JSON blob makes every diff unreadable.
+	await writeFile(path, `${JSON.stringify(stored, null, 2)}\n`, "utf8");
 }
 
 /**
@@ -177,6 +249,20 @@ export interface InboxDeps {
 	publisher?: Publisher;
 	/** Overridable for testing; defaults to the live shop scan. */
 	scan?: (items: ParsedItem[]) => Promise<NewItemResult[]>;
+	/**
+	 * Set by any process that **cannot reach the shops** — which in practice means
+	 * the cloud, because Sheng Siong challenges datacenter IPs and answers a
+	 * residential one.
+	 *
+	 * ⚠️ **It leaves new items ON the queue instead of pricing them.** The tempting
+	 * alternative — scan anyway, FairPrice-only — produces a new-items page that
+	 * silently compares one shop and looks exactly like one that compared five. The
+	 * residential runner drains the queue on its next wake (`tg-drain.ts`), so the
+	 * answer is late rather than wrong. Everything else the inbox does (parsing,
+	 * matching, writing the grocery-list row, asking questions) needs nothing but
+	 * Notion and runs in the cloud at full speed.
+	 */
+	deferPricing?: boolean;
 }
 
 /**
@@ -354,7 +440,14 @@ export function askKeyboard(t: string, candidates: AskCandidate[]): InlineKeyboa
 		// because that is where the decision is made — picking it un-parks the row.
 		{ text: `${c.parked ? "💤 " : ""}${c.rowName} · ${Math.round(c.score * 100)}%`, data: `p:${t}:${i}` },
 	]);
-	keyboard.push([{ text: "🔎 No — re-search", data: `r:${t}` }]);
+	// ⚠️ **No "re-search" button** (removed 2026-08-11, by request: redundant). It
+	// offered the NEXT tranche of rows from the Ingredients DB, and the user's read
+	// is that the question already puts the options that matter in front of them —
+	// so a second tranche was a tap that returned worse answers than the first.
+	// What it cost: the rows above are the leader plus anything within
+	// `CANDIDATE_MARGIN` of it (at most `MAX_CANDIDATES`), so a right-but-faint row
+	// is no longer reachable from the keyboard. The way to that item is now the
+	// same as for anything unrecognised — create it, or fix the row's name.
 	keyboard.push([{ text: "🆕 New item — create in Ingredients", data: `c:${t}` }]);
 	// ⚠️ **Always last, and always present.** This is the typo escape (asked for by
 	// the user, 2026-08-11): a mistyped line should cost one tap to forget, not a
@@ -386,7 +479,6 @@ async function ask(
 	state.pending[t] = {
 		item,
 		candidates,
-		rejected: candidates.map((c) => c.rowId),
 		messageId,
 		chatId,
 		blocking: opts.blocking,
@@ -401,7 +493,10 @@ async function ask(
  * waiting for that would mean a batch containing one unfamiliar item never gets
  * priced at all.
  */
-async function maybeDrain(deps: InboxDeps, state: InboxState): Promise<void> {
+export async function maybeDrain(deps: InboxDeps, state: InboxState): Promise<void> {
+	// The cloud can't ask Sheng Siong anything. The queue stays put and the caller
+	// says so in the chat — see `deferPricing`.
+	if (deps.deferPricing) return;
 	if (Object.values(state.pending).some((a) => a.blocking)) return;
 	await drainQueue(deps, state);
 }
@@ -591,35 +686,14 @@ async function handleCallback(
 			break;
 		}
 
-		case "r": {
-			// "No — re-search": a different ingredient that is similar (the user's own
-			// words, 2026-08-11). It looks again at the INGREDIENTS DB, not at the
-			// shops — the shops are what the new-items page is for.
-			let next: AskCandidate[] = [];
-			try {
-				next = toCandidates(nextCandidates(pending.item.name, await rows(deps), pending.rejected));
-			} catch (e: any) {
-				await edit(`⚠️ Couldn't re-read your Ingredients DB: ${esc(e.message)}`, askKeyboard(t, pending.candidates));
-				break;
-			}
-			if (!next.length) {
-				// The buttons stay: "nothing else close" is an answer about the DB, not
-				// the end of the question — creating the row is still on the table.
-				pending.candidates = [];
-				await edit(
-					`🔎 <b>${esc(pending.item.name)}</b> — nothing else in your Ingredients comes close.`,
-					askKeyboard(t, []),
-				);
-				break;
-			}
-			pending.candidates = next;
-			pending.rejected = [...pending.rejected, ...next.map((c) => c.rowId)];
-			await edit(
-				`🔎 <b>${esc(pending.item.name)}</b> — how about one of these?`,
-				askKeyboard(t, next),
-			);
+		case "r":
+			// A re-search button from a keyboard sent BEFORE it was removed
+			// (2026-08-11). Kept only to re-draw the question — falling through to
+			// `default` would settle it, and so throw away an item the user has not
+			// actually answered, on a tap that used to be harmless. Delete this once
+			// no question predating the change can still be open.
+			await edit(askText(pending.item, pending.candidates), askKeyboard(t, pending.candidates));
 			break;
-		}
 
 		case "c": {
 			// Creating a row is the one action here with no undo, in a live personal
@@ -782,40 +856,60 @@ export async function pumpOnce(
 	state: InboxState,
 	timeoutSec = 25,
 ): Promise<number> {
-	const allowed = String(config.telegramChatId());
 	const updates = await getUpdates(state.offset, timeoutSec);
 	for (const u of updates) {
-		try {
-			if (u.message?.text && String(u.message.chat.id) === allowed) {
-				await handleMessage(deps, state, u.message.text, u.message.chat.id);
-			} else if (u.callback_query && String(u.callback_query.message?.chat.id) === allowed) {
-				await handleCallback(deps, state, u.callback_query);
-			}
-			// Anything else — another chat, a photo, a sticker — is dropped in silence.
-		} catch (e: any) {
-			console.error(`update ${u.update_id} failed: ${e?.stack ?? e}`);
-			// ⚠️ **Say so in the chat.** The offset still advances (see below), so
-			// this update is gone — and the whole point of fault 29 was that a
-			// swallowed update looks exactly like a handled one from the sofa. One
-			// line to a console nobody is watching is not a report. Wrapped because
-			// the thing that just failed may well be Telegram itself.
-			try {
-				await sendHtml(`⚠️ I dropped that one — ${esc(e?.message ?? String(e))}. Please send it again.`);
-			} catch {
-				/* the chat is unreachable too; the console line is all there is */
-			}
-		}
+		await handleUpdate(deps, state, u);
 		// After handling, never before: an offset advanced early loses the message.
 		//
 		// ⚠️ **It advances even when the handler threw, and that is deliberate.**
 		// The alternative — retry until it succeeds — turns one poison update into
 		// an infinite loop that blocks every message behind it, which is a worse
 		// failure than losing one line of a shopping list. The user is told instead,
-		// above, and can send it again.
+		// in `handleUpdate`, and can send it again.
 		state.offset = u.update_id + 1;
 		await writeState(state);
 	}
 	return updates.length;
+}
+
+/**
+ * Handle exactly one update, however it arrived. **Never throws.**
+ *
+ * Both doors into the inbox come through here — the laptop's long poll
+ * (`pumpOnce`) and the cloud's webhook (`tg-handle.ts`, one update per Actions
+ * run) — so the chat allow-list, the drop-report and the choice of what counts as
+ * an update at all are decided in exactly one place. When these were inline in the
+ * poll loop, the webhook path would have had to restate all three and could have
+ * restated any of them slightly differently; the allow-list is not a check worth
+ * having two copies of.
+ */
+export async function handleUpdate(
+	deps: InboxDeps,
+	state: InboxState,
+	u: TgUpdate,
+): Promise<void> {
+	const allowed = String(config.telegramChatId());
+	try {
+		if (u.message?.text && String(u.message.chat.id) === allowed) {
+			await handleMessage(deps, state, u.message.text, u.message.chat.id);
+		} else if (u.callback_query && String(u.callback_query.message?.chat.id) === allowed) {
+			await handleCallback(deps, state, u.callback_query);
+		}
+		// Anything else — another chat, a photo, a sticker — is dropped in silence.
+	} catch (e: any) {
+		console.error(`update ${u.update_id} failed: ${e?.stack ?? e}`);
+		// ⚠️ **Say so in the chat.** This update is gone either way — the poller has
+		// already advanced its offset and the webhook has already been answered 200 —
+		// and the whole point of fault 29 was that a swallowed update looks exactly
+		// like a handled one from the sofa. One line to a console nobody is watching
+		// is not a report. Wrapped because the thing that just failed may well be
+		// Telegram itself.
+		try {
+			await sendHtml(`⚠️ I dropped that one — ${esc(e?.message ?? String(e))}. Please send it again.`);
+		} catch {
+			/* the chat is unreachable too; the console line is all there is */
+		}
+	}
 }
 
 /** Long-poll forever (or once, for a scheduled short-lived run). */

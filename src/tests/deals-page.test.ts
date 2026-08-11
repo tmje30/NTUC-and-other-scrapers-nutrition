@@ -114,12 +114,16 @@ check("the grocery issue prefix is still Add:", html.includes(encodeURIComponent
  * product block and the ⋯ menu held the weekly snooze; now it is the other way
  * round. Both actions are unchanged — only which control emits which.
  *
- * This is worth a test because getting it backwards is invisible. Both buttons say
+ * ⚠️ The weekly one became a DROPDOWN on 2026-08-11 (1/2/3/4 weeks), so the CTA
+ * column now holds a `<details>` rather than a link, and one card carries four
+ * `ignore-week` payloads instead of one.
+ *
+ * This is worth a test because getting it backwards is invisible. Both controls say
  * "Ignore", both settle on "✓ ignored", and the difference only shows up days later
  * as a product that never comes back. The pairing that must hold is:
  *
- *   reachable (one tap, CTA column)  →  ignore-week    →  reversible, undoable
- *   behind the ⋯ menu (two taps)     →  ignore-product →  no undo, confirms
+ *   reachable (CTA column)       →  ignore-week    →  reversible, undoable
+ *   behind the ⋯ menu (two taps) →  ignore-product →  no undo, confirms
  *
  * ⚠️ Both are RED (asked for 2026-08-05), so colour no longer tells them apart —
  * the label, the action and the confirm dialog do. That makes these cases more
@@ -127,27 +131,42 @@ check("the grocery issue prefix is still Add:", html.includes(encodeURIComponent
  */
 describe("deals page — the two ignores");
 
-// The CTA column's lower button. `week` sizes it and lets the label wrap; `ignore`
-// is the shared red paint.
-check("the CTA button is the weekly one", /class="act week ignore"[^>]*>[\s\S]*?Ignore 1wk/.test(html));
-check("the CTA button emits ignore-week", html.includes("&quot;action&quot;:&quot;ignore-week&quot;"));
+// The CTA column's lower control: a disclosure whose summary is painted as the red
+// button it replaced. `weeks` is what moves its panel to the left edge.
+check("the CTA holds the weeks dropdown", html.includes('<details class="menu weeks"'));
+check("its summary is the red button", /<summary class="act week ignore"/.test(html));
+check("it emits ignore-week", html.includes("&quot;action&quot;:&quot;ignore-week&quot;"));
+
+// Every duration the user asked for, and no others — a menu missing "4 weeks" is a
+// menu that silently caps the snooze a month short.
+for (const label of [">1 week<", ">2 weeks<", ">3 weeks<", ">4 weeks<"]) {
+	check(`the dropdown offers ${label.slice(1, -1)}`, html.includes(label));
+}
+check("and no fifth week", !html.includes(">5 weeks<"));
+
+// ⚠️ The duration has to be IN the payload. Four buttons that all send the same
+// JSON is the failure this catches, and on the page it is invisible: every one of
+// them would say "✓ 3 weeks" and snooze the item for one.
+for (const n of [1, 2, 3, 4]) {
+	check(`${n} week(s) travels in the payload`, html.includes(`&quot;weeks&quot;:${n}`));
+}
 
 // The menu entry. Red too, and it must keep the dialog — it is the only control on
 // the page with no undo.
 check("the menu holds the permanent one", html.includes(">Ignore for good<"));
 check("the menu entry emits ignore-product", html.includes("&quot;action&quot;:&quot;ignore-product&quot;"));
 check("the permanent one is still red", /class="act ignore"/.test(html));
-check("the weekly one is red as well", /class="act week ignore"/.test(html));
 
-// ⚠️ The weekly button must NOT pick up the confirm dialog just because it now
-// shares a class with the permanent one. Colour is shared; behaviour is not.
-const weekTag = html.match(/<a class="act week ignore"[^>]*>/)?.[0] ?? "";
-check("the weekly one does not confirm", !weekTag.includes("data-confirm"));
+// ⚠️ No week option may pick up the confirm dialog just because it shares a class
+// with the permanent one. Colour is shared; behaviour is not.
+const weekTags = html.match(/<a class="act ignore"[^>]*&quot;weeks&quot;[^>]*>/g) ?? [];
+eq("all four week options are rendered", weekTags.length, 4 * 3); // four options × three cards
+check("no week option confirms", weekTags.every((t) => !t.includes("data-confirm")));
 
 // ⚠️ The confirm has to travel WITH the permanent action, not stay on the button
 // that used to hold it. A permanent block that fires without asking is the exact
 // failure this guards.
-const ignoreTag = html.match(/<a class="act ignore"[^>]*>/)?.[0] ?? "";
+const ignoreTag = html.match(/<a class="act ignore"[^>]*data-confirm[^>]*>/)?.[0] ?? "";
 check("the permanent one still confirms first", ignoreTag.includes("data-confirm"));
 check("its confirm still says 'for good'", ignoreTag.includes("for good"));
 
@@ -159,12 +178,40 @@ check(
 	html.includes(encodeURIComponent("Item: Ignore for good — Skippy Peanut Butter Spread")),
 );
 check(
-	"the weekly issue names the ingredient",
-	html.includes(encodeURIComponent("Item: Ignore 1wk — Peanut Butter, Smooth")),
+	"a week issue names the ingredient and the duration",
+	html.includes(encodeURIComponent("Item: 2 weeks — Peanut Butter, Smooth")),
 );
 
-// Neither may have gone missing in the move.
-eq("every card has both", (html.match(/ignore-week/g) ?? []).length, (html.match(/ignore-product/g) ?? []).length);
+// Neither may have gone missing in the move: four week options per card, one
+// permanent block per card.
+eq(
+	"every card has both",
+	(html.match(/ignore-week/g) ?? []).length,
+	(html.match(/ignore-product/g) ?? []).length * 4,
+);
+
+/**
+ * An accepted ignore takes the card off the page (asked for 2026-08-11).
+ *
+ * ⚠️ **The page can only do that if each card says what it IS**, and the two
+ * ignores mean different things: the weekly one silences an INGREDIENT, the
+ * permanent one retires a PRODUCT. `data-key` / `data-url` are what let one tap
+ * clear every card the decision covers — the same ingredient can hold a deal card
+ * and a "close match" card, and one product can be the match for two ingredients.
+ */
+describe("deals page — an accepted ignore clears the card");
+
+check("cards carry the ingredient key", /<div class="card" data-key="peanut butter"/.test(html));
+check("cards carry the product url", html.includes('data-url="https://www.fairprice.com.sg/product/skippy'));
+check("the weekly options clear by ingredient", html.includes('data-hide-card="key"'));
+check("the permanent one clears by product", html.includes('data-hide-card="url"'));
+// ⚠️ Only the ignores. Buy, Add, Replace and the two corrections all leave the card
+// where it is — a card that vanished on "Mismatch item" would take the product's
+// price off the screen while the user was still deciding whether to buy it.
+// The attribute, not the word — the dispatch script names it in a comment too.
+eq("nothing else hides a card", (html.match(/data-hide-card="/g) ?? []).length, (4 + 1) * 3);
+// The count in the header is rewritten as cards leave, so it needs a handle.
+check("the deal count is addressable", html.includes('id="dealcount"'));
 
 /**
  * Pack shots have to reach the payload, or the + Macros toggle buys the expensive

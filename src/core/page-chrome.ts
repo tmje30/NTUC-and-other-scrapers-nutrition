@@ -83,6 +83,20 @@ export const PAGE_CSS = `
      the column at Buy's width and cost nothing but a few pixels of height. */
   .act.week { min-height: 34px; font-size: .85rem; font-weight: 700;
     white-space: normal; line-height: 1.15; padding: 4px 8px; text-align: center; }
+  /* The Ignore dropdown (1/2/3/4 weeks, added 2026-08-11). It is a <details> like
+     the ⋯ menu, so it inherits the open/close and the tap-outside handler, but its
+     summary is painted as the red button it replaced — .act.ignore and .act.week
+     both out-specify .menu > summary, so only the sizing needs saying here. */
+  .cta .menu.weeks { width: 100%; }
+  .cta .menu.weeks > summary { width: 100%; min-width: 0; }
+  /* ⚠️ The panel hangs off the LEFT edge, unlike every other .panel. This menu
+     lives in the left-hand CTA column, where the shared "right: 0" would open a
+     190px panel leftwards and put most of it off the side of a phone. */
+  .menu.weeks .panel { left: 0; right: auto; min-width: 132px; }
+  /* A card on its way out. Removed from the DOM when it finishes — this is only
+     what makes the removal readable rather than a flicker. */
+  .card.going { opacity: 0; transform: scale(.98);
+    transition: opacity .22s ease, transform .22s ease; }
   /* Ignore, both of them: red, because they take something off the page. The
      permanent one lives in the ⋯ menu (since 2026-08-05), where .panel .act sizes
      it; colour is all this rule is for. "done" stays red rather than turning green
@@ -374,6 +388,59 @@ function githubOneTapScript(o: ChromeOptions): string {
     paint();
   }
 
+  // ---- An accepted ignore takes the card off the page -------------------
+  //
+  // Runs only after GitHub has ACCEPTED the job, and only for a button carrying
+  // data-hide-card. The two-tap path never gets here on purpose: there the click
+  // opens a pre-filled issue the user may yet abandon, and a card that vanished
+  // on a request never submitted would be the page lying about what it did.
+  //
+  // The scope comes from the button: "key" clears every card for the INGREDIENT
+  // (nothing is searched for it now), "url" every card offering the PRODUCT (it
+  // is never offered again, whichever item it matched). Matched in JS rather than
+  // with an attribute selector — a product URL is full of characters a selector
+  // would have to be escaped for.
+  function matching(scope, want) {
+    var out = [];
+    document.querySelectorAll(".card").forEach(function (c) {
+      if (c.getAttribute("data-" + scope) === want) out.push(c);
+    });
+    return out;
+  }
+
+  function hideCards(btn) {
+    var card = btn.closest(".card");
+    if (!card) return;
+    var scope = btn.dataset.hideCard;
+    var want = card.getAttribute("data-" + scope);
+    var cards = want ? matching(scope, want) : [card];
+    cards.forEach(function (c) { c.classList.add("going"); });
+    setTimeout(function () {
+      cards.forEach(function (c) { c.remove(); });
+      prune();
+    }, 240);
+  }
+
+  // A section heading with nothing left under it, and a count that no longer
+  // matches what is on screen, both outlive the cards they described. Re-derived
+  // from the live DOM rather than tracked, so it stays right however many cards
+  // one tap took (an ignored ingredient can own several).
+  function prune() {
+    var head = null, live = false;
+    var settle = function () { if (head) head.style.display = live ? "" : "none"; };
+    document
+      .querySelectorAll(".wrap > h2.section, .wrap > .card, .wrap > .snooze, .wrap > .empty-sm")
+      .forEach(function (el) {
+        if (el.tagName === "H2") { settle(); head = el; live = false; }
+        else live = true;
+      });
+    settle();
+    // Recommendations are close matches, not deals, and were never in this total.
+    var n = document.querySelectorAll(".card:not(.rec)").length;
+    var label = document.getElementById("dealcount");
+    if (label) label.textContent = n + " deal" + (n === 1 ? "" : "s");
+  }
+
   function dispatch(btn) {
     var label = btn.textContent;
     btn.dataset.state = "busy";
@@ -414,8 +481,13 @@ function githubOneTapScript(o: ChromeOptions): string {
           menu.open = false;
           menu.dataset.state = "done";
           var sum = menu.querySelector("summary");
-          if (sum) sum.textContent = "✓";
+          // A labelled summary (the Ignore dropdown) says what it settled on; the
+          // ⋯ menu has no label to keep, so a bare tick is the whole message.
+          if (sum) sum.textContent = menu.dataset.done || "✓";
         }
+        // Last, and after a beat: the tick above is the only confirmation there is,
+        // so it has to be read before the card carrying it leaves.
+        if (btn.dataset.hideCard) setTimeout(function () { hideCards(btn); }, 420);
       })
       .catch(function (e) {
         btn.dataset.state = "failed";
