@@ -237,13 +237,77 @@ laptop now covers the runner role, this is optional. To finish later:
 ## Telegram intake — texting a grocery list (added 2026-08-10)
 
 ```
-  you text:  2kg chicken breast     →  matched ≥0.70  →  grocery List row, with the
-             1L milk                                     ingredient's own price,
+  you text:  2kg chicken breast   →  one match ≥0.70  →  grocery List row, with the
+             1L milk                                      ingredient's own price,
              bananas x6                                   vendor and $/kg, and a
              harissa paste                                List [Ingredients] relation
-                                    →  0.45–0.70    →  "did you mean X?" + buttons
-                                    →  below 0.45   →  scan the shops → new-items.html
+                                  →  several close   →  "which of these?" — one
+                                                        button per candidate row
+                                  →  nothing close   →  "nothing looks like this" —
+                                                        create it, or just price it
+                                        both asks also carry:
+                                          🔎 No — re-search   (the next tranche of rows)
+                                          🆕 New item — create in Ingredients
 ```
+
+### ⚠️ The ask asks "which one", not "is this it" (rewritten 2026-08-11)
+
+The three faults the first live run exposed were all one shape — *the flow looks
+like it worked* — and all three are fixed together, because they are the same
+conversation:
+
+- **Fault 28 — a tie was invisible.** `bestRow` returned the single highest
+  scorer and kept the FIRST on a tie, so `1 x milk` linked silently to
+  `Milk (Low Fat)` only because Notion returned that row earlier; reorder the
+  query and the same text files against `Milk ( Normal)`. Both scored **1.000**.
+  ⚠️ **The bug was the QUESTION, not the threshold.** The rule asked "is the best
+  match good enough?" when what decides whether to ask is "**is there only
+  one?**" — and those come apart precisely on the short generic words people
+  text. Lowering `ACCEPT` would not have helped (1.000 beats any threshold) and
+  would have made every confident single match nag.
+  `rankRows` now returns the whole ranked list; `candidatesFor` keeps everyone
+  within **`CANDIDATE_MARGIN` (0.05)** of the leader; `decideItem` links silently
+  only when the leader clears `ACCEPT` **and is alone**. Ties break by name, so
+  the same question always produces the same buttons.
+- **Fault 30 — a "new" item reached no list.** It was queued, priced, published
+  on a page, and never written anywhere you shop from. Both ways out now sit on
+  every ask:
+  - **`🔎 No — re-search`** — *"a different ingredient that is similar"* (the
+    user's own words, 2026-08-11). It looks again at the **Ingredients DB**, not
+    at the shops, skipping everything already offered. ⚠️ It deliberately ignores
+    the review bar: being asked at all means the confident answers were already
+    turned down, so "nothing else is close" is a worse answer than a faint one
+    the user can see and reject.
+  - **`🆕 New item — create in Ingredients`** — creates the row *and* puts the
+    item on the grocery list against it, which is the half that fixes the fault.
+    It confirms first, showing exactly what it will write, because creating a row
+    in a live personal workspace has no undo.
+- **Fault 29 — a tap could be acknowledged and thrown away.** See below.
+
+⚠️ **The new row is marked `{New}`, in BRACES, and the brackets are not
+interchangeable** (the user's choice on 2026-08-11, from three options). `( )` is
+a **defining property** in this project's bracket standard — a hard requirement on
+the product title — so `(New) Harissa Paste` would demand the word "new" from
+every listing at every shop, match nothing, and appear in no section of the deals
+page, while looking perfectly ordinary in Notion. `{ }` is the *ignored* bracket:
+stripped from the search term and from every matching decision. It marks the row
+unreviewed to a human and is invisible to the scan.
+`src/tests/intake-candidates.test.ts` pins the contrast in both directions.
+
+⚠️ **The created row gets a `Catagory` guess and a `Unit type `, and NO price or
+size.** The unit type is inferred from what was typed — `2kg` → By Gram, `1L` →
+By ml, `x6` → By Unit, nothing → By Gram — the same inference
+`fieldsFromPurchase` makes from a pack. Price and size belong to a **vendor
+slot**, and a slot holding a size with no price and no shop is not a price-book
+entry but a half-fact `readBaseline` would have to step over. The shop scan fills
+those in properly. The category is resolved against Notion's **live options** at
+write time and dropped if absent — this tool never invents schema.
+
+⚠️ **A question about a `new` item does NOT block the shop scan; a near-miss
+does.** `maybeDrain` gates on `blocking` rather than on `pending` being empty. A
+near-miss must block — until it is answered we don't know whether the item is new
+at all — but an optional "shall I file this?" left unanswered would otherwise mean
+a batch containing one unfamiliar item never gets priced.
 
 Run it with `npm run tg-poll` (`--once` to drain and exit, `--no-push` to skip the
 commit/dispatch). It long-polls `getUpdates`, so it answers in about a second and
@@ -339,15 +403,30 @@ acknowledge a message the poller hasn't handled.
   with an empty price book has no price to quote, and `Price , To Buy ` = $0.00
   does not read as "unknown", it reads as free. It also adds `count` to `Amount `
   rather than 1 — texting "eggs x6" twice means twelve.
-- ⚠️ **A near-miss asks one question per message**, not one message with six pairs
+- ⚠️ **A near-miss asks one question per message**, not one message with six sets
   of buttons. A mis-tap here points `List [Ingredients]` at the wrong ingredient
   and quotes that ingredient's price — the row then reads perfectly and is about a
   different food. The buttons are replaced with the outcome once answered, so a
-  settled question can't be tapped again.
+  settled question can't be tapped again. **One candidate per keyboard ROW**, never
+  two side by side: these labels are ingredient names, and Telegram shrinks text to
+  fit, so two columns is two truncated names and a coin flip between two foods.
 - ⚠️ **The offset is persisted AFTER handling.** Telegram treats a fetch at an
   offset as an acknowledgement of everything before it: advance early and a crash
   loses the message, never advance and it replays forever. A crash mid-batch
   re-runs the batch, which the grocery list's title dedupe absorbs.
+  ⚠️ **It advances even when the handler THREW, and that stays deliberate** — the
+  alternative turns one poison update into an infinite loop blocking every message
+  behind it. What changed on 2026-08-11 is that the failure now **says so in the
+  chat** ("I dropped that one — …"). One line to a console nobody is watching was
+  what let fault 29 look like success.
+- ⚠️ **Clearing the button spinner may never gate the work** (fault 29, fixed
+  2026-08-11). `handleCallback` used to `await answerCallback(cb.id)` *before*
+  deleting the pending entry and doing the write. The user tapped while no poller
+  was running; by the time one started, Telegram had expired the query id
+  (`"query is too old and response timeout expired"`), the await threw, and the
+  handler aborted before writing anything — while the offset advanced. `ack()`
+  now swallows that failure and logs it. A spinner nobody is still watching is
+  worth nothing; the write is worth everything.
 - ⚠️ **Only the configured chat is answered.** The bot token is shared with the
   user's Notion Worker bot; anything from another chat is dropped in silence.
 - **Nothing here spends money.** No macro lookup, no model call — see "Nothing
@@ -396,13 +475,16 @@ three write through an `AddPayload`, which requires the id of an **existing**
 Ingredients page. A new item has none, and the alternative would be making that
 field optional across a live write path.
 
-⚠️ **This section used to end "The texted item is already on the grocery list by
-the time the page exists — the bot put it there". THAT IS FALSE** (corrected
-2026-08-10 by reading the code). `handleMessage` writes a grocery-List row only
-for a `linked` verdict; a `new` item goes to `state.queue`, and `drainQueue`
-scans, texts a summary and publishes — it makes no Notion write at all. So a
-texted item the DB doesn't know gets priced on a page and appears on **no list**.
-Whether that changes, and how, is Remaining work 30.
+⚠️ **A new item is priced here and lands on the grocery list only if you say so.**
+This section used to claim "The texted item is already on the grocery list by the
+time the page exists — the bot put it there", which was **false** (corrected
+2026-08-10): `handleMessage` wrote a row only for a `linked` verdict, so a texted
+item the DB didn't know got a price comparison on a web page and appeared on **no
+list**. Since 2026-08-11 every new item is offered
+**`🆕 New item — create in Ingredients`**, which creates the row *and* writes the
+list line against it — see "The ask asks which one" above. Declining still gets
+you the page, which is the old behaviour and often the right one: you wanted to
+know what harissa paste costs, not to start stocking it.
 
 Hand-off is the Sheng Siong pattern exactly: the laptop writes
 `data/new-items-latest.json`, commits, pushes, and fires
@@ -1300,7 +1382,28 @@ test, and nothing here would have been. When picking up this project, **check wh
 actually ran before writing code** — `push-ss.log`, `Get-ScheduledTaskInfo`, and
 the date inside `data/shengsiong-latest.json`.
 
-`npm test` **518 passing** (was 508), `npm run check` clean.
+### Then the inbox faults — 28, 29 and 30 are all done
+
+The user answered the three open questions the same morning, and all of it
+shipped:
+
+| asked | answered | built |
+| --- | --- | --- |
+| re-search **what**? | "a different ingredient that is similar" | `nextCandidates()` — the Ingredients DB, next tranche, skipping what was rejected |
+| `(New)` or `{New}`? | **`{New}`** | `newIngredientFields()`; `( )` would have made "new" a hard requirement and matched nothing |
+| the empty third bullet | "was a mistake" | no third button |
+
+Plus a fourth rule, on **By Unit**: a counted row's weight may be in the `Name`
+**or** in `Item Name [Vendor n]`, and if it is in neither the item is sold by the
+piece — a blank is an answer, not a gap. `readGroceryTargets` reads both now; see
+Remaining work 0 for what that changed on the live DB (nothing yet, and why).
+
+**What has NOT been done:** none of this has been used in anger. The ask, the
+re-search button and the create button were built against tests and a restarted
+poller; nobody has texted the bot since. Do that first — text something you
+already stock, something ambiguous ("milk"), and something you don't.
+
+`npm test` **552 passing** (was 508 this morning), `npm run check` clean.
 
 ### The state at 2026-08-10, evening
 
@@ -1642,7 +1745,7 @@ Both made a bad deal look good — the same family as the 32 g serving read as 1
   names the shop — never claims a free slot, never evicts, never writes
   `Unit type `. Carousell opens a real Chrome window.
 - `npm run check` — typecheck.
-- `npm test` — **508** offline cases (`src/tests/`). Free, fast, no network.
+- `npm test` — **552** offline cases (`src/tests/`). Free, fast, no network.
 
 ## Key technical facts (details in LEARNINGS.md)
 
@@ -1713,12 +1816,30 @@ from its first live use; **31–33 were the operational faults found and fixed o
 2026-08-11** and are recorded as done because the next reader needs to know the
 system has a supervisor now.*
 
-**0. ⚠️ Five By-Unit rows state no pack weight in their `Name` — a job for Notion,
-not for code.** A counted row is compared **per piece**, and counting doesn't
+**0. ⚠️ Five By-Unit rows state no pack weight anywhere — mostly correct, and one
+of them isn't.** A counted row is compared **per piece**, and counting doesn't
 normalise size, so a smaller piece wins on price every time. The guard against that
-is the pack weight written into the row's own name, which lets the comparison fall
-back to price-per-gram (see "Counted packs" in SYSTEM-GUIDE.md). Measured
-2026-08-09, of 9 By-Unit targets:
+is the pack weight written down somewhere, which lets the comparison fall back to
+price-per-gram (see "Counted packs" in SYSTEM-GUIDE.md).
+
+⚠️ **The rule, from the user on 2026-08-11: the weight may be in the row's `Name`
+OR in `Item Name [Vendor n]`, and if it is in neither, the item is sold by the
+piece only.** So a blank here is a legitimate answer, not a backlog — a razor
+cartridge, a tissue roll and a stock cube have no meaningful weight and want none
+invented. `readGroceryTargets` reads both places as of that date.
+
+⚠️ **Only the CHEAPEST slot's item name is read, never another slot's.** That
+weight divides that slot's price; borrowing Guardian's 550 g to divide FairPrice's
+price invents a per-100g figure that is no shop's — silent, plausible and wrong.
+
+⚠️ **Measured against the live DB on 2026-08-11: all five have an EMPTY
+`Item Name [Vendor n]`, so nothing changed yet.** That column only arrived on
+2026-08-09; it fills as `vendor-scan`, Add and Replace touch each row, and the
+fallback starts working for free when it does. The one row still worth a hand
+edit is the eggs — 30 pieces at $6.20 with no weight is exactly the quail-egg
+exposure the rule exists for.
+
+Measured 2026-08-09, of 9 By-Unit targets (re-checked 2026-08-11, unchanged):
 
 | row | states a weight |
 | --- | --- |
@@ -1734,8 +1855,10 @@ back to price-per-gram (see "Counted packs" in SYSTEM-GUIDE.md). Measured
 
 Fix by renaming in Notion — `Eggs, Whole, small, 350g, {cheap}` or
 `Eggs, Whole, small (350g), {cheap}`; both parse, parentheses win if you write both.
-The last four matter less (nobody sells a half-size toilet roll), but the eggs row is
-exactly the case that motivated the rule.
+Filling `Item Name [Vendor 1]` with the shop's own wording ("Fresh Eggs (10s) 550g")
+now works just as well and is the thing a vendor scan does for you. The other four
+are piece-only by the rule above and need nothing; the eggs row is the one that
+motivated it.
 
 1. ~~Schedule → 10:00 SGT~~ **done** — `daily.yml` runs `cron: "0 2 * * *"`
    (02:00 UTC = 10:00 SGT), which also gives the laptop more morning windows to
@@ -1821,7 +1944,11 @@ exactly the case that motivated the rule.
     mechanically but found nothing cheaper than the baseline. Probe more items
     first — `npm run vendor-probe` is free.
 27. **Shopee needs a one-time hand sign-in** before it can be probed at all.
-28. **⚠️ The ask is a yes/no on ONE guess; it should offer every candidate.**
+28. ~~The ask is a yes/no on ONE guess; it should offer every candidate~~
+    **done 2026-08-11** — `rankRows` + `candidatesFor`, one button per candidate,
+    and a silent link only when the leader clears `ACCEPT` **and is alone**. See
+    "The ask asks which one". Original note follows, for the measurements.
+
     *(Asked for by the user, 2026-08-10, after texting `1 x milk` and having it
     linked silently.)*
 
@@ -1853,7 +1980,14 @@ exactly the case that motivated the rule.
     are within a small margin of the top (a tie certainly, and probably ~0.05),
     ask **which one** with one button per candidate rather than ✅/🆕.
 
-29. **⚠️ A button tap can be acknowledged and thrown away.** Seen live on
+29. ~~A button tap can be acknowledged and thrown away~~ **done 2026-08-11** —
+    `ack()` swallows a failed `answerCallback` and the work carries on; the
+    offset still advances on a throw (deliberately — see "Telegram intake") but
+    the failure is now reported in the chat instead of only to a console. Also
+    narrowed at the root by item 32: there is a poller running now. Original
+    note follows.
+
+    **⚠️ A button tap can be acknowledged and thrown away.** Seen live on
     2026-08-10:
 
     ```
@@ -1873,7 +2007,19 @@ exactly the case that motivated the rule.
     handler that throws should advance the offset at all (a failed Notion write is
     currently dropped just as silently).
 
-30. **⚠️ A "new" item never reaches the grocery List, and this file said it did.**
+30. ~~A "new" item never reaches the grocery List~~ **done 2026-08-11.** All three
+    questions the note below asked were answered by the user that morning and
+    built the same day:
+    - **re-search WHAT** → *"a different ingredient that is similar"* — the
+      **Ingredients DB**, offering the next tranche and skipping what was already
+      turned down. `nextCandidates()`.
+    - **`(New)` vs `{New}`** → **`{New}`**, option 1: the ignored bracket, so the
+      row is still searched. `newIngredientFields()`.
+    - **the empty third bullet** → *"was a mistake"* — there is no third button.
+
+    Original note follows.
+
+    **⚠️ A "new" item never reaches the grocery List, and this file said it did.**
     `handleMessage` writes a row only for `verdict === "linked"`; `"new"` items go
     to `state.queue`, and `drainQueue` scans the shops, texts a summary and
     publishes `new-items.html` — **no Notion write anywhere in that path**. The

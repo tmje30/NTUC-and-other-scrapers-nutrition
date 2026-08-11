@@ -62,6 +62,37 @@ export function parseWeight(input: string | null | undefined): ParsedWeight | nu
 	return null;
 }
 
+/**
+ * The first pack size stated anywhere INSIDE a longer string — a shop's product
+ * title, say — rather than in a string that is nothing but a size.
+ *
+ * ⚠️ **`parseWeight` alone is not safe on free text and this is why this exists.**
+ * Its unit alternation ends in a bare `l` with nothing after it, so `"2 large"`
+ * parses as **2 litres** and `"3 lean chicken"` as 3 litres. On a pack label that
+ * never comes up; on a title someone typed, it is a fabricated pack weight that
+ * then divides a real price. The boundary here — a unit followed by a non-letter —
+ * is the whole point of the function.
+ *
+ * The grams conversion is still `parseWeight`'s: this only decides WHICH substring
+ * is a size, then hands it over, so there is one place that knows kg from ml.
+ */
+const IN_TEXT_UNIT = "(?:kg|kgs|gm|gms|grams?|g|ml|ltr|litre|liter|lt|l)";
+const MULTI_IN_TEXT = new RegExp(
+	String.raw`(?<![\w.])\d+(?:\.\d+)?\s*[x×]\s*\d+(?:\.\d+)?\s*${IN_TEXT_UNIT}(?![a-z])`,
+	"i",
+);
+const SINGLE_IN_TEXT = new RegExp(String.raw`(?<![\w.])\d+(?:\.\d+)?\s*${IN_TEXT_UNIT}(?![a-z])`, "i");
+
+export function parseWeightInText(input: string | null | undefined): ParsedWeight | null {
+	if (!input) return null;
+	// Thousands separators go first, or "1,500g" reads as 1 g.
+	const s = String(input).replace(/,/g, "");
+	// Multipack first, for the same reason `parseWeight` does it: "6 x 250ml" is
+	// 1500 ml, and the single-size pattern would take the 250 and call it a day.
+	const m = s.match(MULTI_IN_TEXT) ?? s.match(SINGLE_IN_TEXT);
+	return m ? parseWeight(m[0]) : null;
+}
+
 /** Grams only (back-compat helper). */
 export function parseWeightGrams(input: string | null | undefined): number | null {
 	return parseWeight(input)?.grams ?? null;

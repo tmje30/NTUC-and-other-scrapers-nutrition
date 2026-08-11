@@ -13,11 +13,15 @@ import {
 import { parseList, sizeLabel, type ParsedItem } from "./list-parse.js";
 import {
 	decideList,
+	nextCandidates,
 	pricePerKgLabelFor,
 	readIngredientRows,
 	type IngredientRow,
+	type RowMatch,
 } from "./list-intake.js";
 import { addTextedItem } from "./grocery-list.js";
+import { categorize } from "./categorize.js";
+import { createIngredient, type IngredientFields } from "./ingredient-write.js";
 import { scanNewItems, type NewItemResult } from "./new-items.js";
 
 /**
@@ -51,15 +55,40 @@ import { scanNewItems, type NewItemResult } from "./new-items.js";
 /** Machine-local, gitignored (`.sessions/` holds session-shaped state already). */
 const STATE_PATH = ".sessions/tg-inbox.json";
 
-/** One near-miss awaiting a Yes/No tap. */
-interface PendingAsk {
-	item: ParsedItem;
+/** One row on offer, as it sits on the keyboard. */
+interface AskCandidate {
 	rowId: string;
 	rowName: string;
 	score: number;
+}
+
+/** One question awaiting a tap. */
+interface PendingAsk {
+	item: ParsedItem;
+	/** The rows currently on the keyboard, in button order. */
+	candidates: AskCandidate[];
+	/**
+	 * Every row already offered and passed over. Re-search never offers these
+	 * again — being shown the same wrong answer twice is how a user learns to stop
+	 * reading the buttons.
+	 */
+	rejected: string[];
 	/** The prompt message, so its buttons can be replaced with the outcome. */
 	messageId: number;
 	chatId: number;
+	/**
+	 * Whether the shop scan must wait for this answer.
+	 *
+	 * ⚠️ A **near-miss** blocks: until it is answered we do not know whether the
+	 * item is new at all, and scanning the shops for something that turns out to be
+	 * the milk you already buy is wasted work on a page nobody wants. An offer on
+	 * an item already ruled **new** does not block — it is only asking whether to
+	 * file it, and holding a whole batch's pricing behind an optional question is
+	 * how the new-items page would stop appearing.
+	 */
+	blocking: boolean;
+	/** Set once the user has asked to create a row and been shown what that means. */
+	awaitingCreate?: boolean;
 }
 
 export interface InboxState {
@@ -270,34 +299,114 @@ async function handleMessage(
 	const reply = [...written, ...failed];
 	if (reply.length) await sendHtml(reply.join("\n"));
 
-	// Ask about the near-misses one message at a time, so each answer is
-	// unambiguous — a single message with six pairs of buttons is a mis-tap
-	// waiting to happen, and a mis-tap here points a relation at the wrong row.
+	// Ask one message at a time, so each answer is unambiguous — a single message
+	// with six sets of buttons is a mis-tap waiting to happen, and a mis-tap here
+	// points a relation at the wrong row and quotes that row's price.
 	for (const d of decisions) {
-		if (d.verdict !== "ask" || !d.match) continue;
-		const t = token(state.pending);
-		const keyboard: InlineKeyboard = [
-			[
-				{ text: "✅ Yes, that's it", data: `y:${t}` },
-				{ text: "🆕 No, it's new", data: `n:${t}` },
-			],
-		];
-		const messageId = await sendHtml(
-			`❓ <b>${esc(d.item.name)}</b> — did you mean <b>${esc(d.match.row.name)}</b>?` +
-				` <i>(${Math.round(d.match.score * 100)}% match)</i>`,
-			{ keyboard },
-		);
-		state.pending[t] = {
-			item: d.item,
-			rowId: d.match.row.pageId,
-			rowName: d.match.row.name,
-			score: d.match.score,
-			messageId,
-			chatId,
-		};
+		if (d.verdict === "ask" && d.candidates.length) {
+			await ask(state, d.item, chatId, toCandidates(d.candidates), { blocking: true });
+		} else if (d.verdict === "new") {
+			// An item nothing matched is queued for pricing AND offered a home. Until
+			// 2026-08-11 it was only queued, so texting something you don't stock got
+			// you a comparison on a web page and nothing on the list you shop from —
+			// see fault 30.
+			await ask(state, d.item, chatId, [], { blocking: false });
+		}
 	}
 
-	if (!Object.keys(state.pending).length) await drainQueue(deps, state);
+	await maybeDrain(deps, state);
+}
+
+/** `RowMatch`es as the keyboard stores them. */
+function toCandidates(matches: RowMatch[]): AskCandidate[] {
+	return matches.map((m) => ({ rowId: m.row.pageId, rowName: m.row.name, score: m.score }));
+}
+
+/**
+ * The keyboard for one question: a button per candidate row, then the two ways
+ * out.
+ *
+ * ⚠️ **One candidate per ROW of the keyboard, never two side by side.** These
+ * labels are ingredient names — `Chicken thigh, Boneless [Seara]` beside
+ * `chicken soup cube` — and Telegram shrinks the text to fit, so a two-column
+ * layout is two truncated names on a phone and a coin flip between two different
+ * foods.
+ */
+function askKeyboard(t: string, candidates: AskCandidate[]): InlineKeyboard {
+	const keyboard: InlineKeyboard = candidates.map((c, i) => [
+		{ text: `${c.rowName} · ${Math.round(c.score * 100)}%`, data: `p:${t}:${i}` },
+	]);
+	keyboard.push([{ text: "🔎 No — re-search", data: `r:${t}` }]);
+	keyboard.push([{ text: "🆕 New item — create in Ingredients", data: `c:${t}` }]);
+	return keyboard;
+}
+
+/** The question above the keyboard. */
+function askText(item: ParsedItem, candidates: AskCandidate[]): string {
+	return candidates.length
+		? `❓ <b>${esc(item.name)}</b> — which of these did you mean?`
+		: `🆕 <b>${esc(item.name)}</b> — nothing in your Ingredients looks like this.` +
+				` I'll price it at the shops either way.`;
+}
+
+/** Send one question and record it as pending. */
+async function ask(
+	state: InboxState,
+	item: ParsedItem,
+	chatId: number,
+	candidates: AskCandidate[],
+	opts: { blocking: boolean },
+): Promise<void> {
+	const t = token(state.pending);
+	const messageId = await sendHtml(askText(item, candidates), { keyboard: askKeyboard(t, candidates) });
+	state.pending[t] = {
+		item,
+		candidates,
+		rejected: candidates.map((c) => c.rowId),
+		messageId,
+		chatId,
+		blocking: opts.blocking,
+	};
+}
+
+/**
+ * Price the queue once nothing is left that could change what is in it.
+ *
+ * ⚠️ Gated on **blocking** questions, not on `pending` being empty. A new item's
+ * "shall I file this?" offer stays live for as long as the user leaves it, and
+ * waiting for that would mean a batch containing one unfamiliar item never gets
+ * priced at all.
+ */
+async function maybeDrain(deps: InboxDeps, state: InboxState): Promise<void> {
+	if (Object.values(state.pending).some((a) => a.blocking)) return;
+	await drainQueue(deps, state);
+}
+
+/**
+ * Stop Telegram's button spinner. **Cosmetic, and it may never gate the work.**
+ *
+ * ⚠️ **This is fault 29, seen live on 2026-08-10:**
+ *
+ * ```
+ * update 523965592 failed: answerCallbackQuery HTTP 400:
+ *   "Bad Request: query is too old and response timeout expired…"
+ * ```
+ *
+ * The user tapped a button while no poller was running. By the time one started,
+ * Telegram had expired the query id; the `await` threw, `handleCallback` aborted
+ * **before** the Notion write, and `pumpOnce` advanced the offset anyway — so the
+ * answer was consumed and lost, and the chat showed a question that had been
+ * answered and a row that never appeared. A spinner nobody is watching any more is
+ * worth nothing; the write is worth everything. Failing here is now a logged
+ * shrug.
+ */
+async function ack(id: string, text?: string): Promise<void> {
+	try {
+		await answerCallback(id, text);
+	} catch (e: any) {
+		// Expected whenever the tap is older than Telegram's callback window.
+		console.error(`answerCallback failed (cosmetic, carrying on): ${e?.message ?? e}`);
+	}
 }
 
 /** Handle one button tap. */
@@ -306,45 +415,199 @@ async function handleCallback(
 	state: InboxState,
 	cb: NonNullable<TgUpdate["callback_query"]>,
 ): Promise<void> {
-	const [verb, t] = (cb.data ?? "").split(":");
-	const ask = t ? state.pending[t] : undefined;
+	const [verb, t, arg] = (cb.data ?? "").split(":");
+	const pending = t ? state.pending[t] : undefined;
 
 	// Acknowledge first, always. Telegram spins the button until this lands, so a
 	// stale token must still clear the spinner rather than leaving it turning.
-	if (!ask) {
-		await answerCallback(cb.id, "That question has already been answered.");
+	if (!pending) {
+		await ack(cb.id, "That question has already been answered.");
 		return;
 	}
-	await answerCallback(cb.id);
-	delete state.pending[t];
+	await ack(cb.id);
 
-	if (verb === "y") {
-		let outcome: string;
-		try {
-			// Re-looked-up rather than taken from the pending record: a confirmation
-			// can sit unanswered for hours, and the price quoted on the list should be
-			// the one on the row now. A row deleted in the meantime falls back to the
-			// name we asked about, so the item still lands on the list.
-			const row = (await rows(deps)).find((r) => r.pageId === ask.rowId) ?? {
-				pageId: ask.rowId,
-				name: ask.rowName,
-				searchTerm: ask.rowName,
-				unitType: "By Gram" as const,
-				price: null,
-			};
-			outcome = await writeItem(deps, ask.item, row);
-		} catch (e: any) {
-			outcome = `❌ ${esc(ask.item.name)} — ${esc(e.message)}`;
+	const edit = (text: string, keyboard?: InlineKeyboard) =>
+		editHtml(pending.messageId, text, { chatId: String(pending.chatId), keyboard });
+	/** Settle the question: its buttons become its outcome and cannot be tapped again. */
+	const settle = async (text: string) => {
+		delete state.pending[t];
+		await edit(text);
+	};
+
+	switch (verb) {
+		case "p": {
+			// One of the offered rows. This is also the answer to "which one" — the
+			// tie that fault 28 used to resolve by whichever row Notion listed first.
+			const chosen = pending.candidates[Number(arg)];
+			if (!chosen) {
+				await settle(`⚠️ ${esc(pending.item.name)} — that option is no longer available.`);
+				break;
+			}
+			// An item ruled `new` was queued for pricing when it arrived; linking it to
+			// a row it turns out we already have means it must come back out, or it is
+			// priced as a new item on a page while sitting on the list as a known one.
+			state.queue = state.queue.filter((q) => q.raw !== pending.item.raw);
+			let outcome: string;
+			try {
+				// Re-looked-up rather than taken from the pending record: a question can
+				// sit unanswered for hours, and the price quoted on the list should be
+				// the one on the row now. A row deleted in the meantime falls back to the
+				// name we asked about, so the item still lands on the list.
+				const row = (await rows(deps)).find((r) => r.pageId === chosen.rowId) ?? {
+					pageId: chosen.rowId,
+					name: chosen.rowName,
+					searchTerm: chosen.rowName,
+					unitType: "By Gram" as const,
+					price: null,
+				};
+				outcome = await writeItem(deps, pending.item, row);
+			} catch (e: any) {
+				outcome = `❌ ${esc(pending.item.name)} — ${esc(e.message)}`;
+			}
+			await settle(outcome);
+			break;
 		}
-		await editHtml(ask.messageId, outcome, { chatId: String(ask.chatId) });
-	} else {
-		state.queue.push(ask.item);
-		await editHtml(ask.messageId, `🆕 ${esc(ask.item.name)} — treating as new`, {
-			chatId: String(ask.chatId),
-		});
+
+		case "r": {
+			// "No — re-search": a different ingredient that is similar (the user's own
+			// words, 2026-08-11). It looks again at the INGREDIENTS DB, not at the
+			// shops — the shops are what the new-items page is for.
+			let next: AskCandidate[] = [];
+			try {
+				next = toCandidates(nextCandidates(pending.item.name, await rows(deps), pending.rejected));
+			} catch (e: any) {
+				await edit(`⚠️ Couldn't re-read your Ingredients DB: ${esc(e.message)}`, askKeyboard(t, pending.candidates));
+				break;
+			}
+			if (!next.length) {
+				// The buttons stay: "nothing else close" is an answer about the DB, not
+				// the end of the question — creating the row is still on the table.
+				pending.candidates = [];
+				await edit(
+					`🔎 <b>${esc(pending.item.name)}</b> — nothing else in your Ingredients comes close.`,
+					askKeyboard(t, []),
+				);
+				break;
+			}
+			pending.candidates = next;
+			pending.rejected = [...pending.rejected, ...next.map((c) => c.rowId)];
+			await edit(
+				`🔎 <b>${esc(pending.item.name)}</b> — how about one of these?`,
+				askKeyboard(t, next),
+			);
+			break;
+		}
+
+		case "c": {
+			// Creating a row is the one action here with no undo, in a live personal
+			// workspace, so it shows exactly what it is about to write and asks again —
+			// the same courtesy *Not in use* and *Replace* extend on the deals page.
+			const fields = newIngredientFields(pending.item);
+			pending.awaitingCreate = true;
+			await edit(
+				`➕ Create <b>${esc(fields.name)}</b> in Ingredients?\n` +
+					// The category shown is this project's own key. The Notion OPTION is
+					// resolved from the live list at write time and dropped if it isn't
+					// there — this tool never invents schema — so the row can legitimately
+					// land uncategorised even though a guess is quoted here.
+					`<i>${esc(fields.categoryKey ?? "uncategorised")} · ${esc(fields.unitType ?? "—")}</i>\n` +
+					`It'll go on your grocery list too. No price yet — the shop scan fills that in.`,
+				[
+					[{ text: "✅ Yes, create it", data: `k:${t}` }],
+					[{ text: "✖ Cancel", data: `x:${t}` }],
+				],
+			);
+			break;
+		}
+
+		case "k": {
+			if (!pending.awaitingCreate) break; // a stale confirm button; ignore quietly
+			let outcome: string;
+			try {
+				outcome = await createAndList(deps, pending.item);
+			} catch (e: any) {
+				outcome = `❌ ${esc(pending.item.name)} — ${esc(e.message)}`;
+			}
+			await settle(outcome);
+			break;
+		}
+
+		case "x":
+			// Cancelling leaves it exactly as it arrived: queued, priced, and on no
+			// list. Nothing was written, so there is nothing to undo.
+			await settle(`🆕 ${esc(pending.item.name)} — left as a new item; I'll price it at the shops.`);
+			break;
+
+		default:
+			await settle(`⚠️ ${esc(pending.item.name)} — I didn't understand that button.`);
 	}
 
-	if (!Object.keys(state.pending).length) await drainQueue(deps, state);
+	await maybeDrain(deps, state);
+}
+
+/**
+ * What a texted item becomes as an Ingredients row.
+ *
+ * ⚠️ **The marker is `{New}`, in BRACES, and the brackets are not
+ * interchangeable** (the user chose this on 2026-08-11 from three options).
+ * `parseName` reads `( )` as a **defining property** — a hard requirement on the
+ * product title — so a row called `(New) Harissa Paste` would demand the word
+ * "new" from every candidate at every shop, match nothing, and appear in no
+ * section of the deals page, all while looking perfectly ordinary in Notion.
+ * `{ }` is the ignored bracket: excluded from the search term and from every
+ * matching decision, which is exactly this job. It marks the row as unreviewed to
+ * a human and is invisible to the scan.
+ *
+ * No price and no size are written. Both belong to a vendor slot, and a slot
+ * holding a size with no price and no shop is not a price book entry — it is a
+ * half-fact that `readBaseline` would have to step over. The shop scan fills
+ * them in properly.
+ */
+export function newIngredientFields(item: ParsedItem): IngredientFields {
+	const key = categorize(item.name);
+	return {
+		name: `{New} ${item.name.trim()}`,
+		categoryKey: key,
+		unitType: unitTypeFor(item),
+	};
+}
+
+/**
+ * `Unit type ` from what the user actually typed — the same inference
+ * `fieldsFromPurchase` makes from a pack: a stated volume is `By ml`, a stated
+ * weight is `By Gram`, and a bare count is `By Unit`.
+ *
+ * An item with no quantity at all ("harissa paste") gets `By Gram`, the type most
+ * groceries have. ⚠️ Getting this wrong is not silent — it is visible on the row
+ * and one dropdown to correct — which is why it guesses rather than asking.
+ */
+export function unitTypeFor(item: ParsedItem): string {
+	if (item.amountG != null) return item.volumetric ? "By ml" : "By Gram";
+	return item.count > 1 ? "By Unit" : "By Gram";
+}
+
+/**
+ * Create the Ingredients row, then put the item on the grocery list against it.
+ *
+ * The second half is the point of the whole button: fault 30 was that a new item
+ * got a price comparison on a web page and never reached the list you shop from.
+ */
+async function createAndList(deps: InboxDeps, item: ParsedItem): Promise<string> {
+	const fields = newIngredientFields(item);
+	const res = await createIngredient(deps.notion, fields);
+	// The cache would otherwise keep calling this row new for up to a minute — and
+	// the same list, re-sent, would offer to create it a second time.
+	rowCache = null;
+	const row: IngredientRow = {
+		pageId: res.id,
+		name: fields.name,
+		searchTerm: item.name,
+		unitType: fields.unitType as IngredientRow["unitType"],
+		price: null,
+	};
+	const listed = await writeItem(deps, item, row);
+	const skipped = res.skipped.length ? `\n<i>Not written: ${esc(res.skipped.join("; "))}</i>` : "";
+	return `➕ Created <b>${esc(row.name)}</b> in Ingredients\n${listed}${skipped}`;
 }
 
 /**
@@ -368,8 +631,24 @@ export async function pumpOnce(
 			// Anything else — another chat, a photo, a sticker — is dropped in silence.
 		} catch (e: any) {
 			console.error(`update ${u.update_id} failed: ${e?.stack ?? e}`);
+			// ⚠️ **Say so in the chat.** The offset still advances (see below), so
+			// this update is gone — and the whole point of fault 29 was that a
+			// swallowed update looks exactly like a handled one from the sofa. One
+			// line to a console nobody is watching is not a report. Wrapped because
+			// the thing that just failed may well be Telegram itself.
+			try {
+				await sendHtml(`⚠️ I dropped that one — ${esc(e?.message ?? String(e))}. Please send it again.`);
+			} catch {
+				/* the chat is unreachable too; the console line is all there is */
+			}
 		}
 		// After handling, never before: an offset advanced early loses the message.
+		//
+		// ⚠️ **It advances even when the handler threw, and that is deliberate.**
+		// The alternative — retry until it succeeds — turns one poison update into
+		// an infinite loop that blocks every message behind it, which is a worse
+		// failure than losing one line of a shopping list. The user is told instead,
+		// above, and can send it again.
 		state.offset = u.update_id + 1;
 		await writeState(state);
 	}

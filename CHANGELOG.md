@@ -6,6 +6,27 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+### Changed
+- **The Telegram ask offers every candidate (2026-08-11).** `rankRows` and
+  `candidatesFor` replace `bestRow`'s single answer: rows within
+  `CANDIDATE_MARGIN` (0.05) of the leader all get a button, and an item is linked
+  silently only when its leader clears `ACCEPT` **and is alone**. Fixes fault 28,
+  where `1 x milk` linked to whichever of two 1.000-scoring rows Notion returned
+  first. Every ask also carries **`🔎 No — re-search`** (the next tranche of
+  Ingredients rows, skipping what was rejected — `nextCandidates`) and
+  **`🆕 New item — create in Ingredients`**, which creates the row *and* writes
+  the grocery-list line against it, confirming first. That second button is fault
+  30: a new item used to be priced on a web page and reach no list at all.
+  The new row is marked **`{New}`** — braces, the ignored bracket; `(New)` would
+  be read as a defining property and match nothing at any shop.
+- **A By-Unit row's pack weight may come from `Item Name [Vendor n]`
+  (2026-08-11).** Rule from the user: the weight is stated in the row's `Name` or
+  in the vendor's own item name, and if neither states one the item is sold by the
+  piece — a blank is an answer, not a gap. Only the **cheapest** slot's item name
+  is read, since that weight divides that slot's price. New `parseWeightInText`
+  does the reading, with the boundary `parseWeight` lacks: on free text its bare
+  `l` unit turns "2 large" into two litres.
+
 ### Fixed
 - **The Telegram inbox now has something that starts it (2026-08-11).** Until
   today nothing ran `npm run tg-poll` — the inbox existed only while someone

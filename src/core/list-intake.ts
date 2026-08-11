@@ -110,12 +110,79 @@ export interface RowMatch {
  * Taking the max means neither spelling is punished for the other's sake.
  */
 export function bestRow(query: string, rows: IngredientRow[]): RowMatch | null {
-	let best: RowMatch | null = null;
-	for (const row of rows) {
-		const s = Math.max(score(query, row.name), score(query, row.searchTerm));
-		if (!best || s > best.score) best = { row, score: s };
-	}
-	return best && best.score > 0 ? best : null;
+	return rankRows(query, rows)[0] ?? null;
+}
+
+/**
+ * Every row that scored at all, best first.
+ *
+ * ⚠️ **`bestRow` returning one row is what fault 28 was.** It kept the FIRST row
+ * on a tie, so texting `1 x milk` linked silently to `Milk (Low Fat)` purely
+ * because Notion returned it before `Milk ( Normal)` — both scored **1.000**.
+ * Reorder the query and the same text files against the other one. The rule asked
+ * "is the best match good enough?" when the question that decides whether to ask
+ * is "**is there only one?**", and those two come apart precisely on the short
+ * generic words people actually text: milk, eggs, chicken, bread.
+ *
+ * Lowering `ACCEPT` would not have helped — 1.000 beats every threshold — and
+ * would have made each confident single match nag.
+ *
+ * Ties are broken by name so the order is stable between runs: the ask below is
+ * built from this list, and a set of buttons that reshuffles between two
+ * identical questions is its own small betrayal.
+ */
+export function rankRows(query: string, rows: IngredientRow[]): RowMatch[] {
+	return rows
+		.map((row) => ({ row, score: Math.max(score(query, row.name), score(query, row.searchTerm)) }))
+		.filter((m) => m.score > 0)
+		.sort((a, b) => b.score - a.score || a.row.name.localeCompare(b.row.name));
+}
+
+/**
+ * How close a runner-up has to be to the leader to be offered alongside it.
+ *
+ * A tie is the case this was written for and 0 would cover it. The margin is
+ * wider than that because the near-ties are just as wrong and just as invisible:
+ * `chicken` scores 0.850 on `Chicken thigh, Boneless [Seara]` and 0.800 on
+ * `chicken soup cube` — two different foods, one confident-looking answer.
+ *
+ * ⚠️ Widen this and every confident match starts asking, which trains the user to
+ * tap the first button without reading. That is worse than the bug.
+ */
+export const CANDIDATE_MARGIN = 0.05;
+
+/** At most this many rows are offered at once — a keyboard, not a catalogue. */
+export const MAX_CANDIDATES = 4;
+
+/**
+ * The rows worth putting in front of the user for one query: the leader, plus
+ * anyone within `CANDIDATE_MARGIN` of it that also clears the review bar.
+ */
+export function candidatesFor(query: string, rows: IngredientRow[], exclude: string[] = []): RowMatch[] {
+	const skip = new Set(exclude);
+	const ranked = rankRows(query, rows).filter((m) => !skip.has(m.row.pageId));
+	const top = ranked[0];
+	if (!top || top.score < REVIEW_THRESHOLD) return [];
+	return ranked
+		.filter((m) => m.score >= REVIEW_THRESHOLD && top.score - m.score <= CANDIDATE_MARGIN)
+		.slice(0, MAX_CANDIDATES);
+}
+
+/**
+ * The next rows to offer after the user has rejected some — the **re-search**
+ * button (fault 30). "A different ingredient that is similar", in the user's own
+ * words: it looks again at the Ingredients DB, not at the shops.
+ *
+ * ⚠️ **The review bar is deliberately NOT applied here.** Being asked at all
+ * means the confident answers have already been rejected, so the honest next
+ * offer is whatever is left in order, however faint — the alternative is
+ * answering "nothing else looks close" while a perfectly good row sits at 0.44.
+ */
+export function nextCandidates(query: string, rows: IngredientRow[], exclude: string[]): RowMatch[] {
+	const skip = new Set(exclude);
+	return rankRows(query, rows)
+		.filter((m) => !skip.has(m.row.pageId))
+		.slice(0, MAX_CANDIDATES);
 }
 
 /**
@@ -137,15 +204,29 @@ export type IntakeVerdict = "linked" | "ask" | "new";
 export interface IntakeDecision {
 	item: ParsedItem;
 	verdict: IntakeVerdict;
-	/** The candidate row, for `linked` and `ask`. Null for `new`. */
+	/** The leading row, for `linked` and `ask`. Null for `new`. */
 	match: RowMatch | null;
+	/**
+	 * Every row worth offering, best first — one button each. Holds a single entry
+	 * for a `linked` item, two or more for the tie that made `ask` necessary, and
+	 * nothing for `new`.
+	 */
+	candidates: RowMatch[];
 }
 
+/**
+ * ⚠️ **A confident match is only linked silently when it is ALONE.** Two rows
+ * within `CANDIDATE_MARGIN` of each other are asked about even at 1.000, because
+ * "good enough" and "the only one" are different questions — see `rankRows`.
+ */
 export function decideItem(item: ParsedItem, rows: IngredientRow[]): IntakeDecision {
-	const match = bestRow(item.name, rows);
-	if (!match || match.score < REVIEW_THRESHOLD) return { item, verdict: "new", match: null };
-	if (match.score >= ACCEPT_THRESHOLD) return { item, verdict: "linked", match };
-	return { item, verdict: "ask", match };
+	const candidates = candidatesFor(item.name, rows);
+	const match = candidates[0] ?? null;
+	if (!match) return { item, verdict: "new", match: null, candidates: [] };
+	if (match.score >= ACCEPT_THRESHOLD && candidates.length === 1) {
+		return { item, verdict: "linked", match, candidates };
+	}
+	return { item, verdict: "ask", match, candidates };
 }
 
 export function decideList(items: ParsedItem[], rows: IngredientRow[]): IntakeDecision[] {

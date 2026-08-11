@@ -2,6 +2,7 @@ import { Client } from "@notionhq/client";
 import { config } from "./config.js";
 import { parseName, type ParsedName } from "./parse.js";
 import { cheapestVendorSlot, readVendorSlots, resolveVendorSlotProps } from "./vendor-slots.js";
+import { parseWeightInText } from "./stores/weight.js";
 
 /**
  * Reads the Ingredients data and resolves the "active plan" grocery targets the
@@ -151,8 +152,13 @@ export interface PlanTarget {
 	/**
 	 * The pack's weight in grams/ml, whatever the row is counted in. Same as
 	 * `packSize` for By-Gram and By-ml rows; for a By-Unit row it comes from a size
-	 * written into the name — "Bread, Wholemeal (600g)" is bought in 20 slices but
-	 * sold by the shop by weight. Null when the row is counted and says no weight.
+	 * written into the row's `Name` — "Bread, Wholemeal (600g)" is bought in 20
+	 * slices but sold by the shop by weight — or, failing that, from the cheapest
+	 * slot's `Item Name [Vendor n]`.
+	 *
+	 * ⚠️ **Null means sold by the piece, and is a real answer.** Neither place
+	 * stating a weight is how a razor cartridge, a tissue roll or a stock cube
+	 * looks; those are compared per piece and want no weight invented for them.
 	 *
 	 * This is the figure to use for anything measured in grams: the per-100
 	 * baseline, the pack label, the cooldown. `packSize` may be a piece count.
@@ -334,6 +340,12 @@ function readBaseline(p: Record<string, any>): {
 	priceSgd: number | null;
 	size: number | null;
 	vendor: string;
+	/**
+	 * `Item Name [Vendor n]` for the slot the price came from — what THAT shop
+	 * calls this product. Read because it is the second place a counted row's pack
+	 * weight can be written; see `packWeightG` in `readGroceryTargets`.
+	 */
+	itemName: string;
 } {
 	// Resolved from the ROW rather than from a retrieved schema: a page's
 	// `properties` carry the same names and `type`s, which is all the resolver
@@ -348,12 +360,18 @@ function readBaseline(p: Record<string, any>): {
 			// ignore the tag too, and a price with no shop attached is worth more than
 			// no price at all.
 			vendor: cheapest.slot.vendorName,
+			itemName: cheapest.slot.itemNameValue,
 		};
 	}
 	// No slot states both halves. Notion's own formula may still have a price (it
 	// reads the same slots, so in practice this means "price but no size"), and a
 	// priced, sizeless row is exactly what the caller's guard is there to drop.
-	return { priceSgd: numberOf(propByName(p, "Price,SGD [Cheapest]")), size: null, vendor: "" };
+	return {
+		priceSgd: numberOf(propByName(p, "Price,SGD [Cheapest]")),
+		size: null,
+		vendor: "",
+		itemName: "",
+	};
 }
 
 /** How much of one ingredient the Main-tagged meals get through. */
@@ -455,10 +473,28 @@ export async function readGroceryTargets(): Promise<PlanTarget[]> {
 		const search = parseName(name);
 
 		// What the pack WEIGHS, as opposed to how many of it there are. A By-Unit row
-		// counts pieces, so its weight can only come from the name — "(600g)" on a
-		// 20-slice loaf. Written by hand for exactly the items the shop prices by
-		// weight and not by the piece.
-		const packWeightG = isByWeight(unitType) ? packSize : (search.size?.grams ?? null);
+		// counts pieces, so its weight has to be written down somewhere in words —
+		// "(600g)" on a 20-slice loaf.
+		//
+		// TWO places state it, and the row's own `Name` is only the first (rule from
+		// the user, 2026-08-11). The second is `Item Name [Vendor n]` — what the shop
+		// calls the pack — which usually carries the weight whether or not the user
+		// has repeated it in the title: "Fresh Eggs (10s) 550g".
+		//
+		// ⚠️ **Only the CHEAPEST slot's item name is read, never any other slot's.**
+		// This weight is about to divide that slot's price (`baselinePer100g` below),
+		// and the slots describe different packs at different shops — borrowing
+		// Guardian's 550 g to divide FairPrice's price invents a per-100g figure that
+		// is no shop's. Silent, plausible, and wrong in whichever direction the packs
+		// happen to differ.
+		//
+		// ⚠️ **Null here is a legitimate answer, not a gap to fill.** A row that
+		// states no weight in either place is sold by the PIECE only — razor
+		// cartridges, tissue rolls, stock cubes — and is compared per piece, which is
+		// the right comparison for them. Don't "fix" these by guessing a weight.
+		const packWeightG = isByWeight(unitType)
+			? packSize
+			: (search.size?.grams ?? parseWeightInText(baseline.itemName)?.grams ?? null);
 
 		// **Computed here rather than read from Notion's `Price per 100g `**, and it
 		// stays that way even though that formula works again.
