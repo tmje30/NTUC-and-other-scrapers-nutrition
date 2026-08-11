@@ -22,6 +22,8 @@ import {
 import { addTextedItem } from "./grocery-list.js";
 import { categorize } from "./categorize.js";
 import { createIngredient, type IngredientFields } from "./ingredient-write.js";
+import { unparkIngredient } from "./park.js";
+import { PARKED_TAG } from "./notion.js";
 import { scanNewItems, type NewItemResult } from "./new-items.js";
 
 /**
@@ -60,6 +62,8 @@ interface AskCandidate {
 	rowId: string;
 	rowName: string;
 	score: number;
+	/** Tagged `Not in Use ATM` — shown with a 💤, and un-parked if picked. */
+	parked?: boolean;
 }
 
 /** One question awaiting a tap. */
@@ -319,7 +323,12 @@ async function handleMessage(
 
 /** `RowMatch`es as the keyboard stores them. */
 function toCandidates(matches: RowMatch[]): AskCandidate[] {
-	return matches.map((m) => ({ rowId: m.row.pageId, rowName: m.row.name, score: m.score }));
+	return matches.map((m) => ({
+		rowId: m.row.pageId,
+		rowName: m.row.name,
+		score: m.score,
+		parked: m.row.parked || undefined,
+	}));
 }
 
 /**
@@ -334,7 +343,9 @@ function toCandidates(matches: RowMatch[]): AskCandidate[] {
  */
 function askKeyboard(t: string, candidates: AskCandidate[]): InlineKeyboard {
 	const keyboard: InlineKeyboard = candidates.map((c, i) => [
-		{ text: `${c.rowName} · ${Math.round(c.score * 100)}%`, data: `p:${t}:${i}` },
+		// 💤 marks a row you parked. It is on the button rather than in the message
+		// because that is where the decision is made — picking it un-parks the row.
+		{ text: `${c.parked ? "💤 " : ""}${c.rowName} · ${Math.round(c.score * 100)}%`, data: `p:${t}:${i}` },
 	]);
 	keyboard.push([{ text: "🔎 No — re-search", data: `r:${t}` }]);
 	keyboard.push([{ text: "🆕 New item — create in Ingredients", data: `c:${t}` }]);
@@ -458,9 +469,11 @@ async function handleCallback(
 					name: chosen.rowName,
 					searchTerm: chosen.rowName,
 					unitType: "By Gram" as const,
+					parked: false,
 					price: null,
 				};
 				outcome = await writeItem(deps, pending.item, row);
+				outcome += await unparkIfNeeded(deps, row);
 			} catch (e: any) {
 				outcome = `❌ ${esc(pending.item.name)} — ${esc(e.message)}`;
 			}
@@ -546,6 +559,34 @@ async function handleCallback(
 }
 
 /**
+ * Wake a parked row that the user has just picked, and say so.
+ *
+ * ⚠️ **Buying something is the un-park.** `Not in Use ATM` means "don't show me
+ * this for now", and putting the item on your list is the plainest possible
+ * statement that "for now" is over — leaving the tag on would keep the ingredient
+ * out of the daily deal scan for a thing sitting on the shopping list.
+ *
+ * ⚠️ It is only ever reached from an explicit tap, never from a silent link —
+ * `decideItem` refuses to link a parked row however well it scores, precisely so
+ * this write cannot happen by accident.
+ *
+ * ⚠️ `unparkIngredient` removes **only** that one tag and refuses outright on a
+ * row that also carries `Don't Search`. Failing to wake a row must not lose the
+ * list line that was already written, so a failure here is reported, not thrown.
+ */
+async function unparkIfNeeded(deps: InboxDeps, row: IngredientRow): Promise<string> {
+	if (!row.parked) return "";
+	try {
+		const res = await unparkIngredient(deps.notion, row.pageId);
+		rowCache = null; // the row's tags changed; don't answer from a stale copy
+		if (res.blockedBy) return `\n<i>Left parked — it also carries ${esc(res.blockedBy)}.</i>`;
+		return `\n<i>💤 → awake: removed ${esc(PARKED_TAG)}.</i>`;
+	} catch (e: any) {
+		return `\n<i>⚠️ Couldn't un-park it: ${esc(e.message)}</i>`;
+	}
+}
+
+/**
  * What a texted item becomes as an Ingredients row.
  *
  * ⚠️ **The marker is `{New}`, in BRACES, and the brackets are not
@@ -603,6 +644,7 @@ async function createAndList(deps: InboxDeps, item: ParsedItem): Promise<string>
 		name: fields.name,
 		searchTerm: item.name,
 		unitType: fields.unitType as IngredientRow["unitType"],
+		parked: false,
 		price: null,
 	};
 	const listed = await writeItem(deps, item, row);

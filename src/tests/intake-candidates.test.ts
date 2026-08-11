@@ -27,6 +27,7 @@ const row = (name: string): IngredientRow => ({
 	name,
 	searchTerm: name.replace(/\s*[[({].*$/, "").trim(),
 	unitType: "By Gram",
+	parked: false,
 	price: null,
 });
 
@@ -59,6 +60,35 @@ check(
 	"the margin is small enough to leave clear winners alone",
 	CANDIDATE_MARGIN > 0 && CANDIDATE_MARGIN <= 0.1,
 );
+
+describe("texted list — a parked row is offered, never assumed");
+
+/**
+ * ⚠️ **Found by texting the live bot on 2026-08-11: "milk, skimmed" came back
+ * offering two milks, neither of them skimmed.** `Milk (Skimmed)` carries
+ * `Not in Use ATM`, and the reader dropped parked rows outright — so the one row
+ * the user meant was the one row that could not be offered. Texting an item is an
+ * explicit "I am buying this" and now outranks a snooze set weeks ago.
+ *
+ * ⚠️ **`Don't Search` is NOT this tag and must stay dropped.** It is the user's
+ * permanent instruction, set by hand in Notion, and nothing in this repo may
+ * write, clear, or offer a button that undoes it.
+ */
+const parked = (name: string): IngredientRow => ({ ...row(name), parked: true });
+const WITH_PARKED: IngredientRow[] = [...ROWS, parked("Milk (Skimmed)")];
+
+check(
+	"a parked row is a candidate like any other",
+	candidatesFor("milk", WITH_PARKED).some((m) => m.row.name === "Milk (Skimmed)"),
+);
+
+// Picking one un-parks it — a write to a tag the user set by hand — so it has to
+// be a deliberate tap, never the by-product of a confident score.
+const onlyParked: IngredientRow[] = [parked("Harissa Paste")];
+const decided = decideItem(parseItem("harissa paste")!, onlyParked);
+eq("⚠️ a parked row is NEVER linked silently, however well it scores", decided.verdict, "ask");
+check("…and it is still the row on offer", decided.candidates[0]?.row.name === "Harissa Paste");
+check("…which it would have been, unparked", decideItem(parseItem("harissa paste")!, [row("Harissa Paste")]).verdict === "linked");
 
 describe("texted list — re-search offers the next tranche");
 

@@ -42,6 +42,15 @@ export interface IngredientRow {
 	/** The bracket standard stripped down to the searchable noun. */
 	searchTerm: string;
 	unitType: UnitType;
+	/**
+	 * Tagged `Not in Use ATM` — offered, but never linked without asking.
+	 *
+	 * ⚠️ **`Don't Search` rows are a different thing and are still dropped
+	 * entirely.** The two tags look alike and are not: one is this tool's own
+	 * reversible snooze, the other is the user's permanent instruction, and
+	 * nothing in this repo may write, clear, or offer a button that undoes it.
+	 */
+	parked: boolean;
 	/** Cheapest price on the row's price book, or null when it has none yet. */
 	price: {
 		sgd: number;
@@ -69,7 +78,12 @@ export async function readIngredientRows(client: Client): Promise<IngredientRow[
 		// worst kind of bug — see `notion.ts`.
 		const tags = multiSelectNames(p[TAGS_PROPERTY]);
 		const hasTag = (t: string) => tags.some((x) => normTag(x) === normTag(t));
-		if (hasTag(PARKED_TAG) || DONT_SEARCH_TAGS.some(hasTag)) continue;
+		// ⚠️ `Don't Search` still drops the row outright. `Not in Use ATM` no longer
+		// does: texting an item is an explicit "I am buying this" and outranks a
+		// snooze set weeks ago (the user's call, 2026-08-11, after texting
+		// "milk, skimmed" and being offered two milks that were not it). The row is
+		// flagged instead, offered with a 💤, and un-parked only on a deliberate tap.
+		if (DONT_SEARCH_TAGS.some(hasTag)) continue;
 
 		const cheapest = cheapestVendorSlot(readVendorSlots(p, slotDefs));
 		const priceSgd = cheapest?.slot.priceValue ?? null;
@@ -80,6 +94,7 @@ export async function readIngredientRows(client: Client): Promise<IngredientRow[
 			name,
 			searchTerm: parseName(name).searchTerm,
 			unitType: (selectName(p[ING_PROPS.UNIT_TYPE]) as UnitType) || "By Gram",
+			parked: hasTag(PARKED_TAG),
 			price:
 				priceSgd && priceSgd > 0
 					? {
@@ -218,12 +233,16 @@ export interface IntakeDecision {
  * ⚠️ **A confident match is only linked silently when it is ALONE.** Two rows
  * within `CANDIDATE_MARGIN` of each other are asked about even at 1.000, because
  * "good enough" and "the only one" are different questions — see `rankRows`.
+ *
+ * ⚠️ **A PARKED row is never linked silently either, however well it scores.**
+ * Picking one un-parks it — a write to a tag the user set by hand — and that has
+ * to be a deliberate tap, not a side effect of a confident match.
  */
 export function decideItem(item: ParsedItem, rows: IngredientRow[]): IntakeDecision {
 	const candidates = candidatesFor(item.name, rows);
 	const match = candidates[0] ?? null;
 	if (!match) return { item, verdict: "new", match: null, candidates: [] };
-	if (match.score >= ACCEPT_THRESHOLD && candidates.length === 1) {
+	if (match.score >= ACCEPT_THRESHOLD && candidates.length === 1 && !match.row.parked) {
 		return { item, verdict: "linked", match, candidates };
 	}
 	return { item, verdict: "ask", match, candidates };

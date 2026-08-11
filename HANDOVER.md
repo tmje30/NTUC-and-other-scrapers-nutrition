@@ -303,6 +303,36 @@ entry but a half-fact `readBaseline` would have to step over. The shop scan fill
 those in properly. The category is resolved against Notion's **live options** at
 write time and dropped if absent — this tool never invents schema.
 
+### ⚠️ A parked row is offered here, and picking it wakes it (2026-08-11)
+
+**Found by texting the live bot**: "2L milk, skimmed" came back offering
+`Milk ( Normal)` and `Milk (Low Fat)` at 0.65 each, and **not** `Milk (Skimmed)`,
+which scores **1.000**. It was not scored badly — it was invisible.
+`readIngredientRows` dropped every row tagged `Not in Use ATM` alongside the
+`Don't Search` ones, so the single row the user meant was the one row that could
+not be offered.
+
+The user's call: **texting an item is an explicit "I am buying this" and outranks
+a snooze set weeks ago.** So:
+
+- Parked rows are read, flagged `parked`, and offered with a **💤** on the button.
+- ⚠️ **A parked row is NEVER linked silently, however well it scores** —
+  `decideItem` forces the ask. Picking one un-parks it, which is a write to a tag
+  the user set by hand, and that must be a deliberate tap rather than the
+  by-product of a confident match.
+- Picking one calls `unparkIngredient`, which removes **only** that tag. A failure
+  is reported and does not lose the list line that was already written.
+
+⚠️ **`Don't Search` is a different tag and is still dropped outright.** The two
+look alike and are not: one is this tool's own reversible snooze, the other is the
+user's permanent instruction, and nothing in this repo may write, clear or offer a
+button that undoes it. `unparkIngredient` refuses on such a row independently, so
+the rule is enforced twice.
+
+⚠️ This makes the inbox's view **wider than the deals page's** — 90 rows against
+84 before the change. That asymmetry is intentional: the scan pushes items at you
+and must respect the snooze; the inbox answers a question you asked.
+
 ⚠️ **A question about a `new` item does NOT block the shop scan; a near-miss
 does.** `maybeDrain` gates on `blocking` rather than on `pending` being empty. A
 near-miss must block — until it is answered we don't know whether the item is new
@@ -1745,7 +1775,7 @@ Both made a bad deal look good — the same family as the 32 g serving read as 1
   names the shop — never claims a free slot, never evicts, never writes
   `Unit type `. Carousell opens a real Chrome window.
 - `npm run check` — typecheck.
-- `npm test` — **552** offline cases (`src/tests/`). Free, fast, no network.
+- `npm test` — **556** offline cases (`src/tests/`). Free, fast, no network.
 
 ## Key technical facts (details in LEARNINGS.md)
 

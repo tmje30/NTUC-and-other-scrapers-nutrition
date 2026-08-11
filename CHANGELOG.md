@@ -19,6 +19,14 @@ All notable changes to this project are documented here. Format based on
   30: a new item used to be priced on a web page and reach no list at all.
   The new row is marked **`{New}`** — braces, the ignored bracket; `(New)` would
   be read as a defining property and match nothing at any shop.
+- **The inbox offers parked rows, and picking one wakes it (2026-08-11).** Found
+  by texting the live bot: "milk, skimmed" offered two milks that were not it,
+  because `Milk (Skimmed)` is tagged `Not in Use ATM` and `readIngredientRows`
+  dropped parked rows outright — it scores 1.000 and was simply invisible.
+  Texting an item outranks a snooze, so parked rows are now offered with a 💤,
+  never linked silently however well they score, and un-parked via
+  `unparkIngredient` on a deliberate tap. ⚠️ `Don't Search` rows are still dropped
+  entirely; that tag is the user's and nothing here may undo it.
 - **A By-Unit row's pack weight may come from `Item Name [Vendor n]`
   (2026-08-11).** Rule from the user: the weight is stated in the row's `Name` or
   in the vendor's own item name, and if neither states one the item is sold by the

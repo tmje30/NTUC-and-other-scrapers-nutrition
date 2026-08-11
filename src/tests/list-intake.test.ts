@@ -24,6 +24,7 @@ const row = (name: string, extra: Partial<IngredientRow> = {}): IngredientRow =>
 	// test is about the decision, not about bracket parsing (covered in naming.test).
 	searchTerm: name.replace(/\s*[[({].*$/, "").trim(),
 	unitType: "By Gram",
+	parked: false,
 	price: null,
 	...extra,
 });
