@@ -246,7 +246,19 @@ it's a session credential). The cookie rides on the DDP handshake
 - This reuses a real browser session; it does not solve or reimplement the
   challenge. Keep it that way (see the captcha-fallback skill's line on this).
 
-### Phone runner (optional redundancy — PAUSED)
+### Phone runner (SHELVED 2026-08-11 — do not pick this up)
+
+⚠️ **The user's decision, 2026-08-11: "we won't be doing the phone setup now."**
+Everything below is kept as a record of what was built and proven, **not as
+pending work.** Do not start on the Termux scheduling, the battery settings or the
+PAT recipe unless the user reopens it — they read as a live TODO list and they are
+not one.
+
+Two reasons it is shelved rather than merely paused: the laptop already covers the
+runner role, and — since the VPN measurements the same day (see "OPEN QUESTION"
+under *Your IP decides what you can scrape*) — the residential-IP premise the phone
+existed to serve may not hold at all. If a server can do this, the phone is
+redundant twice over.
 
 ⚠️ **Blocked by the Incapsula change.** Termux has no Chrome, so the phone can no
 longer mint a cookie for itself — it would only work in the hours the WAF happens
@@ -1370,17 +1382,54 @@ not block this.
 `AS60068` on 08-11. "It's Datacamp" is not one address pool, so reasoning from the
 org name (which is what `egress()` matches on) is weaker than it looks.
 
-**Why this is NOT yet a green light**, and the reason is already written above at
-"the runner needs a browser": *the block is intermittent — some hours a bare client
-connects with no cookie at all, so "it worked when I tried it" proves little.*
-That warning was aimed at a one-off success exactly like this one. One term, one
-afternoon, is not a daily 05:30 scan. What would settle it:
+**The full-scan test was then run, and it passed.**
+`npm run push-ss -- --force --no-push` over the same VPN: **60 terms, 0 errors,
+765 products, 39 terms with hits.** This matters because the 2026-07-30 failure
+took the opposite shape — *all 62 searches died at the WebSocket upgrade* — and
+nothing resembling it occurred. The zeros in the output ("Pu Erh", "Muscovado
+Sugar") are genuine no-match terms; the script counts errors separately and
+reported none. So the "one lucky search" objection is **answered**.
 
-- `npm run push-ss -- --force --no-push` over the VPN — all ~44 terms, which is the
-  shape the 2026-07-30 failure took (all 62 searches died at the WebSocket
-  upgrade). One search surviving says much less than a full scan surviving.
-- Then the same thing repeatedly, at the hour it would really run, across several
-  days, read off `push-ss.log` rather than a hand run.
+⚠️ **What this does NOT establish — and it is the important part.**
+
+**Geography and hosting have never been separated in any measurement in this
+file.** Every datacenter address that failed was **foreign** (GitHub Actions runs
+in US regions). The datacenter address that just succeeded is in **Singapore**.
+Sheng Siong is a Singapore grocer. So the rule may never have been "datacenter
+addresses are challenged" — it may always have been "**foreign** addresses are
+challenged", and the residential runner would then be solving a variable that was
+never the one that mattered.
+
+Nothing here distinguishes those two hypotheses, and they imply very different
+systems. The 07-30 entry pulls the same way: a *residential* line was challenged
+into needing Chrome, which a datacenter VPN did not need today. A model where
+"datacenter" is the operative variable does not explain that; one where the WAF's
+rules simply changed, or where geography dominates, does.
+
+**The cheap decisive test, in this order:**
+
+1. **A Singapore VPS, no VPN at all** — DigitalOcean `sgp1`, AWS `ap-southeast-1`,
+   Vultr/Linode Singapore. Run `npm run ss -- "milk"`. Costs about a dollar and an
+   hour. If it works, geography is the variable, the VPN is unnecessary, and the
+   whole hybrid can collapse to a single cloud box. If it fails where the SG VPN
+   succeeded, hosting reputation is real and the VPN is doing something specific.
+2. **Then duration, not repetition of the same hand run** — the same scan at 05:30,
+   unattended, for a week, read off `push-ss.log`. That is the only thing that
+   answers the intermittency warning above, and no amount of afternoon testing
+   substitutes for it.
+
+⚠️ **A shared VPN exit is the worst of the candidate addresses for the long run,
+even though it is the one that was tested.** Its reputation is pooled across every
+user of that exit and drifts without warning; a dedicated VPS IP is far more
+stable. Do not conclude "the VPN works" and then deploy the VPN.
+
+⚠️ **`RUNNER_SOURCE` was unset for the test run, so `data/shengsiong-latest.json`
+was written with `source: "phone"`** — the default at `push-shengsiong.ts:32` is
+`"phone"`, a runner that (as of the same day) will never exist. Any run that loses
+that env var files itself under a plausible-looking wrong name, in the one field
+you would use to trace where a scan came from. Recommended: default it to
+`"unknown"` rather than to any real runner, so a misconfiguration is visible
+instead of merely wrong. **Not yet changed.**
 
 ⚠️ **Guardian's 503 is NOT evidence against the VPN — it is site maintenance.**
 This note first recorded it as the VPN's cost ("a VPN'd server trades one shop for
