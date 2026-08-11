@@ -20,7 +20,7 @@ import { packShotsFor } from "../src/core/macro-prompt.js";
 import { categorize } from "../src/core/categorize.js";
 import { shengSiongPackShots } from "../src/core/stores/shengsiong-images.js";
 
-/** The bit of the worker's MacroQuery that decides whether pack shots are attached. Kept in step with `macros-for`. */
+/** The bit of the worker's MacroQuery that decides whether pack shots are attached. Kept in step with `find-macros`. */
 const shotQuery = (name, exactName, images) => ({
   product: exactName || name || "",
   ingredientName: name || "",

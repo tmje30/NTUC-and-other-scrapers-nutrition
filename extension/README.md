@@ -116,8 +116,20 @@ panel is read off the same slug-anchored object as the name and price, and nowhe
 
 ⚠️ **This never happens on its own.** Until 2026-08-04 an empty set of boxes triggered a lookup
 automatically once the row was written, and patched the figures in behind you — so an ordinary Add could
-quietly spend up to 29 cents on numbers nobody asked for and nobody read. Now there is a **Find Macros**
+quietly spend **US$0.29–0.41** on numbers nobody asked for and nobody read. Now there is a **Find Macros**
 button under the four boxes, and pressing it is the only way this extension spends anything.
+
+⚠️ **The machinery for the old automatic lookup was DELETED on 2026-08-11, not just disconnected.** The
+worker's `macros-for` handler (look the figures up for a row that already exists, and patch them in) and
+the `needsLookup` flag `add-item` used to return had both been caller-less since 2026-08-04. They were
+kept for a while to keep the diff honest, and that was a mistake: a message handler wired to a name, which
+silently spends up to 41 cents, is not something to leave lying around, and a flag called `needsLookup` is
+exactly what makes the next reader believe lookups are automatic.
+
+⚠️ **The FREE path was deliberately kept, and it is the one most captures use.** `derive` parses the
+shop's own nutrition panel at render time, fills the four boxes and greens them — no key needed, no
+charge, no button. Only the *paid* road was removed. "Free if the shop published it, a button press if it
+has to be searched for" is the rule.
 
 It appears only when it would do something: the page published **no** free panel, and a key is set. Where
 the shop did publish one the boxes are already filled and green, and paying for an answer you have would be

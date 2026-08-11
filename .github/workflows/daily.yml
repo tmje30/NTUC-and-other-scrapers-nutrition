@@ -2,8 +2,13 @@ name: Daily grocery deal scan
 
 on:
   schedule:
-    # 02:00 UTC = 10:00 Singapore time (UTC+8), once daily.
-    - cron: "0 2 * * *"
+    # ⚠️ **Set to ARRIVE at 08:00 SGT, not to fire at it.** GitHub queues scheduled
+    # runs on free public repos — measured +3h18 to +3h46 every day 01–04 Aug — so a
+    # cron that says 08:00 delivers around 11:30. Working backwards: 20:30 UTC fires
+    # about 00:00 UTC = 08:00 SGT next morning. Expect 07:48–08:16 SGT in practice.
+    # This is a queue, not a guarantee; if GitHub's backlog changes, re-measure
+    # rather than assuming the number above still holds.
+    - cron: "30 20 * * *"
   workflow_dispatch: # allow manual runs from the Actions tab
   # The page's "Rescan" button, shown only when a shop is missing from the scan.
   # The usual cause is the laptop being shut at 05:30: Task Scheduler runs the

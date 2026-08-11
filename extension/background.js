@@ -6,7 +6,7 @@
 import { deriveGenericName, stripStructure, structuredName } from "../src/core/generic-name.js";
 import { categorize, matchCategoryOption, guessSize } from "../src/core/categorize.js";
 import { parseNutritionPanel } from "../src/core/nutrition-panel.js";
-import { findSimilar, findByUrl, createIngredient, replaceIngredient, setupCheck, getFieldOptions, writeMacros } from "./notion-client.js";
+import { findSimilar, findByUrl, createIngredient, replaceIngredient, setupCheck, getFieldOptions } from "./notion-client.js";
 import { lookupMacros, macrosConfigured } from "./macros-client.js";
 import { vendorForUrl } from "./vendors.js";
 
@@ -148,21 +148,20 @@ const handlers = {
     const macros = macrosFrom(m);
     const created = await createIngredient({ ...fieldsFrom(m), macros });
 
-    // `needsLookup` is told to the caller so it can show "looking up nutrition…" only when a lookup is
-    // actually coming — no key, or figures already present, must not leave a spinner running forever.
-    return {
-      ok: true,
-      created,
-      needsLookup: !macros && (await macrosConfigured()),
-      macrosFromForm: Boolean(macros),
-    };
+    // ⚠️ No `needsLookup` here, and there must not be one. It used to tell the caller "these boxes are
+    // empty, go and look them up", which is the automatic paid lookup that was removed on 2026-08-04.
+    // Nothing read it after that, and a flag describing a behaviour the code no longer has is how the
+    // next reader concludes lookups are automatic. The two roads to nutrition are both deliberate:
+    // the shop's own panel, free, filled at render time by `derive`; and **Find Macros**, which the
+    // user presses when they want to pay for a search.
+    return { ok: true, created, macrosFromForm: Boolean(macros) };
   },
 
   /**
    * "Find Macros" — look the figures up and hand them BACK, writing nothing.
    *
-   * Deliberately different from `macros-for` below, which needs a row to patch. This
-   * runs BEFORE the row exists, so the four boxes fill and the user reads them,
+   * The ONLY road to a paid lookup in this extension, and deliberately shaped so it
+   * cannot become an automatic one: it runs BEFORE the row exists, so the boxes fill and the user reads them,
    * edits them, or clears them before anything reaches Notion. That ordering is the
    * whole point of the button: a lookup costs US$0.003–0.29 and is occasionally
    * wrong, and figures you approved are worth more than figures that appeared
@@ -185,42 +184,13 @@ const handlers = {
     return macros ? { ok: true, macros } : { ok: false, reason: "not-found" };
   },
 
-  /**
-   * Look up the four nutrition figures for a row just added, and write them.
-   *
-   * A SECOND round trip, deliberately: the lookup reads the product page and may search, which takes ten
-   * to thirty seconds, and the add itself must not wait on it. Notably this runs in the WORKER, so it
-   * survives the popup closing — the row gets its macros whether or not anyone is still watching. Only
-   * the "here's what it found" message is lost in that case.
-   *
-   * Never throws. There is nothing to roll back: the row exists and is correct, just without nutrition,
-   * and the reply says which of the two happened.
-   */
-  async "macros-for"({ pageId, name, exactName, vendor, url, category, images }) {
-    if (!pageId) throw new Error("No row to look up nutrition for.");
-    if (!(await macrosConfigured())) return { ok: false, reason: "no-key" };
-
-    const macros = await lookupMacros({
-      // The shop's own wording is the better search term; the generic name is the fallback.
-      product: exactName || name || "",
-      store: vendor || "",
-      url: url || "",
-      ingredientName: name || "",
-      category: category || "",
-      // The project's own key ("produce", "protein"), NOT the Notion option name in `category` — it is
-      // what `isCommodityFood` branches on to decide whether searching is worth paying for, and the
-      // user can rename their Notion options at any time.
-      categoryKey: categorize(name || exactName || "") || undefined,
-      // The shop's own pack shots. Passed whole — `selectPackShots` keeps the back and side views and
-      // drops the front, because a marketing face with no panel is what made this back-fire on frozen
-      // chicken. When it keeps none, the lookup is exactly the text-only one it was before.
-      images: Array.isArray(images) ? images : [],
-    });
-    if (!macros) return { ok: false, reason: "not-found" };
-
-    const { written, skipped } = await writeMacros(pageId, macros);
-    return { ok: true, macros, written, skipped };
-  },
+  // ⚠️ **`macros-for` was removed on 2026-08-11 and must not come back by accident.** It looked the four
+  // figures up for a row that had ALREADY been created and patched them in afterwards — the second half
+  // of the automatic paid lookup that "Nothing spends money unasked" retired on 2026-08-04. It had had no
+  // caller since, and a worker handler that silently spends up to 41 cents is not something to leave
+  // lying around wired to a message name. `find-macros` above is its live counterpart and is a different
+  // shape on purpose: it runs BEFORE the row exists and hands the numbers back for the user to read, so
+  // nothing is written that nobody looked at.
 
   // "Replace With This" — repoint an existing row at this product.
   async "replace-item"(m) {

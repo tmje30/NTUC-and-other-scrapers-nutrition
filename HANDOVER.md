@@ -114,10 +114,12 @@ Deep dives on one session each, kept for the *why*:
   per kg/L **or per piece**, and `uses ~X/month`. A ⚠️ banner under the header
   means a shop was missing from the scan.
 - **Cloud schedule:** GitHub Actions `.github/workflows/daily.yml`,
-  `cron: "0 2 * * *"` = 02:00 UTC, plus manual `workflow_dispatch`.
-  ⚠️ **It nominally means 10:00 SGT and actually delivers ~13:20–13:50 SGT** —
-  GitHub queues scheduled runs on free public repos by ~3.5 h, measured every day
-  01–04 Aug. See "Infrastructure truths". "It didn't run" is usually "not yet".
+  `cron: "30 20 * * *"` = 20:30 UTC, plus manual `workflow_dispatch`.
+  ⚠️ **Set to ARRIVE at 08:00 SGT, not to fire at it** (changed 2026-08-11, was
+  `0 2 * * *` aiming at 10:00 and landing ~13:30). GitHub queues scheduled runs on
+  free public repos by ~3.5 h, measured every day 01–04 Aug, so the cron is set 3.5 h
+  EARLY on purpose. Expect the digest 07:48–08:16 SGT. See "Infrastructure truths".
+  "It didn't run" is usually "not yet".
 - **Telegram:** reuses the user's Notion-Worker bot **@Big_Notion_Bot**, chat
   `7626546412`. Secrets `NOTION_TOKEN`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`
   are GitHub Actions secrets. Locally they live in `.env` (gitignored).
@@ -126,7 +128,7 @@ Deep dives on one session each, kept for the *why*:
 ## How the hybrid works
 
 ```
-Laptop (Task Scheduler, 05:30 SGT)        Cloud (Actions, 10:00 SGT)
+Laptop (Task Scheduler, 05:30 SGT)        Cloud (Actions, arrives ~08:00 SGT)
   npm run push-ss:                           npm run build-site:
    - fetch terms from public targets.json     - scan FairPrice live
    - live Sheng Siong scan (residential IP)   - read data/shengsiong-latest.json
@@ -1306,10 +1308,29 @@ actual firing times:
 | 08-03 | 05:46 | +3h46 |
 | 08-04 | 05:18 | +3h18 |
 
-So the Telegram digest actually lands about **13:20–13:50 SGT**. This is ordinary
+So the Telegram digest used to land about **13:20–13:50 SGT**. This is ordinary
 GitHub Actions queueing on a free public repo, not a fault — but "it didn't run"
-is almost always "it hasn't run *yet*". **To land near 10:00 SGT the cron would
-have to be ~`30 22 * * *`** (the previous day). Not changed; the user's call.
+is almost always "it hasn't run *yet*".
+
+⚠️ **Changed 2026-08-11: the cron is now set 3.5 h EARLY, to ARRIVE at 08:00 SGT.**
+`cron: "30 20 * * *"` (20:30 UTC) + the queue ≈ 00:00 UTC = **08:00 SGT**, in
+practice 07:48–08:16. So **the cron no longer reads as the delivery time and must
+not be "corrected" to one** — a well-meaning edit to `0 0 * * *` would push
+delivery back to ~11:30. If GitHub's backlog ever changes, re-measure and move the
+cron; don't assume 3.5 h is a constant.
+
+⚠️ **This shrank the runner's head start from ~6½ h to ~1¼ h, and that is the
+cost of the change.** The laptop's Sheng Siong scan does not run at 05:30 either —
+`StartWhenAvailable` fires it on WAKE, ~06:47 on a working morning. Wake the
+laptop after ~08:00 and the cloud will already have built **FairPrice-only** for
+the day. The existing recovery still applies: open the laptop (it scans by
+itself), then press **Rescan** in the page's ⚠️ banner.
+If late wakes turn out to be common, the fix is to have `push-shengsiong.ts` fire
+`repository_dispatch` after a successful push — the pattern `tg-poll.ts` already
+uses. ⚠️ Two things to solve first: the laptop runner deliberately carries **no
+PAT** (it authenticates through Credential Manager, and `dispatch()` needs
+`GITHUB_TOKEN`), and every extra build **re-sends the Telegram digest**, so a
+second daily message would need suppressing.
 
 ### ⚠️ The laptop runner scans into a doomed push when the network is late — FIXED 2026-08-10
 
@@ -2009,13 +2030,15 @@ motivated it.
     Buy / Add / Replace / + Macros and the has-macro tag were proven by rendering
     the real page and asserting its markup, not by pressing them. `Replace` is the
     one to try first and carefully — it renames a hand-maintained row with no undo.
-17. **Dead code left behind on purpose, to keep the diff honest.** The extension's
-    `macros-for` worker handler and the `needsLookup` flag `add-item` returns both
-    lost their only caller when the automatic lookup went. Harmless, but they
-    describe a behaviour that no longer exists, which is the kind of comment that
-    misleads a year from now. `hasMacros()` in `flow.js` is a third, older one.
-18. **Docs not yet caught up with the 2026-08-04 redesign:** `CHANGELOG.md` and
-    `extension/README.md`. This file is current.
+17. ~~Dead code left behind on purpose~~ **done 2026-08-11** — `macros-for` and
+    `needsLookup` removed, `hasMacros()` was already gone. ⚠️ **The FREE path was
+    kept and is what most captures use**: `derive` parses the shop's own nutrition
+    panel at render time, fills the four boxes and costs nothing. Only
+    **Find Macros** pays. Removing a handler that could silently spend 41 cents
+    while leaving the free one is the whole point of the change.
+18. ~~Docs not caught up with the 2026-08-04 redesign~~ **done** — `extension/README.md`
+    was corrected for the price book on 2026-08-10 and for the deleted `macros-for` /
+    `needsLookup` on 2026-08-11; `CHANGELOG.md` has been kept current since.
 19. ~~Sheng Siong pack shots reach the extension only~~ **done** 2026-08-04 —
     both stores now reach both surfaces. FairPrice's search payload carries
     `images` (10/10 products, free); Sheng Siong's carries `imgKey` but **not**
@@ -2037,8 +2060,10 @@ motivated it.
     flat columns and was corrected at the same time.
 24. **Decide the category→vendor routing** (see the vendor section). The one with
     the most upside: `Suppliments` is 30 rows the scan has never looked at.
-25. **Correct the documented schedule**, or move the cron. Everything says 10:00
-    SGT; it actually delivers ~13:20–13:50.
+25. ~~Correct the documented schedule, or move the cron~~ **done 2026-08-11** —
+    moved. `cron: "30 20 * * *"` is set 3.5 h early so the digest ARRIVES at
+    08:00 SGT. ⚠️ The cron no longer reads as the delivery time; see
+    "Infrastructure truths" for why, and for the head-start it costs the runner.
 26. **Marketplace adapters are NOT cleared to build.** Carousell works
     mechanically but found nothing cheaper than the baseline. Probe more items
     first — `npm run vendor-probe` is free.

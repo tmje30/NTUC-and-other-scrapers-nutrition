@@ -6,7 +6,29 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+### Removed
+- **The extension's automatic-macro-lookup machinery (2026-08-11).** The worker's
+  `macros-for` handler and the `needsLookup` flag from `add-item` had both been
+  caller-less since the automatic lookup was retired on 2026-08-04; `hasMacros()`
+  was already gone. Keeping them "to keep the diff honest" was the wrong call — a
+  message handler that silently spends up to 41 cents should not sit wired to a
+  name, and a flag called `needsLookup` is what convinces the next reader that
+  lookups are automatic. ⚠️ **The FREE path is untouched and is what most captures
+  use**: `derive` parses the shop's own nutrition panel at render time, fills the
+  four boxes and costs nothing. Only **Find Macros** pays.
+
 ### Changed
+- **The daily scan is scheduled to ARRIVE at 08:00 SGT (2026-08-11).**
+  `cron: "0 2 * * *"` → `"30 20 * * *"`. GitHub queues scheduled runs on free
+  public repos by ~3.5 h, so the cron is deliberately set that far early; expect
+  the digest 07:48–08:16 SGT. ⚠️ **The cron no longer reads as the delivery time
+  and must not be "corrected" to one.** ⚠️ It also shrinks the Sheng Siong
+  runner's head start from ~6½ h to ~1¼ h — wake the laptop after 08:00 and the
+  page builds FairPrice-only, recoverable with the page's Rescan button.
+- **A row naming no shop in any `Vendor n` slot is no longer a baseline
+  (2026-08-11)** and so is not searched. Measured first: 6 of 72 priced rows, 5 of
+  them `Suppliments` already outside the scan. ⚠️ Not the same as routing searches
+  by tag — a row tagged with one shop is still searched at every shop.
 - **The Telegram ask offers every candidate (2026-08-11).** `rankRows` and
   `candidatesFor` replace `bestRow`'s single answer: rows within
   `CANDIDATE_MARGIN` (0.05) of the leader all get a button, and an item is linked
