@@ -46,10 +46,19 @@ A daily job reads the user's Notion **Ingredients** DB + active plan, scrapes
 liquids), and posts **one Telegram message → a GitHub Pages page** listing the
 deals. **It is LIVE and self-running, including Sheng Siong.**
 
-Sheng Siong is blocked from datacenter IPs, so it runs via a **residential-IP
-hybrid**: a runner (the user's **laptop**, daily) scans Sheng Siong and commits
+Sheng Siong is blocked from GitHub's IPs, so it runs via a **hybrid**: a runner
+(the user's **laptop**, daily) scans Sheng Siong and commits
 `data/shengsiong-latest.json`; the cloud reads that file. FairPrice runs in the
 cloud directly. If the file is missing/stale the page degrades to FairPrice-only.
+
+⚠️ **This was designed as a "residential IP" hybrid and that premise is WRONG**
+(measured 2026-08-11). Sheng Siong challenges addresses **outside Singapore**; it
+does not care whether they are residential or datacenter. A Singapore datacenter
+address served a full 60-term scan while a US one was refused the same hour. The
+laptop works because it is in Singapore, not because it is on a home line — so a
+**Singapore VPS** could replace it, along with the Pi that was being considered.
+See "RESOLVED: the constraint is the COUNTRY" under *Your IP decides what you can
+scrape*. Nothing has been migrated; the hybrid below is still what runs.
 
 There is a second, **manual** way in: the **Chrome extension** in `extension/`
 ("Nutrition Plan Extension"), which captures a product page you're looking at
@@ -1340,11 +1349,14 @@ This also puts a question mark over the 2026-07-30 entry claiming "Incapsula now
 challenges *residential* IPs too". That may simply have been the VPN. Not
 re-tested; treat the claim as unconfirmed.
 
-#### ⚠️ OPEN QUESTION (2026-08-11): can a VPN replace the residential runner?
+#### ⚠️ RESOLVED (2026-08-11): the constraint is the COUNTRY, not the connection
 
-**Nothing here is settled. This section records an experiment in progress, not a
-conclusion.** It exists so the next session doesn't redo the measurements or,
-worse, trust the table above without reading this.
+**Read to the end before acting.** This section starts as an experiment and ends
+with a result that contradicts the design premise of the whole hybrid above: Sheng
+Siong challenges addresses that are **not in Singapore**, and does not care whether
+they are residential or datacenter. The measurements are kept in the order they
+were taken, because two wrong conclusions were reached along the way and the way
+they were wrong is the useful part.
 
 **The question being asked.** Can the laptop stop being load-bearing? Today two
 jobs pin work to it: the 05:30 `push-ss` scan and — the real motivation — the
@@ -1390,33 +1402,58 @@ nothing resembling it occurred. The zeros in the output ("Pu Erh", "Muscovado
 Sugar") are genuine no-match terms; the script counts errors separately and
 reported none. So the "one lucky search" objection is **answered**.
 
-⚠️ **What this does NOT establish — and it is the important part.**
+### ⚠️⚠️ THE ANSWER: it is GEOGRAPHY, not "datacenter vs residential"
 
-**Geography and hosting have never been separated in any measurement in this
-file.** Every datacenter address that failed was **foreign** (GitHub Actions runs
-in US regions). The datacenter address that just succeeded is in **Singapore**.
-Sheng Siong is a Singapore grocer. So the rule may never have been "datacenter
-addresses are challenged" — it may always have been "**foreign** addresses are
-challenged", and the residential runner would then be solving a variable that was
-never the one that mattered.
+**Three addresses were measured on 2026-08-11, within about an hour, same code,
+and the cached cookie moved aside for each:**
 
-Nothing here distinguishes those two hypotheses, and they imply very different
-systems. The 07-30 entry pulls the same way: a *residential* line was challenged
-into needing Chrome, which a datacenter VPN did not need today. A model where
-"datacenter" is the operative variable does not explain that; one where the WAF's
-rules simply changed, or where geography dominates, does.
+| address | where | result |
+| --- | --- | --- |
+| `AS60068` Datacamp | 🇸🇬 **Singapore** (VPN exit) | ✅ **60 terms, 0 errors, 765 products** |
+| `AS8075` Microsoft/Azure | 🇺🇸 Chicago (GitHub Actions) | 🔴 challenged by Incapsula |
+| `AS174` Cogent | 🇺🇸 Los Angeles (VPN exit) | 🔴 challenged; **cookie mint did not save it** |
 
-**The cheap decisive test, in this order:**
+The US Cogent run is the one that settles it. It minted a fresh cookie through
+headed Chrome — successfully — and the DDP handshake **still** failed with
+`Unexpected server response: 200`, the exact 2026-07-30 signature. Three different
+networks, two countries: the only variable that tracks the outcome is **which
+country the address is in.**
 
-1. **A Singapore VPS, no VPN at all** — DigitalOcean `sgp1`, AWS `ap-southeast-1`,
-   Vultr/Linode Singapore. Run `npm run ss -- "milk"`. Costs about a dollar and an
-   hour. If it works, geography is the variable, the VPN is unnecessary, and the
-   whole hybrid can collapse to a single cloud box. If it fails where the SG VPN
-   succeeded, hosting reputation is real and the VPN is doing something specific.
-2. **Then duration, not repetition of the same hand run** — the same scan at 05:30,
-   unattended, for a week, read off `push-ss.log`. That is the only thing that
-   answers the intermittency warning above, and no amount of afternoon testing
-   substitutes for it.
+⚠️ **So "Sheng Siong needs a RESIDENTIAL IP" is wrong, and has probably always been
+wrong.** The laptop works because it is **in Singapore**, not because it is on a
+home line. That premise is load-bearing for the entire hybrid design above — the
+runner, the file hand-off, the shelved phone — and it was never the real
+constraint.
+
+⚠️ **This also retro-explains the 2026-07-30 "Incapsula now challenges residential
+IPs too" entry**, which never made sense on its own. That session was almost
+certainly on the VPN with a foreign exit, exactly as the 08-05 Watsons session
+was. It was not a WAF policy change; it was the same confound, twice, eleven days
+apart, and it cost a whole browser-minting subsystem. The suspicion was already
+recorded above as "treat the claim as unconfirmed" — it now has direct support.
+
+**What follows for the server question:**
+
+- A **Singapore VPS** (DigitalOcean `sgp1`, AWS `ap-southeast-1`, Vultr/Linode SG,
+  ~US$5/mo) is the indicated answer. It removes the laptop *and* makes the Pi
+  unnecessary, and gives `tg-poll` the 24/7 host that was the real motivation.
+- ⚠️ **Not yet directly tested.** Every Singapore success so far is through one
+  commercial VPN exit. A VPS in an SG region is a *different* address, and the
+  honest state is "strongly indicated", not "proven". Test it with
+  `npm run ss -- "milk"` on the box before migrating anything.
+- ⚠️ **Do not deploy the thing that was tested.** A shared VPN exit has reputation
+  pooled across every user of it and drifts without warning. A dedicated VPS IP is
+  the more stable address even though it is the untested one.
+- **Then duration** — the scan at 05:30, unattended, for a week, read off
+  `push-ss.log`. Geography being the variable does not repeal the intermittency
+  warning above; it only explains which addresses are eligible in the first place.
+
+⚠️ **`incapsula.ts` should NOT be ripped out on the strength of this.** From an
+eligible address the cached-cookie path means no browser opens anyway, so it costs
+nothing to keep; and the minting fallback is what will be needed the day the WAF
+tightens on Singapore addresses too. What changed is the *diagnosis*, not the
+machinery: a mint failing is now evidence the address is foreign, not evidence the
+site got harder.
 
 ⚠️ **A shared VPN exit is the worst of the candidate addresses for the long run,
 even though it is the one that was tested.** Its reputation is pooled across every
