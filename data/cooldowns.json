@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-11T01:00:23.233Z",
+  "updatedAt": "2026-08-11T01:44:59.987Z",
   "entries": [
     {
       "key": "chicken thigh",
@@ -26,6 +26,20 @@
       "store": "Sheng Siong",
       "product": "Peanut Butter - Crunchy",
       "packSizeG": 510,
+      "monthlyAmount": 0
+    },
+    {
+      "key": "milk",
+      "ingredientId": "34b69a18-4fe7-805a-b781-e3300da041a4",
+      "ingredientName": "Milk (Low Fat)",
+      "reason": "ignored",
+      "addedAt": "2026-08-11T01:44:59.987Z",
+      "until": "2026-08-16T16:00:00.000Z",
+      "days": 6,
+      "basis": "ignored from the deals page until the start of next week (Mon, SGT)",
+      "store": "FairPrice",
+      "product": "Fairprice UHT Milk - Low Fat ",
+      "packSizeG": null,
       "monthlyAmount": 0
     },
     {
