@@ -18,6 +18,19 @@ REPO = "tmje30/NTUC-and-other-scrapers-nutrition"
 #   GITHUB_TOKEN        — fine-grained PAT, Contents: read+write on this repo only
 #   ALLOWED_CHAT_ID     — the one chat that is answered
 
+# The clock for the one-hour auto-file: every 15 minutes, dispatch `tgsweep` and let
+# `tg-sweep.yml` decide whether anything has actually expired.
+#
+# ⚠️ **This cron is load-bearing, not a nicety.** GitHub's own `schedule:` trigger is
+# queued by ~3–3¾ h on a free public repo, so the workflow cannot time itself — remove
+# these two lines and questions stop being filed after an hour with nothing else
+# failing. 15 min is the resolution, so the real deadline is 60–75 minutes.
+#
+# Free plan: cron triggers are included, and 96 ticks a day sits far inside the
+# 100k requests/day allowance. Most exit in seconds having found nothing to do.
+[triggers]
+crons = ["*/15 * * * *"]
+
 # Nothing is logged persistently and no data is stored: the Worker holds no state
 # between requests. Observability is on so `wrangler tail` can show a live
 # dispatch failure, which is the one thing worth watching here.

@@ -25,6 +25,10 @@ const ASK = {
 	messageId: 37,
 	chatId: 7626546412,
 	blocking: true,
+	// The one-hour clock (2026-08-12). It has to survive the round trip like
+	// everything else: an ask that came back without it would have its clock
+	// restarted on every write, and so would never expire. See `tg-sweep.test.ts`.
+	askedAt: "2026-08-12T14:00:00.000Z",
 };
 
 const dir = await mkdtemp(join(tmpdir(), "tg-state-"));

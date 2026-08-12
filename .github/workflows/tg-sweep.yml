@@ -1,0 +1,56 @@
+name: Telegram inbox sweep
+
+# File the questions nobody answered within an hour.
+#
+# ⚠️ **`schedule:` is NOT used here, even though this is a scheduled job.** Free
+# public repos queue cron runs by ~3–3¾ h (measured; HANDOVER "Infrastructure
+# truths"), which would turn a one-hour promise into a four-hour one. The clock is
+# Cloudflare's instead — the relay Worker has a cron trigger that fires every 15
+# minutes and sends this `repository_dispatch`, which starts promptly. That makes
+# the relay a prerequisite: until it is deployed, the laptop's poll loop is what
+# sweeps (see `runInbox`), and this workflow only runs when triggered by hand.
+on:
+  repository_dispatch:
+    types: [tgsweep]
+  workflow_dispatch:
+
+# ⚠️ A concurrency group HERE, and deliberately not in `tg-inbox.yml`. The rule
+# GitHub applies — keep one pending run per group, cancel the rest — is a data-loss
+# bug for taps (each tap is unique) and exactly right for sweeps (every sweep does
+# the same idempotent job, and a cancelled duplicate costs nothing because the next
+# one is 15 minutes away). Two concurrent sweeps would each file the same expired
+# ask from their own checkout.
+concurrency:
+  group: tg-sweep
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # commit data/tg-inbox-state.json
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - run: npm ci
+
+      # `tg-sweep.ts` commits and pushes for itself (via `commitAndPushData`, with a
+      # re-apply that keeps whatever the cloud wrote meanwhile), so it needs an
+      # identity. Unlike `tg-inbox.yml`, there is no separate commit step.
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: File anything older than an hour
+        run: npm run tg-sweep
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}

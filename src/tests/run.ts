@@ -41,6 +41,10 @@ import { report } from "./harness.js";
 // filed under whichever suite name happened to be current. Loading them alone,
 // after the rest and one at a time, keeps the labels honest.
 await import("./tg-state.test.js");
+// ⚠️ This one also REPLACES `globalThis.fetch` while it runs, and puts it back at
+// the end. Another suite loading inside its await window would be running against
+// the stub — another reason these load one at a time.
+await import("./tg-sweep.test.js");
 await import("./git-data-push.test.js");
 
 report();

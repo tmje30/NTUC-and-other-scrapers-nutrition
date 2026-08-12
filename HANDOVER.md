@@ -144,7 +144,16 @@ inbox code via `npm run tg-handle`. Reply in **20–60 s with the laptop shut**.
 `npm run tg-poll` — leave the poller running and it 409s on every call and the chat
 looks dead. ⚠️ **Pricing a brand-new item still needs the laptop** (Sheng Siong
 challenges datacenter IPs): those items queue in `data/tg-inbox-state.json`, the chat
-says so, and `npm run tg-drain` prices them every 15 minutes. Switch-over order,
+says so, and `npm run tg-drain` prices them every 15 minutes.
+⚠️ **Added 2026-08-12 — a question nobody answers is filed after ONE HOUR.** Asked for
+by the user: an unanswered near-miss used to leave the line nowhere at all. After
+`ASK_TTL_MS` the item goes onto the grocery List **as typed — Name only, no
+Ingredients relation, no price, and nothing created in the Ingredients DB** — the
+buttons are replaced with the outcome and the chat gets one summary. The clock is the
+relay Worker's **Cloudflare cron** (every 15 min → `tgsweep` → `tg-sweep.yml` →
+`npm run tg-sweep`), because GitHub's `schedule:` is queued by hours here; real
+deadline 60–75 min. Before the relay is deployed the poll loop sweeps instead, so it
+only fires while the laptop is awake. Switch-over order,
 secrets, verification and the way back:
 **[`relay/README.md`](relay/README.md)**; the why:
 **[`docs/session-2026-08-11-telegram-webhook.md`](docs/session-2026-08-11-telegram-webhook.md)**.
@@ -512,6 +521,13 @@ and the way to run the inbox with no Cloudflare account at all. The three things
 differ in the webhook flow: state lives in **`data/tg-inbox-state.json`** (committed,
 merged) rather than `.sessions/`, there is no offset, and new-item pricing is deferred
 rather than immediate.
+
+⚠️ **The one-hour auto-file works in both flows, from different clocks** (2026-08-12).
+The poller sweeps inside its own loop, so it is accurate to ~25 s but only runs while
+this machine is awake; the webhook flow gets its clock from the relay Worker's
+Cloudflare cron instead, which is why that configuration is the one that actually keeps
+the promise. Either way the decision itself is `expiredAsks` in `src/core/tg-inbox.ts`
+and the write is `writeItem(deps, item, null)` — the same unlinked row.
 
 ⚠️ **The poller ran as a scheduled task from 2026-08-11, because until then nothing
 started it.** The inbox existed only while someone remembered to launch it by hand — and

@@ -1,6 +1,12 @@
 import { Client } from "@notionhq/client";
 import { config } from "../core/config.js";
-import { COMMITTED_STATE_PATH, handleUpdate, readState, writeState } from "../core/tg-inbox.js";
+import {
+	COMMITTED_STATE_PATH,
+	handleUpdate,
+	readState,
+	sweepExpiredAsks,
+	writeState,
+} from "../core/tg-inbox.js";
 import { escapeHtml as esc, sendHtml, useBotToken, type TgUpdate } from "../core/telegram.js";
 
 /**
@@ -57,6 +63,14 @@ useBotToken(config.telegramInboxBotToken());
 
 const notion = new Client({ auth: config.notionToken() });
 const state = await readState(COMMITTED_STATE_PATH);
+
+// ⚠️ **Before handling, not after.** A question that timed out while nobody was
+// texting should settle on its own terms rather than in the middle of the reply to
+// the next list — and sweeping first means a stale blocking ask cannot hold up this
+// update's pricing. Free when nothing has expired, which is almost always.
+// `tg-sweep.ts` is what runs this on a clock; here it is opportunistic.
+const swept = await sweepExpiredAsks({ notion, deferPricing: true }, state);
+if (swept.filed.length) console.error(`Filed ${swept.filed.length} unanswered question(s) on the way in.`);
 
 // Which items were already waiting to be priced before this update. Compared by the
 // raw line, the same identity the merge rule and `handleCallback`'s de-queue use.

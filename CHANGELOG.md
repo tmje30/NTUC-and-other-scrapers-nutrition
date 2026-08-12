@@ -33,6 +33,33 @@ All notable changes to this project are documented here. Format based on
   not what is already in Notion.
 
 ### Added
+- **A question nobody answers is filed after an hour (2026-08-12).** Asked for by the
+  user. A near-miss they never got round to tapping used to leave the line nowhere —
+  not on the grocery list, not in Ingredients, just a message on a phone. After
+  `ASK_TTL_MS` (60 min) the item goes onto the grocery List **exactly as typed: Name
+  only**. The buttons are replaced with the outcome and the chat gets one summary
+  naming what was filed.
+  ⚠️ **No Ingredients relation, no price, no vendor, and nothing created in the
+  Ingredients DB** — the user's words were *"just copy the name from the telegram chat
+  into 'Name' without adding an item into 'Ingredient' DB"*. That is deliberately
+  weaker than every other path (an unlinked row carries no price and never appears in
+  the deal scan), because an unlinked row you can shop from beats a question you never
+  answered, and guessing which candidate was meant is the one thing this must not do.
+  ⚠️ **A missing `askedAt` starts the clock rather than firing it** — an ask from a
+  state file written before this shipped is of *unknown* age, and reading that as "old"
+  would file a question the user might have been looking at for ten seconds.
+  ⚠️ **The queue is untouched**: a "nothing looks like this" offer was queued for shop
+  pricing when it was asked, and stays queued — the summary says so.
+  ⚠️ **The clock is Cloudflare's, not GitHub's.** The relay Worker gained a
+  `*/15 * * * *` cron trigger that dispatches `tgsweep` at the new
+  `.github/workflows/tg-sweep.yml`; Actions `schedule:` is queued by ~3–3¾ h on a free
+  public repo, which would turn one hour into four. Real deadline 60–75 min. **Removing
+  the cron trigger silently stops the timeout happening** — nothing else in the cloud
+  watches it. Until the relay is deployed the poll loop sweeps instead, so it only
+  fires while the laptop is awake.
+  ⚠️ `tg-sweep.yml` **has** a `concurrency` group where `tg-inbox.yml` deliberately has
+  none: cancelling a duplicate *tap* loses data, cancelling a duplicate *sweep* costs
+  nothing, and two concurrent sweeps would file the same ask twice.
 - **Ignore is a dropdown now: 1, 2, 3 or 4 weeks (2026-08-11).** The button under
   Buy meant exactly one week; tapping it opens a list and the tap that picks a
   duration is the tap that fires. `weeks` rides in the payload, is clamped to

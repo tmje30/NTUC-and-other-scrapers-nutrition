@@ -9,7 +9,7 @@
  * here, and a test that only looked at the status code would pass on a relay that
  * dispatched nothing.
  */
-import { handle } from "./worker.mjs";
+import { handle, scheduled } from "./worker.mjs";
 
 let passed = 0;
 const failures = [];
@@ -169,6 +169,47 @@ const tapUpdate = (chatId = 7626546412) => ({
 	const f = recorder();
 	const res = await handle(new Request("https://relay.example/", { method: "GET" }), ENV, { fetch: f });
 	eq("a GET is not a webhook delivery", res.status, 405);
+}
+
+/**
+ * The cron tick — the clock for the one-hour auto-file.
+ *
+ * ⚠️ **Nothing else in the cloud watches that clock.** GitHub's own `schedule:` is
+ * queued by hours on a free public repo, so if this tick stops dispatching, questions
+ * simply stop being filed and no run fails to say so. That makes "it dispatches
+ * `tgsweep`, and it does not talk to Telegram" worth pinning down.
+ */
+{
+	const f = recorder();
+	await scheduled({ cron: "*/15 * * * *" }, ENV, { fetch: f });
+	eq("the cron tick dispatches, and only that", f.methods(), ["dispatches"]);
+	eq("…as tgsweep", f.calls[0].body.event_type, "tgsweep");
+	check("…to the right repo", f.calls[0].url.includes(ENV.REPO));
+	check("…authenticated", f.calls[0].headers.Authorization === `Bearer ${ENV.GITHUB_TOKEN}`);
+	// GitHub refuses an API call with no User-Agent — the same trap the update path hit.
+	check("…with a User-Agent", Boolean(f.calls[0].headers["User-Agent"]));
+}
+{
+	// ⚠️ A failed tick is deliberately SILENT in the chat. It fires 96 times a day, so
+	// a chat message on failure would be four an hour for ever — the alert you mute,
+	// and then miss a real one behind. `wrangler tail` is where this one is visible.
+	const f = recorder({ fail: "dispatches" });
+	await scheduled({ cron: "*/15 * * * *" }, ENV, { fetch: f });
+	eq("a failed tick does not message the chat", f.methods(), ["dispatches"]);
+}
+{
+	// It must not throw either: an unhandled rejection in a scheduled handler is a
+	// Cloudflare error with no chat and no Actions run to show for it.
+	const boom = async () => {
+		throw new Error("network down");
+	};
+	let threw = false;
+	try {
+		await scheduled({ cron: "*/15 * * * *" }, ENV, { fetch: boom });
+	} catch {
+		threw = true;
+	}
+	check("a thrown fetch is swallowed", !threw);
 }
 
 // ── report ───────────────────────────────────────────────────────────────────

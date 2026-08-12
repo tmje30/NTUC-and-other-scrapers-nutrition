@@ -111,6 +111,16 @@ interface PendingAsk {
 	messageId: number;
 	chatId: number;
 	/**
+	 * When the question was sent, ISO — the start of the one-hour clock.
+	 *
+	 * ⚠️ **The type says `string`; a state file written before 2026-08-12 has
+	 * none.** `readState` casts unvalidated JSON, so this field can genuinely be
+	 * `undefined` at runtime on an ask that predates the auto-file. `expiredAsks`
+	 * therefore checks for it rather than trusting the type — see the note there on
+	 * why a missing timestamp starts the clock instead of firing it.
+	 */
+	askedAt: string;
+	/**
 	 * Whether the shop scan must wait for this answer.
 	 *
 	 * ⚠️ A **near-miss** blocks: until it is answered we do not know whether the
@@ -482,7 +492,150 @@ async function ask(
 		messageId,
 		chatId,
 		blocking: opts.blocking,
+		// Stamped at SEND time, not at parse time: the hour the user gets is an hour
+		// of the question being on their screen.
+		askedAt: new Date().toISOString(),
 	};
+}
+
+/**
+ * How long a question waits for a tap before the item is filed anyway.
+ *
+ * ⚠️ **An unanswered question used to mean an item that never arrived.** Asked for
+ * by the user on 2026-08-12: a near-miss they never got round to tapping left the
+ * line nowhere — not on the grocery list, not in Ingredients, just a message on a
+ * phone. Shopping happens whether or not the question got answered, so the default
+ * after an hour is to file the item rather than to keep waiting.
+ */
+export const ASK_TTL_MS = 60 * 60_000;
+
+/** What one pass of the clock finds. Separated from the writing so it can be tested. */
+export interface SweepPlan {
+	/** Tokens whose hour is up — file these. */
+	expired: string[];
+	/** Tokens with no readable `askedAt`, whose clock starts now. */
+	unstamped: string[];
+}
+
+/**
+ * Which questions have run out of time, as of `now`. **Pure.**
+ *
+ * ⚠️ **A missing or unreadable `askedAt` starts the clock; it does not fire it.**
+ * An ask carrying no timestamp is one of unknown age, and the two ways to read that
+ * are not symmetric: treating it as old writes a Notion row for a question the user
+ * may have been looking at for ten seconds, while treating it as new costs at most
+ * one extra hour on a file that predates the feature. In practice the live state
+ * file had no open asks when this shipped, so this path is a guard rather than a
+ * migration.
+ */
+export function expiredAsks(pending: Record<string, PendingAsk>, now: number): SweepPlan {
+	const plan: SweepPlan = { expired: [], unstamped: [] };
+	for (const [t, ask] of Object.entries(pending)) {
+		const at = Date.parse(ask.askedAt ?? "");
+		if (!Number.isFinite(at)) plan.unstamped.push(t);
+		else if (now - at >= ASK_TTL_MS) plan.expired.push(t);
+	}
+	return plan;
+}
+
+/** The outcome of a sweep, for the caller that has to decide whether to save. */
+export interface SweepResult {
+	/** Tokens filed and settled. */
+	filed: string[];
+	/** How many asks had their clock started. */
+	stamped: number;
+}
+
+/**
+ * File every question whose hour is up, and settle it in the chat.
+ *
+ * ```
+ *   asked 14:02  ─── no tap ───▶  15:02  ─▶  grocery List row, Name only
+ *                                            buttons replaced with the outcome
+ * ```
+ *
+ * ⚠️ **The row is written with `row = null`, and that is the whole feature.** The
+ * name goes in the title exactly as it was texted, and NOTHING is created in or
+ * linked to the Ingredients DB — no relation, no price, no vendor, no `{New}` row.
+ * The user was explicit (2026-08-12): *"just copy the name from the telegram chat
+ * into 'Name' without adding an item into 'Ingredient' DB"*. That is deliberately
+ * weaker than every other path here — an unlinked row carries no price and never
+ * appears in the deal scan — because an unlinked row you can shop from beats a
+ * question you never answered, and guessing which candidate they meant is the one
+ * thing this must not do.
+ *
+ * ⚠️ **The queue is not touched.** A `blocking` near-miss was never queued, so
+ * there is nothing to remove; a non-blocking "nothing looks like this" offer WAS
+ * queued and stays queued, because the message it settles promised to price the
+ * item at the shops either way.
+ *
+ * ⚠️ **A failed write still retires the question**, the same choice
+ * `handleCallback` makes: a structural failure fails identically on the next sweep,
+ * and re-trying every 15 minutes forever is a worse outcome than one ❌ in the chat.
+ *
+ * Never throws — every effect is individually wrapped, because a sweep runs on a
+ * timer with nobody watching and must not take the poll loop down with it.
+ */
+export async function sweepExpiredAsks(
+	deps: InboxDeps,
+	state: InboxState,
+	now = Date.now(),
+): Promise<SweepResult> {
+	const plan = expiredAsks(state.pending, now);
+	const stamp = new Date(now).toISOString();
+	for (const t of plan.unstamped) state.pending[t].askedAt = stamp;
+
+	const filed: string[] = [];
+	const lines: string[] = [];
+	let queued = 0;
+
+	for (const t of plan.expired) {
+		const ask = state.pending[t];
+		delete state.pending[t];
+		filed.push(t);
+		if (state.queue.some((q) => q.raw === ask.item.raw)) queued++;
+
+		let outcome: string;
+		try {
+			outcome = await writeItem(deps, ask.item, null);
+		} catch (e: any) {
+			outcome = `❌ ${esc(ask.item.name)} — ${esc(e.message)}`;
+		}
+		lines.push(outcome);
+
+		// The buttons must go, even if the summary below never sends: a live keyboard
+		// on a settled question is a tap that writes the item a second time.
+		try {
+			await editHtml(ask.messageId, `⏳ No answer in an hour — filed as typed.\n${outcome}`, {
+				chatId: String(ask.chatId),
+			});
+		} catch (e: any) {
+			console.error(`expiry edit failed (cosmetic, carrying on): ${e?.message ?? e}`);
+		}
+	}
+
+	if (lines.length) {
+		// ⚠️ **A summary as well as the edits**, because an edit does not notify. The
+		// user is by definition not watching — they left the question for an hour — and
+		// a row appearing in Notion with no word in the chat is the silent-write failure
+		// this project keeps re-learning.
+		const head =
+			lines.length === 1
+				? "⏳ A question went an hour without an answer, so I filed it as typed:"
+				: `⏳ ${lines.length} questions went an hour without an answer, so I filed them as typed:`;
+		const tail =
+			`<i>Name only — no Ingredients link and no price, and nothing was added to your ` +
+			`Ingredients DB. Link ${lines.length === 1 ? "it" : "them"} in Notion if you want ` +
+			`${lines.length === 1 ? "its" : "their"} price tracked.</i>` +
+			(queued ? `\n<i>${queued === lines.length ? "Still" : `${queued} still`} queued for a shop price.</i>` : "");
+		try {
+			await sendHtml([head, ...lines, tail].join("\n"));
+		} catch (e: any) {
+			console.error(`expiry summary failed: ${e?.message ?? e}`);
+		}
+	}
+
+	return { filed, stamped: plan.unstamped.length };
 }
 
 /**
@@ -918,6 +1071,14 @@ export async function runInbox(deps: InboxDeps, opts: { once?: boolean } = {}): 
 	do {
 		try {
 			await pumpOnce(deps, state);
+			// ⚠️ **The one-hour clock, checked here rather than on a timer.** The long
+			// poll returns at least every 25 s whether or not anything arrived, so this
+			// loop is already the most accurate clock the poller has, and a `setInterval`
+			// alongside it would mutate the same state object from two places. Filing an
+			// item can also unblock the pricing queue, hence the `maybeDrain`.
+			const swept = await sweepExpiredAsks(deps, state);
+			if (swept.filed.length) await maybeDrain(deps, state);
+			if (swept.filed.length || swept.stamped) await writeState(state);
 		} catch (e: any) {
 			// A network blip must not kill a long-running poller. Back off and retry.
 			console.error(`poll failed: ${e.message}`);

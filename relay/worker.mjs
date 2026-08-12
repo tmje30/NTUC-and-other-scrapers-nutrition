@@ -39,7 +39,48 @@ const GH = "https://api.github.com";
 /** The event `tg-inbox.yml` listens for. Change both or neither. */
 const EVENT_TYPE = "tgupdate";
 
+/**
+ * The event `tg-sweep.yml` listens for — the one-hour auto-file.
+ *
+ * ⚠️ **This Worker is the CLOCK for that feature, not just the doorbell.** GitHub's
+ * own `schedule:` trigger is queued by ~3–3¾ h on a free public repo, so a workflow
+ * that cron'd itself would file "after an hour" somewhere past the four-hour mark.
+ * Cloudflare's cron fires on time and `repository_dispatch` starts promptly, so the
+ * two together are the only punctual path this project has. If you remove the cron
+ * trigger from `wrangler.toml`, the timeout quietly stops happening — nothing else
+ * in the cloud is watching the clock.
+ */
+const SWEEP_EVENT = "tgsweep";
+
 const ok = () => new Response("ok", { status: 200 });
+
+/**
+ * Ask GitHub to run a workflow. Returns whether it was accepted.
+ *
+ * Never throws: both callers have their own way of coping with a refusal, and
+ * neither is improved by an exception.
+ */
+async function dispatch(doFetch, env, eventType, payload) {
+	try {
+		const res = await doFetch(`${GH}/repos/${env.REPO}/dispatches`, {
+			method: "POST",
+			headers: {
+				Authorization: `Bearer ${env.GITHUB_TOKEN}`,
+				Accept: "application/vnd.github+json",
+				"Content-Type": "application/json",
+				// GitHub rejects an API call with no User-Agent.
+				"User-Agent": "grocery-telegram-relay",
+			},
+			body: JSON.stringify({ event_type: eventType, client_payload: payload }),
+		});
+		// 204 No Content is the success case for this endpoint.
+		if (!res.ok) console.error(`dispatch ${eventType} HTTP ${res.status}`);
+		return res.ok;
+	} catch (e) {
+		console.error(`dispatch ${eventType} failed: ${e?.message ?? e}`);
+		return false;
+	}
+}
 
 /**
  * One Bot API call, best-effort.
@@ -127,28 +168,10 @@ export async function handle(request, env, deps = {}) {
 		});
 	}
 
-	let dispatched = false;
-	try {
-		const res = await doFetch(`${GH}/repos/${env.REPO}/dispatches`, {
-			method: "POST",
-			headers: {
-				Authorization: `Bearer ${env.GITHUB_TOKEN}`,
-				Accept: "application/vnd.github+json",
-				"Content-Type": "application/json",
-				// GitHub rejects an API call with no User-Agent.
-				"User-Agent": "grocery-telegram-relay",
-			},
-			// One top-level property, `update`, holding Telegram's payload verbatim —
-			// no reshaping here. This Worker is not a place where the meaning of an
-			// update can drift; `tg-handle.ts` parses the real thing.
-			body: JSON.stringify({ event_type: EVENT_TYPE, client_payload: { update } }),
-		});
-		// 204 No Content is the success case for this endpoint.
-		dispatched = res.ok;
-		if (!res.ok) console.error(`dispatch HTTP ${res.status}`);
-	} catch (e) {
-		console.error(`dispatch failed: ${e?.message ?? e}`);
-	}
+	// One top-level property, `update`, holding Telegram's payload verbatim — no
+	// reshaping here. This Worker is not a place where the meaning of an update can
+	// drift; `tg-handle.ts` parses the real thing.
+	const dispatched = await dispatch(doFetch, env, EVENT_TYPE, { update });
 
 	// ⚠️ **A failed dispatch must be audible.** This is the one failure that would
 	// otherwise reproduce the original complaint precisely — message sent, nothing
@@ -164,6 +187,26 @@ export async function handle(request, env, deps = {}) {
 	return ok();
 }
 
+/**
+ * The cron tick: ask GitHub to sweep the unanswered questions.
+ *
+ * ⚠️ **A failure here is deliberately NOT reported into the chat.** The tick runs
+ * every fifteen minutes, so a token that has expired would send four messages an
+ * hour, for ever — the alert would become the thing you mute, and then a real one
+ * would be muted too. It goes to `wrangler tail` and to the absence of runs in the
+ * Actions tab, both of which are places you go when you notice something is wrong.
+ *
+ * ⚠️ **It carries no state and skips no ticks.** Deciding *which* asks have expired
+ * is `expiredAsks` in the repo, where the state file is; this end only says "go and
+ * look". A tick that lands on an empty state file costs one Actions run that exits
+ * in seconds.
+ */
+export async function scheduled(_event, env, deps = {}) {
+	const doFetch = deps.fetch ?? fetch;
+	await dispatch(doFetch, env, SWEEP_EVENT, {});
+}
+
 export default {
 	fetch: (request, env) => handle(request, env),
+	scheduled: (event, env) => scheduled(event, env),
 };

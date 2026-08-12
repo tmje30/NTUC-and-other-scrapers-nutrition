@@ -140,9 +140,23 @@ switching back rather than in the middle.
 | parse a texted list, match it, write the grocery-list row | **cloud** | 20–60 s |
 | ask about a near-miss, handle every button tap | **cloud** | 20–60 s |
 | price-book review taps (`vy`/`vn`) | **cloud** | 20–60 s |
+| file a question nobody answered (the one-hour rule) | **cloud** | 60–75 min |
 | price a genuinely new item + publish `new-items.html` | **laptop** | ≤15 min awake |
 | the daily Sheng Siong scan | **laptop** | 05:30, unchanged |
 | the daily deals page + digest | **cloud** | unchanged |
+
+⚠️ **The Worker is also the CLOCK, not just the doorbell** (added 2026-08-12). Its
+`[triggers] crons = ["*/15 * * * *"]` fires a `tgsweep` dispatch every fifteen minutes,
+and `tg-sweep.yml` files any question older than an hour as a plain grocery-list row.
+GitHub's own `schedule:` could not do this — free public repos queue cron by ~3–3¾ h,
+so "after an hour" would land past four. **Delete the cron trigger and the timeout
+silently stops happening**; nothing else in the cloud is watching. `npx wrangler tail`
+shows each tick, and the Actions tab shows a run every 15 minutes (most exit in
+seconds having found nothing).
+
+⚠️ **Until the Worker is deployed, the poller is what sweeps** — in its own loop, every
+25 s, but only while the laptop is awake. That is the one part of the one-hour promise
+that still depends on this machine, and deploying the relay is what removes it.
 
 ⚠️ **State lives in the repo now** (`data/tg-inbox-state.json`), because a webhook has
 no process to hold it in — every update is a fresh checkout. Two taps seconds apart
