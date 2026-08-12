@@ -1,52 +1,7 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-11T06:23:39.580Z",
-  "pending": [
-    {
-      "token": "vg3c5h",
-      "ingredientId": "34b69a18-4fe7-8020-b136-ebb02d41c6ef",
-      "ingredientName": "Milk ( Normal)",
-      "unitType": "By ml",
-      "vendor": "Sheng Siong",
-      "slotN": 2,
-      "priceSgd": 22.5,
-      "size": 12000,
-      "url": "https://shengsiong.com.sg/product/cowhead-uht-pure-milk-12-x-1-l",
-      "itemName": "UHT Pure Milk",
-      "perLabel": "$1.88/L",
-      "reasons": [
-        {
-          "kind": "bulk",
-          "grams": 12000,
-          "note": "12L pack — catering size, not a weekly shop"
-        }
-      ],
-      "askedAt": "2026-08-11T06:14:52.304Z",
-      "messageId": 32
-    },
-    {
-      "token": "yquvvd",
-      "ingredientId": "34b69a18-4fe7-8089-bff1-d84e43a7b560",
-      "ingredientName": "Cinnamon",
-      "unitType": "By Gram",
-      "vendor": "Sheng Siong",
-      "slotN": 2,
-      "priceSgd": 2.64,
-      "size": 100,
-      "url": "https://shengsiong.com.sg/product/happy-family-cinnamon-powder-100-g",
-      "itemName": "Cinnamon Powder",
-      "perLabel": "$26.40/kg",
-      "reasons": [
-        {
-          "kind": "outlier",
-          "factor": 0.15147540983606556,
-          "note": "6.6× cheaper than this row's other shop"
-        }
-      ],
-      "askedAt": "2026-08-11T06:15:29.310Z",
-      "messageId": 34
-    }
-  ],
+  "updatedAt": "2026-08-12T00:52:05.250Z",
+  "pending": [],
   "rejected": [
     {
       "ingredientId": "34b69a18-4fe7-8089-bff1-d84e43a7b560",
@@ -137,6 +92,26 @@
       "name": "Oil (Bran)",
       "why": "2L pack — catering size, not a weekly shop",
       "rejectedAt": "2026-08-11T06:23:31.745Z"
+    },
+    {
+      "ingredientId": "34b69a18-4fe7-8020-b136-ebb02d41c6ef",
+      "vendor": "Sheng Siong",
+      "url": "https://shengsiong.com.sg/product/cowhead-uht-pure-milk-12-x-1-l",
+      "store": "Sheng Siong",
+      "product": "UHT Pure Milk",
+      "name": "Milk ( Normal)",
+      "why": "12L pack — catering size, not a weekly shop",
+      "rejectedAt": "2026-08-12T00:51:57.338Z"
+    },
+    {
+      "ingredientId": "34b69a18-4fe7-8089-bff1-d84e43a7b560",
+      "vendor": "Sheng Siong",
+      "url": "https://shengsiong.com.sg/product/happy-family-cinnamon-powder-100-g",
+      "store": "Sheng Siong",
+      "product": "Cinnamon Powder",
+      "name": "Cinnamon",
+      "why": "6.6× cheaper than this row's other shop",
+      "rejectedAt": "2026-08-12T00:52:05.250Z"
     }
   ]
 }
