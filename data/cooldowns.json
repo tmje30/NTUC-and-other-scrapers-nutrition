@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-12T09:09:30.382Z",
+  "updatedAt": "2026-08-12T09:09:33.892Z",
   "entries": [
     {
       "key": "chicken thigh",
@@ -136,6 +136,20 @@
       "product": "Knife Brand Thai Fish Sauce",
       "packSizeG": 750,
       "monthlyAmount": 40
+    },
+    {
+      "key": "blachan",
+      "ingredientId": "34c69a18-4fe7-80c7-a298-d1323c01250e",
+      "ingredientName": "blachan[Taho]",
+      "reason": "ignored",
+      "addedAt": "2026-08-12T09:09:33.892Z",
+      "until": "2026-08-23T16:00:00.000Z",
+      "days": 11,
+      "basis": "ignored from the deals page for 2 weeks — until the start of that week (Mon, SGT)",
+      "store": "FairPrice",
+      "product": "Bagus Belachan",
+      "packSizeG": null,
+      "monthlyAmount": 0
     }
   ]
 }
