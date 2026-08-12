@@ -1,6 +1,7 @@
 import { Client } from "@notionhq/client";
 import { categorize, guessSize, matchCategoryOption, type CategoryKey } from "./categorize.js";
 import { deriveGenericName } from "./generic-name.js";
+import { humanizeProductName } from "./human-name.js";
 import { INGREDIENTS_DS, ING_MACRO_PROPS, ING_PROPS } from "./ingredients-schema.js";
 import type { Macros } from "./macros.js";
 import {
@@ -287,7 +288,14 @@ export function fieldsFromPurchase(p: {
 	url: string;
 	ingredientName: string;
 }): IngredientFields {
-	const generic = deriveGenericName(p.product, "") || p.ingredientName || p.product;
+	// ⚠️ Before anything is derived, not after. A shop that handed over a URL slug
+	// instead of a title ("cerave-pm-facial-moisturizing-lotion-52ml-630062.html")
+	// would otherwise have it parsed for a size, guessed at for a category and
+	// written verbatim into `Items Exact Name`, where it stays for the life of the
+	// row. Nearly every product arrives with a real title and passes through
+	// `humanizeProductName` untouched.
+	const product = humanizeProductName(p.product);
+	const generic = deriveGenericName(product, "") || p.ingredientName || product;
 	// Three sources, and the ORDER is the whole point.
 	//
 	// 1. A published pack WEIGHT wins. ⚠️ It has to: plenty of packs state both, and
@@ -305,14 +313,14 @@ export function fieldsFromPurchase(p: {
 			? { amount: p.packSizeG, unitType: p.volumetric ? "By ml" : "By Gram" }
 			: p.unitCount && p.unitCount > 0
 				? { amount: p.unitCount, unitType: "By Unit" }
-				: guessSize(p.product);
+				: guessSize(product);
 
 	return {
 		name: generic,
-		exactName: p.product,
+		exactName: product,
 		// The shop's own wording, recorded against the slot its price lands in as
 		// well as on the row — see `IngredientFields.itemName`.
-		itemName: p.product,
+		itemName: product,
 		priceSgd: p.priceSgd,
 		size: sized.amount,
 		// ⚠️ **No size, no unit type.** `Unit type ` says what `Size[Vendor n]` counts,
@@ -321,7 +329,7 @@ export function fieldsFromPurchase(p: {
 		// egg row to By Gram and leave its piece counts being read as grams. Undefined
 		// is dropped by `buildProps`, so the row keeps the type the user gave it.
 		unitType: sized.amount != null ? (sized.unitType ?? (p.volumetric ? "By ml" : "By Gram")) : undefined,
-		categoryKey: categorize(generic || p.product),
+		categoryKey: categorize(generic || product),
 		vendor: p.store,
 		url: p.url,
 	};

@@ -6,6 +6,32 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+### Fixed
+- **A product named after its own URL now reads as words (2026-08-12).** Spotted by the
+  user: an Ingredients row whose `Items Exact Name` was
+  `cerave-pm-facial-moisturizing-lotion-52ml-630062.html`. New `src/core/human-name.ts`
+  repairs that to `Cerave PM Facial Moisturizing Lotion 52ml`, and it runs at the two
+  points a name is captured — the extension's content script (one call, where every
+  reader funnels together) and `fieldsFromPurchase` (before the generic name, the
+  category and the size are derived from it, so the row is not merely readable but
+  correctly filed).
+  How it got in: Guardian is Magento PWA Studio, which sets `document.title` from the
+  route and only replaces it once the product resolves — a content script arriving
+  early reads the slug, and the `titleName()` last resort wrote it through verbatim.
+  ⚠️ **The strict half is the point.** A repair that fires on a title a shop really
+  published rewrites a field nobody re-reads. So it only touches a string with **no
+  whitespace at all** that also has a page extension, a path, or **three or more**
+  hyphenated parts — three, not two, because `Coca-Cola`, `7-Eleven` and `Vitamin-C`
+  are real names with real hyphens. A trailing catalogue id is dropped only at **five**
+  digits or more, so `vitamin-c-1000` keeps its dose; that follows the rule already set
+  in `generic-name.ts`, that deleting a meaningful word loses information silently
+  while keeping a useless one costs one edit.
+  ⚠️ Pack sizes survive intact (`52ml`, `2x100g`, `1L`) because `marketplaceSize` reads
+  the size out of the NAME at Guardian and Watsons — eating it would leave the price
+  with nothing to be per-kilo of.
+  ⚠️ **Rows written before today are not touched** — this changes what gets captured,
+  not what is already in Notion.
+
 ### Added
 - **Ignore is a dropdown now: 1, 2, 3 or 4 weeks (2026-08-11).** The button under
   Buy meant exactly one week; tapping it opens a list and the tap that picks a

@@ -6,6 +6,8 @@
 // Reads four things: name, brand, price, and a pack-size string. There is deliberately NO SKU and no ABV —
 // the Ingredients DB has no column for either.
 
+import { humanizeProductName } from "../src/core/human-name.js";
+
 // ---------------------------------------------------------------------------
 // FairPrice — the one site worth a dedicated reader
 // ---------------------------------------------------------------------------
@@ -317,6 +319,12 @@ function headingName() {
  * Sheng Siong serves every page the same site-wide title ("Online Grocery Shopping and Delivery @ Sheng
  * Siong Online Singapore"), so this would confidently fill the Name box with the shop's slogan. Used only
  * when something else on the page corroborated that we're really looking at a product (a price or a size).
+ *
+ * ⚠️ It can also hand back the URL. Guardian is Magento PWA Studio, which sets the document title from the
+ * route and only replaces it once the product resolves — arrive early and `document.title` is literally
+ * "cerave-pm-facial-moisturizing-lotion-52ml-630062.html". That is a slug, not a name, and it used to be
+ * written into `Items Exact Name` verbatim. Repaired at the assembly point below, which catches an h1 or
+ * an og:title carrying the same thing.
  */
 function titleName() {
   return (document.title || "").split(/\s[|–—-]\s/)[0].trim();
@@ -365,7 +373,12 @@ if (!window.__ingredientAddExtractorReady) {
       const sizeText = special?.sizeText || ld.sizeText || pageSize(trusted);
       // Fall back to the tab title ONLY when a price or size corroborates that this is a product page —
       // otherwise a site-wide title becomes a confident-looking wrong name. Blank is the honest answer.
-      const name = trusted || (priceText || sizeText ? titleName() : "");
+      //
+      // ⚠️ Humanised here, at the one point every reader funnels through, rather than in each of them: an
+      // app-rendered shop can put the URL slug in the title, in the h1 and in og:title, and this name is
+      // then what the Name box, the category guess and the size parse are all built from. A title a shop
+      // really published comes through unchanged — see `humanizeProductName`.
+      const name = humanizeProductName(trusted || (priceText || sizeText ? titleName() : ""));
       sendResponse({
         url: location.href,
         name,

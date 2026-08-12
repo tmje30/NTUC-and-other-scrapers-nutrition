@@ -14,6 +14,7 @@ import "./packshots.test.js";
 import "./nutrition-panel.test.js";
 import "./macro-reply.test.js";
 import "./naming.test.js";
+import "./human-name.test.js";
 import "./deals-page.test.js";
 import "./marketplace-size.test.js";
 import "./cooldown.test.js";
