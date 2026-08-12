@@ -5,11 +5,17 @@ import { callTelegram, useBotToken } from "../core/telegram.js";
  * Point this project's bot at the Cloudflare relay — or show/undo it.
  *
  *   npm run tg-webhook                          # show what is registered now
- *   npm run tg-webhook -- set <url> <secret>    # register the relay
+ *   npm run tg-webhook -- set <url> [secret]    # register the relay
  *   npm run tg-webhook -- delete                # go back to long-polling
  *
  * A script rather than a `curl` line because the bot token would otherwise sit in
  * shell history, and because of the guard below.
+ *
+ * ⚠️ **Prefer `WEBHOOK_SECRET` in `.env` to the argument.** The secret is the only
+ * thing standing between a stranger who guesses the Worker URL and this bot, and an
+ * argument goes into shell history, `ps` output and any transcript of the session.
+ * Cloudflare's own `wrangler secret put` prompts for exactly this reason; the
+ * positional form is kept only so the two can be set in one sitting without a file.
  *
  * ⚠️ **A bot has a webhook OR serves `getUpdates`, never both.** Registering one
  * stops `npm run tg-poll` working — every call gets `409 Conflict` and the chat
@@ -27,7 +33,9 @@ import { callTelegram, useBotToken } from "../core/telegram.js";
 
 const BANNED = ["big_notion_bot"];
 
-const [verb = "show", url, secret] = process.argv.slice(2);
+const [verb = "show", url, secretArg] = process.argv.slice(2);
+// The argument wins when given, so nothing that used to work stops working.
+const secret = secretArg || process.env.WEBHOOK_SECRET || "";
 
 useBotToken(config.telegramInboxBotToken());
 
@@ -62,8 +70,19 @@ if (verb === "delete") {
 	process.exit(0);
 }
 
-if (verb !== "set" || !url || !secret) {
-	console.error("\nusage: npm run tg-webhook -- set <https-url> <secret>   |   delete   |   show");
+if (verb !== "set" || !url) {
+	console.error("\nusage: npm run tg-webhook -- set <https-url> [secret]   |   delete   |   show");
+	process.exit(2);
+}
+
+if (!secret) {
+	// ⚠️ Never register without one. The URL is public the moment it is guessed, and a
+	// webhook with no `secret_token` lets anyone POST an update the Worker will accept
+	// — which is a stranger writing to the grocery list.
+	console.error(
+		"\nNo secret. Put WEBHOOK_SECRET in .env (the same value as the Worker's), or pass it\n" +
+			"as the third argument. It must match `wrangler secret put WEBHOOK_SECRET` exactly.",
+	);
 	process.exit(2);
 }
 
