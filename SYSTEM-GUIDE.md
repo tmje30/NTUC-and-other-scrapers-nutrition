@@ -1,6 +1,6 @@
 # Grocery Deal Scraper — System Guide
 
-*Last updated: 2026-08-06 · Covers changes through commit 8af53e6*
+*Last updated: 2026-08-12 · Covers changes through commit cee5735*
 
 ## What this is
 
@@ -18,6 +18,16 @@ new ingredient or used to re-base an existing one, and nutrition figures
 (protein, fat, carbs, fibre per 100 g) are filled in at the same time. A
 companion **Chrome extension** does the same capture from a product page you're
 browsing.
+
+Since 2026-08-10 there is a third way in, and it's the one used most: **text your
+shopping list to a Telegram bot** (`@Grocery69_bot`) and it files the lines onto
+your Notion grocery list, asking about anything it isn't sure of. Since 2026-08-12
+that runs entirely in the cloud and answers in **under a minute**, awake or not.
+
+The system also **fills in your price book** — what each shop charges for each
+ingredient, in Notion's `Vendor 1..4` columns — across up to nine shops rather
+than the two it watches daily. It asks before recording anything odd (a 10 kg sack
+of carrots is genuinely the cheapest per kilo and is not a pack anyone buys).
 
 ## What it does (features)
 
@@ -57,9 +67,12 @@ browsing.
   Yes. **Add** files it as a *new* ingredient; **Replace** re-bases the existing
   ingredient onto it (new name, price, pack size, unit and vendor). Replace asks
   first and cannot be undone.
-- **"I don't want to be asked about this again this week."** Tap **Ignore 1wk**,
-  under Buy. The ingredient isn't searched again until Monday, and it's undone from
-  the list at the foot of the page.
+- **"I don't want to be asked about this again for a while."** Tap **Ignore** under
+  Buy and pick **1, 2, 3 or 4 weeks** — the tap that picks the duration is the tap
+  that fires. Every option returns the item at the *start* of a week (Mondays, not
+  7-day blocks), and it's undone from the list at the foot of the page. The card
+  also leaves the page immediately, rather than sitting there until tomorrow's
+  rebuild.
 - **"How do I get rid of a bad match?"** The `⋯` menu holds three corrections:
   **Ignore for good** (retires that *product* for every ingredient, permanently),
   **Mismatch item** (ban words for that ingredient) and **Almost, but no** (block
@@ -69,6 +82,34 @@ browsing.
   footer. It lists what you bought and when, ingredients you've parked, and
   products you've banned outright. It exists because the deals page has to forget
   things to stay readable.
+- **"How do I add things to my shopping list without opening Notion?"** Text them
+  to the bot, one per line or comma-separated: `2kg chicken breast, bananas x6,
+  2 x 500g peanut butter`. Each line is matched against your Ingredients list and
+  filed onto the Notion grocery List. You get a reply in **20–60 seconds**.
+- **"What happens when it isn't sure what I meant?"** It asks, in the chat, with
+  buttons: the ingredient rows that came close, **🆕 New item — create in
+  Ingredients**, and **✖️ Cancel — typo**. A parked (`Not in Use ATM`) row is
+  offered with a 💤 and picking it wakes the row up — texting something outranks a
+  snooze. Nothing is written until you tap.
+- **"What if I never answer?"** After **an hour** the line is filed onto the
+  grocery list anyway, exactly as you typed it — name only, no price, no
+  ingredient link — and the chat tells you what was filed. An unlinked row you can
+  shop from beats a question you never answered.
+- **"It says it's pricing something — what's that?"** A line matching no
+  ingredient at all has no known price, so the cloud queues it and the laptop
+  prices it across five shops within 15 minutes, then publishes a **New items**
+  page. The chat says `🔎 Pricing 1 new item: …` so the wait is never silent.
+- **"Where do the prices for other shops come from?"** `npm run vendor-scan`
+  searches the shops each ingredient row actually names and fills its
+  `Price [Vendor n]` / `Size[Vendor n]` / `URL [Vendor n]` slots. Anything it isn't
+  confident about — a bulk pack, a size range, a wild outlier — is sent to Telegram
+  as a review card with **Ok** / **Don't use** instead of being written.
+  ⚠️ **"Don't use" is not "ignore forever"**: it declines to *record that pack as
+  your price at that shop* and the product still appears on the deals page.
+- **"The page says a shop is missing — can I fix it now?"** Tap **Rescan** in the
+  warning banner. It asks the laptop for fresh Sheng Siong prices, and about ten
+  minutes later the page rebuilds *with the data in it*. If no laptop is awake,
+  nothing happens and the page keeps what it had.
 - **"Can I capture a product I'm looking at in the browser?"** Yes — the Chrome
   extension ("Nutrition Plan Extension") reads the product page you're on and
   writes it into your Ingredients database, either as a new row or over an
@@ -81,15 +122,26 @@ browsing.
 
 ## How it fits together
 
-The tricky part is that **Sheng Siong blocks the cloud.** FairPrice can be
-scraped from anywhere, but Sheng Siong's bot-protection refuses connections from
-data-centre servers (like the free cloud runner) while allowing normal home/mobile
-internet connections. So the system is split across two places:
+The tricky part is that **Sheng Siong won't answer the cloud.** FairPrice can be
+scraped from anywhere, but Sheng Siong's bot-protection challenges connections from
+**outside Singapore** — and the free cloud runner is US-hosted. So the system is
+split across two places:
 
-1. **A residential runner** (the user's **laptop**, on a daily schedule) does the
-   part the cloud can't: it scans Sheng Siong from a normal home internet
-   connection and saves the results into a small file (`data/shengsiong-latest.json`)
-   that it commits to the project's GitHub repository.
+⚠️ **It is geography, not "residential vs data-centre" — corrected 2026-08-11.**
+This was designed on the belief that Sheng Siong needed a *home* internet line, and
+that belief was wrong. Measured: a **Singapore data-centre** address completed a full
+60-term scan with 0 errors, while US data-centre addresses (GitHub Actions, and a US
+VPN exit even with a browser-minted cookie) were challenged. The laptop qualifies by
+being **in Singapore**, not by being on a home line. The practical consequence is
+that a **~US$5/month Singapore VPS could replace the laptop entirely** — strongly
+indicated but not proven, because every Singapore success so far came through one
+commercial VPN exit and a VPS is a different address. Run `npm run ss -- "milk"` on
+the box before migrating anything.
+
+1. **The laptop** (a Singapore address, on scheduled jobs) does the parts the cloud
+   can't: it scans Sheng Siong daily and saves the results into a small file
+   (`data/shengsiong-latest.json`) that it commits to the project's GitHub
+   repository. It also prices brand-new items and can serve an on-demand rescan.
 
 2. **The cloud** (a free GitHub Actions job, once a day) does everything else: it
    reads your Notion ingredient list, scrapes FairPrice live, reads the Sheng
@@ -113,8 +165,54 @@ If the laptop's Sheng Siong file is missing or not from today, the cloud simply
 skips Sheng Siong and publishes a **FairPrice-only** page — it never fails and
 never tries the blocked connection. A ⚠️ banner on the page (and a line in the
 Telegram message) says a shop was missing, so a degraded run is never silent; the
-banner carries a **Rescan** button that re-runs the whole cloud job once the
-laptop's data has landed.
+banner carries a **Rescan** button.
+
+⚠️ **Rescan asks the laptop for prices; it does not just redraw the page.** It used
+to fire `rescan` at the cloud, which rebuilt from the same unchanged file — a promise
+of a rescan that delivered a redraw, with the warning still there three minutes
+later. It now fires `sscan` at `scan-request.yml`, which commits a marker file; the
+laptop's 5-minute `ss-on-request` job sees it, scans Sheng Siong, pushes the prices
+and dispatches `rescan` itself. One rebuild with the data in it, one Telegram
+message, about ten minutes — and the button says `✓ requested · ~10 min` rather than
+claiming to be rescanning. ⚠️ The marker **expires at midnight SGT**, so a laptop
+opened at 23:00 (or on Thursday, having been shut since Monday) doesn't wake up and
+scan a shopping day that is already over.
+
+**The inbound leg — Telegram.** Texting the bot is the third way in, and unlike the
+other two it is something *arriving* rather than a page being built. Telegram cannot
+call GitHub directly: `setWebhook` POSTs Telegram's own JSON to a fixed URL, while
+`repository_dispatch` needs an `Authorization` header and an `{event_type}` body, and
+Telegram sends neither. So a ~100-line **Cloudflare Worker** (`relay/`) sits between
+them — it receives the webhook, checks a shared secret, and fires
+`repository_dispatch` at `tg-inbox.yml`.
+
+```
+you ──text──▶ Telegram ──webhook──▶ Cloudflare Worker ──dispatch──▶ Actions
+                                    (free, always on,               (parse · match ·
+                                     ~50 ms, holds no state)         write · ask)
+                                            │                            │
+                                     every 15 min: tgsweep          a NEW item
+                                     (the one-hour rule)            needs a price
+                                                                         │
+                                                                    laptop, ≤15 min
+```
+
+⚠️ **The Worker is also the clock, not just the doorbell.** Its
+`crons = ["*/15 * * * *"]` trigger fires a `tgsweep` dispatch that files any question
+older than an hour. GitHub's own `schedule:` could not do this — free public repos
+queue cron by ~3–3¾ h, so "after an hour" would land past four. **Delete the cron
+trigger and the one-hour rule silently stops happening**; nothing else is watching.
+
+⚠️ **A bot has a webhook OR serves `getUpdates`, never both.** The relay therefore
+*replaced* the laptop's forever-poller rather than joining it — with a webhook
+registered, a poller gets `409 Conflict` on every call and the chat just looks dead.
+Switch-over order, the four secrets, and the way back are in
+[`relay/README.md`](relay/README.md).
+
+⚠️ **State lives in the repo now** (`data/tg-inbox-state.json`), because a webhook
+has no process to hold it in — every update is a fresh checkout. Two taps seconds
+apart are two runs writing that file, resolved by the three-way merge in
+`src/core/merge-data.ts`.
 
 **The write-back leg.** Everything above is read-only. Writing to Notion needs a
 token, and the deals page is a static file that cannot hold one — so a button on
@@ -152,7 +250,12 @@ All commands run from the repo root and read secrets from `.env` (see Setup).
 - **Key detail:** uses the Notion SDK **v5** `dataSources.query` (not
   `databases.query`). Skips the `Suppliments` and `Filler` categories. Notion
   property names contain real typos/trailing spaces and must be matched exactly:
-  `Catagory`, `Unit type `, `Vendor 1..4`, `Price [Vendor n]`, `Size[Vendor n]`,
+  `Category` (⚠️ **and** the old `Catagory` — the typo was fixed in Notion on
+  2026-08-11 and this repo didn't follow, so every read returned undefined and every
+  category became `""`: `Suppliments` stopped being excluded and the scan started
+  asking NTUC for Lion's mane. `CATEGORY_ALIASES` + `categoryOf()` accept both, and
+  `Vendor ` → `Vendor %` and `Checkbox` → `Tickbox` have drifted the same way),
+  `Unit type `, `Vendor 1..4`, `Price [Vendor n]`, `Size[Vendor n]`,
   `URL [Vendor n]`, `Used '1'/'2'/'3' Plan`. Note `Price [Vendor 2] ` has a
   trailing space and `Price [Vendor 1]` does not, and `Size[Vendor n]` has no
   space after "Size" — which is why the vendor columns are resolved from the live
@@ -325,13 +428,43 @@ vs grams), price-per-100 g, sale info, and URL. Defined in
   site's Meteor **DDP protocol over a WebSocket** (`wss://shengsiong.com.sg/websocket`,
   via the `ws` library), calling `Products.getByAllSlugs(filters, misc, page,
   size)` with the query in `filters.searchFilter.slug`; weight from `packSize`.
-  **Only works from a residential IP** — data-centre IPs get a `200` challenge
-  instead of a WebSocket upgrade. Used by the runner and for local testing.
+  **Only works from a Singapore IP** — an address outside Singapore gets a `200`
+  challenge instead of a WebSocket upgrade, whether it is residential or a data
+  centre (see the geography note under "How it fits together"). Used by the laptop
+  and for local testing.
 - **Sheng Siong (file)** — `src/core/stores/shengsiong-file.ts`. Implements the
   same interface but reads `data/shengsiong-latest.json` instead of the network.
   Uses it **only if the file's `date` equals today (Singapore time)**; otherwise
   every search returns empty (→ FairPrice-only). It never makes a live call, so
   the cloud's IP block is irrelevant. Env override: `SHENGSIONG_DATA_PATH`.
+- **Guardian** — `src/core/stores/guardian.ts`. Magento PWA Studio; no anti-bot,
+  just an SPA, so it needs the browser tier. ⚠️ Its size is stated in the **name**,
+  not a field. ⚠️ Its `document.title` is set from the route before the product
+  resolves, which is how a slug (`cerave-pm-…-630062.html`) once reached Notion as a
+  product name — see `human-name.ts` below.
+- **MyProtein** — `src/core/stores/myprotein.ts`. Works from the cloud. The size
+  lives in an on-page variant, so the module fetches variants per product; the old
+  "28 products priced, 0 with a size" verdict was about the search page only.
+- **iHerb** — `src/core/stores/iherb.ts`. Plain `fetch` is 403; needs headed Chrome
+  on the laptop. ⚠️ **The capsule count is the size, and the dose is not the pack.**
+  "Vitamin C, 1,000 mg, 240 Veggie Capsules" priced as a 1 g purchase is the trap;
+  `capsuleCount` takes the number **adjacent to the piece word**, never the first in
+  the title. Do **not** "fix" this by multiplying dose × count — 240 g of active
+  ingredient is not a 240 g pack.
+- **Watsons** — `src/core/stores/watsons.ts`. ⚠️ **It renders prices and then wipes
+  them**: an Akamai Bot Manager check tears the results down 16–22 s in, so a fixed
+  delay has to thread a window that fails at both ends, and too-early and too-late
+  produce the *identical* footer-only shell. That is why it collected two independent
+  "dead end" verdicts (2026-08-05 and again 2026-08-11) which were both honest and
+  both wrong. The fix is `evaluateInPage`'s `waitFor` — poll an expression until
+  truthy and read the page the moment it's ready — with `settleMs` demoted to a
+  give-up deadline. **Do not re-open or close a shop on a node count alone**: the
+  probe once scored Watsons 54 "prices" while it rendered nothing but its footer,
+  because skeleton loaders match `[class*="price"]`. It now demands prices containing
+  a **number** *and* product links, and reports both counts.
+- **Carousell** — `src/core/stores/carousell.ts`. A marketplace: headed browser for
+  search (headless renders zero cards), plain `fetch` for the listing page, reduced
+  with `cheapestPlausible` and never the minimum.
 - **Weight parsing** — `src/core/stores/weight.ts`: turns pack-size strings
   ("4 x 125 ml", "1 kg") into grams and a volumetric flag.
 - **Incapsula** — `src/core/stores/incapsula.ts`. Sheng Siong's WAF answers plain
@@ -704,6 +837,119 @@ own so a Notion hiccup can never take the deals page down with it. Four sections
   from the same `data/exclusions.json` the scan uses, so this list cannot disagree
   with what actually gets skipped. Listed but not undoable from the page.
 
+### New items page — `public/new-items.html`
+
+`src/core/new-items.ts` prices items that **aren't in Ingredients yet** across five
+shops (`NEW_ITEM_SHOPS`: FairPrice, Sheng Siong, Guardian, MyProtein, Carousell). The
+last three already had modules but were reachable only through `vendor-scan`'s
+directed search, which needs a row naming the vendor — and a new item has no row.
+
+- **No baseline exists**, so the card compares *shops against each other* and shows
+  the shop's own sale %, never a saving against the user's price.
+- Carousell is reduced with `cheapestPlausible` and labelled `[marketplace listing]`.
+- Same hybrid hand-off as the daily scan: the laptop scans and commits
+  `data/new-items-latest.json`, `repository_dispatch: newitems` rebuilds Pages, and a
+  stale file is skipped rather than published.
+- ⚠️ It holds **its own shop list and uses the live DDP module**, not `run.ts`'s
+  `STORES`. That default is `shengsiong-file`, which only answers terms in that day's
+  committed scan — and a new item's term is never among them, so Sheng Siong returned
+  zero results with no error on every new-item card.
+
+### The Telegram inbox — texting a list in
+
+The first **inbound** path in the project: everything else here is a page being
+built or a button being pressed, while this is a message arriving. Three files do
+the thinking and one holds the state.
+
+- **`src/core/list-parse.ts`** — the quantity grammar, no AI. `2kg chicken breast`,
+  `bananas x6`, `2 x 500g peanut butter`. ⚠️ **`x` is a multiplier, stripped as a
+  whole word and never as a character**: `Carrots x 1kg` reached the matcher as
+  `"Carrots x"` and scored 0.65 against a row that `Carrots` scores 1.000 on — while
+  a leading character class turns `Xylitol` into `ylitol`.
+- **`src/core/list-intake.ts`** — matches each line to an Ingredients row with the
+  same scorer the deals page uses, and returns one of **three verdicts**:
+
+  | verdict | what happens |
+  |---|---|
+  | **link** | the leader clears `ACCEPT` **and is alone** → the row is written silently |
+  | **ask** | anything within `CANDIDATE_MARGIN` (0.05) of the leader gets a button |
+  | **new** | nothing matched → queued for shop pricing, and offered a home in Ingredients |
+
+  ⚠️ **"Alone" is load-bearing.** Two rows both scoring 1.000 on `1 x milk` used to
+  link to whichever Notion returned first. A tie is now a question.
+- **`src/core/tg-inbox.ts`** — the handler: chat allow-list, the inline keyboards,
+  every button tap, and the state. No paid lookups, ever.
+- **`src/core/grocery-list.ts`** `addTextedItem()` — shares schema resolution and
+  dedupe with the Buy button, but leaves unknown columns **blank** rather than
+  writing zero.
+
+**The question's buttons.** The candidate rows, then **🆕 New item — create in
+Ingredients** (creates the row *and* the grocery-list line against it, confirming
+first; marked `{New}` in braces — `(New)` would read as a defining property and match
+nothing at any shop), then **✖️ Cancel — typo**, always **last** so a thumb aiming at
+the final ingredient cannot reach it — the order is pinned by test. A parked
+(`Not in Use ATM`) row is offered with a 💤 and never linked silently however well it
+scores; picking it un-parks the row, because texting an item outranks a snooze.
+⚠️ `Don't Search` rows are still dropped entirely — that tag is the user's and
+nothing here may undo it.
+
+**The one-hour rule — `tg-sweep`.** An unanswered ask is filed onto the grocery List
+after `ASK_TTL_MS` (60 min) as **name only, exactly as typed**: no Ingredients
+relation, no price, no vendor, and nothing created in Ingredients. That is
+deliberately weaker than every other path — an unlinked row carries no price and
+never appears in the deal scan — because an unlinked row you can shop from beats a
+question you never answered, and guessing which candidate was meant is the one thing
+this must not do. ⚠️ **A missing `askedAt` starts the clock rather than firing it**:
+an ask from a state file written before this shipped is of *unknown* age, and reading
+that as "old" would file a question the user had been looking at for ten seconds.
+⚠️ The pricing queue is **untouched** by a sweep, and the summary says so.
+
+**The pricing queue — `tg-drain`.** A line matching no ingredient has no known price,
+and pricing it means asking Sheng Siong. The cloud sets `deferPricing`, leaves the
+item on a queue in `data/tg-inbox-state.json`, **says so in the chat**, and the laptop
+drains it every 15 minutes across five shops (`NEW_ITEM_SHOPS`). ⚠️ The cloud
+deliberately does **not** scan the shops it *can* reach instead: a card comparing one
+shop looks exactly like a card comparing five.
+
+**Two state files, and they are not the same file.**
+
+| | who owns it | when |
+|---|---|---|
+| `data/tg-inbox-state.json` | the **cloud**, committed to the repo | now |
+| `.sessions/tg-inbox.json` | the retired **poller**, local and gitignored | before 2026-08-12 |
+
+`npm run tg-adopt-state` carries the poller's open questions into the committed file.
+⚠️ Run it **after** stopping the poller, never before: while the poller is alive it
+owns that file and will answer a tap behind your back.
+
+### The relay Worker — `relay/`
+
+A single dependency-free ESM file (`relay/worker.mjs`, ~200 lines) deployed to
+Cloudflare's free tier; `wrangler deploy` uploads it as-is, there is no build step.
+Full setup, verification and rollback in [`relay/README.md`](relay/README.md).
+
+- **It holds no state** and does two things: turn a Telegram webhook delivery into a
+  `repository_dispatch`, and fire a `tgsweep` dispatch every 15 minutes on its cron
+  trigger. It also sends the typing indicator, so the chat acknowledges you in about
+  a second while Actions takes 20–60 s.
+- **It is fail-closed.** A request without the exact
+  `X-Telegram-Bot-Api-Secret-Token` gets `401`, and a missing `WEBHOOK_SECRET` in the
+  environment fails the same way rather than opening up — the URL is public the moment
+  it is guessed, and an unauthenticated webhook is a stranger writing to the grocery
+  list. `ALLOWED_CHAT_ID` is a second gate: exactly one chat is answered.
+- **Four secrets** (`wrangler secret put`), documented in `relay/wrangler.toml`:
+  `WEBHOOK_SECRET`, `TELEGRAM_BOT_TOKEN`, `GITHUB_TOKEN` (fine-grained PAT, this repo
+  only, **Contents: read and write** — that and only that is what
+  `repository_dispatch` needs; Administration does not grant it), `ALLOWED_CHAT_ID`.
+  `REPO` is a plain var in `wrangler.toml`.
+- ⚠️ **A cron-tick failure is deliberately not reported into the chat.** 96 ticks a
+  day would train the user to mute the bot. The consequence is that nothing tells you
+  if the PAT is revoked, which is why it was created with **no expiry** — a decision,
+  not an oversight.
+- **Live:** `https://grocery-telegram-relay.tmje30.workers.dev`. `npx wrangler tail`
+  from `relay/` is the live log; `relay/worker.test.mjs` has 33 offline cases and runs
+  as part of `npm test`.
+
 ### Chrome extension — "Nutrition Plan Extension"
 
 `extension/` — captures a grocery product page straight into the Notion
@@ -754,15 +1000,68 @@ script cannot see `window.Meteor`.
 The extension imports from `src/core/` — the sharing goes one way only; nothing
 under `src/` imports from `extension/`.
 
+### Shared plumbing — the small modules everything leans on
+
+- **`src/core/sgt.ts`** — `sgtDate()` (the `YYYY-MM-DD` **data** value, compared for
+  equality to decide whether a scan is today's) and `sgtLongDate()` (the **display**
+  string a person reads). ⚠️ These existed as **four verbatim copies plus a fifth
+  inlined**, and `item-action.ts` had independently grown a *different* function with
+  the same name and a docstring warning against exactly what the other five did. Two
+  implementations of "what day is it in Singapore", sharing a name and disagreeing
+  about method, is how the wrong one eventually gets copied.
+  ⚠️ **The `+8h`-then-`toISOString` form is correct and must not be "simplified"** —
+  Singapore has been UTC+8 with no DST since 1982 — but only because the offset
+  *precedes* the `toISOString`, and that leading line is precisely what a future reader
+  deletes on recognising the anti-pattern. 13 cases pin it, all inside the 00:00–08:00
+  SGT window, because that is the only window this system runs in; three of them assert
+  that the naive form gives the **wrong** answer. Getting it wrong is silent: the page
+  simply goes FairPrice-only and nothing says why.
+- **`src/core/human-name.ts`** — repairs a product name that is really a URL slug:
+  `cerave-pm-facial-moisturizing-lotion-52ml-630062.html` → `Cerave PM Facial
+  Moisturizing Lotion 52ml`. Runs at the two points a name is captured.
+  ⚠️ **The strict half is the point.** A repair that fires on a title a shop really
+  published rewrites a field nobody re-reads, so it only touches a string with **no
+  whitespace at all** that also has a page extension, a path, or **three or more**
+  hyphenated parts — three, not two, because `Coca-Cola`, `7-Eleven` and `Vitamin-C`
+  are real names. A trailing catalogue id is dropped only at **five** digits or more,
+  so `vitamin-c-1000` keeps its dose. ⚠️ Rows written before 2026-08-12 are untouched.
+- **`src/core/git-data-push.ts`** — a data file re-applied onto the fetched remote and
+  retried (5 attempts), used by every writer on the laptop. It exists because on
+  2026-08-05 a perfect scan (58 terms, 0 errors) was rejected for being 12 commits
+  behind and **sat stranded locally while the cloud built FairPrice-only**. It is a
+  whole-file re-apply, deliberately *not* `merge-data.ts`'s three-way merge: these
+  files are regenerated in full each run. ⚠️ A clone holding any *other* uncommitted
+  change refuses the working-tree reset and says so — so a session's edits are never
+  sacrificed to publish a page. `DataPushOptions.reapply` is the exception for
+  `tg-inbox-state.json`, which the cloud edits on every tap: a runner writing its whole
+  copy over the remote would resurrect questions the user had just answered, on screen,
+  with live buttons.
+- **`src/core/gh-dispatch.ts`** — fires `repository_dispatch`. Falls back to the `gh`
+  CLI when `GITHUB_TOKEN` is unset, which is how the laptop's rebuild request worked at
+  all. ⚠️ `gh` reads its token from the OS keyring, which a scheduled job can reach
+  while the user is logged in and may not when they are logged out — a job that must
+  work regardless still wants a real PAT in `GITHUB_TOKEN`. It also does not pass the
+  token as a `curl` argument, where anything able to list processes could read it.
+- **`src/core/workflow-report.ts`** — the one `report()` both write workflows use.
+  ⚠️ Its heredoc delimiter is **randomised per call**: the text either side of it is
+  not ours (a shop listing's title, and on Carousell the seller writes it), and a title
+  carrying a line that is exactly `EOF` closes the block early — benign case truncates
+  the comment, crafted case sets outputs the script never wrote.
+
 ### Tests — `npm test`
 
-**241 offline cases in `src/tests/`**, free and fast. Nine suites: pack-shot
-selection and its commodity gate, nutrition-panel parsing, macro-reply parsing,
-name derivation, the deals page's markup, marketplace size parsing, cooldown
-length, the concurrent-write merge, and the grocery-list row.
+**854 offline cases, free and fast** — 821 across 26 suites in `src/tests/`, plus 33
+in `relay/worker.test.mjs`, which `npm test` runs after them. They cover pack-shot
+selection and its commodity gate, nutrition-panel parsing, macro-reply parsing, name
+derivation and URL-slug repair, the deals page's markup, marketplace and in-text size
+parsing, cooldown length, the concurrent-write merge, the whole-file re-apply against
+a real temp git repo, the grocery-list row, vendor slots / scan / review, the texted
+list's parsing and candidate ranking, the inbox state and its one-hour sweep, SGT
+dates, the scan-request marker, and the relay's dispatch and auth behaviour.
 
 There is **no test runner and no new dependency** — each file registers its cases
-into `harness.ts`, and `run.ts` imports every suite and sets the exit code.
+into `harness.ts`, and `run.ts` imports every suite and sets the exit code. The relay
+suite is plain Node with no imports from `src/`, because the Worker is deployed as-is.
 Nothing here calls Notion, a shop, or Anthropic: a test that costs 29 cents is a
 test nobody runs. The live checks that *do* cost something have their own scripts
 (`npm run macro-test`, `npm run fp`, `npm run ss`) and are deliberately not wired
@@ -775,8 +1074,12 @@ commodity gate spends real money. None of those announce themselves.
 
 ### Searching shops beyond FairPrice and Sheng Siong
 
-Scoped but **not built** — only the probe exists. Full detail in
-`docs/vendor-scoping.md`, which governs; this is the orientation.
+**Built as of 2026-08-11**, as `npm run vendor-scan` — no longer just a probe. Full
+detail in `docs/vendor-scoping.md`, which governs; this is the orientation.
+
+⚠️ **Nothing schedules `vendor-scan`.** Not `daily.yml`, not Task Scheduler. It is
+still a command someone runs, deliberately — it drives a headed browser for four of
+the shops and can only run on the laptop.
 
 ⚠️ **The baseline and the price book used to be separate sets of columns, and that
 distinction is gone as of 2026-08-09.** The price book is now the *only* record of
@@ -813,16 +1116,77 @@ FairPrice scan on 42 rows.
 
 **`npm run vendor-probe -- "<term>"`** measures whether each shop can yield a
 price **and** a pack size. It writes nothing anywhere and prints its own egress IP
-first. Status as at 2026-08-05:
+first. Status as at **2026-08-11**, re-measured from the laptop:
 
-| shop | status | note |
+| shop | where it can run | note |
 | --- | --- | --- |
-| **Carousell** | ✅ works end to end | headed browser for search, plain `fetch` for the listing page |
-| **Guardian** | ✅ browser tier renders prices | no anti-bot, just an SPA; its `/graphql` is the cheaper long-term route |
-| **MyProtein** | 🟠 28 products priced, **0 with a size** | size lives in an on-page variant; needs a second fetch per product |
-| **iHerb** | 🔴 403 even from residential | genuinely client-side |
-| **Watsons** | 🔴 parked | an SPA behind Akamai Bot Manager; payoff is one row |
-| **Shopee** | 🔑 auth wall | needs a hand sign-in once. ⚠️ Nothing in this repo may type a credential |
+| **NTUC (FairPrice), Sheng Siong** | cloud / laptop | working. `NTUC` is the live `Vendor n` option name; the module is called `fairprice` |
+| **Watsons** | laptop, **headed** | renders, then wipes — needs `waitFor`, not a tuned delay |
+| **iHerb** | laptop, **headed** | plain `fetch` is 403 |
+| **Carousell** | laptop, **headed** | headless renders zero cards |
+| **Shopee** | laptop, headed, **signed in** | session in `.sessions/chrome-shopee`. ⚠️ Nothing in this repo may type a credential — and it has a session but **no module yet** |
+| **MyProtein** | cloud | already worked; the "no sizes" complaint was about the search page |
+| **Guardian** | — | was **down** on 2026-08-11: Magento's own maintenance page on `/graphql` (503, and the homepage still 200s from CDN cache — `x-cache: MISS, HIT` gives it away). Not blocking us; nothing to fix |
+| **"Google Search"** | — | tagged on 3 rows, but it is not a shop and cannot be a route |
+
+⚠️ **Watsons, iHerb, Carousell and Shopee are laptop-only** — headless is detected by
+every one of them, so none can run in GitHub Actions.
+
+⚠️ **Still open: iHerb yields 0 candidates even now**, and so do two Watsons
+toothpaste rows — but for a *different* reason. The shops serve real results (43, 23
+and 28 priced products) and `evaluate()` rejects them all. That is a **matching**
+problem with supplement and personal-care naming, not a store problem, and a refusal
+reads identically to an empty catalogue in the report.
+
+#### Filling the price book — `vendor-scan.ts`, `vendor-review.ts`
+
+`npm run vendor-scan` searches the shops each row names and, with `--write`, fills
+that shop's `Price [Vendor n]` / `Size[Vendor n]` / `URL [Vendor n]`. A read-only
+census on 2026-08-11 found the hole it was built for: **49 rows named Sheng Siong and
+not one had a price** — the shop the laptop scrapes 1,092 products from every morning
+was the biggest gap in the price book, and the scan had been finding those prices
+daily and discarding them.
+
+⚠️ **Run it on the laptop with `SHENGSIONG_LIVE=1`.** Against the committed file the
+lookup is an *exact, case-sensitive* string match into whichever terms that morning's
+run happened to scrape, so **"not stocked" and "never scraped" become identical**. The
+two term builders also disagree by design — `vendor-scan` prefixes the brand, the
+runner scraped the daily scan's spelling — so `fairprice Bread` found nothing while 48
+bread products sat in the file under `Bread`. Patching the exact-key lookup would only
+move the problem.
+
+**The third answer: "I found something, but I'm not sure."** `--write` used to mean
+"write everything it found", which on the first run would have recorded a **10 kg sack
+of carrots**, a **12 × 1 L case of milk** and **5 L of soy sauce** as the user's price.
+Each is genuinely the cheapest per kilo; none is a pack anyone buys. So
+`vendor-review.ts` classifies each pick and an uncertain one is **queued and asked
+about** — a Telegram review card with **Ok** / **Don't use**. Six reasons: `bulk`
+(≥ 2 kg/2 L or a multipack), `size-range` (a range read at its **top**, which flatters
+the per-kilo figure by 14% on a 600–700 g cabbage), `outlier` (≥ 3× from the row's
+other shop), and three marketplace-only ones (`floor-rescue`, `auto-handle`,
+`undercut`). First run: **12 clear picks, 9 queued** of 21 candidates.
+
+⚠️⚠️ **"Don't use" is NOT "ignore forever", and this is the load-bearing rule.**
+
+| | scope | effect on the deals page |
+| --- | --- | --- |
+| **Don't use** (`data/vendor-review.json`) | the price book: one row, one shop | **none — the product still appears** |
+| **Ignore forever** (`data/exclusions.json`, `ALL_ITEMS`) | every search, everywhere | gone from the page too |
+
+A refusal says *"this is not the pack I'd record as my price at this shop"* and says
+nothing about whether it's a good deal. **Never write these into `exclusions.ts`** —
+that answers both questions at once and takes away the user's ability to answer only
+the first. `vendor-review.test.ts` pins the file shape for exactly this reason.
+
+⚠️ A refusal is applied **before** the pick, not after, so the next scan offers the
+next-best pack rather than going silent on the row — refusing the 5 L soy sauce
+surfaces the 640 ml bottle. `findPendingFor` stops the same 10 kg sack being re-asked
+every day, and `PENDING_TTL_DAYS = 7` drops a stale question rather than answering it
+with a price the shop has since changed.
+
+⚠️ **A report-only run must write nothing at all** — not Notion, and not
+`data/vendor-review.json` either. `npm run vendor-scan` with no flags is the safe
+thing to reach for, and it stops being that the moment it leaves state behind.
 
 ⚠️ **Never take the minimum on a marketplace — the minimum is usually the scam.**
 `cheapestPlausible()` clusters candidates and drops anything below ~55% of the
@@ -886,9 +1250,35 @@ why `vendor-probe` prints its egress IP and flags datacenter addresses.
   pack size? Writes nothing. `--only a,b`, `--browser`, `--headed`,
   `--login shopee`. ⚠️ Prints its egress IP first — a 403 from a datacenter
   address means nothing.
+- **`npm run vendor-scan`** — fill the price book. No flags = report only, writing
+  **nothing** anywhere; `--write` fills the vendor slots and queues the uncertain
+  picks for review. Laptop only, and wants `SHENGSIONG_LIVE=1`.
+- **`npm run ss-on-request`** — serves the page's Rescan button: if
+  `data/scan-request.json` holds an unserved marker, scan Sheng Siong, push, and
+  dispatch `rescan`. Runs every 5 minutes on the laptop. **`npm run scan-request`**
+  files such a marker by hand.
+- **The Telegram commands** — all read `TELEGRAM_BOT_TOKEN` from `.env`:
+
+  | command | what it does |
+  |---|---|
+  | `npm run tg-handle` | handle **one** update from `TG_UPDATE`. What the cloud runs |
+  | `npm run tg-drain` | price the queued new items. The laptop's 15-minute job |
+  | `npm run tg-sweep` | file any ask older than an hour. What the Worker's cron triggers |
+  | `npm run tg-webhook` | `show` (default) / `set <url> [secret]` / `delete` |
+  | `npm run tg-adopt-state` | carry the poller's open questions into the committed file |
+  | `npm run tg-diag` | "which bot is this and what is queued" |
+  | `npm run tg-poll` | the **retired** forever-poller. `409 Conflict`s while a webhook is registered |
+
+  ⚠️ `tg-webhook` **refuses to touch `@Big_Notion_Bot`**, checked against the live
+  bot's own name — its webhook is another project's only delivery path, and
+  `TELEGRAM_INBOX_BOT_TOKEN` falling back to `TELEGRAM_BOT_TOKEN` means a mis-set
+  `.env` could genuinely point this at it. It also **refuses to register without a
+  secret**, reading `WEBHOOK_SECRET` from `.env` rather than taking it on the command
+  line where it would land in shell history.
 - **`npm run ext:build`** — rebuild the Chrome extension's `dist/`. Required after
   editing `synonyms.json`.
-- **`npm test`** — the 241 offline cases. Free, fast, no network.
+- **`npm test`** — the 854 offline cases (`src/tests/` then the relay suite). Free,
+  fast, no network.
 - **`npm run check`** — TypeScript type-check (no emit). **`npm run build`** emits
   `dist/`.
 
@@ -899,29 +1289,65 @@ why `vendor-probe` prints its egress IP and flags datacenter addresses.
 - **Wrapper:** `C:\Users\newuser\shengsiong-runner\run.cmd` — sets
   `RUNNER_SOURCE=laptop`, adds Node + git to `PATH`, runs `git pull` then
   `npm run push-ss`, and appends output to `..\push-ss.log`.
-- **Task:** Windows Task Scheduler **"ShengSiong Daily Scan"**, daily **05:30
-  SGT**. Runs if the scheduled time was missed (laptop off/asleep), runs on
-  battery, and runs as the logged-in user so Windows Credential Manager provides
-  git push auth — **no access token is stored anywhere.**
-- **Inspect it:** `type C:\Users\newuser\shengsiong-runner\push-ss.log`;
-  `schtasks /Query|/Run|/Change|/Delete /TN "ShengSiong Daily Scan"`.
-- A **phone (Termux/Android)** runner (`phone-run.sh`) exists as optional extra
-  redundancy; its push is proven but its scheduling is unfinished (see HANDOVER).
+- **Four Windows Task Scheduler tasks**, as at 2026-08-12:
+
+  | task | script | when | state |
+  |---|---|---|---|
+  | **ShengSiong Daily Scan** | `run.cmd` (runner clone) | **05:30 SGT**, then every 30 min until 11:00 | Ready |
+  | **ShengSiong Scan Request** | `ss-request-run.cmd` | every **5 min** | Ready |
+  | **Grocery New-Item Pricing** | `tg-drain-run.cmd` | every **15 min** | Ready |
+  | **Grocery Telegram Inbox** | `tg-poll-run.cmd` | at logon, every 15 min | **Disabled** — retired by the relay |
+
+  All run as the logged-in user (`/IT`), so Windows Credential Manager provides git
+  push auth and **no access token is stored anywhere**. The two `tg-*` jobs and the
+  scan-request job run in the **dev clone**, because they need the `.env` holding
+  `NOTION_TOKEN` and `TELEGRAM_BOT_TOKEN`; the daily scan runs in its own clone so it
+  never collides with in-progress work.
+
+- ⚠️ **A non-zero exit code does not buy you a retry, and this cost three days.**
+  10–12 August all failed identically: the task fired on time, `git pull` hit
+  `Could not resolve host: github.com` while the network came up after wake, and the
+  runner correctly refused to scan into a dead network. The page was FairPrice-only
+  three days running — on the 12th that was **half the deals**, 3 becoming 6 once the
+  scan landed. The task carried `RestartCount: 3` and the wrapper returned 1 on the
+  stated reasoning that a non-zero exit buys the second attempt. It does not: Windows
+  restarts a task that **failed to run**, and a program that runs and returns 1 is a
+  *completed* run. `RunOnlyIfNetworkAvailable` doesn't help either — it asks whether an
+  adapter has a link, not whether DNS resolves. The fix is a **trigger repetition**,
+  which Task Scheduler does honour, and it costs nothing on a normal morning because
+  `push-ss` self-gates on today's file and the extra runs print "Already fresh".
+- **Inspect them:** `type C:\Users\newuser\shengsiong-runner\push-ss.log` (and
+  `tg-drain.log`, `tg-poll.log` beside it);
+  `schtasks /Query|/Run|/Change|/Delete /TN "<task name>"`.
+  ⚠️ Run `schtasks` through **PowerShell, not Git Bash** — MSYS rewrites `/Query` into
+  a path (`C:/Users/newuser/scoop/apps/git/…/Query`) and the command fails obscurely.
+- ⚠️ **A long-running poller degrades invisibly.** On 2026-08-12 `tg-poll.log` held
+  **2,547** `poll failed: fetch failed` lines across 13 hours while the chat looked
+  normal, because a *successful* poll logs nothing at all and the failure path backs
+  off 5 s and retries forever. So "every line is a failure" does **not** mean nothing
+  succeeded, and the ratio cannot be recovered from the log — corroborate with the
+  state file's `updatedAt`. This is the same silent-degradation shape as the 2 h 45 m
+  Modern Standby delay, and it is an argument for the relay rather than a bug to fix.
+- A **phone (Termux/Android)** runner (`phone-run.sh`) exists but is **shelved** by
+  the user (2026-08-11); its push was proven, its scheduling never finished. The
+  Singapore VPS is the direction instead. Do not pick it up as pending work.
 
 ### The cloud jobs
 
-Three GitHub Actions workflows:
+Six GitHub Actions workflows:
 
-- **`.github/workflows/daily.yml`** — the main job. `cron: "0 2 * * *"` (02:00
-  UTC), plus a manual "Run workflow" button and a `repository_dispatch: rescan`
-  trigger the page's Rescan button fires. Steps: `npm ci` → `npm run build-site` →
+- **`.github/workflows/daily.yml`** — the main job. `cron: "0 0 * * *"` (00:00
+  UTC), plus a manual "Run workflow" button and `repository_dispatch` triggers for
+  `rescan` and `newitems`. Steps: `npm ci` → `npm run build-site` →
   deploy `public/` to GitHub Pages → `npm run notify`.
-  ⚠️ **It nominally means 10:00 SGT and actually delivers around 13:20–13:50
-  SGT.** GitHub queues scheduled runs on free public repos by roughly 3.5 hours —
-  measured at +3h18 to +3h46 on four consecutive days. This is ordinary queueing,
-  not a fault, but it means **"it didn't run" is almost always "it hasn't run
-  yet"**. To land near 10:00 SGT the cron would have to be about `30 22 * * *`
-  (the previous day). Not changed — the user's call.
+  ⚠️ **The cron is a floor on when the shops are scraped, not a delivery time.**
+  GitHub queues scheduled runs on free public repos by roughly 3–3¾ h — measured at
+  +3h18 to +3h46 on four consecutive days — so a 00:00 UTC cron means the scrape
+  can't happen before **08:00 SGT** and both page and digest land ~11:30 SGT. That
+  floor is the point: a discount read at 5am may not be the one on the shelf. ⚠️ An
+  earlier cron aimed at an 08:00 *arrival* (`30 20 * * *`) was tried and reverted the
+  same day — the delay is a queue, not a promise, and on a quiet night it would scrape
+  at 04:30. And it means **"it didn't run" is almost always "it hasn't run yet"**.
 - **`.github/workflows/add-to-list.yml`** — the privileged half of the **Buy**
   button: writes the grocery-list row, records the cooldown, appends to the
   purchase log, comments the result on the issue and closes it. No Telegram ping —
@@ -934,6 +1360,20 @@ Three GitHub Actions workflows:
   blast radius from writing to Notion. Issue titles use a fixed `Item: ` prefix,
   which is what the workflow's allowlist matches, so renaming a button on the page
   cannot break the two-tap path.
+- **`.github/workflows/tg-inbox.yml`** — one Telegram update, handled. Triggered by
+  `repository_dispatch: tgupdate` from the relay Worker; runs `npm run tg-handle` with
+  the update in `TG_UPDATE`, then commits `data/tg-inbox-state.json`. ⚠️ **No
+  `concurrency` group, deliberately** — GitHub keeps one run pending per group and
+  cancels the rest, so a burst of taps would lose the middle ones.
+- **`.github/workflows/tg-sweep.yml`** — the one-hour rule. Triggered by
+  `repository_dispatch: tgsweep`, which the Worker's cron fires every 15 minutes, so
+  the real deadline is **60–75 minutes**. ⚠️ This one **does** have a `concurrency`
+  group, where `tg-inbox.yml` has none: cancelling a duplicate *tap* loses data,
+  cancelling a duplicate *sweep* costs nothing, and two concurrent sweeps would file
+  the same ask twice. Most runs exit in seconds having found nothing.
+- **`.github/workflows/scan-request.yml`** — triggered by `repository_dispatch: sscan`
+  from the page's Rescan button; commits the marker in `data/scan-request.json` for the
+  laptop to find. It does not scan anything itself — it can't.
 
 **When two taps land together** — `src/core/merge-data.ts` + `src/scripts/merge-data.ts`.
 Each tap is its own workflow run, and each commits a JSON data file and pushes, so
@@ -973,8 +1413,27 @@ secrets in the cloud — names only here, never values):
 
 - **`NOTION_TOKEN`** — Notion integration token; required to read the ingredient
   list. Must have access to the Ingredients database.
-- **`TELEGRAM_BOT_TOKEN`**, **`TELEGRAM_CHAT_ID`** — the bot (reuses the user's
-  `@Big_Notion_Bot`) and destination chat for the daily message.
+- **`TELEGRAM_BOT_TOKEN`**, **`TELEGRAM_CHAT_ID`** — the bot and destination chat.
+  ⚠️ Since 2026-08-10 this project has **its own bot, `@Grocery69_bot`**, which both
+  sends the daily digest and serves the inbox; `@Big_Notion_Bot` went back to being
+  only the Notion Worker's, so no shared bot and no chance of one project's webhook
+  breaking the other's polling. The chat id is unchanged — a private chat's id is the
+  user's own user id, the same for every bot.
+- **`TELEGRAM_INBOX_BOT_TOKEN`** — optional override for the inbox bot. Stays blank;
+  `config.telegramInboxBotToken()`'s fallback to `TELEGRAM_BOT_TOKEN` is the normal
+  path, not a degraded one. ⚠️ Which is exactly why `tg-webhook` checks the *live
+  bot's own name* before touching a webhook.
+- **`WEBHOOK_SECRET`** — shared three ways and all three must match exactly: `.env`
+  (where `tg-webhook` reads it), the Worker's `wrangler secret put WEBHOOK_SECRET`,
+  and Telegram's `setWebhook` `secret_token`. Generate it straight into `.env` so it
+  never appears on screen or in shell history:
+  ```bash
+  node -e "console.log('WEBHOOK_SECRET='+require('crypto').randomBytes(24).toString('hex'))" >> .env
+  ```
+- **`GITHUB_TOKEN`** — a fine-grained PAT, this repo only, **Contents: read and
+  write**. Needed by the Worker (as a `wrangler secret`) and wanted in `.env` so the
+  laptop's `repository_dispatch` doesn't depend on the `gh` CLI's keyring. ⚠️ Not the
+  same thing as the automatic `GITHUB_TOKEN` inside an Actions run.
 - **`SITE_URL`** — public URL of the Pages page (defaults to the live URL);
   used in the Telegram message.
 - **`SHENGSIONG_LIVE`** — set to `1` to force the live Sheng Siong scan instead
@@ -1008,9 +1467,21 @@ Other requirements:
 - **Node 22+**, npm ≥ 10.9.2.
 - The repo must be **public** for free GitHub Pages, and Pages must be enabled.
 - The laptop runner needs a working `git push` credential (Windows Credential
-  Manager), the scheduled task above, and — since the WAF change — **Google Chrome
+  Manager), the scheduled tasks above, and — since the WAF change — **Google Chrome
   installed**, which it launches briefly to earn a session cookie when it gets
-  challenged.
+  challenged. Four of the nine shops need that headed browser for every search.
+- **A Cloudflare account** (free tier) for the relay, and `npx wrangler` to deploy
+  it — no global install, no build step. ⚠️ `wrangler login` opens a browser and
+  cannot be scripted. The **workers.dev subdomain is global across Cloudflare** and
+  separate from the Worker's name.
+- ⚠️ **On a brand-new `workers.dev` subdomain, `setWebhook` will fail first** with
+  `bad webhook: Failed to resolve host: Temporary failure in name resolution`.
+  Telegram's own resolvers lag a new subdomain by up to about an hour while every
+  public resolver already answers it, so nothing is misconfigured and nothing local
+  will reproduce it. Wait and re-run; don't debug it. (Failed twice at ~25 min and
+  succeeded untouched at ~70 min on 2026-08-12.)
+- This machine's shell is **Windows PowerShell 5.1**, where `&&` is a parser error
+  ("not a valid statement separator in this version"). Commands go one per line.
 - The Chrome extension needs `https://api.anthropic.com/*` in `host_permissions`
   plus the `anthropic-dangerous-direct-browser-access` header, because a service
   worker sends a browser `Origin`.
@@ -1020,17 +1491,41 @@ Other requirements:
 - **Baseline (price per 100 g)** — what you currently pay for an item, computed in
   Notion; the number a store must beat to count as a deal.
 - **By-Gram / By-Unit** — whether an ingredient is measured by weight or by count
-  (eggs). Only By-Gram items are compared in this version.
+  (eggs). Both are compared: By-Unit rows per piece, or per kilo when a weight is
+  stated in the row's `Name` or the cheapest slot's item name.
 - **Active plan** — the meals tagged `Main` in Meal prep's `Current Plan`
   column; the ingredients on their sub-item lines form the "In your plan"
   section.
 - **DDP** — the WebSocket-based protocol (from the Meteor framework) that Sheng
   Siong's website uses; the live Sheng Siong module speaks it directly.
 - **Residential vs data-centre IP** — a home/mobile internet address vs a cloud
-  server's. Sheng Siong allows the former and blocks the latter, which is why a
-  laptop runner exists.
-- **Runner** — the residential machine (laptop, optionally phone) that scans Sheng
-  Siong and commits the data file the cloud reads.
+  server's. ⚠️ **This distinction is *not* what Sheng Siong cares about** — it
+  challenges addresses outside **Singapore**, residential or not (corrected
+  2026-08-11). It still matters at other shops: on the same line, `curl` gets 403
+  from Watsons while Node's `fetch` gets 200, so the client is an independent
+  variable. Pin both before calling anything "blocked".
+- **Runner** — the machine in Singapore (the laptop) that scans Sheng Siong and
+  commits the data file the cloud reads.
+- **Relay** — the Cloudflare Worker in `relay/`. Turns a Telegram webhook into a
+  GitHub `repository_dispatch`, and carries the 15-minute cron that is the system's
+  only clock. Holds no state.
+- **Webhook** — Telegram pushing each message to a URL you registered, instead of
+  your program asking repeatedly. A bot can have a webhook **or** serve `getUpdates`,
+  never both.
+- **`repository_dispatch`** — the GitHub API call that starts a workflow **promptly**,
+  unlike `schedule:`, which free public repos queue by ~3–3¾ h. Everything in this
+  system that has to happen soon goes through it.
+- **DNS** — the lookup turning a hostname into an address. There is no single copy:
+  Telegram runs its own, which is why a brand-new subdomain can resolve everywhere
+  except at Telegram for about an hour.
+- **Sweep** — the 15-minute job that files any chat question older than an hour onto
+  the grocery list as name only. The "one-hour rule".
+- **Pricing queue** — texted items matching no Ingredients row. The cloud can't price
+  them (Sheng Siong), so they wait in `data/tg-inbox-state.json` for the laptop.
+- **Price-book review** — the **Ok** / **Don't use** cards the vendor scan sends when
+  a pick is odd (bulk pack, size range, wild outlier). ⚠️ **"Don't use" affects only
+  the price book** — the product still appears on the deals page. "Ignore forever" is
+  the other thing.
 - **`targets.json`** — the list of search terms, rebuilt from Notion each cloud
   run and published on the web page so runners can read it without any token.
 - **FORM_WORDS** — a reject-list that stops "right word, wrong form" matches (e.g.
@@ -1065,6 +1560,61 @@ Other requirements:
 
 ## What changed in this update
 
+- **2026-08-12 — Texting the bot now works from the cloud, in under a minute.** A
+  list texted at ~18:20 on 08-11 was answered at **21:11**: the laptop had entered
+  Modern Standby at 18:26 and Telegram held the message for 2 h 45 m. Nothing was
+  broken; nothing was awake. A Cloudflare Worker now receives the webhook and starts a
+  GitHub Actions run — measured **2 seconds** from message to run, ~15 s to the row
+  being written. The laptop's forever-poller is retired, and only one Telegram job
+  remains on this machine: pricing an item nobody has bought before.
+- **2026-08-12 — "After an hour, file it anyway."** A near-miss the user never got
+  round to tapping used to leave the line nowhere at all. It now lands on the grocery
+  list as typed — name only, no price, no ingredient link — because an unlinked row you
+  can shop from beats a question you never answered. ⚠️ The clock is **Cloudflare's**,
+  not GitHub's: Actions `schedule:` is queued by ~3–3¾ h on a free public repo, which
+  would turn one hour into four. Delete the Worker's cron trigger and the rule silently
+  stops happening.
+- **2026-08-12 — Rescan actually rescans.** The button fired a rebuild from the same
+  unchanged file, so it promised a rescan and delivered a redraw — the warning banner
+  was still there three minutes later. It now asks the laptop for fresh prices; about
+  ten minutes, one rebuild with the data in it, one Telegram message, and a label that
+  says `✓ requested · ~10 min` instead of claiming to be rescanning.
+- **2026-08-12 — ⚠️ It was never the residential line, it was the country.** This
+  system was designed around "Sheng Siong needs a home internet connection", and that
+  was **wrong**. A Singapore data-centre address scans all 60 terms cleanly; US
+  data-centre addresses are challenged, VPN cookie or not. The laptop qualifies by
+  being in Singapore. The practical upshot: a **~US$5/month Singapore VPS could take
+  the last job off this laptop** — indicated, not proven, so probe the box first.
+- **2026-08-12 — Two silent-failure lessons worth more than the fixes.** The 05:30
+  scan failed three days running because a non-zero exit code does **not** buy a Task
+  Scheduler retry (Windows retries a task that failed to *launch*), and the page was
+  FairPrice-only — half the deals — with nothing saying why. And the poller logged
+  **2,547** consecutive failures in 13 hours while looking healthy, because a
+  successful poll logs nothing at all.
+- **2026-08-11 — The daily scan fills the price book, and asks before it guesses.**
+  49 rows named Sheng Siong and **not one had a price**: the scan had been finding
+  those prices every morning and discarding them. `vendor-scan` now writes them. But
+  "cheapest per kilo" would have recorded a 10 kg sack of carrots and a 12 × 1 L case
+  of milk as the user's price, so an uncertain pick is sent to Telegram as an **Ok /
+  Don't use** card instead of written. ⚠️ **"Don't use" is not "ignore forever"** — it
+  declines to record that *pack* as the price at that *shop*, and the product still
+  appears on the deals page.
+- **2026-08-11 — Five more shops, and what each of them actually is.** Guardian,
+  MyProtein, iHerb, Watsons and Carousell have modules now. The find worth keeping:
+  **Watsons renders its prices and then wipes them** 16–22 s in, so a fixed delay has
+  to thread a window that fails at both ends — and too-early looks exactly like
+  too-late. It collected two independent "dead end" verdicts, both honest, both wrong.
+  Never re-open or close a shop on a node count alone.
+- **2026-08-10 — Text your shopping list to the bot.** The first *inbound* path in the
+  project: a quantity grammar, the existing matcher, three verdicts (link silently /
+  ask with buttons / price it as new), and a **New items** page for things not in
+  Ingredients yet. The project also got **its own bot**, `@Grocery69_bot`, so
+  `@Big_Notion_Bot` is the Notion Worker's alone again.
+- **2026-08-12 — The guide had drifted six days and about 17,800 lines.** Everything
+  above was missing from it, plus: the 854-case test suite (was 241), the six
+  workflows (was three), the four scheduled tasks (was one), the shared plumbing
+  (`sgt.ts`, `human-name.ts`, `git-data-push.ts`, `gh-dispatch.ts`,
+  `workflow-report.ts`), the `Category` spelling fix, and the Ignore dropdown.
 - **2026-08-06 — The grocery-list Name says which pack to look for.**
   `Fish Sauce` is now `Fish Sauce, Knife Brand, 750ml` — the ingredient, then the
   brand and pack size of the listing actually on offer, which is what you need
