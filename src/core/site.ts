@@ -650,25 +650,35 @@ function actionMenu(t: PlanTarget, p: StoreProduct, o: PageOptions, missing: str
 }
 
 /**
- * "Rescan" — rebuild this page from scratch. Only ever rendered inside the
- * missing-shop warning, because that is the only time it does anything useful.
+ * "Rescan" — ask the laptop for fresh Sheng Siong prices. Only ever rendered
+ * inside the missing-shop warning, because that is the only time it does
+ * anything useful.
  *
- * It exists because the two halves of the hybrid heal at different times. If the
- * laptop is shut at 05:30, Task Scheduler runs the missed Sheng Siong scan when
- * it next wakes (`StartWhenAvailable`), so fresh prices land in the repo by
- * mid-morning — but the cloud already built the page at 10:00 and nothing looks
- * again. The laptop half fixes itself; this is the button for the other half.
+ * ⚠️ **It deliberately does NOT rebuild the page.** Rebuilding is what this
+ * button used to do, and it was useless in exactly the case it is shown for: the
+ * cloud cannot reach Sheng Siong, so a rebuild came back with the same
+ * FairPrice-only page and the same warning, three minutes later. The button
+ * looked broken because it was — it promised a rescan and delivered a redraw.
  *
- * One tap fires `repository_dispatch: rescan` at the daily workflow. Without a
- * token it falls back to that workflow's own page, where "Run workflow" does the
- * same job in one more tap — the same floor as every other button here.
+ * So one tap fires `repository_dispatch: sscan`, which commits a marker; the
+ * laptop's five-minute job sees it, scans, pushes and asks for the rebuild
+ * itself. That way the rebuild happens once, with the data in it, and one
+ * Telegram message arrives rather than two.
+ *
+ * The cost is honesty about latency: this is roughly ten minutes, not three, and
+ * it does nothing at all if no laptop is awake. Hence the label — a tick that
+ * says "requested", not "done", and a hint that names the machine it depends on.
+ *
+ * Without a token it falls back to that workflow's own page, where "Run
+ * workflow" does the same job in one more tap — the same floor as every other
+ * button here.
  */
 function rescanButton(o: PageOptions): string {
 	const payload = esc(JSON.stringify({ v: 1, reason: "rescan requested from the deals page" }));
-	const href = `https://github.com/${o.repo}/actions/workflows/daily.yml`;
+	const href = `https://github.com/${o.repo}/actions/workflows/scan-request.yml`;
 	return `<a class="act rescan" href="${esc(href)}" target="_blank" rel="noopener"
-        data-payload="${payload}" data-event="rescan" data-done="✓ rescanning"
-        aria-label="Rescan the shops and rebuild this page">↻ Rescan</a>`;
+        data-payload="${payload}" data-event="sscan" data-done="✓ requested · ~10 min"
+        aria-label="Ask the laptop to scan Sheng Siong and rebuild this page">↻ Rescan Sheng Siong</a>`;
 }
 
 /** One line in "Recently bought · not searched": the item, when it's back, its buttons. */
@@ -998,8 +1008,8 @@ export function renderDealsPage(
 			o.warning
 				? `<div class="warn">⚠️ ${esc(o.warning)}
       <div class="warnrow">${rescanButton(o)}
-        <span class="warnhint">Open your laptop first — it scans Sheng Siong by itself once
-          it wakes. Rescan then rebuilds this page (~3 min).</span>
+        <span class="warnhint">Only your laptop can reach Sheng Siong, so leave it open —
+          Rescan asks it to. Prices and a new message arrive in about 10 minutes.</span>
       </div>
     </div>`
 				: ""

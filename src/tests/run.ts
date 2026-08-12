@@ -16,6 +16,7 @@ import "./macro-reply.test.js";
 import "./naming.test.js";
 import "./human-name.test.js";
 import "./deals-page.test.js";
+import "./scan-request.test.js";
 import "./marketplace-size.test.js";
 import "./cooldown.test.js";
 import "./merge-data.test.js";

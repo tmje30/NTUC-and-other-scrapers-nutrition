@@ -6,7 +6,56 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+### Changed
+- **Rescan now actually rescans Sheng Siong (2026-08-12).** Asked for by the user, after
+  tapping it and getting the same page back. The button was shown *only* inside the
+  missing-shop warning, and the one shop that can be missing is the one the cloud
+  cannot reach — so it fired `repository_dispatch: rescan`, the cloud rebuilt from the
+  same unchanged file, and three minutes later the warning was still there. It promised
+  a rescan and delivered a redraw.
+  It now fires `sscan` at a new `scan-request.yml`, which commits `data/scan-request.json`.
+  A new laptop job (`ss-on-request`, every 5 min) pulls, sees the marker, scans Sheng
+  Siong, pushes the prices and dispatches `rescan` itself. One rebuild, with the data in
+  it, and **one** Telegram message rather than two. About 10 minutes end to end, and the
+  button's label says so — `✓ requested · ~10 min`, not `✓ rescanning`.
+  ⚠️ **The marker expires at midnight SGT.** Without that, a laptop opened at 23:00 — or
+  on Thursday, having been shut since Monday — would wake and scan a shopping day that is
+  already over, then push it as current. And the date is stamped in **SGT, not the
+  runner's UTC**: a tap at 07:30 SGT is 23:30 UTC the day before, so a UTC stamp would be
+  read as expired the moment it was made, every evening and only in the evenings.
+  ⚠️ A request is served by comparing the scan's `generatedAt` against the tap, not by
+  asking "is today's file fresh?" — the file can be perfectly fresh and the user can
+  still be asking for prices newer than this morning's.
+  ⚠️ If no laptop is awake, nothing happens and the page keeps what it had. That is the
+  honest floor of a button whose work can only be done by one machine.
+
 ### Fixed
+- **The 05:30 Sheng Siong scan now retries until 11:00 (2026-08-12).** 10, 11 and 12 Aug
+  all failed identically: the task fired on time, `git pull` hit `Could not resolve host:
+  github.com` six times over 2½ minutes while the network came up after wake, and the
+  runner correctly refused to scan into a dead network. The page was FairPrice-only three
+  days running, which on the 12th was **half the deals** — 3 became 6 once the scan
+  landed.
+  ⚠️ **The retry that was supposed to cover this had never once fired.** The task carries
+  `RestartCount: 3, RestartInterval: PT10M`, and `laptop-run.cmd` hands back a non-zero
+  exit code on the stated reasoning that "a non-zero exit is what buys the second and
+  third attempt". It does not: Windows restarts a task that *failed to run*, and a program
+  that runs and returns 1 is a **completed** run. `RunOnlyIfNetworkAvailable` does not
+  help either, as that file already notes — it asks whether an adapter has a link, not
+  whether DNS resolves.
+  The fix is a trigger repetition (every 30 min for 5½ h from 05:30, so the last attempt
+  is 11:00), which Task Scheduler *does* honour. It costs nothing on a normal morning
+  because `push-ss` self-gates on today's file — the extra runs print "Already fresh;
+  nothing to do" and exit.
+- **The rebuild request no longer silently does nothing (2026-08-12).** `tg-poll`'s
+  dispatch required `GITHUB_TOKEN`, which is set in neither clone's `.env` nor in the user
+  or machine environment — so it had been taking the "no token" branch and waiting for the
+  next daily run. `src/core/gh-dispatch.ts` now falls back to the `gh` CLI, already
+  logged in here with `repo` scope. ⚠️ `gh` reads its token from the OS keyring, which a
+  scheduled job can reach while the user is logged in and may not when they are logged
+  out; a job that must work regardless still wants a PAT in `GITHUB_TOKEN`.
+  It also stopped passing the token as a `curl` command-line argument, where anything
+  able to list processes could read it.
 - **A product named after its own URL now reads as words (2026-08-12).** Spotted by the
   user: an Ingredients row whose `Items Exact Name` was
   `cerave-pm-facial-moisturizing-lotion-52ml-630062.html`. New `src/core/human-name.ts`

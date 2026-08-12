@@ -23,6 +23,8 @@
     "vendor-probe": "tsx src/scripts/vendor-probe.ts",
     "vendor-scan": "tsx src/scripts/vendor-scan.ts",
     "push-ss": "tsx src/scripts/push-shengsiong.ts",
+    "ss-on-request": "tsx src/scripts/ss-on-request.ts",
+    "scan-request": "tsx src/scripts/file-scan-request.ts",
     "ext:build": "node extension/build.mjs",
     "test": "tsx src/tests/run.ts && node relay/worker.test.mjs",
     "tg-poll": "tsx src/scripts/tg-poll.ts",

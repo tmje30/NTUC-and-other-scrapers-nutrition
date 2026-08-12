@@ -1,0 +1,62 @@
+name: Sheng Siong scan request
+
+# The page's Rescan button, when Sheng Siong is missing from the scan.
+#
+# It does NOT rebuild the page. Rebuilding is what the old button did, and it is
+# useless in exactly the case the button is shown for: the cloud cannot reach
+# Sheng Siong, so a rebuild returns the same FairPrice-only page. All this does
+# is commit a marker asking the laptop — the only machine with a Singapore
+# address — to scan. The laptop pushes prices and dispatches `rescan` itself, so
+# the rebuild happens once, with the data in it, and the user gets one Telegram
+# message rather than two.
+#
+# ⚠️ If no laptop is awake, nothing happens and the page keeps the page the user
+# was already looking at. The marker expires at midnight SGT — see
+# `src/core/scan-request.ts` for why same-day is the whole safety mechanism.
+on:
+  repository_dispatch:
+    types: [sscan]
+  workflow_dispatch: # so it can be filed by hand from the Actions tab
+
+# Committing the marker is the entire job.
+permissions:
+  contents: write
+
+# Two taps in quick succession would otherwise race to push the same file, and
+# the loser fails noisily for no reason. The second tap's marker is worth no
+# more than the first's.
+concurrency:
+  group: scan-request
+  cancel-in-progress: false
+
+jobs:
+  file:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - run: npm ci
+
+      - name: Write the marker
+        run: npm run scan-request -- "${{ github.event.client_payload.payload.reason || 'requested from the deals page' }}"
+
+      - name: Commit it
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/scan-request.json
+          # `--quiet --exit-code`: nothing staged means the identical marker is
+          # already committed, which is a duplicate tap, not a failure.
+          if git diff --cached --quiet; then
+            echo "Marker unchanged — nothing to commit."
+            exit 0
+          fi
+          git commit -m "chore: Sheng Siong scan requested from the deals page"
+          # The laptop may have pushed a scan in the seconds since checkout.
+          git pull --rebase --autostash
+          git push

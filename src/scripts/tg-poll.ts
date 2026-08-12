@@ -1,7 +1,7 @@
-import { execSync } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
 import { Client } from "@notionhq/client";
 import { config } from "../core/config.js";
+import { dispatchRepositoryEvent } from "../core/gh-dispatch.js";
 import { commitAndPushData } from "../core/git-data-push.js";
 import { runInbox, type Publisher } from "../core/tg-inbox.js";
 import { useBotToken } from "../core/telegram.js";
@@ -41,33 +41,6 @@ const OUT = "data/new-items-latest.json";
 const SOURCE = process.env.RUNNER_SOURCE ?? "laptop";
 
 /**
- * Ask the cloud to rebuild Pages now.
- *
- * `repository_dispatch` runs immediately — it is only the `schedule:` trigger
- * that GitHub queues by hours on a free public repo (measured every day 01–04
- * Aug; see HANDOVER "Infrastructure truths"). This is the same mechanism the
- * page's Rescan button uses, so if that works, this works.
- *
- * Needs a PAT in `GITHUB_TOKEN` with `contents: read/write` on this repo. Without
- * one the file is still committed and the page appears on the next daily run —
- * later, but never lost.
- */
-function dispatch(): void {
-	const token = process.env.GITHUB_TOKEN;
-	if (!token) {
-		console.error("No GITHUB_TOKEN — pushed the file; the page will build on the next run.");
-		return;
-	}
-	execSync(
-		`curl -sS -X POST -H "Accept: application/vnd.github+json" ` +
-			`-H "Authorization: Bearer ${token}" ` +
-			`https://api.github.com/repos/${config.repo()}/dispatches ` +
-			`-d "{\\"event_type\\":\\"newitems\\"}"`,
-		{ stdio: "inherit" },
-	);
-}
-
-/**
  * Commit and push the priced new items, retrying a rejected push.
  *
  * ⚠️ This one usually runs in the DEV clone (it needs NOTION_TOKEN), so the
@@ -103,7 +76,7 @@ const publisher: Publisher = {
 		// Dispatching after a failed push would rebuild the site without the
 		// file it needs, so it deliberately doesn't run.
 		await gitPush(results.length);
-		dispatch();
+		await dispatchRepositoryEvent("newitems");
 	},
 };
 
