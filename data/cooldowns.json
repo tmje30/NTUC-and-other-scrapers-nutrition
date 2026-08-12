@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-12T00:46:57.464Z",
+  "updatedAt": "2026-08-12T09:09:30.382Z",
   "entries": [
     {
       "key": "chicken thigh",
@@ -71,6 +71,34 @@
       "monthlyAmount": 0
     },
     {
+      "key": "egg",
+      "ingredientId": "34b69a18-4fe7-807d-8439-fea7f149877f",
+      "ingredientName": "Eggs, Whole, small, {cheap}",
+      "reason": "ignored",
+      "addedAt": "2026-08-12T00:46:57.464Z",
+      "until": "2026-08-23T16:00:00.000Z",
+      "days": 12,
+      "basis": "ignored from the deals page for 2 weeks — until the start of that week (Mon, SGT)",
+      "store": "FairPrice",
+      "product": "Pasar Fresh Eggs",
+      "packSizeG": null,
+      "monthlyAmount": 0
+    },
+    {
+      "key": "banana",
+      "ingredientId": "34b69a18-4fe7-80c7-9de6-fa3234a2a9d8",
+      "ingredientName": "Banana (Fruit)",
+      "reason": "ignored",
+      "addedAt": "2026-08-12T09:09:30.382Z",
+      "until": "2026-08-23T16:00:00.000Z",
+      "days": 11,
+      "basis": "ignored from the deals page for 2 weeks — until the start of that week (Mon, SGT)",
+      "store": "FairPrice",
+      "product": "Sumifru Philippines Banana",
+      "packSizeG": null,
+      "monthlyAmount": 0
+    },
+    {
       "key": "soy sauc",
       "ingredientId": "34c69a18-4fe7-80ae-8ff6-e24b8e4e26dc",
       "ingredientName": "Soy Sauce (light)",
@@ -108,20 +136,6 @@
       "product": "Knife Brand Thai Fish Sauce",
       "packSizeG": 750,
       "monthlyAmount": 40
-    },
-    {
-      "key": "egg",
-      "ingredientId": "34b69a18-4fe7-807d-8439-fea7f149877f",
-      "ingredientName": "Eggs, Whole, small, {cheap}",
-      "reason": "ignored",
-      "addedAt": "2026-08-12T00:46:57.464Z",
-      "until": "2026-08-23T16:00:00.000Z",
-      "days": 12,
-      "basis": "ignored from the deals page for 2 weeks — until the start of that week (Mon, SGT)",
-      "store": "FairPrice",
-      "product": "Pasar Fresh Eggs",
-      "packSizeG": null,
-      "monthlyAmount": 0
     }
   ]
 }
