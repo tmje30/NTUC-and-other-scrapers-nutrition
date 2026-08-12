@@ -11,6 +11,16 @@ writing any code here, check what actually ran.** `push-ss.log`,
 `Get-ScheduledTaskInfo`, and the `date` inside `data/shengsiong-latest.json`
 answer in under a minute, and a green tick from any one layer means nothing.*
 
+*⚠️ **Code-reviewed 2026-08-12, and the one bug worth the trip was a repeat.** A
+thousands separator made a $1,500 Carousell listing read as **$1** — and because
+deals rank by percentage saved, it sorted to the top of the page. That is the same
+comma that broke iHerb's weights the day before, in a different file. Fixed, along
+with a workflow-output hardening and two dead helpers; five copies of `sgtDate` and
+two of `report()` became one module each. **Two findings were left alone on
+purpose** — the stock-template README (because the Notion worker may yet be built
+here) and `exclusions.ts`'s missing tests. Read "Two findings deliberately left
+alone" under "Next session" before touching either.*
+
 *The system is live and self-running. The parts most
 likely to bite a newcomer, all flagged ⚠️ below: the Incapsula browser mint, the
 two comparison dimensions, and — for the Chrome extension — the fact that
@@ -1696,7 +1706,97 @@ which only appears when a shop is **missing from a build that happened**. "No
 build at all" has no button. Its absence on a healthy page is correct behaviour,
 not a bug — that confused the user on 2026-08-05.
 
-## Next session — pick up here (as of 2026-08-11, evening)
+## Next session — pick up here (as of 2026-08-12)
+
+### What 2026-08-12 did — a code review, and the one bug it found that costs money
+
+No feature work. A read-only diagnosis of the whole tree, then the three findings
+worth acting on plus the two cleanups behind them. **Nothing in the running system
+changed behaviour** — 756 tests pass (was 733), `tsc --noEmit` clean.
+
+⚠️ **Start by knowing what the review did NOT find**, because it is the useful
+half: the workflows are sound. Every one of them passes untrusted input
+(`github.event.issue.body`, `client_payload`) through `env:` rather than
+interpolating it into a `run:` block, which is the correct pattern and is done
+consistently across all four. `exclusions.ts` was read closely looking for a defect
+and has none — the `ALL_ITEMS` subsumption in `withBlockedProduct` is correct in
+both directions. The tree was clean, typecheck green and every test passing before
+the review started.
+
+**What was fixed (4 commits, branch `claude/code-review-diagnosis-a3xw5w`):**
+
+1. ⚠️⚠️ **The comma that made a $1,500 Carousell listing cost $1.** The one that
+   costs money. `readListing` read the JSON-LD price with `([\d.]+)`, which stops at
+   a thousands separator — `"1,500.00"` captured `1`. It passed every guard, and
+   because `findDeal` ranks by *percentage saved*, the mispriced listing sorted to
+   the **top of the page**. **This is the same fault as the iHerb weight comma fixed
+   the day before**, one file over. `parseCards` 50 lines above it, and
+   `watsons.ts`/`iherb.ts`, had always handled it correctly — this one parser was
+   the outlier, and it was the only parser in that file **not exported**, buried in
+   the fetch where no test could reach it. Now `parseOfferPrice`, with 10 cases.
+   *Lesson worth generalising: the comma has now bitten twice in two days, in two
+   files. If a third price or weight reader is written, `[\d,]` is the default.*
+2. **A shop's product title could end the workflow's output block.** `report()`
+   used a literal `EOF` heredoc delimiter, and the text either side of it is not
+   ours — `itemName` reaches it from `ISSUE_BODY`, having started as a title a
+   Carousell seller typed. Randomised per call now. Never wide open (the `if:` gate
+   means the owner still had to tap Add), but a two-line fix.
+3. **Two dead back-compat helpers deleted** — `matchesTarget`, `parseWeightGrams`.
+   Zero callers anywhere.
+4. **`sgtDate` and `report()` are one module each** (`core/sgt.ts`,
+   `core/workflow-report.ts`). `sgtDate` had five copies; `report()` had two, which
+   is why fix 2 had to be applied twice. ⚠️ The find here was a **naming collision**:
+   `item-action.ts` had grown a *different* `sgtDate` whose docstring warns "never
+   `toISOString().slice(0, 10)`" — exactly what the other five do. Now `sgtDate`
+   (data) and `sgtLongDate` (display), with 13 tests on the 00:00–08:00 SGT window
+   the daily scan actually runs in. See CHANGELOG for why the `+8h` form was kept.
+
+### ⚠️ Two findings deliberately left alone — read before "fixing" either
+
+**1. The README is still 100% the stock Notion Workers template — LEAVE IT for
+now (user's call, 2026-08-12).** All 19 KB of it documents `worker.sync()`,
+`worker.tool()` and `ntn workers deploy`; none of it mentions groceries.
+`SYSTEM-GUIDE.md` is the real document. On a repo that is public by necessity
+(GitHub Pages on the free plan) the landing page therefore describes a different
+project, which *sounds* like an obvious cleanup.
+
+⚠️ **It is not obvious, and the reason is forward-looking.** The user may build the
+Notion worker in this repo — `src/index.ts` already holds a written, reviewed,
+`NOT DEPLOYED YET` webhook (the one-tap Add relay, see `docs/one-tap-add.md`), and
+`.examples/` holds five SDK samples. While that is still on the table the template
+README is **live reference material for work about to be done**, and deleting it
+buys a tidier landing page at the cost of the SDK reference right before it is
+needed. Revisit when the worker question is settled either way: if the worker gets
+built, the README should cover both halves; if it is abandoned, delete the template
+prose, `.examples/`, and the `@notionhq/workers-template` name and `0.0.0` version
+still sitting in `package.json`.
+
+**2. `exclusions.ts` has no tests — the largest untested hot path left.** 281
+lines, pure, no I/O, and `exclusionReason` runs against **every** product in both
+`findDeal` and `findReview`. A regression there silently suppresses real deals or
+lets corrected ones back onto the page, and "silently" is the operative word — the
+module's own docstring explains it returns a *reason* rather than a boolean
+precisely so the scan can log what it dropped, "a silently vanishing product is how
+a bad exclusion goes unnoticed for weeks". It was read closely during the review
+and no defect was found, so this is coverage, not a known bug.
+
+⚠️ **It is also the cheapest test to write in the repo** — pure functions, no
+network, no Notion, no clock. `termHits`, `isBlocked`, `exclusionReason`,
+`withExcludedTerms`, `withBlockedProduct` and `suggestExclusionTerms` all take
+plain values. The `ALL_ITEMS` interaction is the part most worth pinning: a global
+ignore *replaces* per-item blocks on the same product, and a per-item block on an
+already-globally-ignored product is a no-op. Both directions are currently correct
+and nothing enforces that.
+
+*Smaller leftovers from the same review, all mechanical:* `cloudflare/` is
+referenced in `config.ts:72` and `add-to-list.yml:8` but the directory is `relay/`
+(stale rename); `.env.example` is missing `GROCERY_LIST_DS_ID`, whose fallback in
+`grocery-list.ts:37` is a hard-coded live Notion data-source UUID; and
+`git-data-push.ts` builds its git commands as shell strings, so `RUNNER_SOURCE`
+reaches `git commit -m "…"` unquoted (`execFileSync` with an argv array removes the
+class). ⚠️ **`package-lock.json` is tab-indented and plain `npm install` rewrites it
+with spaces** — a ~1,100-line phantom diff with no dependency change. It is
+generated, not authored; do not chase it into the tabs convention.
 
 ### What 2026-08-11 (evening) did — the price book stopped being empty
 

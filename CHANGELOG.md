@@ -72,6 +72,31 @@ All notable changes to this project are documented here. Format based on
   options and `<summary>`'s own toggle are unaffected.
 
 ### Changed
+- **Two copy-pasted helpers became one module each (2026-08-12).** `sgtDate` had
+  four verbatim copies — `tg-drain`, `tg-poll`, `push-shengsiong`,
+  `shengsiong-file` — plus a fifth inlined in `build-site.ts`, and `report()` was
+  identical in `add-to-list.ts` and `item-action.ts` (which is why the delimiter fix
+  above had to be made twice). Now `src/core/sgt.ts` and
+  `src/core/workflow-report.ts`.
+  ⚠️ **The naming collision was the real find.** `item-action.ts` had independently
+  grown a *different* function called `sgtDate` — `Intl`-based, human-readable —
+  carrying a docstring warning *"never `toISOString().slice(0, 10)`"*, which is
+  exactly what the other five did. Two implementations of "what day is it in
+  Singapore", sharing a name and disagreeing about method, is how the wrong one
+  eventually gets copied. They are now `sgtDate` (the `YYYY-MM-DD` **data** value,
+  compared for equality to decide if a scan is today's) and `sgtLongDate` (the
+  **display** string a person reads), in one file, with the difference written down.
+  ⚠️ **The `+8h` offset form was kept, not replaced with `Intl`.** It is correct —
+  Singapore is UTC+8 with no DST since 1982, so there is no transition to be caught
+  by — but *only* because the offset precedes the `toISOString`, and that leading
+  line is precisely what a future reader deletes on recognising the anti-pattern.
+  So `sgtDate` now takes an injectable `now` and **13 cases pin it**, all inside the
+  00:00–08:00 SGT window, because that is the only window this system runs in (the
+  daily scan is requested at 00:00 UTC and dequeued 3–3¾ h later). Three of them
+  assert the *naive* form gives the wrong answer — the half that stops the offset
+  being "simplified" away. Getting it wrong is silent: `shengsiong-file.ts` compares
+  the scan file's date to today and contributes **nothing** when they differ, so the
+  page goes FairPrice-only and nothing says why.
 - **The Telegram question's *"No — re-search"* button is gone (2026-08-11, by
   request).** It offered the next tranche of Ingredients rows, below the review bar;
   the judgement is that the candidates already on the keyboard are the offer.
@@ -84,6 +109,32 @@ All notable changes to this project are documented here. Format based on
   unanswered item.
 
 ### Fixed
+- **The comma that made a $1,500 Carousell listing cost $1 (2026-08-12).** The
+  JSON-LD price on a listing page was read with `([\d.]+)`, which stops dead at a
+  thousands separator: `"1,500.00"` captured `1`. ⚠️ **Silent, and in the worst
+  direction.** $1 is finite and positive, so it passed every guard in `readListing`,
+  and `findDeal` ranks by *percentage saved* — a mispriced bike does not merely
+  appear, it sorts to the **top of the page**, because nothing beats a $1,500 item
+  for a dollar. Carousell writes the grouped form on anything four figures and up,
+  which is most of what is worth scraping there. Same fault as the iHerb weight
+  comma of 2026-08-11, one file over; `parseCards` 50 lines above, and
+  `watsons.ts`/`iherb.ts`, had always read it correctly.
+  ⚠️ **Why it survived: it was the only parser in that file not exported**, buried
+  inside the fetch where no test could reach it. It is now `parseOfferPrice`,
+  alongside every other pure reader there, with 10 cases pinning it — grouped,
+  ungrouped, multi-separator, unquoted, and the no-price forms that must stay `null`
+  rather than become a free item that undercuts every real deal.
+- **A shop's product title could end the workflow's output block (2026-08-12).**
+  `report()` handed its result to Actions as a heredoc delimited by the literal
+  `EOF`. ⚠️ **The text either side of it is not ours**: `summary` quotes
+  `itemName`/`vendor`, which arrive in `ISSUE_BODY` having started life as a title
+  someone typed into a shop listing — and on Carousell the seller writes their own.
+  A title carrying a line that is exactly `EOF` closes the block early, and
+  everything after it is read as further `name=value` output rather than as prose:
+  benign case truncates the issue comment, crafted case sets outputs the script
+  never wrote. Delimiter is now randomised per call, which is the form GitHub
+  documents. The `if:` gate on both workflows means the owner still had to tap Add,
+  so this was never wide open.
 - **`x` means `*`, and a stranded one is no longer part of the name
   (2026-08-11).** `Carrots x 1kg` reached the matcher as `"Carrots x"`: the size is
   stripped first, taking the multiplier's number with it. It scored **0.65** against
@@ -102,6 +153,15 @@ All notable changes to this project are documented here. Format based on
   and `Checkbox` → `Tickbox` have both drifted and both still resolve.
 
 ### Removed
+- **Two back-compat helpers nothing called (2026-08-12).** `matchesTarget`
+  (`compare.ts`) and `parseWeightGrams` (`weight.ts`) both described themselves as
+  back-compat shims; neither had a single reference anywhere in `src` — not the
+  scan, not the page builders, not the extension, not the tests.
+  ⚠️ **`matchesTarget` is worth not keeping**: it collapses `evaluate()` to a
+  boolean, which is the shape this system deliberately moved away from when matching
+  grew a REVIEW band. Anything picking it up again silently loses the distinction
+  between *confident* and *close enough to ask about* — the distinction `findDeal`
+  and `findReview` exist to hold apart.
 - **The extension's automatic-macro-lookup machinery (2026-08-11).** The worker's
   `macros-for` handler and the `needsLookup` flag from `add-item` had both been
   caller-less since the automatic lookup was retired on 2026-08-04; `hasMacros()`
