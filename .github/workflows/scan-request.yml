@@ -42,8 +42,14 @@ jobs:
 
       - run: npm ci
 
+      # ⚠️ The reason arrives through `client_payload` from a public page, so it is
+      # untrusted text. It goes in through the environment, never interpolated into
+      # the `run:` line — `${{ }}` is expanded before the shell sees it, so a reason
+      # containing a quote and a semicolon would run as a command on this runner.
       - name: Write the marker
-        run: npm run scan-request -- "${{ github.event.client_payload.payload.reason || 'requested from the deals page' }}"
+        env:
+          REASON: ${{ github.event.client_payload.payload.reason || 'requested from the deals page' }}
+        run: npm run scan-request -- "$REASON"
 
       - name: Commit it
         run: |
