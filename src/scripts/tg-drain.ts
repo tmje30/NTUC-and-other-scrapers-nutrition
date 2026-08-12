@@ -12,6 +12,7 @@ import {
 } from "../core/tg-inbox.js";
 import { useBotToken } from "../core/telegram.js";
 import type { NewItemResult, NewItemsFile } from "../core/new-items.js";
+import { sgtDate } from "../core/sgt.js";
 
 /**
  * Price the new items the cloud couldn't. **The only part of the inbox that still
@@ -45,11 +46,6 @@ import type { NewItemResult, NewItemsFile } from "../core/new-items.js";
 const NO_PUSH = process.argv.includes("--no-push");
 const OUT = "data/new-items-latest.json";
 const SOURCE = process.env.RUNNER_SOURCE ?? "laptop";
-
-/** Today's date in Singapore (UTC+8, no DST) as YYYY-MM-DD. */
-function sgtDate(): string {
-	return new Date(Date.now() + 8 * 3600_000).toISOString().slice(0, 10);
-}
 
 /**
  * Ask the cloud to rebuild Pages now — `repository_dispatch`, which runs promptly.

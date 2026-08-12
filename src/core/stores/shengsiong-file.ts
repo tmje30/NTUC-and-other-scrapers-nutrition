@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import type { StoreModule, StoreProduct } from "./types.js";
+import { sgtDate } from "../sgt.js";
 
 /**
  * File-backed Sheng Siong source for the CLOUD. Sheng Siong's Incapsula blocks
@@ -14,11 +15,6 @@ import type { StoreModule, StoreProduct } from "./types.js";
  */
 
 const DATA_PATH = process.env.SHENGSIONG_DATA_PATH ?? "data/shengsiong-latest.json";
-
-/** Today's date in Singapore (UTC+8, no DST) as YYYY-MM-DD. */
-function sgtDate(): string {
-	return new Date(Date.now() + 8 * 3600_000).toISOString().slice(0, 10);
-}
 
 /**
  * Whether this run actually had Sheng Siong prices, and how old they are.

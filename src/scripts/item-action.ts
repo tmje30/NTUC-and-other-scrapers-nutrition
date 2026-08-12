@@ -1,5 +1,3 @@
-import { appendFile } from "node:fs/promises";
-import { randomUUID } from "node:crypto";
 import { Client } from "@notionhq/client";
 import { config } from "../core/config.js";
 import { parseActionPayload, type ActionPayload } from "../core/item-actions.js";
@@ -33,6 +31,8 @@ import {
 import { lookupMacros, macrosConfigured, type Macros, type MacroResult } from "../core/macros.js";
 import { withNeverBuy, withOutcome } from "../core/purchases.js";
 import { readPurchases, writePurchases } from "../core/purchases-file.js";
+import { sgtLongDate } from "../core/sgt.js";
+import { report } from "../core/workflow-report.js";
 
 /**
  * The other end of the page's buttons — the "Recently bought" row, and the ⋯ menu
@@ -103,43 +103,6 @@ function readPayload(): ActionPayload {
 	throw new Error("no payload: pass --payload, or set ACTION_PAYLOAD or ISSUE_BODY");
 }
 
-/**
- * A date as the user reads it. Never `toISOString().slice(0, 10)` for a cooldown
- * that lands on a Singapore midnight: that instant is 16:00 the PREVIOUS day in
- * UTC, so the report would name the wrong day — and, for "ignore until Monday",
- * name a Sunday.
- */
-function sgtDate(d: Date): string {
-	return d.toLocaleDateString("en-SG", {
-		weekday: "short",
-		day: "numeric",
-		month: "short",
-		year: "numeric",
-		timeZone: "Asia/Singapore",
-	});
-}
-
-/**
- * Hand a one-line result back to the workflow, which posts it on the issue.
- *
- * ⚠️ **The heredoc delimiter is randomised per call, and a literal `EOF` is not
- * good enough.** `summary` quotes the product — `itemName`, `vendor` — and that
- * text is not ours: it arrives in `ISSUE_BODY`, having started life as a title
- * someone typed into a shop listing. A Carousell seller writes their own. A title
- * carrying a line that is exactly `EOF` ends the block early, and everything after
- * it is read by Actions as further `name=value` output rather than as prose — so a
- * crafted listing could set workflow outputs this script never wrote. A random
- * delimiter cannot be guessed by someone writing a title days earlier, which is
- * why GitHub documents this form.
- */
-async function report(summary: string): Promise<void> {
-	console.log(summary);
-	const out = process.env.GITHUB_OUTPUT;
-	if (!out) return;
-	const delim = `EOF_${randomUUID()}`;
-	await appendFile(out, `summary<<${delim}\n${summary}\n${delim}\n`, "utf8");
-}
-
 const payload = readPayload();
 const label = payload.name || payload.key;
 const now = new Date();
@@ -187,7 +150,7 @@ if (payload.action === "ignore-week") {
 	if (existing && Date.parse(existing.until) >= until.getTime()) {
 		await report(
 			`**${label}** is already not being searched until ` +
-				`${sgtDate(new Date(existing.until))} — left as it is.`,
+				`${sgtLongDate(new Date(existing.until))} — left as it is.`,
 		);
 		process.exit(0);
 	}
@@ -210,12 +173,12 @@ if (payload.action === "ignore-week") {
 	};
 
 	if (dryRun) {
-		await report(`DRY RUN — would ignore **${label}** for ${spell}, until ${sgtDate(until)}.`);
+		await report(`DRY RUN — would ignore **${label}** for ${spell}, until ${sgtLongDate(until)}.`);
 		process.exit(0);
 	}
 	await writeCooldowns(withCooldown(file, entry, now));
 	await report(
-		`Ignored for ${spell}: **${label}** is not searched until ${sgtDate(until)} ` +
+		`Ignored for ${spell}: **${label}** is not searched until ${sgtLongDate(until)} ` +
 			`(${days} day${days === 1 ? "" : "s"}).\n` +
 			`Tap Reset on the page to bring it back sooner.`,
 	);

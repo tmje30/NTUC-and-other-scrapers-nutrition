@@ -3,6 +3,7 @@ import { commitAndPushData } from "../core/git-data-push.js";
 import { isUsableScan } from "../core/stores/shengsiong-file.js";
 import { shengsiong } from "../core/stores/shengsiong.js";
 import type { StoreProduct } from "../core/stores/types.js";
+import { sgtDate } from "../core/sgt.js";
 
 /**
  * Phone / laptop runner (residential IP). Sheng Siong blocks the cloud's
@@ -31,11 +32,6 @@ const NO_PUSH = process.argv.includes("--no-push");
 /** Which runner produced this data (for the commit message + payload). */
 const SOURCE = process.env.RUNNER_SOURCE ?? "phone";
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-/** Today's date in Singapore (UTC+8, no DST) as YYYY-MM-DD. */
-function sgtDate(): string {
-	return new Date(Date.now() + 8 * 3600_000).toISOString().slice(0, 10);
-}
 
 async function alreadyFreshToday(today: string): Promise<boolean> {
 	try {

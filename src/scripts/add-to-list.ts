@@ -1,5 +1,3 @@
-import { appendFile } from "node:fs/promises";
-import { randomUUID } from "node:crypto";
 import { Client } from "@notionhq/client";
 import { config } from "../core/config.js";
 import {
@@ -12,6 +10,7 @@ import { planCooldown, withCooldown, type CooldownEntry } from "../core/cooldown
 import { readCooldowns, writeCooldowns } from "../core/cooldown-file.js";
 import { purchaseFromAdd, withPurchase } from "../core/purchases.js";
 import { readPurchases, writePurchases } from "../core/purchases-file.js";
+import { report } from "../core/workflow-report.js";
 
 /**
  * The other end of the page's Add button: put one deal on the Notion grocery
@@ -68,27 +67,6 @@ function readPayload(): AddPayload {
 		return parseAddPayload(payloadFromIssueBody(process.env.ISSUE_BODY));
 	}
 	throw new Error("no payload: pass --payload, or set ADD_PAYLOAD or ISSUE_BODY");
-}
-
-/**
- * Hand a one-line result back to the workflow, which posts it on the issue.
- *
- * ⚠️ **The heredoc delimiter is randomised per call, and a literal `EOF` is not
- * good enough.** `summary` quotes the product — `itemName`, `vendor` — and that
- * text is not ours: it arrives in `ISSUE_BODY`, having started life as a title
- * someone typed into a shop listing. A Carousell seller writes their own. A title
- * carrying a line that is exactly `EOF` ends the block early, and everything after
- * it is read by Actions as further `name=value` output rather than as prose — so a
- * crafted listing could set workflow outputs this script never wrote. A random
- * delimiter cannot be guessed by someone writing a title days earlier, which is
- * why GitHub documents this form.
- */
-async function report(summary: string): Promise<void> {
-	console.log(summary);
-	const out = process.env.GITHUB_OUTPUT;
-	if (!out) return;
-	const delim = `EOF_${randomUUID()}`;
-	await appendFile(out, `summary<<${delim}\n${summary}\n${delim}\n`, "utf8");
 }
 
 const payload = readPayload();

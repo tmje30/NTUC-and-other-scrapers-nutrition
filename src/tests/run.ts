@@ -30,6 +30,7 @@ import "./scan-file.test.js";
 import "./weight-in-text.test.js";
 import "./intake-candidates.test.js";
 import "./directed-search.test.js";
+import "./sgt.test.js";
 import { report } from "./harness.js";
 
 // Imported dynamically, and last, because these suites `await` — one writes real

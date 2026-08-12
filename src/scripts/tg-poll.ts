@@ -6,6 +6,7 @@ import { commitAndPushData } from "../core/git-data-push.js";
 import { runInbox, type Publisher } from "../core/tg-inbox.js";
 import { useBotToken } from "../core/telegram.js";
 import type { NewItemResult, NewItemsFile } from "../core/new-items.js";
+import { sgtDate } from "../core/sgt.js";
 
 /**
  * The Telegram inbox poller — the residential-IP half of the texted-list flow.
@@ -38,11 +39,6 @@ const ONCE = process.argv.includes("--once");
 const NO_PUSH = process.argv.includes("--no-push");
 const OUT = "data/new-items-latest.json";
 const SOURCE = process.env.RUNNER_SOURCE ?? "laptop";
-
-/** Today's date in Singapore (UTC+8, no DST) as YYYY-MM-DD. */
-function sgtDate(): string {
-	return new Date(Date.now() + 8 * 3600_000).toISOString().slice(0, 10);
-}
 
 /**
  * Ask the cloud to rebuild Pages now.

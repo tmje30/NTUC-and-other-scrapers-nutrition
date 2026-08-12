@@ -12,6 +12,7 @@ import { readVendorReview } from "../core/vendor-review-file.js";
 import { prunePending } from "../core/vendor-review.js";
 import { renderReviewPage } from "../core/review-page.js";
 import { config } from "../core/config.js";
+import { sgtDate } from "../core/sgt.js";
 
 /**
  * Runs the scan and writes the GitHub Pages site:
@@ -208,7 +209,7 @@ try {
  */
 try {
 	const raw = JSON.parse(await readFile("data/new-items-latest.json", "utf8")) as NewItemsFile;
-	const today = new Date(Date.now() + 8 * 3600_000).toISOString().slice(0, 10);
+	const today = sgtDate();
 	if (raw?.date === today && Array.isArray(raw.results) && raw.results.length) {
 		await writeFile(
 			"public/new-items.html",
