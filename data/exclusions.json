@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-12T09:09:43.614Z",
+  "updatedAt": "2026-08-12T14:34:49.504Z",
   "terms": [
     {
       "key": "instant coffe",
@@ -155,6 +155,15 @@
       "name": "Thai Red rice",
       "note": "close, but not confirmed",
       "addedAt": "2026-08-12T09:09:43.614Z"
+    },
+    {
+      "key": "honei",
+      "store": "FairPrice",
+      "product": "Hosen Honey",
+      "url": "https://www.fairprice.com.sg/product/hosen-honey-1kg-12130785",
+      "name": "Honey (Raw)",
+      "note": "not raw",
+      "addedAt": "2026-08-12T14:34:49.504Z"
     }
   ]
 }
