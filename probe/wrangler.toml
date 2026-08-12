@@ -1,0 +1,14 @@
+# Throwaway probe — NOT part of the running system. See worker.mjs.
+#
+#   cd probe
+#   npx wrangler dev --remote     # runs on Cloudflare's edge, nothing deployed
+#   npx wrangler deploy           # only if you want a URL to hit from your phone
+#   npx wrangler delete           # when you have your answer
+#
+# ⚠️ `--remote` is the point. A plain `wrangler dev` runs the code on THIS laptop,
+# which already has a Singapore address — it would pass and prove nothing.
+#
+# No secrets, no vars, no state, no cron. It reads two public URLs and reports.
+name = "shengsiong-egress-probe"
+main = "worker.mjs"
+compatibility_date = "2026-08-11"

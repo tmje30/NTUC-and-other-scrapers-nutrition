@@ -1,0 +1,22 @@
+# Throwaway probe — NOT part of the running system. See worker.mjs.
+#
+#   cd probe/placement
+#   npx wrangler dev --remote        then hit http://127.0.0.1:8787/?tries=8
+#   npx wrangler delete              when you have your answer
+#
+# ⚠️ `--remote` is the point, as with the sibling probe: a local run would place
+# everything on this laptop and prove nothing.
+name = "cf-placement-probe"
+main = "worker.mjs"
+compatibility_date = "2026-08-11"
+
+[[durable_objects.bindings]]
+name = "PLACEMENT"
+class_name = "Placement"
+
+# ⚠️ `new_sqlite_classes`, not `new_classes`. SQLite-backed Durable Objects are the
+# ones available without a paid Workers plan, and the whole point of this probe is
+# whether the free tier can host the scan.
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Placement"]
