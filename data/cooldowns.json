@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-12T09:09:33.892Z",
+  "updatedAt": "2026-08-12T09:09:46.355Z",
   "entries": [
     {
       "key": "chicken thigh",
@@ -148,6 +148,20 @@
       "basis": "ignored from the deals page for 2 weeks — until the start of that week (Mon, SGT)",
       "store": "FairPrice",
       "product": "Bagus Belachan",
+      "packSizeG": null,
+      "monthlyAmount": 0
+    },
+    {
+      "key": "sze chuan pepper",
+      "ingredientId": "34c69a18-4fe7-801b-afb7-c2e11b7a3c2a",
+      "ingredientName": "Szechuan pepper",
+      "reason": "ignored",
+      "addedAt": "2026-08-12T09:09:46.355Z",
+      "until": "2026-08-23T16:00:00.000Z",
+      "days": 11,
+      "basis": "ignored from the deals page for 2 weeks — until the start of that week (Mon, SGT)",
+      "store": "FairPrice",
+      "product": "Laobanniang Dried Sze Chuan Peppercorn",
       "packSizeG": null,
       "monthlyAmount": 0
     }
