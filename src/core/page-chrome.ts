@@ -267,6 +267,19 @@ export interface ChromeOptions {
  * does: a tap anywhere else closes it. Without this an open menu stays open until
  * you find its own ⋯ again, and on a phone that reads as a stuck page.
  *
+ * ⚠️ **The tap that closes it does NOTHING ELSE** (2026-08-12, reported: aiming
+ * away from the Ignore dropdown opened the shop's page). A menu panel is small and
+ * the card behind it is the whole width of the screen — mostly a link — so
+ * "somewhere neutral" is nearly always on top of something. Dismissing an open
+ * menu is a complete action in itself, and it must not also be a Buy, a store
+ * page, or the opening of the next card's menu.
+ *
+ * Both halves are needed and they do different jobs: `stopPropagation` (in the
+ * CAPTURE phase, before the event has reached anything) keeps the click away from
+ * every handler on the page, and `preventDefault` stops the browser's own default
+ * for it — following the `<a>` — which no amount of not-listening would have
+ * prevented.
+ *
  * Emitted on both paths (one-tap and relay), because the menus are rendered
  * either way — everything else about them works with JavaScript off.
  */
@@ -275,10 +288,14 @@ export function menuScript(): string {
 (function () {
   document.addEventListener("click", function (ev) {
     var open = document.querySelector("details.menu[open]");
-    // Capture phase, so this runs before the action handler below and a tap on a
-    // menu item still reaches it. A tap INSIDE the open menu is left alone —
-    // <summary> does its own toggling.
-    if (open && !open.contains(ev.target)) open.open = false;
+    if (!open) return;
+    // A tap INSIDE the open menu is left alone: <summary> does its own toggling,
+    // and a menu item has to reach the dispatch handler that fires it.
+    if (open.contains(ev.target)) return;
+    open.open = false;
+    // Swallow it. This tap was "close the menu", nothing more.
+    ev.preventDefault();
+    ev.stopPropagation();
   }, true);
 })();
 </script>

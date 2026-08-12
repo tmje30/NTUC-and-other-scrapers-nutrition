@@ -1,5 +1,6 @@
 import type { Deal } from "../core/compare.js";
 import { renderDealsPage } from "../core/site.js";
+import { menuScript } from "../core/page-chrome.js";
 import { check, describe, eq } from "./harness.js";
 
 /**
@@ -346,3 +347,32 @@ const counted = renderDealsPage(
 	{ repo: "tmje30/NTUC-and-other-scrapers-nutrition" },
 );
 check("a counted pack reads in pieces", counted.includes("&quot;size&quot;:&quot;30 pcs&quot;"));
+
+/**
+ * Dismissing an open menu is a complete action, and nothing else happens.
+ *
+ * ⚠️ **Reported live, 2026-08-12:** aiming away from the Ignore dropdown to close
+ * it landed on the card behind — which is mostly the link to the shop — so the
+ * shop's page opened. A panel is small and a card is the width of the screen;
+ * there is almost nowhere neutral to tap.
+ *
+ * Both calls are load-bearing and they do different jobs, so both are asserted.
+ * `stopPropagation` in the CAPTURE phase keeps the click from reaching any handler
+ * (Buy, the dispatch script, the next card's menu); `preventDefault` stops the
+ * browser following the `<a>`, which no amount of not-listening would have
+ * stopped. Verified in a real browser before it shipped: the link's own handler
+ * never ran, `defaultPrevented` was true, and a tap INSIDE the menu still reached
+ * its button.
+ */
+describe("deals page — closing a menu does nothing else");
+
+const dismiss = menuScript();
+// The guard clause: taps inside the open menu return early, so a week option can
+// still fire and <summary> can still toggle itself shut.
+check("a tap inside the menu is left alone", dismiss.includes("if (open.contains(ev.target)) return;"));
+check("an outside tap is kept from every handler", dismiss.includes("ev.stopPropagation();"));
+check("…and from the browser's own default", dismiss.includes("ev.preventDefault();"));
+check("it still closes the menu", dismiss.includes("open.open = false;"));
+// ⚠️ Capture phase. In bubble phase the click has already reached the anchor by
+// the time this runs, and stopping propagation there stops nothing.
+check("and runs before anything else can", /\}, true\);/.test(dismiss));

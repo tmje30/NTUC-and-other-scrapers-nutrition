@@ -61,6 +61,16 @@ All notable changes to this project are documented here. Format based on
   every tap, so a runner that wrote its whole copy over the remote would resurrect
   questions the user had just answered — on screen, with live buttons.
 
+### Fixed (page)
+- **Closing a menu no longer opens the shop (2026-08-12, reported live).** Tapping
+  away from the Ignore dropdown to dismiss it landed on the card behind — which is
+  mostly the link to the store — so the shop's page opened. The dismiss handler now
+  swallows that tap: `stopPropagation` in the capture phase keeps it from every
+  handler on the page, and `preventDefault` stops the browser following the `<a>`.
+  ⚠️ Both are needed and they do different jobs — not listening to a click does not
+  stop a link. A tap *inside* the open menu still reaches its button, so the week
+  options and `<summary>`'s own toggle are unaffected.
+
 ### Changed
 - **The Telegram question's *"No — re-search"* button is gone (2026-08-11, by
   request).** It offered the next tranche of Ingredients rows, below the review bar;
