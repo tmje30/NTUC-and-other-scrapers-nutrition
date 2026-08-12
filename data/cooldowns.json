@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-11T01:45:18.764Z",
+  "updatedAt": "2026-08-12T00:46:48.098Z",
   "entries": [
     {
       "key": "chicken thigh",
@@ -43,6 +43,34 @@
       "monthlyAmount": 0
     },
     {
+      "key": "oil",
+      "ingredientId": "34c69a18-4fe7-80a9-af53-cf0c2e5cf7f8",
+      "ingredientName": "Oil (Bran)",
+      "reason": "ignored",
+      "addedAt": "2026-08-11T01:45:18.764Z",
+      "until": "2026-08-16T16:00:00.000Z",
+      "days": 6,
+      "basis": "ignored from the deals page until the start of next week (Mon, SGT)",
+      "store": "FairPrice",
+      "product": "Fairprice Rice Bran Oil",
+      "packSizeG": null,
+      "monthlyAmount": 0
+    },
+    {
+      "key": "cinnamon",
+      "ingredientId": "34b69a18-4fe7-8089-bff1-d84e43a7b560",
+      "ingredientName": "Cinnamon",
+      "reason": "ignored",
+      "addedAt": "2026-08-12T00:46:48.098Z",
+      "until": "2026-08-23T16:00:00.000Z",
+      "days": 12,
+      "basis": "ignored from the deals page for 2 weeks — until the start of that week (Mon, SGT)",
+      "store": "FairPrice",
+      "product": "RedMan Cinnamon Powder",
+      "packSizeG": null,
+      "monthlyAmount": 0
+    },
+    {
       "key": "soy sauc",
       "ingredientId": "34c69a18-4fe7-80ae-8ff6-e24b8e4e26dc",
       "ingredientName": "Soy Sauce (light)",
@@ -80,20 +108,6 @@
       "product": "Knife Brand Thai Fish Sauce",
       "packSizeG": 750,
       "monthlyAmount": 40
-    },
-    {
-      "key": "oil",
-      "ingredientId": "34c69a18-4fe7-80a9-af53-cf0c2e5cf7f8",
-      "ingredientName": "Oil (Bran)",
-      "reason": "ignored",
-      "addedAt": "2026-08-11T01:45:18.764Z",
-      "until": "2026-08-16T16:00:00.000Z",
-      "days": 6,
-      "basis": "ignored from the deals page until the start of next week (Mon, SGT)",
-      "store": "FairPrice",
-      "product": "Fairprice Rice Bran Oil",
-      "packSizeG": null,
-      "monthlyAmount": 0
     }
   ]
 }
