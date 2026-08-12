@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-11T01:45:06.816Z",
+  "updatedAt": "2026-08-12T09:09:43.614Z",
   "terms": [
     {
       "key": "instant coffe",
@@ -146,6 +146,15 @@
       "name": "Cinnamon",
       "note": "ignored from the deals page",
       "addedAt": "2026-08-11T01:45:06.816Z"
+    },
+    {
+      "key": "thai red rice",
+      "store": "FairPrice",
+      "product": "FairPrice Thai Rice Blend",
+      "url": "https://www.fairprice.com.sg/product/fairprice-thai-rice-blend-2-5kg-13086201",
+      "name": "Thai Red rice",
+      "note": "close, but not confirmed",
+      "addedAt": "2026-08-12T09:09:43.614Z"
     }
   ]
 }
