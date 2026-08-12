@@ -7,6 +7,18 @@ All notable changes to this project are documented here. Format based on
 ## [Unreleased]
 
 ### Added
+- **CI — the checks are run by something other than the person who wrote them
+  (2026-08-12).** `.github/workflows/ci.yml`: typecheck then both suites, on push
+  and pull request. Until now nothing ran the 763 tests except a human asking, and
+  the thing that discovered a broken `main` was **the daily scan**, which
+  discovered it by publishing a wrong page at 11:30 SGT.
+  ⚠️ **The only workflow here that just reads.** No secrets, and it must never be
+  given any — it runs on every branch. It costs nothing: `src/tests/run.ts` is
+  offline by design (no Notion, no shop, no Anthropic API) and the checks that do
+  cost money are deliberately outside `npm test`.
+  ⚠️ `paths-ignore` skips `data/**`, `docs/**` and `**.md` — the button workflows
+  and the runners commit data files several times a day, and running the suite
+  against a changed JSON file proves nothing.
 - **Ignore is a dropdown now: 1, 2, 3 or 4 weeks (2026-08-11).** The button under
   Buy meant exactly one week; tapping it opens a list and the tap that picks a
   duration is the tap that fires. `weeks` rides in the payload, is clamped to
@@ -72,6 +84,18 @@ All notable changes to this project are documented here. Format based on
   options and `<summary>`'s own toggle are unaffected.
 
 ### Changed
+- **Two stale `cloudflare/` references now name the real mechanism (2026-08-12).**
+  `config.ts` and `add-to-list.yml` both pointed at a `cloudflare/` directory for
+  the one-tap **Add** relay. ⚠️ **Renaming it to `relay/` would have been the
+  plausible, wrong fix**: the Add relay is the `addToGroceryList` webhook in
+  `src/index.ts` (`docs/one-tap-add.md`) and has never been a Cloudflare Worker —
+  the Cloudflare Worker in `relay/` serves the **Telegram inbox**, a different flow
+  that shares nothing with Add. Both comments now say which is which.
+- **`GROCERY_LIST_DS_ID` is documented in `.env.example` (2026-08-12).** ⚠️ Unlike
+  `INGREDIENTS_DB_ID` and `MEAL_PREP_DB_ID` it is **not** auto-discovered:
+  `grocery-list.ts` falls back to a hard-coded data-source id in the original
+  author's workspace, so an add from anyone else's workspace writes to a database
+  they do not own, or fails. Default unchanged — it is now merely visible.
 - **Two copy-pasted helpers became one module each (2026-08-12).** `sgtDate` had
   four verbatim copies — `tg-drain`, `tg-poll`, `push-shengsiong`,
   `shengsiong-file` — plus a fifth inlined in `build-site.ts`, and `report()` was
@@ -109,6 +133,17 @@ All notable changes to this project are documented here. Format based on
   unanswered item.
 
 ### Fixed
+- **A commit message was being run by a shell (2026-08-12).** `git-data-push.ts`
+  built its git commands as strings — `` execSync(`git commit -m "${message}"`) ``
+  — and `message` interpolates `RUNNER_SOURCE` straight from the environment.
+  ⚠️ **Measured, not theoretical**: against the old form a message containing
+  `` "quoted" $HOME `whoami` `` committed as `quoted /root root` — `$HOME`
+  expanded and **`whoami` actually executed**. Every git call now goes through
+  `execFileSync` with an argv array, so there is no quoting to get right and no
+  metacharacter to escape; the `fetch` split takes only the FIRST slash, because
+  `origin/feature/x` is a remote and a branch, not three arguments. The suite
+  gained a case carrying every metacharacter that mattered, asserting the subject
+  lands verbatim.
 - **The comma that made a $1,500 Carousell listing cost $1 (2026-08-12).** The
   JSON-LD price on a listing page was read with `([\d.]+)`, which stops dead at a
   thousands separator: `"1,500.00"` captured `1`. ⚠️ **Silent, and in the worst

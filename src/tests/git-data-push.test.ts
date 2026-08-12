@@ -218,4 +218,30 @@ const onRemote = (dir: string, file: string): string => {
 	);
 }
 
+/**
+ * ⚠️ **A commit message is not a shell command, and this pins that it is never
+ * treated as one.** The git calls in `git-data-push.ts` used to be built as
+ * strings — `` execSync(`git commit -m "${message}"`) `` — and `message`
+ * interpolates `RUNNER_SOURCE` straight from the environment. A value carrying a
+ * double quote ended the quoted string and git saw arguments nobody wrote; a `$`
+ * or a backtick was expanded by the shell before git ever ran. Both are silent:
+ * the scan succeeded, the commit did not say what it meant, and in the worst
+ * reading the substitution ran.
+ *
+ * The message below carries every metacharacter that mattered. It must land
+ * VERBATIM as the commit subject.
+ */
+{
+	const { runner } = sandbox();
+	const nasty = 'data: scan "quoted" $HOME `whoami` ; echo pwned && true';
+	writeFileSync(join(runner, FILE), '{"day":1,"from":"laptop"}');
+	const result = await commitAndPushData({ file: FILE, message: nasty, cwd: runner });
+	eq("a message full of shell metacharacters still pushes", result, "pushed");
+	eq(
+		"and lands verbatim as the commit subject",
+		git(runner, "log", "-1", "--pretty=%s").trim(),
+		nasty,
+	);
+}
+
 rmSync(root, { recursive: true, force: true });

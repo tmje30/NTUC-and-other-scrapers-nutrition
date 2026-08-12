@@ -69,8 +69,14 @@ export const config = {
 	 */
 	repo: () => optional("GITHUB_REPOSITORY", "tmje30/NTUC-and-other-scrapers-nutrition"),
 	/**
-	 * Optional one-tap Add endpoint (the Cloudflare Worker in `cloudflare/`).
+	 * Optional one-tap Add endpoint — the `addToGroceryList` webhook in
+	 * `src/index.ts`, if it is ever deployed. See `docs/one-tap-add.md`.
 	 * Unset — the normal case — makes Add open a pre-filled GitHub issue instead.
+	 *
+	 * ⚠️ **Not the Cloudflare Worker in `relay/`** — that serves the Telegram
+	 * inbox, a different flow that shares nothing with this one. This comment used
+	 * to point at a `cloudflare/` directory, which does not exist and never did
+	 * under that name; the one-tap Add relay has always been the Notion Worker.
 	 */
 	addEndpoint: () => optional("ADD_ENDPOINT"),
 	/**

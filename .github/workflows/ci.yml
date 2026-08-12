@@ -1,0 +1,63 @@
+name: CI
+
+# The 761 checks this repo already has, run by something other than the person
+# who wrote them.
+#
+# ⚠️ **Every other workflow here DOES something** — scrapes, writes Notion rows,
+# commits data, answers Telegram. This one is the only one that just reads, and it
+# is the only one whose failure is free. That is the point: the daily scan is the
+# thing that currently discovers a broken `main`, and it discovers it by publishing
+# a wrong page at 11:30 SGT.
+#
+# ⚠️ **Nothing here costs money or touches an account.** `src/tests/run.ts` is
+# offline by design — no Notion, no shop, no Anthropic API — and the live checks
+# that do cost something (`macro-test`, `fp`, `ss`) are deliberately not wired into
+# `npm test`. So this needs no secrets, and must never be given any: a workflow
+# that runs on every branch is the wrong place to hold a token.
+on:
+  push:
+    # Skipped for commits that cannot break a test. `data/**` is the big one —
+    # `add-to-list.yml`, `item-actions.yml` and the runners commit cooldowns,
+    # purchases and scan files on their own, several times a day, and running the
+    # suite against a changed JSON file proves nothing.
+    paths-ignore:
+      - "data/**"
+      - "**.md"
+      - "docs/**"
+  pull_request:
+    paths-ignore:
+      - "data/**"
+      - "**.md"
+      - "docs/**"
+
+# A branch only needs its newest commit checked. Unlike the workflows that write
+# things, cancelling a superseded run here loses nothing — the commit it was
+# checking is no longer the head, and the replacement run covers it.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - run: npm ci
+
+      # Typecheck before tests: `tsc` names the file and line, while a type error
+      # reaches the suite as a confusing runtime failure somewhere downstream.
+      - name: Typecheck
+        run: npm run check
+
+      # `npm test` is both suites — src/tests/run.ts and relay/worker.test.mjs.
+      - name: Tests
+        run: npm test

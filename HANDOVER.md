@@ -1788,15 +1788,51 @@ ignore *replaces* per-item blocks on the same product, and a per-item block on a
 already-globally-ignored product is a no-op. Both directions are currently correct
 and nothing enforces that.
 
-*Smaller leftovers from the same review, all mechanical:* `cloudflare/` is
-referenced in `config.ts:72` and `add-to-list.yml:8` but the directory is `relay/`
-(stale rename); `.env.example` is missing `GROCERY_LIST_DS_ID`, whose fallback in
-`grocery-list.ts:37` is a hard-coded live Notion data-source UUID; and
-`git-data-push.ts` builds its git commands as shell strings, so `RUNNER_SOURCE`
-reaches `git commit -m "…"` unquoted (`execFileSync` with an argv array removes the
-class). ⚠️ **`package-lock.json` is tab-indented and plain `npm install` rewrites it
-with spaces** — a ~1,100-line phantom diff with no dependency change. It is
-generated, not authored; do not chase it into the tabs convention.
+### What 2026-08-12 (later) did — CI, and the three mechanical leftovers
+
+**There is CI now (`.github/workflows/ci.yml`).** Typecheck + both suites, on
+push and PR. ⚠️ **It is the only workflow here that just reads** — no secrets, no
+Notion, no shop, nothing that costs money, and it must never be given any: it runs
+on every branch. `paths-ignore` skips `data/**`, `docs/**` and `**.md`, because the
+button workflows and the runners commit data files several times a day and running
+the suite against a changed JSON file proves nothing. Before this, **the thing that
+discovered a broken `main` was the daily scan**, and it discovered it by publishing
+a wrong page at 11:30 SGT.
+
+The three leftovers are done:
+
+- **`cloudflare/` was stale in a way a rename would not have fixed.** It is
+  referenced in `config.ts:72` and `add-to-list.yml:8` — but the one-tap **Add**
+  relay is the `addToGroceryList` webhook in `src/index.ts` (see
+  `docs/one-tap-add.md`), and has never been a Cloudflare Worker. The Cloudflare
+  Worker in `relay/` serves the **Telegram inbox**, a different flow entirely.
+  Pointing the comments at `relay/` would have been a plausible, wrong fix; both
+  now name the real mechanism and say what `relay/` is not.
+- **`GROCERY_LIST_DS_ID` is documented in `.env.example`.** ⚠️ Unlike
+  `INGREDIENTS_DB_ID` and `MEAL_PREP_DB_ID` it is **not** auto-discovered —
+  `grocery-list.ts:37` falls back to a hard-coded id in the original author's
+  workspace, so an add from anyone else's workspace writes somewhere they do not
+  own, or fails. The default is unchanged; it is now merely visible.
+- **`git-data-push.ts` uses argv arrays, not shell strings.** ⚠️ **This one was
+  live, not theoretical.** Measured against the old form, a message containing
+  `` "quoted" $HOME `whoami` `` committed as `quoted /root root` — `$HOME`
+  expanded and **`whoami` actually executed**, from a value that reaches the
+  message through the `RUNNER_SOURCE` environment variable. Every git call now
+  goes through `execFileSync` with an array; the suite has a case carrying every
+  metacharacter that mattered, asserting the subject lands verbatim.
+
+⚠️ **`package-lock.json` is tab-indented and plain `npm install` rewrites it with
+spaces** — a ~1,100-line phantom diff with no dependency change. It is generated,
+not authored; do not chase it into the tabs convention. `npm ci` (what CI runs)
+reads it without rewriting, so CI is unaffected.
+
+⚠️ **`npm audit` reports one high-severity advisory, left alone deliberately**:
+`fast-uri` (GHSA-7p8r-x3mc-p8w7, host confusion via a backslash authority
+introducer), reached transitively through the Notion SDK's schema validation.
+`npm audit fix` would take it, but the same command rewrites the whole lockfile in
+npm's spaces formatting — burying a real one-line dependency bump inside that
+~1,100-line reformat. Worth doing as its own deliberate commit, not as a side
+effect. Nothing in this project parses untrusted URIs for a security decision.
 
 ### What 2026-08-11 (evening) did — the price book stopped being empty
 

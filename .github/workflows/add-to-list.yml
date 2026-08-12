@@ -4,8 +4,14 @@ name: Add to grocery list
 # instead opens a pre-filled issue on this repo; this workflow is the privileged
 # half that actually writes to Notion and records the cooldown.
 #
-# repository_dispatch is the same job reached a different way — used by the
-# optional Cloudflare Worker (see cloudflare/) for a genuine one-tap flow.
+# repository_dispatch is the same job reached a different way, for a genuine
+# one-tap flow: either the page calling api.github.com directly with the user's
+# own PAT (the default, `githubOneTapScript`), or the `addToGroceryList` webhook
+# in src/index.ts if ADD_ENDPOINT is ever set. See docs/one-tap-add.md.
+#
+# ⚠️ NOT the Cloudflare Worker in relay/ — that serves the Telegram inbox and has
+# nothing to do with Add. This comment used to name a cloudflare/ directory that
+# does not exist.
 on:
   issues:
     types: [opened]

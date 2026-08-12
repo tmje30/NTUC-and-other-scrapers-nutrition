@@ -1,4 +1,4 @@
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
@@ -60,13 +60,26 @@ export interface DataPushOptions {
 
 export type DataPushResult = "pushed" | "nothing-to-commit" | "already-upstream";
 
-function git(args: string, cwd: string): string {
-	return execSync(`git ${args}`, { encoding: "utf8", cwd });
+/**
+ * ⚠️ **Every git call here takes an argv ARRAY, and none of them goes near a
+ * shell.** These used to be built as strings — `` execSync(`git commit -m
+ * "${message}"`) `` — which put two values this module does not control inside
+ * shell quotes: the commit message, which interpolates `RUNNER_SOURCE` from the
+ * environment, and the file path. A message carrying a `"`, a `$` or a backtick
+ * either broke the commit or ran something; a path with a space silently staged
+ * the wrong thing. `execFileSync` passes the arguments straight to git, so there
+ * is no quoting to get right and no metacharacter to escape.
+ *
+ * Keep it that way. If a new git call is needed, add an array entry — never
+ * rebuild a command string, however simple the value looks today.
+ */
+function git(args: string[], cwd: string): string {
+	return execFileSync("git", args, { encoding: "utf8", cwd });
 }
 
-function gitOk(args: string, cwd: string): boolean {
+function gitOk(args: string[], cwd: string): boolean {
 	try {
-		execSync(`git ${args}`, { stdio: "inherit", cwd });
+		execFileSync("git", args, { stdio: "inherit", cwd });
 		return true;
 	} catch {
 		return false;
@@ -75,13 +88,13 @@ function gitOk(args: string, cwd: string): boolean {
 
 /** True when `git add` staged nothing — i.e. the file is byte-identical to HEAD. */
 function nothingStaged(cwd: string): boolean {
-	return gitQuiet("diff --cached --quiet", cwd);
+	return gitQuiet(["diff", "--cached", "--quiet"], cwd);
 }
 
 /** Run a git command for its exit code alone, showing nothing. */
-function gitQuiet(args: string, cwd: string): boolean {
+function gitQuiet(args: string[], cwd: string): boolean {
 	try {
-		execSync(`git ${args}`, { cwd, stdio: "ignore" });
+		execFileSync("git", args, { cwd, stdio: "ignore" });
 		return true;
 	} catch {
 		return false;
@@ -91,9 +104,9 @@ function gitQuiet(args: string, cwd: string): boolean {
 /** `origin/main` — the tracking branch, however this clone happens to name it. */
 function upstream(cwd: string): string {
 	try {
-		return git("rev-parse --abbrev-ref --symbolic-full-name @{u}", cwd).trim();
+		return git(["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"], cwd).trim();
 	} catch {
-		return `origin/${git("rev-parse --abbrev-ref HEAD", cwd).trim()}`;
+		return `origin/${git(["rev-parse", "--abbrev-ref", "HEAD"], cwd).trim()}`;
 	}
 }
 
@@ -108,7 +121,7 @@ function upstream(cwd: string): string {
  */
 function otherLocalChanges(file: string, cwd: string): string[] {
 	const want = file.replace(/\\/g, "/");
-	return git("status --porcelain", cwd)
+	return git(["status", "--porcelain"], cwd)
 		.split("\n")
 		.map((l) => l.trim())
 		.filter(Boolean)
@@ -121,7 +134,7 @@ export async function commitAndPushData(opts: DataPushOptions): Promise<DataPush
 	const cwd = opts.cwd ?? process.cwd();
 	const path = join(cwd, file);
 
-	execSync(`git add ${file}`, { stdio: "inherit", cwd });
+	execFileSync("git", ["add", file], { stdio: "inherit", cwd });
 	if (nothingStaged(cwd)) {
 		console.error("No changes to commit.");
 		return "nothing-to-commit";
@@ -133,10 +146,10 @@ export async function commitAndPushData(opts: DataPushOptions): Promise<DataPush
 	const mine = await readFile(path, "utf8");
 	const dirty = otherLocalChanges(file, cwd);
 
-	execSync(`git commit -m "${message}"`, { stdio: "inherit", cwd });
+	execFileSync("git", ["commit", "-m", message], { stdio: "inherit", cwd });
 
 	for (let attempt = 1; attempt <= attempts; attempt++) {
-		if (gitOk("push", cwd)) {
+		if (gitOk(["push"], cwd)) {
 			console.error("Pushed.");
 			return "pushed";
 		}
@@ -156,12 +169,19 @@ export async function commitAndPushData(opts: DataPushOptions): Promise<DataPush
 		// A fetch that fails is not a race with another runner, it's no network
 		// (or no credential) — retrying that four more times only delays the
 		// error the user needs to see.
-		const fetchArgs = `fetch ${up.replace("/", " ")}`; // "origin/main" → "origin main"
+		// "origin/main" → ["fetch", "origin", "main"]. Split on the FIRST slash only:
+		// a branch may contain more of them, and `origin/feature/x` is the remote
+		// `origin` and the branch `feature/x`, not three arguments.
+		const slash = up.indexOf("/");
+		const fetchArgs =
+			slash < 0 ? ["fetch", up] : ["fetch", up.slice(0, slash), up.slice(slash + 1)];
 		if (!gitOk(fetchArgs, cwd)) {
-			throw new Error(`git ${fetchArgs} failed — offline or unauthenticated, not a push race.`);
+			throw new Error(
+				`git ${fetchArgs.join(" ")} failed — offline or unauthenticated, not a push race.`,
+			);
 		}
 
-		execSync(`git reset --hard ${up}`, { stdio: "inherit", cwd });
+		execFileSync("git", ["reset", "--hard", up], { stdio: "inherit", cwd });
 		// The reset has just put THEIRS in the working tree. Read it before writing,
 		// so a caller that has to preserve the other side's edits can see them.
 		let theirs: string | null = null;
@@ -171,12 +191,12 @@ export async function commitAndPushData(opts: DataPushOptions): Promise<DataPush
 			theirs = null; // upstream doesn't have this file yet
 		}
 		await writeFile(path, opts.reapply ? await opts.reapply(theirs, mine) : mine, "utf8");
-		execSync(`git add ${file}`, { stdio: "inherit", cwd });
+		execFileSync("git", ["add", file], { stdio: "inherit", cwd });
 		if (nothingStaged(cwd)) {
 			console.error("Already applied upstream — nothing left to push.");
 			return "already-upstream";
 		}
-		execSync(`git commit -m "${message}"`, { stdio: "inherit", cwd });
+		execFileSync("git", ["commit", "-m", message], { stdio: "inherit", cwd });
 	}
 
 	throw new Error(`Could not push ${file} after ${attempts} attempts.`);
