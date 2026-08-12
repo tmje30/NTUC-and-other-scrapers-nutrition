@@ -54,11 +54,6 @@ export interface Deal {
 
 const MIN_SAVING_PCT = 5; // ignore sub-5% noise
 
-/** Back-compat boolean: does the product confidently (ACCEPT-band) match the target? */
-export function matchesTarget(product: StoreProduct, target: PlanTarget): boolean {
-	return evaluate(target, product).verdict === "accept";
-}
-
 /** The two baselines a target can offer, or null where it has none. */
 function baselines(target: PlanTarget): { unit: number | null; weight: number | null } {
 	return {

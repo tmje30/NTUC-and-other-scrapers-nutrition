@@ -93,11 +93,6 @@ export function parseWeightInText(input: string | null | undefined): ParsedWeigh
 	return m ? parseWeight(m[0]) : null;
 }
 
-/** Grams only (back-compat helper). */
-export function parseWeightGrams(input: string | null | undefined): number | null {
-	return parseWeight(input)?.grams ?? null;
-}
-
 /** Parse a unit count like "10 eggs", "(2 per pack)", "6s". Returns null if none. */
 export function parseUnitCount(input: string | null | undefined): number | null {
 	if (!input) return null;
