@@ -1,7 +1,23 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-11T01:00:23.233Z",
+  "updatedAt": "2026-08-12T14:34:36.476Z",
   "entries": [
+    {
+      "id": "dhall-sheng-siong-masoor-dhall-split-202608121434",
+      "ingredientId": "37369a18-4fe7-80c4-861a-c35c73e730d1",
+      "ingredientName": "Dahl (Masoory split dahl)",
+      "key": "dhall",
+      "store": "Sheng Siong",
+      "product": "Masoor Dhall Split",
+      "priceSgd": 1.91,
+      "packSizeG": 500,
+      "unitCount": null,
+      "volumetric": false,
+      "url": "https://shengsiong.com.sg/product/house-brand-masoor-dhall-split-500-g",
+      "listTitle": "Dahl (Masoory split dahl) (500g) [House Brand]",
+      "addedAt": "2026-08-12T14:34:36.476Z",
+      "outcome": "open"
+    },
     {
       "id": "soy-sauc-sheng-siong-premium-less-sodium-light-s-202608110100",
       "ingredientId": "34c69a18-4fe7-80ae-8ff6-e24b8e4e26dc",

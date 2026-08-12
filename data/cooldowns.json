@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-12T09:09:46.355Z",
+  "updatedAt": "2026-08-12T14:34:36.476Z",
   "entries": [
     {
       "key": "chicken thigh",
@@ -57,6 +57,19 @@
       "monthlyAmount": 0
     },
     {
+      "key": "dhall",
+      "ingredientId": "37369a18-4fe7-80c4-861a-c35c73e730d1",
+      "ingredientName": "Dahl (Masoory split dahl)",
+      "addedAt": "2026-08-12T14:34:36.476Z",
+      "until": "2026-08-22T14:34:36.476Z",
+      "days": 10,
+      "basis": "500g ÷ 1.2kg/month = 0.42 months × 0.75 = 0.31 months",
+      "store": "Sheng Siong",
+      "product": "Masoor Dhall Split",
+      "packSizeG": 500,
+      "monthlyAmount": 1200
+    },
+    {
       "key": "cinnamon",
       "ingredientId": "34b69a18-4fe7-8089-bff1-d84e43a7b560",
       "ingredientName": "Cinnamon",
@@ -99,6 +112,34 @@
       "monthlyAmount": 0
     },
     {
+      "key": "blachan",
+      "ingredientId": "34c69a18-4fe7-80c7-a298-d1323c01250e",
+      "ingredientName": "blachan[Taho]",
+      "reason": "ignored",
+      "addedAt": "2026-08-12T09:09:33.892Z",
+      "until": "2026-08-23T16:00:00.000Z",
+      "days": 11,
+      "basis": "ignored from the deals page for 2 weeks — until the start of that week (Mon, SGT)",
+      "store": "FairPrice",
+      "product": "Bagus Belachan",
+      "packSizeG": null,
+      "monthlyAmount": 0
+    },
+    {
+      "key": "sze chuan pepper",
+      "ingredientId": "34c69a18-4fe7-801b-afb7-c2e11b7a3c2a",
+      "ingredientName": "Szechuan pepper",
+      "reason": "ignored",
+      "addedAt": "2026-08-12T09:09:46.355Z",
+      "until": "2026-08-23T16:00:00.000Z",
+      "days": 11,
+      "basis": "ignored from the deals page for 2 weeks — until the start of that week (Mon, SGT)",
+      "store": "FairPrice",
+      "product": "Laobanniang Dried Sze Chuan Peppercorn",
+      "packSizeG": null,
+      "monthlyAmount": 0
+    },
+    {
       "key": "soy sauc",
       "ingredientId": "34c69a18-4fe7-80ae-8ff6-e24b8e4e26dc",
       "ingredientName": "Soy Sauce (light)",
@@ -136,34 +177,6 @@
       "product": "Knife Brand Thai Fish Sauce",
       "packSizeG": 750,
       "monthlyAmount": 40
-    },
-    {
-      "key": "blachan",
-      "ingredientId": "34c69a18-4fe7-80c7-a298-d1323c01250e",
-      "ingredientName": "blachan[Taho]",
-      "reason": "ignored",
-      "addedAt": "2026-08-12T09:09:33.892Z",
-      "until": "2026-08-23T16:00:00.000Z",
-      "days": 11,
-      "basis": "ignored from the deals page for 2 weeks — until the start of that week (Mon, SGT)",
-      "store": "FairPrice",
-      "product": "Bagus Belachan",
-      "packSizeG": null,
-      "monthlyAmount": 0
-    },
-    {
-      "key": "sze chuan pepper",
-      "ingredientId": "34c69a18-4fe7-801b-afb7-c2e11b7a3c2a",
-      "ingredientName": "Szechuan pepper",
-      "reason": "ignored",
-      "addedAt": "2026-08-12T09:09:46.355Z",
-      "until": "2026-08-23T16:00:00.000Z",
-      "days": 11,
-      "basis": "ignored from the deals page for 2 weeks — until the start of that week (Mon, SGT)",
-      "store": "FairPrice",
-      "product": "Laobanniang Dried Sze Chuan Peppercorn",
-      "packSizeG": null,
-      "monthlyAmount": 0
     }
   ]
 }
