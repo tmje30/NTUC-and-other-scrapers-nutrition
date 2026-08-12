@@ -30,23 +30,31 @@ public so Actions minutes are free.
 - A Cloudflare account (free).
 - A **fine-grained GitHub PAT**, this repo only, **Contents: read and write** — that
   is the permission `repository_dispatch` requires. Nothing else.
-- A webhook secret: any long random string. Generate one with
+- A webhook secret: any long random string. Generate one and put it straight into
+  `.env` (gitignored), so the two places that need it can both read it and it never
+  appears in shell history or on screen:
   ```bash
-  node -e "console.log(require('crypto').randomBytes(24).toString('hex'))"
+  node -e "console.log('WEBHOOK_SECRET='+require('crypto').randomBytes(24).toString('hex'))" >> .env
   ```
 
 ## 1. Deploy the Worker
 
 ```bash
-cd relay && npx wrangler login && npx wrangler deploy
+cd relay
+npx wrangler login
+npx wrangler deploy
 ```
+
+⚠️ One per line, not `&&`: this machine's shell is **Windows PowerShell 5.1**, where `&&`
+is a parser error ("not a valid statement separator in this version"). Every `cd relay`
+below is likewise its own line. `wrangler login` opens a browser — it cannot be scripted.
 
 Note the URL it prints — `https://grocery-telegram-relay.<subdomain>.workers.dev`.
 
 ## 2. Give it its four secrets
 
 ```bash
-cd relay && npx wrangler secret put WEBHOOK_SECRET
+npx wrangler secret put WEBHOOK_SECRET
 ```
 
 Then the same for `TELEGRAM_BOT_TOKEN` (the value from `.env`), `GITHUB_TOKEN` (the
@@ -86,17 +94,32 @@ while the poller is alive it owns that file and will answer a tap behind your ba
 ## 5. Register the webhook
 
 ```bash
-npm run tg-webhook -- set https://grocery-telegram-relay.<subdomain>.workers.dev <the-same-secret>
+npm run tg-webhook -- set https://grocery-telegram-relay.<subdomain>.workers.dev
 ```
+
+It reads `WEBHOOK_SECRET` from `.env` — the same value you gave the Worker — and
+**refuses to register without one**: a webhook with no `secret_token` accepts an update
+from anyone who guesses the URL, which is a stranger writing to the grocery list. A
+third positional argument still works, but puts the secret in shell history.
 
 It prints which bot it is about to change and **refuses outright** if that is
 `@Big_Notion_Bot`, whose webhook is the user's Notion Worker's only delivery path in
 another project.
 
+⚠️ **On a brand-new `workers.dev` subdomain, expect this to fail first** with
+`Bad Request: bad webhook: Failed to resolve host: Temporary failure in name resolution`.
+Nothing is misconfigured — **Telegram's own resolvers lag a new subdomain by up to about
+an hour**, while Google/Cloudflare/Quad9/OpenDNS all answer it and `curl` from here works.
+It failed twice at ~25 min and succeeded untouched at ~70 min on 2026-08-12. Just wait and
+re-run. Don't debug it, and don't leave the bot deaf meanwhile: put the poller back
+(see "Going back") if the wait will be long.
+
 ## 6. Replace the laptop's Telegram job
 
-Pricing a brand-new item still needs a residential IP. `tg-drain-run.cmd` is the
-replacement job — a short batch run instead of a forever-poller.
+Pricing a brand-new item still needs a **Singapore** IP — Sheng Siong's Incapsula
+challenges by country, and Actions runners are US Azure. (Not residential-vs-datacenter:
+that premise was disproven on 2026-08-11, see `HANDOVER.md` "it is GEOGRAPHY".)
+`tg-drain-run.cmd` is the replacement job — a short batch run instead of a forever-poller.
 
 ```bash
 schtasks /Create /TN "Grocery New-Item Pricing" /TR "'C:\Users\newuser\Claude Private projects\NTUC and other scrapers nutrition\tg-drain-run.cmd'" /SC MINUTE /MO 15 /IT /F
@@ -112,9 +135,16 @@ Text the bot. You should see a typing indicator within a second and the reply
 20–60 s later. If not:
 
 ```bash
-npm run tg-webhook            # is it registered? what was Telegram's last error?
-cd relay && npx wrangler tail # live log: did the delivery arrive, did the dispatch fire?
+npm run tg-webhook
 ```
+
+Is it registered, and what was Telegram's last error? Then, from `relay/`:
+
+```bash
+npx wrangler tail
+```
+
+The live log: did the delivery arrive, did the dispatch fire?
 
 `npm run tg-diag` still answers "which bot is this and what is queued".
 

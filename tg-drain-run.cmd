@@ -13,8 +13,11 @@ rem queue is empty, which is almost always. So MultipleInstances can stay Ignore
 rem and there is nothing to supervise - a missed run simply happens 15 minutes later.
 rem
 rem Why it is still here and not in the cloud: pricing an item with no Ingredients
-rem row means searching the shops, and Sheng Siong challenges datacenter IPs while
-rem answering a residential one. Everything else the inbox does now runs in Actions.
+rem row means searching the shops, and Sheng Siong's Incapsula challenges addresses
+rem OUTSIDE SINGAPORE - Actions runners are US Azure. It is the country, not
+rem residential-vs-datacenter (measured 2026-08-11; a Singapore datacenter address
+rem scanned all 60 terms with 0 errors). So this laptop qualifies by being in SG, and
+rem a ~US$5/mo Singapore VPS could take the job. Everything else runs in Actions.
 rem
 rem It runs in the DEV clone, for the same reason the poller did: it needs the .env
 rem holding NOTION_TOKEN, TELEGRAM_BOT_TOKEN and GITHUB_TOKEN, and the Sheng Siong
