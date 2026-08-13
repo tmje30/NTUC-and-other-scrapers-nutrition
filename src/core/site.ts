@@ -748,8 +748,19 @@ function snoozeRow(s: NonNullable<PageOptions["snoozed"]>[number], o: PageOption
  * `repository_dispatch` and edits Notion for you. This one cannot: the fix is a
  * judgement about which pack the user actually buys, the row's name is shared by
  * all four vendor slots, and the only size available to offer is the *shop's*.
- * Writing that automatically would put a number nobody chose into a live database
- * — the same mistake as the $399/kg eggs, arrived at politely. So it tells, and
+ * Writing that automatically would put a number nobody chose into a live database.
+ *
+ * ⚠️ **This is NOT the $399/kg egg bug, and the difference is the point.** That one
+ * (2026-08-10) read a By-Unit row's count as a weight — `3.99 ÷ 10 × 1000` — and is
+ * fixed at source: `packWeightOf` returns the size only for By Gram / By ml, so a
+ * counted row has no pack weight and therefore no per-kg figure at all. Verified
+ * again 2026-08-13, shop side included: a `"10s"` pack label parses as a count of
+ * ten and never as ten grams.
+ *
+ * The risk here is the quieter cousin. A weight written in from the shop's pack
+ * would be a perfectly *legal* weight, so nothing downstream would look wrong —
+ * every figure arithmetically correct, and all of them about a carton the user
+ * does not buy. The old bug announced itself; this one would not. So it tells, and
  * the user types.
  */
 function weightGapRow(g: NonNullable<PageOptions["weightGaps"]>[number]): string {
