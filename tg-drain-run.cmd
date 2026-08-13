@@ -37,7 +37,26 @@ cd /d "%REPO%"
 rem A run with nothing to do must not fill the log with a header per 15 minutes, so
 rem the timestamp is written only when there is actually something queued. `git pull`
 rem first: the queue arrives from the cloud, so a stale clone sees an empty one.
-git pull --quiet --rebase 2>>"%LOG%"
+rem
+rem ⚠️ --autostash, because this runs in the DEV clone and a dev clone is MEANT to be
+rem dirty - it holds the .env and it is where sessions work. Plain `--rebase` refuses
+rem to run over uncommitted edits, so for as long as anyone had work in progress this
+rem pull failed on every single run. Autostash tucks the edits aside, rebases, and
+rem puts them back, which keeps the promise the header makes about never sacrificing
+rem a session's work.
+rem
+rem ⚠️ And the result is CHECKED, which it was not until 2026-08-12. Without this the
+rem script walked on to a stale queue, found it empty, printed "Nothing queued for
+rem pricing." and exited 0 - and that string is exactly what suppresses the log
+rem header below. So a failed pull was silent AND green: Task Scheduler recorded
+rem success at 21:29:44 while the log recorded the pull failing on the same run. An
+rem item texted in would have sat in the cloud unpriced with nothing to say so.
+rem Same lesson as the exit code at the bottom of this file, one line further up.
+git pull --quiet --rebase --autostash 2>>"%LOG%"
+if errorlevel 1 (
+  echo ==== %DATE% %TIME% : git pull failed - queue NOT checked ==== >> "%LOG%"
+  endlocal & exit /b 1
+)
 call npm run tg-drain >"%TEMP%\tg-drain-out.txt" 2>&1
 set "RC=%ERRORLEVEL%"
 findstr /C:"Nothing queued for pricing." "%TEMP%\tg-drain-out.txt" >nul
