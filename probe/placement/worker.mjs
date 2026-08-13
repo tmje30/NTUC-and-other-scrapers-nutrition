@@ -92,6 +92,27 @@ export default {
 		const counts = {};
 		for (const r of results) counts[r.colo ?? "error"] = (counts[r.colo ?? "error"] ?? 0) + 1;
 		const sg = results.filter((r) => r.loc === "SG");
+		const failed = results.filter((r) => r.error);
+
+		// ⚠️ An attempt that ERRORED is not an attempt that landed outside Singapore,
+		// and the difference decides whether the laptop can be retired. The first run
+		// of this probe returned `NO SG — "apac" never placed in Singapore` when in
+		// fact all eight calls had failed before placing anything (`wrangler dev
+		// --remote` has dropped Durable Object support). A probe that reports a clean
+		// negative from a broken run is worse than one that reports nothing.
+		if (failed.length === results.length) {
+			return Response.json(
+				{
+					mode: "placement",
+					hint,
+					tries,
+					verdict: "INCONCLUSIVE — every attempt errored; nothing was placed",
+					error: failed[0].error,
+					results,
+				},
+				{ status: 503, headers: { "cache-control": "no-store" } },
+			);
+		}
 
 		// If we landed in Singapore even once, immediately ask that same object
 		// again — a hit that does not hold is not a result worth acting on.
@@ -109,11 +130,12 @@ export default {
 				tries,
 				counts,
 				singapore: sg.length,
+				failed: failed.length,
 				verdict: sg.length
 					? recheck?.stuck
 						? "PASS — landed in Singapore and stayed there"
 						: "UNSTABLE — landed in Singapore but moved on the next call"
-					: `NO SG — "${hint}" never placed in Singapore across ${tries} tries`,
+					: `NO SG — "${hint}" never placed in Singapore across ${tries - failed.length} successful tries`,
 				recheck,
 				results,
 			},

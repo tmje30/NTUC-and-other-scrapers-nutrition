@@ -130,6 +130,13 @@ export async function handle(request, env, deps = {}) {
 		return new Response("unauthorized", { status: 401 });
 	}
 
+	// ⚠️ Measurement, not behaviour — remove it once the question below is answered.
+	// Sheng Siong answers addresses in Singapore and challenges everything else, and
+	// a Worker runs in whichever colo the REQUEST arrived at. So: does Telegram
+	// deliver its webhooks from Singapore? If it does, a scheduled message to
+	// yourself is a Singapore-placed trigger with no laptop involved. See probe/.
+	if (env.LOG_COLO) console.error(`colo webhook=${request.cf?.colo ?? "unknown"}`);
+
 	let update;
 	try {
 		update = await request.json();
@@ -203,6 +210,38 @@ export async function handle(request, env, deps = {}) {
  */
 export async function scheduled(_event, env, deps = {}) {
 	const doFetch = deps.fetch ?? fetch;
+
+	/**
+	 * ⚠️ Measurement, not behaviour — remove it once the question is answered.
+	 *
+	 * This tick is the one thing in the whole system that is a REAL Cloudflare cron:
+	 * no incoming request, so no client location to inherit, and Cloudflare places it
+	 * wherever it likes. That is exactly the unknown blocking the Sheng Siong scan
+	 * from moving off the laptop, and this cron already fires 96 times a day — so a
+	 * day of these lines is a free sample of where Cloudflare actually puts an
+	 * unattended job. If `SIN` shows up often, the scan can follow. See probe/README.
+	 *
+	 * Deliberately global `fetch` and not `deps.fetch`: the relay's tests assert the
+	 * exact sequence of injected calls, and a probe that showed up in that sequence
+	 * would be measurement changing the thing it measures. `LOG_COLO` keeps it out of
+	 * tests entirely and lets you switch it off without a code change.
+	 */
+	if (env.LOG_COLO) {
+		try {
+			const res = await fetch("https://cloudflare.com/cdn-cgi/trace", { cf: { cacheTtl: 0 } });
+			const t = Object.fromEntries(
+				(await res.text())
+					.trim()
+					.split("\n")
+					.map((l) => l.split("=")),
+			);
+			console.error(`colo cron=${t.colo ?? "?"} loc=${t.loc ?? "?"}`);
+		} catch (e) {
+			// Never let a measurement break the sweep it rides on.
+			console.error(`colo cron=unknown (${e?.message ?? e})`);
+		}
+	}
+
 	await dispatch(doFetch, env, SWEEP_EVENT, {});
 }
 

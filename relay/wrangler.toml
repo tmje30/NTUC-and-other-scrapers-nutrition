@@ -12,6 +12,13 @@ compatibility_date = "2026-08-11"
 [vars]
 REPO = "tmje30/NTUC-and-other-scrapers-nutrition"
 
+# ⚠️ Temporary measurement, not a feature. Logs which Cloudflare colo handled each
+# webhook and each cron tick, to answer whether an unattended job can be placed in
+# Singapore — the one thing standing between the Sheng Siong scan and leaving the
+# laptop. See probe/README.md. Delete this line (and the two blocks in worker.mjs
+# that read it) once there is an answer; a day of cron ticks is 96 samples.
+LOG_COLO = "1"
+
 # The other four are SECRETS, set with `wrangler secret put` (see README):
 #   WEBHOOK_SECRET      — shared with Telegram's setWebhook secret_token
 #   TELEGRAM_BOT_TOKEN  — @Grocery69_bot, for the ack / typing / error message
