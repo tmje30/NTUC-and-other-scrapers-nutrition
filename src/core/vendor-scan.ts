@@ -119,6 +119,66 @@ export interface ScanRow {
 	slots: VendorSlot[];
 	/** The routes this row actually asks for, in slot order. */
 	routes: { route: VendorRoute; slot: VendorSlot }[];
+	/** The biggest pack worth recording here, per `Size - floor (g/ml)`. Null = no opinion. */
+	sizeFloor: number | null;
+}
+
+/**
+ * The `Size - floor (g/ml)` column — **the biggest pack this row will accept in its price
+ * book.** Added to the schema by the user on 2026-08-13 after the scan recorded a **1 kg**
+ * bag of white pepper as the NTUC price: honestly the cheapest per kilo, and not a pack
+ * anyone buys pepper in.
+ *
+ * ⚠️ **It is a CEILING, despite the word "floor" in its name.** The user's phrasing was
+ * "the floor amount on the largest size the scraper should look for" — floor as in *the
+ * line you don't go above*, not as in a minimum. The live data settles it beyond doubt:
+ * White Pepper carries 100 against a recorded 1000 g pack, Cinnamon 50 against 28 g, Whey
+ * 10000 against a 2.5 kg tub. Read as a minimum, every one of those inverts.
+ *
+ * ⚠️ **It bounds the PRICE BOOK only** — the `Vendor n` slots, which exist for general
+ * shopping and price comparison. The deals/discovery pipeline never sees it: a 5 kg sack
+ * at half price is exactly the one-off purchase that page is for, and the user said so
+ * explicitly. Nothing outside `vendor-scan` reads this.
+ */
+const SIZE_FLOOR_PREFIX = "sizefloor";
+
+/**
+ * Find the size-ceiling column, whatever its exact spacing and bracketing.
+ *
+ * Matched on a squashed name (letters and digits only) rather than verbatim, for the
+ * reason `CATEGORY_ALIASES` exists: this schema has renamed a property out from under the
+ * code once already — `Catagory` → `Category` — and nothing errored, it just silently read
+ * `undefined` for weeks. `Size - floor (g/ml)`, `Size floor (g)` and `Size - Floor` all
+ * squash to the same prefix, so a tidy-up in Notion cannot quietly disable the ceiling.
+ */
+export function findSizeFloorProp(schema: Record<string, { type: string }>): string | null {
+	const squash = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "");
+	for (const [name, def] of Object.entries(schema ?? {})) {
+		if (def?.type === "number" && squash(name).startsWith(SIZE_FLOOR_PREFIX)) return name;
+	}
+	return null;
+}
+
+/**
+ * May this pack be recorded on a row whose ceiling is `floor`?
+ *
+ * ⚠️ **Compared against the number that would land in `Size[Vendor n]`** — `sizeFor`, not
+ * `packWeightOf`. The column is labelled `(g/ml)` but a **By Unit** row states it in the
+ * row's own units: the egg row carries 30, meaning thirty eggs, beside a recorded pack of
+ * 10. Converting to grams there would compare thirty eggs against a tray's weight and
+ * throw out every candidate. For By Gram / By ml rows the two are the same number anyway.
+ *
+ * ⚠️ **Inclusive.** The user's figure is the largest pack they WILL take, not the first one
+ * they won't: the Milk (Low Fat) row states 2000 and its recorded NTUC pack is exactly
+ * 2000 ml. An exclusive test would refuse the price already in the book.
+ *
+ * A candidate with no readable size gets no opinion, the same answer given everywhere else
+ * — it will fail `unitKindAgrees` a few lines later if it truly has none.
+ */
+export function withinSizeFloor(floor: number | null, size: number | null): boolean {
+	if (floor == null || !Number.isFinite(floor) || floor <= 0) return true;
+	if (size == null || !Number.isFinite(size) || size <= 0) return true;
+	return size <= floor;
 }
 
 /**
@@ -187,6 +247,7 @@ export async function readScanRows(
 ): Promise<{ rows: ScanRow[]; skipped: { name: string; why: string }[] }> {
 	const dsAny = (await client.dataSources.retrieve({ data_source_id: INGREDIENTS_DS } as any)) as any;
 	const slotDefs = resolveVendorSlotProps(dsAny.properties ?? {});
+	const floorProp = findSizeFloorProp(dsAny.properties ?? {});
 
 	const pages = await queryAll(client, INGREDIENTS_DS);
 	const rows: ScanRow[] = [];
@@ -235,6 +296,7 @@ export async function readScanRows(
 			}),
 			slots,
 			routes: matched,
+			sizeFloor: floorProp && typeof p[floorProp]?.number === "number" ? p[floorProp].number : null,
 		});
 	}
 	return { rows, skipped };

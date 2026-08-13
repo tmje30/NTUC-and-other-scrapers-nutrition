@@ -1,4 +1,13 @@
-import { pickCandidate, reputationPasses, searchTermsFor, sizeFor, unitKindAgrees } from "../core/vendor-scan.js";
+import {
+	findSizeFloorProp,
+	pickCandidate,
+	reputationPasses,
+	searchTermsFor,
+	sizeFor,
+	unitKindAgrees,
+	withinSizeFloor,
+} from "../core/vendor-scan.js";
+import { reviewReasons } from "../core/vendor-review.js";
 import { parseName } from "../core/parse.js";
 import type { PlanTarget, UnitType } from "../core/notion.js";
 import type { StoreProduct } from "../core/stores/types.js";
@@ -223,3 +232,76 @@ eq(
 );
 eq("and a counted pack writes its COUNT, not its weight", sizeFor("By Unit", product({ unitCount: 30, packWeightG: 1500 })), 30);
 eq("while a weighed row writes grams", sizeFor("By Gram", product({ unitCount: 30, packWeightG: 1500 })), 1500);
+
+/**
+ * `Size - floor (g/ml)` — the row's own ceiling on the price book.
+ *
+ * ⚠️⚠️ **"floor" here means the line you do not go ABOVE.** Added by the user 2026-08-13
+ * after the scan filed a **1 kg** bag of white pepper as the NTUC price — the honest
+ * cheapest per kilo, and not a pack anyone buys pepper in. Every one of these tests
+ * inverts if the column is ever read as a minimum, which is the mistake its name invites.
+ */
+describe("vendor scan — the row's size ceiling");
+
+eq("the 1 kg pepper that started this is refused at 100 g", withinSizeFloor(100, 1000), false);
+eq("a 100 g jar of pepper is fine", withinSizeFloor(100, 100), true);
+eq("and so is a smaller one — this is a ceiling, not a target", withinSizeFloor(100, 50), true);
+
+// ⚠️ INCLUSIVE, and the Milk (Low Fat) row is why: it states 2000 and its recorded NTUC
+// pack is exactly 2000 ml. An exclusive test would refuse the price already in the book.
+eq("a pack exactly at the ceiling is kept", withinSizeFloor(2000, 2000), true);
+
+// A row with no ceiling behaves exactly as it did before this column existed.
+eq("no ceiling means no opinion", withinSizeFloor(null, 10_000), true);
+eq("and neither does a zero or a blank one", withinSizeFloor(0, 10_000), true);
+// Same rule as everywhere else in this project: an unreadable size is not a verdict.
+eq("a sizeless candidate is not refused by the ceiling", withinSizeFloor(100, null), true);
+
+/**
+ * ⚠️ The column is labelled `(g/ml)` but a **By Unit** row states it in the row's own
+ * units — the egg row carries 30, meaning thirty eggs, beside a recorded pack of 10. The
+ * comparison therefore runs against `sizeFor`, never `packWeightOf`; converting to grams
+ * would weigh thirty eggs against a tray and throw out every candidate on the row.
+ */
+eq(
+	"a By Unit row bounds a COUNT: 30 eggs is inside a ceiling of 30",
+	withinSizeFloor(30, sizeFor("By Unit", product({ unitCount: 30, packWeightG: 1500 }))),
+	true,
+);
+eq(
+	"…and 60 eggs is not, even though its weight never enters into it",
+	withinSizeFloor(30, sizeFor("By Unit", product({ unitCount: 60, packWeightG: 3000 }))),
+	false,
+);
+
+/**
+ * ⚠️ The schema is matched on a squashed name, for the reason `CATEGORY_ALIASES` exists:
+ * this database renamed `Catagory` → `Category` out from under the code once, nothing
+ * errored, and every read silently returned undefined for weeks.
+ */
+const schema = { "Size - floor (g/ml)": { type: "number" }, "Size[Vendor 1]": { type: "number" } };
+eq("the ceiling column is found by its live name", findSizeFloorProp(schema), "Size - floor (g/ml)");
+eq("spacing and bracket drift does not lose it", findSizeFloorProp({ "Size Floor (g)": { type: "number" } }), "Size Floor (g)");
+eq("a per-vendor size column is not mistaken for it", findSizeFloorProp({ "Size[Vendor 1]": { type: "number" } }), null);
+eq("nor is a same-named column of the wrong type", findSizeFloorProp({ "Size - floor (g/ml)": { type: "rich_text" } }), null);
+
+/**
+ * ⚠️ A pack inside a ceiling the user typed is not a pack to ask them about. `BULK_GRAMS`
+ * is 2 kg — a guess about where "a shop" becomes "a caterer", made with no knowledge of
+ * the item. The three whey rows state 10 kg and buy 2.5 kg tubs, so without this they'd
+ * clear the filter and be queued for review anyway, every single run.
+ */
+const tub = product({ name: "Impact Whey Protein 2.5kg", packWeightG: 2500 });
+check("a 2.5 kg tub is normally queued as catering size", reviewReasons(tub, { packGrams: 2500 }).some((r) => r.kind === "bulk"));
+check(
+	"but not on a row whose ceiling already allows it",
+	!reviewReasons(tub, { packGrams: 2500, sizeFloorOk: true }).some((r) => r.kind === "bulk"),
+);
+// ⚠️ …and the multipack test still runs. "12 × 1 L" is a statement about how the pack is
+// SOLD, which a size ceiling has no opinion on — the case of milk stays a question.
+check(
+	"a multipack is still asked about inside a ceiling",
+	reviewReasons(product({ name: "Milk 12 x 1L", packWeightG: 1000 }), { packGrams: 1000, sizeFloorOk: true }).some(
+		(r) => r.kind === "bulk",
+	),
+);

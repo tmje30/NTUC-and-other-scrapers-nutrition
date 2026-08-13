@@ -95,6 +95,7 @@ export function reviewReasons(
 	product: StoreProduct,
 	{
 		packGrams,
+		sizeFloorOk = false,
 		referencePer100g = null,
 		rescued = false,
 		rejectedCheaper = 0,
@@ -102,6 +103,19 @@ export function reviewReasons(
 	}: {
 		/** What this pack weighs, per `packWeightOf` — null for a piece-priced pack. */
 		packGrams: number | null;
+		/**
+		 * The row states a `Size - floor (g/ml)` ceiling and this pack is inside it.
+		 *
+		 * ⚠️ Suppresses the `bulk` reason and nothing else. `BULK_GRAMS` is a guess about
+		 * where "a shop" becomes "a caterer", made with no knowledge of the item; a ceiling
+		 * the user typed on that row is the same judgement made with full knowledge of it,
+		 * and asking anyway would be asking a question Notion already answers. A 2.5 kg tub
+		 * of whey on a row that says 10 kg is simply the pack they buy.
+		 *
+		 * The multipack test below still runs: "12 × 1 L" is a statement about how the pack
+		 * is SOLD, which a size ceiling has no opinion on.
+		 */
+		sizeFloorOk?: boolean;
 		referencePer100g?: number | null;
 		/** Allowed back in on seller reputation despite being under the price floor. */
 		rescued?: boolean;
@@ -113,7 +127,7 @@ export function reviewReasons(
 	const out: ReviewReason[] = [];
 	const text = `${product.name ?? ""} ${product.url ?? ""}`;
 
-	if (packGrams != null && packGrams >= BULK_GRAMS) {
+	if (!sizeFloorOk && packGrams != null && packGrams >= BULK_GRAMS) {
 		out.push({
 			kind: "bulk",
 			grams: packGrams,

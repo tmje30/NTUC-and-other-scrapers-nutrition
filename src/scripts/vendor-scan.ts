@@ -12,6 +12,7 @@ import {
 	searchTermsFor,
 	sizeFor,
 	unitKindAgrees,
+	withinSizeFloor,
 	type CandidateOutcome,
 	type ScanRow,
 	type VendorRoute,
@@ -167,11 +168,16 @@ async function main(): Promise<void> {
 	let written = 0;
 	let refused = 0;
 	let skippedByUser = 0;
+	/** Candidates dropped by the row's own `Size - floor (g/ml)` ceiling. */
+	let skippedOverFloor = 0;
 	/** Uncertain picks, queued for the Telegram ask at the end of the pass. */
 	const toAsk: PendingReview[] = [];
 
 	for (const row of rows) {
-		console.log(`\n${"─".repeat(78)}\n${row.name}   [${row.unitType}]`);
+		console.log(
+			`\n${"─".repeat(78)}\n${row.name}   [${row.unitType}]` +
+				(row.sizeFloor != null ? `   ≤ ${row.sizeFloor}${unitWord(row)}` : ""),
+		);
 		const terms = searchTermsFor(row.target);
 
 		for (const [i, { route, slot }] of row.routes.entries()) {
@@ -203,15 +209,32 @@ async function main(): Promise<void> {
 				// next week in a smaller size; a ceiling ends it. See `sizeBoundsFor`.
 				const bounds = sizeBoundsFor(review, row.pageId, route.option);
 				const before = products.length;
+				let overFloor = 0;
 				products = products.filter((p) => {
 					if (isRejectedPick(review, row.pageId, route.option, p)) return false;
+					// ⚠️ The row's own declared ceiling, checked FIRST and in the row's own
+					// units — see `withinSizeFloor`. This is the standing version of the
+					// "Pack too large" button: `sizeBoundsFor` below is what the user taught
+					// the scan one refusal at a time, and `Size - floor (g/ml)` is them
+					// saying it up front for every shop at once.
+					if (!withinSizeFloor(row.sizeFloor, sizeFor(row.unitType, p))) {
+						overFloor++;
+						return false;
+					}
 					const g = packWeightOf(row.unitType, sizeFor(row.unitType, p), row.name, p.name);
 					if (g == null) return true; // no weight is no opinion, as everywhere else
 					if (bounds.maxGrams != null && g >= bounds.maxGrams) return false;
 					if (bounds.minGrams != null && g <= bounds.minGrams) return false;
 					return true;
 				});
-				if (products.length < before) skippedByUser += before - products.length;
+				if (products.length < before) skippedByUser += before - products.length - overFloor;
+				if (overFloor) {
+					skippedOverFloor += overFloor;
+					// Printed per search, because "no candidate" and "no candidate under
+					// your ceiling" are different problems and only one of them is the
+					// ceiling being set too tight.
+					console.log(`    (${overFloor} over this row's ${row.sizeFloor}${unitWord(row)} size ceiling)`);
+				}
 				outcome = pickCandidate(row.target, products, {
 					marketplace: route.marketplace,
 					// A price already recorded at ANOTHER shop for this row — the one check
@@ -314,6 +337,11 @@ async function main(): Promise<void> {
 			// buy?* — and it is not one a scan can answer. See `vendor-review.ts`.
 			const reasons: ReviewReason[] = reviewReasons(p, {
 				packGrams: packWeightOf(row.unitType, size, row.name, p.name),
+				// ⚠️ A pack inside a ceiling the user typed themselves is not a pack to ask
+				// them about. Without this the three whey rows (ceiling 10 kg, real packs
+				// 2.5 kg) would clear the filter and then be queued anyway by `BULK_GRAMS`,
+				// which is 2 kg — asking a question already answered in Notion, every run.
+				sizeFloorOk: row.sizeFloor != null && withinSizeFloor(row.sizeFloor, size),
 				referencePer100g: referencePer100g(row.slots, slot.n, row),
 				rescued: !!rescued,
 				rejectedCheaper: !rescued && outcome?.ok ? outcome.rejected.length : 0,
@@ -397,6 +425,7 @@ async function main(): Promise<void> {
 			(doWrite ? `, ${written} written, ${refused} refused/failed` : `, nothing written (no --write)`) +
 			(toAsk.length ? `, ${toAsk.length} awaiting your call` : "") +
 			(skippedByUser ? `, ${skippedByUser} listing(s) skipped as previously refused` : "") +
+			(skippedOverFloor ? `, ${skippedOverFloor} over a row's size ceiling` : "") +
 			".\n",
 	);
 }
