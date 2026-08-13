@@ -70,6 +70,13 @@ laptop works because it is in Singapore, not because it is on a home line — so
 See "RESOLVED: the constraint is the COUNTRY" under *Your IP decides what you can
 scrape*. Nothing has been migrated; the hybrid below is still what runs.
 
+⚠️ **A VPS may not be needed either (proved 2026-08-12, evening).** A Cloudflare
+Durable Object created with `locationHint: "apac"` landed in Singapore on 15 of 16
+attempts and stayed there, and a Worker in that colo already scans Sheng Siong
+clean. That closes the last open question — an unattended cloud job *can* be put in
+Singapore, for free. **Still not migrated**, and drift beyond a few minutes is
+unproven. See *Next session — pick up here (as of 2026-08-12, evening)*.
+
 There is a second, **manual** way in: the **Chrome extension** in `extension/`
 ("Nutrition Plan Extension"), which captures a product page you're looking at
 straight into the Ingredients DB — either as a new row or over an existing one.
@@ -1722,9 +1729,294 @@ which only appears when a shop is **missing from a build that happened**. "No
 build at all" has no button. Its absence on a healthy page is correct behaviour,
 not a bug — that confused the user on 2026-08-05.
 
-## Next session — pick up here (as of 2026-08-12)
+## Next session — pick up here (as of 2026-08-12, evening)
 
-### What 2026-08-12 did — a code review, and the one bug it found that costs money
+*Started as "why does a CMD window keep opening on me every five minutes". That
+question turned out to be the thread: it led to a cadence nobody had asked for, a
+job that has been failing silently, and the probe that decides whether this laptop
+is in the system at all.*
+
+### Where this stopped, and what is safe to assume
+
+**Done and verified tonight:**
+
+- Both CMD windows are hidden (`run-hidden.vbs`, both tasks re-pointed).
+- The placement probe ran and **passed** — a Cloudflare cron can run in Singapore.
+- `tg-drain`'s silent pull failure is **fixed and tested** — `--autostash` plus an
+  `errorlevel` check. Verified against the dirty tree that was breaking it: exit 0,
+  pull succeeded, no leftover stash, every working-tree edit intact.
+- The plan is written: **[`docs/retire-the-laptop.md`](docs/retire-the-laptop.md)**.
+  Read it before touching any of this; it carries the decisions and the rejected
+  ideas so they are not re-derived.
+
+**BUILT AND VERIFIED: the Worker port** — `ss-worker/`, deployed as
+`https://ss-worker.tmje30.workers.dev`, 35 new tests, `npm test` green at 821 + 33
++ 35. It scans Sheng Siong from Cloudflare and produces output that matches the
+laptop's, field for field. What it does NOT yet do is write: `GITHUB_TOKEN` is
+unset, so it fails closed and the cron is a no-op. See "what is left" below.
+
+#### ⚠️⚠️ The probe's verdict was wrong, and this is the important entry
+
+Last night's `PASS — landed in Singapore and stayed there` **overstated the
+result, and the flaw is in the probe's own logic.** It keys its verdict on
+`loc === "SG"` from `cdn-cgi/trace`. ⚠️ **`loc` fetched from inside a Worker
+reports the ORIGINAL CALLER's country, not the object's.** Last night the laptop
+was in Singapore, so `loc` read `SG` no matter where the object actually was.
+
+Proved by accident tonight: the laptop was on a **Danish VPN** (`188.126.94.205`,
+`colo=CPH`, `loc=DK`), and objects demonstrably serving from `SIN` reported
+`loc=DK`. The probe then declared `NO SG` on a run where half its objects were in
+Singapore.
+
+⚠️ **Read `colo`. Never `loc`.** And even `colo` is only a hint — the authoritative
+test is the DDP upgrade itself, where `101` means the country is right and `200` is
+Incapsula's challenge page. `ss-worker` gates on that, not on the trace.
+
+#### ⚠️⚠️ `apac` placement is much less reliable than reported
+
+Three consecutive draws tonight: **HKG, KIX (Osaka), SIN.** Earlier: **ICN
+(Seoul).** The `apac` hint covers Tokyo, Seoul, Hong Kong, Sydney and Singapore
+alike, and the real hit rate looks like roughly half — not 15 in 16.
+
+⚠️ **The first design used one fixed object name** (`sheng-siong-sg`) on the
+reasoning that one long-lived object is placed once and stays. It does — and the
+very first one landed in **Seoul** and stayed there, permanently unable to scan.
+A single name is a single draw, and betting the system on it is the mistake.
+
+**The fix, and it is the load-bearing part of `worker.ts`:** eight candidate names,
+each probed with one cheap upgrade attempt, first reachable one wins. Placement per
+name is sticky so the winner keeps winning; at ~50% a miss is vanishingly unlikely.
+Live proof: `sg-0:HKG✗ sg-1:KIX✗ sg-2:SIN✓`, then a clean scan.
+
+#### The fidelity diff — the thing that actually had to be proved
+
+Same four terms, Worker vs the committed file the Node runner produced:
+
+| | |
+|---|---|
+| Common products compared | **79** |
+| Fields identical on | **79 of 79** |
+| Products with any difference | **2** |
+
+⚠️ **Both differences are a real promotion ending, not a porting fault.** Two fish
+fillets read `priceSgd 5 / listPriceSgd 7.95 / onSale true` yesterday and
+`7.95 / null / false` today, with `pricePer100g` following correctly at
+`7.95/350×100 = 2.271`. Everything else — name, brand, `packWeightG`,
+`volumetric`, `unitCount`, `dietaryAttributes`, `url`, `imageKey` — matched
+exactly. `Bread` returned 48/48 identical, which is the term where the two-pass
+merge matters most, so both passes are working.
+
+⚠️ **A same-time diff was NOT possible** because the laptop's VPN put its egress in
+Denmark, so the Node scanner could not reach Sheng Siong to run alongside. The
+comparison above is against yesterday's committed file. Worth redoing with the VPN
+off, though the result above is already strong.
+
+#### What is left
+
+1. ⚠️ **`wrangler secret put GITHUB_TOKEN`** in `ss-worker/` — a fine-grained PAT,
+   this repo, Contents: read and write. Until then the Worker refuses to scan on
+   the real path and the cron logs "skipped" without touching Sheng Siong.
+2. **Wire `scan-request.yml`** to call the Worker instead of committing the marker,
+   with `SCAN_SECRET` as an Actions secret. The button itself does not change.
+3. **Phases 2–4** of the plan: the failure notification, then standing the laptop
+   down.
+4. ⚠️ **Rotate `SCAN_SECRET`.** The one currently set was generated for tonight's
+   verification and is sitting in a scratchpad file, not anywhere durable.
+
+**Also found, not fixed:** `parseUnitCount`'s docstring offers `"10 eggs"` as an
+example and that string **does not parse** — the regex needs `10s`, `10 pcs`,
+`2 per pack` or `6 x`. Left alone because it is shared with the laptop scanner and
+changing it would change both; pinned in `ss-worker/scan.test.ts` so the next
+reader is not misled. Eggs are a known sore point here.
+
+⚠️⚠️ **The plan's original claim that `ss-scan.ts` "already runs clean from a
+Worker" was mine, and it was false.** I wrote it without checking. The scan stack is
+Node-only end to end: `ddp.ts` imports the `ws` npm package and uses its Node event
+API, `incapsula.ts` spawns Chrome through `node:child_process`, and `ss-scan.ts`
+writes with `node:fs` and shells out to git. None of it can run in a Worker.
+
+What exists is `probe/worker.mjs`, a **probe** — 255 lines that genuinely scanned
+(561 products, 0 errors, 26.7 s), with two gaps that matter:
+
+1. Its `mapProduct` is labelled in its own comment as *"a stand-in for
+   `parseWeight`"*. The real parser (`stores/weight.ts`) is pure and ports directly,
+   but it has to actually be used.
+2. **It makes one pass per term where the real scan makes two.**
+   `shengsiong.ts:143` queries each term with `ecommPromotionFilter.active` both
+   `true` and `false` and merges on `slug` — `false` alone truncates by relevance and
+   pushes the promoted items, *the actual deals*, off the end.
+
+⚠️ **This is why it was stopped rather than rushed.** The Worker's output becomes
+`data/shengsiong-latest.json`, which the whole cloud side reads as fact. A port that
+is subtly wrong does not fail loudly — it publishes wrong prices. This project has
+been bitten by exactly that shape twice in a week (the comma that made a $1,500
+listing cost $1; the zero-term scan that read as fresh). A faithful port with tests
+against the same fixtures is a session's work, and it is the right next thing.
+
+⚠️ **Auth is already settled, so that decision need not be reopened:** the deals page
+is public and cannot hold a secret, so the button keeps firing
+`repository_dispatch: sscan` and `scan-request.yml` calls the Worker with a secret
+from Actions secrets. Details in the plan.
+
+**State of the tree:** nothing is committed. `run-hidden.vbs`,
+`docs/retire-the-laptop.md`, the HANDOVER and `tg-drain-run.cmd` edits, and the
+pre-existing `probe/` and `relay/` changes are all sitting in the working tree. The
+placement probe is **still deployed** as `cf-placement-probe` for tomorrow's drift
+check.
+
+### ⚠️⚠️ PROVED: a Cloudflare cron CAN run in Singapore — the laptop is retirable
+
+⚠️ **SUPERSEDED IN PART — read "The probe's verdict was wrong" above first.** The
+conclusion below (a Cloudflare cron can be made to run in Singapore) still holds
+and was confirmed independently by `ss-worker` scanning live from `SIN`. But the
+**numbers** below are wrong: the probe keys on `loc`, which reports the caller's
+country rather than the object's, so "15 of 16" measured the laptop as much as the
+object. Real `apac` hit rate looks closer to half. ⚠️ `probe/placement/` is still
+deployed as `cf-placement-probe` and **will report misleading verdicts** — either
+fix it to key on `colo` or delete it (`cd probe/placement && npx wrangler delete`);
+`ss-worker` no longer depends on it.
+
+`probe/placement/` was written the night before and never validly run. It ran
+tonight and the verdict is **PASS**.
+
+Deployed as `cf-placement-probe`, two rounds of 8 Durable Objects created with
+`locationHint: "apac"`:
+
+| Round | SIN | Elsewhere | Errors |
+|---|---|---|---|
+| 1 | 7 | 0 | 1 |
+| 2 | 8 | 0 | 0 |
+
+Every object that placed at all placed in **SIN**. The one round-1 error was
+`Worker not found.` seconds after upload — propagation, did not recur. Two round-1
+objects re-queried minutes later were still SIN with `stuck: true`.
+
+**Why this matters:** the previous entry (`chore: probe Cloudflare as a Sheng Siong
+runner`) proved a Worker in the SIN colo scans Sheng Siong happily — 561 products,
+0 errors, 26.7 s, no browser — but *only for requests arriving from Singapore*. A
+cron has no request to be placed near, and that was the open question blocking
+retirement of the laptop. It is now answered. Both laptop tasks, and the whole
+`data/scan-request.json` mailbox, are deletable in principle.
+
+⚠️ **Stickiness is proved over MINUTES, not days.** The failure mode this must not
+have is the one the probe's own docstring names: a DO that drifts "would work for
+days and then quietly stop". Tonight cannot rule that out. Two consequences:
+
+- The probe is **still deployed** so the same objects can be re-queried tomorrow
+  for drift. `cd probe/placement && npx wrangler delete` when done with it.
+- ⚠️ Whatever gets built **must call `cdn-cgi/trace` before scraping** and refuse
+  to believe a "blocked" result from outside SG. That converts a silent drift into
+  a loud failure instead of a quietly stale page. The relay README already gives
+  this advice for a different reason; it is now load-bearing.
+
+⚠️ **The probe must be DEPLOYED, never `wrangler dev`.** `--remote` has dropped
+Durable Object support and errors on every stub call; plain `wrangler dev` runs the
+objects *on this laptop*, in Singapore, and would return a triumphant PASS proving
+nothing. This is why the `INCONCLUSIVE` verdict exists at all — the first attempt
+reported a clean `NO SG` when in fact all eight calls had errored before placing
+anything, and a false negative there would have kept the laptop forever.
+
+### ⚠️⚠️ `Grocery New-Item Pricing` reports success while pulling nothing (found 2026-08-12, NOT fixed)
+
+Task Scheduler showed **Last Result 0** at 21:29:44 while `tg-drain.log` recorded
+`error: cannot pull with rebase: You have unstaged changes.` for the same run.
+
+[`tg-drain-run.cmd:40`](tg-drain-run.cmd) does `git pull --quiet --rebase 2>>"%LOG%"`
+and **never checks whether it worked**. On failure the script carries on against a
+stale clone; `npm run tg-drain` finds an empty queue, prints `Nothing queued for
+pricing.`, and exits 0 — and that exact string is what suppresses the log header.
+So the run is silent *and* green.
+
+⚠️ The wrapper's own closing comment (lines 56–59) says this lesson was already
+learned once — "a wrapper that always returned 0 let Task Scheduler report success
+on a run where everything failed". It propagates **npm's** exit code faithfully and
+**git's** not at all.
+
+**What set it off tonight:** uncommitted edits in the dev clone (`probe/`, `relay/`).
+Any dirty tree does it, and the dev clone is where sessions work — so this fires
+often. A pricing request queued by the cloud would never reach this laptop and
+nothing anywhere would say so. Same shape as the poller's 2,547 silent failures.
+
+**Fix (not applied):** check `errorlevel` after the pull; log a timestamped failure
+and exit non-zero. ~4 lines. Left alone tonight because the user's question was the
+window, and because this job may be deleted outright — see the open items below.
+
+### The CMD windows — fixed, and it had to be a shim, not a setting
+
+`ShengSiong Scan Request` fires every 5 min for 23h55 (**288/day**) and
+`Grocery New-Item Pricing` every 15 min (**96/day**). Task Scheduler's `Exec` action
+has no "hidden" option under `InteractiveToken`, so each run painted a console
+window — about one every four minutes, all day, on the user's desktop.
+
+[`run-hidden.vbs`](run-hidden.vbs) (repo root) now fronts both. Tasks re-pointed to
+`wscript.exe //B //Nologo "<shim>" "<target.cmd>"`.
+
+⚠️ **Window style `0` AND `bWaitOnReturn` `True`, both deliberate.** `0` is genuinely
+invisible where `powershell -WindowStyle Hidden` paints-then-hides (a flicker, at this
+frequency). `True` makes wscript block and return the real exit code, so
+`ExecutionTimeLimit` and `MultipleInstancesPolicy=IgnoreNew` still work — with `False`
+every run reports instant success and slow runs pile up.
+
+⚠️ **Do not wrap the target in `cmd.exe /c "..."`.** `cmd` strips the first and last
+quote of the whole string, and with spaces in both paths (`Claude Private projects`,
+`shengsiong-runner`) that tore the path in half and returned 1 without running
+anything. `WshShell.Run` starts a `.cmd` by itself; the extra `cmd.exe` was never
+needed. This cost a debugging round tonight.
+
+Verified: exit-code passthrough `7`, missing-argument guard `2`, and the **real**
+scan-request job exit `0` in 4.2 s with its log line written. `LogonType` is still
+`InteractiveToken` after `schtasks /change` — that command prints a run-as-password
+warning which is spurious for an interactive task, but **check the XML after any
+`/change`**, because it can convert a task to password-based.
+
+⚠️ **Hiding a job makes its log the only way to notice it failing.** That makes the
+`tg-drain` finding above more important, not less.
+
+### ⚠️ The 5-minute cadence was never asked for (user, 2026-08-12)
+
+Worth recording because it shaped a whole subsystem. What the user asked for was
+"Rescan should actually rescan" — they tapped it and got the same page back. The
+**every-5-minutes-all-day poll was the implementation's choice**, not a requirement,
+and it was made hours after the Cloudflare relay had *retired* the Telegram poller
+for being exactly this pattern.
+
+**What the user actually wants: one full scan at 09:00 and one at 11:00 SGT.**
+Their words: that is when they plan the day around what is on sale, and *"everything
+else is a waste"*.
+
+⚠️ **The current schedule cannot hit those times.** `daily.yml` requests 08:00 SGT
+and free-repo crons queue by 3–3¾ h — the comment in that file calls the cron a
+*floor* for this reason. One scan a day, landing between 08:00 and lunchtime. The
+**Worker cron is the reliable clock** (already demonstrated by `tgsweep` firing every
+15 min), which is the same machinery the placement result above unlocks.
+
+### Open — in the order I would take them
+
+1. **Re-check probe drift tomorrow**, then delete the probe. One `curl` with
+   `?id=place-msq4fu18-0`; `stuck:false` changes the plan completely.
+2. **Fix the `tg-drain` silent pull failure** regardless of what happens to the job
+   — 4 lines, and it is lying right now.
+3. **Move the scan to Cloudflare**: Worker cron at 01:00 and 03:00 UTC (= 09:00 and
+   11:00 SGT) → DO pinned `apac` → verify SG via `cdn-cgi/trace` → scan → commit.
+   Then delete `ShengSiong Scan Request`, `ShengSiong Daily Scan`, the
+   `scan-request.json` mailbox, and `Grocery New-Item Pricing` (its Sheng Siong
+   pricing is the same capability). Both CMD windows go with them.
+4. **Decide on the relay's 15-min `tgsweep`.** It is not a scan and costs nothing
+   locally — it files unanswered bot questions after an hour. Keep it if the bot's
+   ask-about-an-item flow is used; it is pure waste if not, and deleting the trigger
+   stops the one-hour rule silently.
+
+### Network note — two `git pull` timeouts, and it was NOT a VPN
+
+`ss-request.log` has failures at 20:45 and 21:30, both `Failed to connect to
+github.com port 443 after ~21 s`. Checked immediately after: `curl` reached
+github.com in **1.19 s**, and `cdn-cgi/trace` reported `loc=SG colo=SIN
+ip=119.56.76.250` — egress was Singapore the whole evening. So this is **not** the
+VPN confound that has now been mistaken for a WAF change three times. Intermittent,
+undiagnosed, and currently harmless because the retry is the next run. Note it if it
+gets worse.
+
+### What 2026-08-12 (daytime) did — a code review, and the one bug it found that costs money
 
 No feature work. A read-only diagnosis of the whole tree, then the three findings
 worth acting on plus the two cleanups behind them. **Nothing in the running system
