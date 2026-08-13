@@ -63,6 +63,17 @@ export const PAGE_CSS = `
   /* Recently-bought rows: quieter than a card, but the buttons still need a
      thumb-sized target, so the row is taller than the old one-line paragraph. */
   .snooze { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 5px 2px; }
+  /* Rows for items that want a size written into their Notion name. Same quiet
+     shape as .snooze — neither is a deal — but with no buttons, because the fix
+     is a decision only the user can make (see weightGapRow). NB the gap: property
+     below is flexbox's, not this class.
+     ⚠️ Two things this block must not contain: backticks (it is inside a template
+     literal) and the section's own heading text (the page is asserted against by
+     substring, and a comment repeating a heading makes those checks always pass). */
+  .gap { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 8px; padding: 5px 2px; }
+  .gaphint { color: #6b7280; font-size: .82rem; margin-left: auto; }
+  .gaphint code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .8rem;
+    background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 5px; padding: 1px 5px; }
   .sname { font-weight: 600; font-size: .95rem; }
   .acts { margin-left: auto; display: flex; gap: 6px; }
   .act { display: inline-flex; align-items: center; justify-content: center; min-height: 32px;
@@ -188,7 +199,8 @@ export const PAGE_CSS = `
   .foot a { color: #9ca3af; text-decoration: none; }
   @media (prefers-color-scheme: dark) {
     body { background: #0f1115; color: #e5e7eb; }
-    .sub, .pack, .meta, .per100, .usage, .section, .empty-sm { color: #9aa1ab; }
+    .sub, .pack, .meta, .per100, .usage, .section, .empty-sm, .gaphint { color: #9aa1ab; }
+    .gaphint code { background: #1c2026; border-color: #2c323a; color: #cbd2dc; }
     .card { background: #171a1f; border-color: #262b32; box-shadow: none; }
     .pct { color: #6ee7b7; background: #06251a; }
     .store { color: #e5e7eb; }
@@ -446,7 +458,11 @@ function githubOneTapScript(o: ChromeOptions): string {
     var head = null, live = false;
     var settle = function () { if (head) head.style.display = live ? "" : "none"; };
     document
-      .querySelectorAll(".wrap > h2.section, .wrap > .card, .wrap > .snooze, .wrap > .empty-sm")
+      // ⚠️ Every row class belongs in this list, .gap included. A heading whose
+      // rows are not matched here counts as having nothing under it and gets
+      // display:none on the first tap — omitting a new row class silently deletes
+      // that whole section from view. (No backticks: template literal.)
+      .querySelectorAll(".wrap > h2.section, .wrap > .card, .wrap > .snooze, .wrap > .empty-sm, .wrap > .gap")
       .forEach(function (el) {
         if (el.tagName === "H2") { settle(); head = el; live = false; }
         else live = true;

@@ -28,14 +28,32 @@ All notable changes to this project are documented here. Format based on
   says `(g/ml)` but a **By Unit** row states it in the row's own units (the egg row carries
   30, meaning thirty eggs). Inclusive, because Milk (Low Fat) states 2000 and its recorded
   NTUC pack is exactly 2000 ml.
+  ⚠️ **A count cannot bound a listing that only states a weight, and most listings only
+  state a weight.** `Stock cubes (120g)[Knorr]` and `Bread, Wholemeal, [FairPrice] (600g)`
+  each matched a real product on the first NTUC pass and were then discarded as "measured
+  by weight, but this row is By Unit" — the ceiling never got a say. So `ceilingGramsFor`
+  converts it, by the user's arithmetic: **ceiling × (the pack's weight ÷ its count)**,
+  reading the weight from the row's own `Name` (`egg (Omega 3 Enriched) (550g)`) and the
+  count from its cheapest priced slot. Eggs: 550 g ÷ 10 = 55 g each, × 30 = a 1.65 kg
+  ceiling. The count still answers first wherever a shop states one; the weight is only the
+  fallback, and never a second gate on top of a stated count.
+  Either half missing ⇒ **no** weight ceiling rather than a guessed one; the count ceiling
+  still applies. Two rows are in that state today (`Bread, Whole grain (Low GI)` and
+  `Eggs, Whole, small`), both because their `Name` states no weight.
+  ⚠️ The report now prints both figures on a By Unit row — `≤ 600 pcs (≈ 18kg by weight)` —
+  because a value typed in the wrong dimension is otherwise invisible. That line is how the
+  four rows below were spotted.
   A pack inside a declared ceiling also stops being queued for Telegram review as "catering
   size" — `BULK_GRAMS` is a 2 kg guess made with no knowledge of the item, and a number the
   user typed on that row is the same judgement made with full knowledge of it.
-  Measured on a report-only NTUC pass: 43 of 58 scan rows carry a ceiling, and **129
-  candidates were dropped by it**. Four rows now state a ceiling *below* a pack already in
-  their price book — Sesame Oil (200 ml vs 700 ml), White Pepper, Tau Kwa (200 g vs 450 g)
-  and Instant Coffee (300 g vs 420 g) — so those slots will be re-priced downward or find
-  nothing until the ceiling is raised.
+  Measured on a report-only NTUC pass: 43 of 58 scan rows carry a ceiling and **82
+  candidates were dropped by it**. Only White Pepper now states a ceiling below a pack
+  already in its book, which is the point — that slot re-prices from the 1 kg bag to the
+  100 g jar on the next `--write`.
+  ⚠️ **Four By Unit rows carry a number that looks like grams on a column the code reads as
+  a count**: `Bread, Wholemeal (600g)` → 600 slices ≈ 18 kg, `Stock cubes` → 500 cubes ≈
+  5 kg, and both tea rows → 2000 bags ≈ 4 kg. Harmless (a loose ceiling only fails to
+  filter) but not the bound that was meant. Left as typed — the numbers are the user's.
 
 ### Changed
 - **Rescan now actually rescans Sheng Siong (2026-08-12).** Asked for by the user, after

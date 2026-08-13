@@ -2,6 +2,7 @@ import { check, describe, eq } from "./harness.js";
 import { findWeightGap } from "../core/compare.js";
 import { formatWeightGaps, type WeightGapNote } from "../core/telegram.js";
 import { parseName } from "../core/parse.js";
+import { renderDealsPage } from "../core/site.js";
 import type { PlanTarget } from "../core/notion.js";
 import type { StoreProduct } from "../core/stores/types.js";
 
@@ -163,6 +164,67 @@ check(
 	"a name with markup in it is escaped, not rendered",
 	// Notion row names are free text and this message is parse_mode=HTML.
 	formatWeightGaps([note({ name: "Eggs <b>big</b>" })]).includes("&lt;b&gt;big&lt;/b&gt;"),
+);
+
+// ── the page section ────────────────────────────────────────────────────────────
+
+const gapsForPage = [
+	{ name: "Eggs", store: "Sheng Siong", size: 600, volumetric: false },
+	{ name: "Milk (Low Fat)", store: "FairPrice", size: 2000, volumetric: true },
+];
+const page = renderDealsPage([], [], new Date(), [], {
+	repo: "tmje30/NTUC-and-other-scrapers-nutrition",
+	snoozed: [{ name: "Rolled Oats", until: "2026-08-20", key: "oats", ingredientId: "ing-oats" }],
+	weightGaps: gapsForPage,
+});
+
+/**
+ * ⚠️ Matched on the heading ELEMENT, not the phrase. The first version searched for
+ * the bare text and passed unconditionally — the same words appear in a CSS comment
+ * near the top of the page, so "no gaps means no section" was green while the
+ * section was always present. A substring assertion against a whole HTML document
+ * is only as good as its anchor.
+ */
+const GAP_HEADING = `<h2 class="section">📏 Needs a size in the name</h2>`;
+const SNOOZE_HEADING = `<h2 class="section">Recently bought · not searched</h2>`;
+
+check("the page gains a section for them", page.includes(GAP_HEADING));
+check("…listing the item", page.includes(">Eggs<"));
+check("…and which shop priced it by weight", page.includes("Sheng Siong prices these by weight"));
+check("…with the example in the row", page.includes("Eggs (600g)"));
+check("a millilitre pack says volume, not weight", page.includes("FairPrice prices these by volume"));
+
+check(
+	"the section sits at the very bottom, below even the snoozed items",
+	// It is a chore, not a saving. Anything that isn't a deal sitting above
+	// something that is would be the page burying its own point.
+	page.includes(SNOOZE_HEADING) && page.indexOf(GAP_HEADING) > page.indexOf(SNOOZE_HEADING),
+);
+
+check(
+	"no gaps means no section at all",
+	!renderDealsPage([], [], new Date(), [], { repo: "r" }).includes(GAP_HEADING),
+);
+
+check(
+	"these rows are not counted as deals",
+	// The headline count reads `.card:not(.rec)`, and a chore is not a saving.
+	/<span id="dealcount">0 deals<\/span>/.test(page),
+);
+
+check(
+	"the row class is registered with prune()",
+	// ⚠️ A heading whose rows aren't in prune()'s selector counts as empty and gets
+	// display:none on the first tap — the whole section would vanish from view.
+	/querySelectorAll\([^)]*\.wrap > \.gap/.test(page),
+);
+
+check(
+	"a name with markup is escaped on the page too",
+	renderDealsPage([], [], new Date(), [], {
+		repo: "r",
+		weightGaps: [{ name: "Eggs <b>x</b>", store: "S", size: null, volumetric: false }],
+	}).includes("Eggs &lt;b&gt;x&lt;/b&gt;"),
 );
 
 // ── the advice has to actually work ─────────────────────────────────────────────

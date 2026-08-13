@@ -130,6 +130,15 @@ try {
 	console.error(`Sheng Siong pack shots failed — ${(e as Error).message}. Building without them.`);
 }
 
+// One shape, two readers: the page lists them all at the bottom, the Telegram
+// message names the first few. Built once so the two cannot drift.
+const weightGapNotes = weightGaps.map((g) => ({
+	name: g.target.name,
+	store: g.product.store,
+	size: g.exampleGrams,
+	volumetric: g.volumetric,
+}));
+
 await mkdir("public", { recursive: true });
 await writeFile(
 	"public/index.html",
@@ -138,6 +147,7 @@ await writeFile(
 		addEndpoint: config.addEndpoint(),
 		snoozed,
 		warning,
+		weightGaps: weightGapNotes,
 	}),
 	"utf8",
 );
@@ -152,12 +162,7 @@ await writeFile(
 		shengsiong,
 		// Structured, not pre-formatted: summary.json is data and notify.ts is the
 		// only thing that knows it is writing for Telegram. See `formatWeightGaps`.
-		weightGaps: weightGaps.map((g) => ({
-			name: g.target.name,
-			store: g.product.store,
-			size: g.exampleGrams,
-			volumetric: g.volumetric,
-		})),
+		weightGaps: weightGapNotes,
 	}),
 	"utf8",
 );

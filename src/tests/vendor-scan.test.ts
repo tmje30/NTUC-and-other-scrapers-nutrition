@@ -1,5 +1,7 @@
 import {
+	ceilingGramsFor,
 	findSizeCeilingProp,
+	packWithinCeiling,
 	pickCandidate,
 	reputationPasses,
 	searchTermsFor,
@@ -271,6 +273,57 @@ eq(
 	"…and 60 eggs is not, even though its weight never enters into it",
 	withinSizeCeiling(30, sizeFor("By Unit", product({ unitCount: 60, packWeightG: 3000 }))),
 	false,
+);
+
+/**
+ * ⚠️ **A count cannot bound a listing that only states a weight**, and most listings only
+ * state a weight. Measured on the 2026-08-13 NTUC pass: `Stock cubes (120g)[Knorr]` and
+ * `Bread, Wholemeal, [FairPrice] (600g)` each matched a real product and each was then
+ * discarded as "measured by weight, but this row is By Unit" — the ceiling never got a say.
+ *
+ * So it is converted, by the user's own arithmetic: **ceiling × (pack weight ÷ pack count)**.
+ */
+eq("the user's worked example: 30 units of a 350 g / 10 pack", ceilingGramsFor("By Unit", 30, 350, 10), 1050);
+eq("the live egg row: 30 eggs at 550 g / 10", ceilingGramsFor("By Unit", 30, 550, 10), 1650);
+
+// A weighed row's ceiling is already grams or millilitres — nothing to convert.
+eq("a By Gram ceiling passes through untouched", ceilingGramsFor("By Gram", 100, 1000, 1000), 100);
+eq("and so does a By ml one", ceilingGramsFor("By ml", 2000, null, null), 2000);
+
+/**
+ * ⚠️ **Null rather than a guess whenever either half is missing.** A row whose Name states
+ * no weight, or which has no priced slot to count against, gets no weight ceiling — the
+ * count ceiling still applies to anything a shop does state a count for. Inventing a
+ * grams-per-unit figure would discard good candidates on precisely the rows with the least
+ * information to check the result against.
+ */
+eq("no weight in the row's Name ⇒ no weight ceiling", ceilingGramsFor("By Unit", 30, null, 10), null);
+eq("no priced pack to count against ⇒ no weight ceiling", ceilingGramsFor("By Unit", 30, 550, 0), null);
+eq("and no ceiling at all ⇒ nothing to convert", ceilingGramsFor("By Unit", null, 550, 10), null);
+
+/** The egg row as the scan actually holds it: ≤ 30 eggs, ≈ 1.65 kg. */
+const eggRow = { unitType: "By Gram" as UnitType, sizeCeiling: 30, ceilingGrams: 1650 };
+const eggs = { ...eggRow, unitType: "By Unit" as UnitType };
+
+// The count answers on its own wherever a shop states one — no arithmetic needed.
+check("a 30-egg tray is inside the count ceiling", packWithinCeiling(eggs, { unitCount: 30, packWeightG: null }));
+check("a 60-egg tray is not", !packWithinCeiling(eggs, { unitCount: 60, packWeightG: null }));
+
+// ⚠️ The weight is a FALLBACK, for the case the user raised: the shop lists the pack by
+// weight, so "By unit does not work" and the derived ceiling is the only bound there is.
+check("a 1.2 kg weighed pack falls back to the derived ceiling", packWithinCeiling(eggs, { unitCount: null, packWeightG: 1200 }));
+check("a 3 kg one is refused by it", !packWithinCeiling(eggs, { unitCount: null, packWeightG: 3000 }));
+
+/**
+ * ⚠️ **Count first, and never both.** A pack stating a count AND a weight is judged on the
+ * count, because the count is what lands in `Size[Vendor n]`. Gating on the derived weight
+ * as well would refuse a pack at exactly the stated ceiling whenever the shop's eggs happen
+ * to run larger than the row's own — the ceiling would then mean something the user never
+ * typed.
+ */
+check(
+	"30 large eggs at 2 kg still pass: the count is the number being recorded",
+	packWithinCeiling(eggs, { unitCount: 30, packWeightG: 2000 }),
 );
 
 /**

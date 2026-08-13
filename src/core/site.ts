@@ -40,6 +40,16 @@ export interface PageOptions extends ChromeOptions {
 	 * with no Sheng Siong bargains, and the page invites you to trust half a search.
 	 */
 	warning?: string;
+	/**
+	 * Items a shop priced by weight that this row has no weight to compare against —
+	 * fixable only by writing a size into the Notion name. See `findWeightGap`.
+	 *
+	 * Shown at the very bottom of the page, below even the snoozed items, and that
+	 * placement is the point: it is a chore, not a deal, and nothing here saves money
+	 * today. The Telegram message names the first few; this is where the whole list
+	 * lives so the message can stay short.
+	 */
+	weightGaps?: { name: string; store: string; size: number | null; volumetric: boolean }[];
 }
 
 function esc(s: string): string {
@@ -731,6 +741,32 @@ function snoozeRow(s: NonNullable<PageOptions["snoozed"]>[number], o: PageOption
     </div>`;
 }
 
+/**
+ * One "this needs a size in its name" row.
+ *
+ * ⚠️ **No button, deliberately.** Every other actionable row on this page posts a
+ * `repository_dispatch` and edits Notion for you. This one cannot: the fix is a
+ * judgement about which pack the user actually buys, the row's name is shared by
+ * all four vendor slots, and the only size available to offer is the *shop's*.
+ * Writing that automatically would put a number nobody chose into a live database
+ * — the same mistake as the $399/kg eggs, arrived at politely. So it tells, and
+ * the user types.
+ */
+function weightGapRow(g: NonNullable<PageOptions["weightGaps"]>[number]): string {
+	const unit = g.volumetric ? "ml" : "g";
+	const measure = g.volumetric ? "volume" : "weight";
+	// "e.g." carries the whole caveat: this is the format to copy, not the figure.
+	const example = g.size
+		? `<span class="gaphint">e.g. <code>${esc(g.name)} (${g.size}${unit})</code></span>`
+		: `<span class="gaphint">add the ${measure} of the pack you buy</span>`;
+	return `
+    <div class="gap">
+      <span class="sname">${esc(g.name)}</span>
+      <span class="pack">${esc(g.store)} prices these by ${measure}</span>
+      ${example}
+    </div>`;
+}
+
 function dealCard(d: Deal, o: PageOptions): string {
 	const t = d.target; // your ingredient (the "main item")
 	const p = d.product; // the cheaper store product we found
@@ -986,7 +1022,21 @@ export function renderDealsPage(
 				ignored.map((s) => snoozeRow(s, o)).join("")
 			: "");
 
-	const cards = saleSection + planSection + otherSection + recSection + snoozeSection;
+	// Dead last, below even the snoozed items (user's call, 2026-08-13). These are
+	// the matches that were found and could not be priced — real, but a chore rather
+	// than a saving, and nothing here is cheaper today. Anything that isn't a deal
+	// sitting above something that is would be the page burying its own point.
+	const gaps = o.weightGaps ?? [];
+	const gapSection = gaps.length
+		? `<h2 class="section">📏 Needs a size in the name</h2>` +
+			`<p class="empty-sm">These matched an item you buy, but the shop prices them by ` +
+			`weight and the Notion row has no size to compare against — so they can't be ` +
+			`turned into a deal. Add the size to the row's name and they'll be priced from ` +
+			`the next scan.</p>` +
+			gaps.map(weightGapRow).join("")
+		: "";
+
+	const cards = saleSection + planSection + otherSection + recSection + snoozeSection + gapSection;
 
 	return `<!doctype html>
 <html lang="en">

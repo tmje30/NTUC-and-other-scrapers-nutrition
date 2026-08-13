@@ -12,7 +12,7 @@ import {
 	searchTermsFor,
 	sizeFor,
 	unitKindAgrees,
-	withinSizeCeiling,
+	packWithinCeiling,
 	type CandidateOutcome,
 	type ScanRow,
 	type VendorRoute,
@@ -29,6 +29,7 @@ import {
 	reviewToken,
 	prunePending,
 	sizeBoundsFor,
+	sizeText,
 	withPending,
 	type PendingReview,
 	type ReviewReason,
@@ -176,7 +177,15 @@ async function main(): Promise<void> {
 	for (const row of rows) {
 		console.log(
 			`\n${"─".repeat(78)}\n${row.name}   [${row.unitType}]` +
-				(row.sizeCeiling != null ? `   ≤ ${row.sizeCeiling}${unitWord(row)}` : ""),
+				// ⚠️ Both figures on a By Unit row, and the second is not decoration. The
+				// column is labelled `(g/ml)` but a counted row bounds a COUNT, so `≤ 600`
+				// on a bread row reads as 600 slices — which is what the code does with it.
+				// Printing the derived weight beside it (`≈ 18kg`) is what makes a value
+				// typed in the wrong dimension visible instead of silently harmless.
+				(row.sizeCeiling != null ? `   ≤ ${row.sizeCeiling}${unitWord(row)}` : "") +
+				(row.sizeCeiling != null && row.unitType === "By Unit" && row.ceilingGrams != null
+					? ` (≈ ${sizeText(row.ceilingGrams)} by weight)`
+					: ""),
 		);
 		const terms = searchTermsFor(row.target);
 
@@ -217,7 +226,7 @@ async function main(): Promise<void> {
 					// "Pack too large" button: `sizeBoundsFor` below is what the user taught
 					// the scan one refusal at a time, and `Size - Ceiling (g/ml)` is them
 					// saying it up front for every shop at once.
-					if (!withinSizeCeiling(row.sizeCeiling, sizeFor(row.unitType, p))) {
+					if (!packWithinCeiling(row, p)) {
 						overCeiling++;
 						return false;
 					}
@@ -241,7 +250,10 @@ async function main(): Promise<void> {
 						// candidate under your ceiling" are different problems — the second one
 						// is the ceiling set too tight, and the only way to see that is to read
 						// the two facts together.
-						(overCeiling ? ` — ${overCeiling} over this row's ${row.sizeCeiling}${unitWord(row)} ceiling` : ""),
+						// Not re-quoting the ceiling in units here: on a By Unit row some of these
+					// were dropped on the derived WEIGHT, and naming one dimension for both
+					// would misreport half the count. The row header states both figures.
+					(overCeiling ? ` — ${overCeiling} over this row's size ceiling` : ""),
 				);
 				if (outcome.ok) break;
 			}
@@ -340,7 +352,7 @@ async function main(): Promise<void> {
 				// them about. Without this the three whey rows (ceiling 10 kg, real packs
 				// 2.5 kg) would clear the filter and then be queued anyway by `BULK_GRAMS`,
 				// which is 2 kg — asking a question already answered in Notion, every run.
-				sizeCeilingOk: row.sizeCeiling != null && withinSizeCeiling(row.sizeCeiling, size),
+				sizeCeilingOk: row.sizeCeiling != null && packWithinCeiling(row, p),
 				referencePer100g: referencePer100g(row.slots, slot.n, row),
 				rescued: !!rescued,
 				rejectedCheaper: !rescued && outcome?.ok ? outcome.rejected.length : 0,

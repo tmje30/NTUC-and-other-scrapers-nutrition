@@ -121,6 +121,8 @@ export interface ScanRow {
 	routes: { route: VendorRoute; slot: VendorSlot }[];
 	/** The biggest pack worth recording here, per `Size - Ceiling (g/ml)`. Null = no opinion. */
 	sizeCeiling: number | null;
+	/** The same ceiling as a WEIGHT, for candidates a shop lists by weight — `ceilingGramsFor`. */
+	ceilingGrams: number | null;
 }
 
 /**
@@ -182,6 +184,67 @@ export function withinSizeCeiling(ceiling: number | null, size: number | null): 
 	if (ceiling == null || !Number.isFinite(ceiling) || ceiling <= 0) return true;
 	if (size == null || !Number.isFinite(size) || size <= 0) return true;
 	return size <= ceiling;
+}
+
+/**
+ * The ceiling expressed as a **weight**, so a shop that lists by weight can still be bounded.
+ *
+ * On a By Gram / By ml row the column is already grams or millilitres and comes back
+ * unchanged. On a **By Unit** row it is a count, and a count cannot be compared against a
+ * listing that only states a weight — which is most of them. Measured on the 2026-08-13
+ * NTUC pass: `Stock cubes (120g)[Knorr]` and `Bread, Wholemeal, [FairPrice] (600g)` both
+ * matched a real product and both were then thrown away as "measured by weight, but this
+ * row is By Unit". The ceiling had nothing to say about either.
+ *
+ * So it is converted, by the user's own arithmetic (2026-08-13):
+ *
+ *   > By unit = 10, size = (350g), size ceiling = 30 units — which is 1050g, which would
+ *   > be the weight ceiling.
+ *
+ * i.e. **`ceiling × (what the row's pack weighs ÷ how many are in it)`**. The weight comes
+ * from the row's own `Name` — `egg  (Omega 3 Enriched) (550g)` — which is where this project
+ * has always read the weight of a counted pack (`packWeightOf`), and the count from the
+ * row's cheapest priced slot. Eggs: 550 g ÷ 10 = 55 g each, × 30 = a 1.65 kg ceiling.
+ *
+ * ⚠️ **Null rather than a guess whenever either half is missing.** A row whose Name states
+ * no weight, or which has no priced slot to count against, gets no weight ceiling at all —
+ * the count ceiling still applies to anything the shop does state a count for. Inventing a
+ * grams-per-unit figure here would silently discard good candidates on exactly the rows
+ * that have the least information to check the result against.
+ */
+export function ceilingGramsFor(
+	unitType: UnitType,
+	ceiling: number | null,
+	packWeightG: number | null,
+	packSize: number | null,
+): number | null {
+	if (ceiling == null || !Number.isFinite(ceiling) || ceiling <= 0) return null;
+	if (isByWeight(unitType)) return ceiling;
+	if (packWeightG == null || !Number.isFinite(packWeightG) || packWeightG <= 0) return null;
+	if (packSize == null || !Number.isFinite(packSize) || packSize <= 0) return null;
+	return ceiling * (packWeightG / packSize);
+}
+
+/**
+ * Is this candidate small enough for the row's price book?
+ *
+ * The count is asked first and answers on its own where a shop states one — 30 eggs against
+ * a ceiling of 30 needs no arithmetic. **The weight is only a fallback**, for the case the
+ * user raised: the shop lists a loaf, not slices, so "By unit does not work" and the
+ * derived `ceilingGrams` is the only bound available.
+ *
+ * ⚠️ Deliberately not both. A pack that states a count AND a weight is judged on the count,
+ * because that is the number that will land in `Size[Vendor n]`; adding the derived weight
+ * as a second gate would refuse packs at the stated ceiling whenever the shop's eggs happen
+ * to be larger than the row's.
+ */
+export function packWithinCeiling(
+	row: { unitType: UnitType; sizeCeiling: number | null; ceilingGrams: number | null },
+	product: { unitCount?: number | null; packWeightG?: number | null },
+): boolean {
+	const size = sizeFor(row.unitType, product as StoreProduct);
+	if (size != null) return withinSizeCeiling(row.sizeCeiling, size);
+	return withinSizeCeiling(row.ceilingGrams, product.packWeightG ?? null);
 }
 
 /**
@@ -282,24 +345,28 @@ export async function readScanRows(
 
 		const unitType = (selectName(p[ING_PROPS.UNIT_TYPE]) as UnitType) || "By Gram";
 		const cheapest = cheapestVendorSlot(slots);
+		const target = targetFor({
+			pageId: page.id,
+			name,
+			unitType,
+			tags,
+			baseline: {
+				priceSgd: cheapest?.slot.priceValue ?? null,
+				size: cheapest?.slot.sizeValue ?? null,
+			},
+		});
+		const sizeCeiling =
+			ceilingProp && typeof p[ceilingProp]?.number === "number" ? p[ceilingProp].number : null;
 
 		rows.push({
 			pageId: page.id,
 			name,
 			unitType,
-			target: targetFor({
-				pageId: page.id,
-				name,
-				unitType,
-				tags,
-				baseline: {
-					priceSgd: cheapest?.slot.priceValue ?? null,
-					size: cheapest?.slot.sizeValue ?? null,
-				},
-			}),
+			target,
 			slots,
 			routes: matched,
-			sizeCeiling: ceilingProp && typeof p[ceilingProp]?.number === "number" ? p[ceilingProp].number : null,
+			sizeCeiling,
+			ceilingGrams: ceilingGramsFor(unitType, sizeCeiling, target.packWeightG, target.packSize),
 		});
 	}
 	return { rows, skipped };
