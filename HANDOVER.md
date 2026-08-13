@@ -1729,12 +1729,111 @@ which only appears when a shop is **missing from a build that happened**. "No
 build at all" has no button. Its absence on a healthy page is correct behaviour,
 not a bug — that confused the user on 2026-08-05.
 
-## Next session — pick up here (as of 2026-08-12, evening)
+## Next session — pick up here (as of 2026-08-13, afternoon)
 
-*Started as "why does a CMD window keep opening on me every five minutes". That
-question turned out to be the thread: it led to a cadence nobody had asked for, a
-job that has been failing silently, and the probe that decides whether this laptop
-is in the system at all.*
+*⚠️ **Everything is committed and pushed.** `main` is clean and in sync with
+origin. That was not true this morning — a whole session's work sat uncommitted,
+which is itself what had been breaking `tg-drain`'s pull.*
+
+### What shipped today (2026-08-13)
+
+Nine commits, `a87cd56..e307c7d`. In the order they landed:
+
+1. **The session's backlog committed** (five commits): the `Size - floor` ceiling,
+   the colo instrumentation, the hidden-window shim and the `tg-drain` pull check,
+   `ss-worker/`, and the retire-the-laptop plan. Rebased onto the laptop's
+   overnight scan, so no price history was lost.
+2. **`cf-placement-probe` deleted**, Worker and source. It had answered its
+   question and then started lying — see below.
+3. **A failure notification on `daily.yml`.** When the run dies before the notify
+   step, Telegram now says so instead of going silent.
+4. **The "needs a size in its name" nudge**, in both the Telegram message and a
+   new section at the foot of the deals page.
+5. **A By Unit row can now record a pack the shop only weighs.**
+
+### ⚠️ Three corrections made today, each to something that READ as true
+
+The pattern is worth more than the individual fixes: in all three, nothing was
+broken, nothing errored, and the wrong thing was what a human would have believed.
+
+- **The placement probe's Singapore verdict was computed from the wrong field.**
+  `cdn-cgi/trace` fetched from inside a Worker reports `loc` as the *original
+  caller's* country, not the object's — with the laptop on a Danish VPN, objects
+  demonstrably serving from `SIN` reported `loc=DK`. Its headline "15 of 16 landed
+  in Singapore" was therefore partly measuring the laptop. **Read `colo`, never
+  `loc`**, and treat even `colo` as a hint: the authoritative test is whether Sheng
+  Siong returns a `101` upgrade rather than the `200` that means a challenge page.
+  The probe is deleted rather than fixed — `ss-worker` runs that check correctly on
+  every scan, and reports the `object` that served it and what each candidate
+  answered, so **a drift now shows up in the run itself** instead of in a separate
+  probe someone has to remember to re-run.
+- **The CHANGELOG and two test labels described a design that had been reversed.**
+  An inexact derived count was originally queued for Telegram confirmation; the
+  user reversed that ("it does not need to be exact"). The code follows the
+  reversal, but the docs did not: the changelog still said "queued, not written",
+  and two test labels said "so it is written without asking" / "so it goes to
+  review instead". **The assertions were correct, so the tests passed while their
+  labels stated the opposite of the behaviour** — the worst shape a test can have,
+  because the label is what the next reader believes. Corrected before committing.
+- **A CSS comment repeating a section heading made page assertions vacuous.** The
+  deals-page tests searched for the literal phrase "Needs a size in the name",
+  which also appears in a comment inside `PAGE_CSS` near the top of every page. So
+  "no gaps means no section" was green while the section was always rendered. The
+  page tests now anchor on the heading *element*.
+
+### ⚠️ Two traps in this codebase, both hit today
+
+- **`PAGE_CSS` and `menuScript()` are template literals.** A backtick inside a
+  comment in either one ends the string, and the CSS starts being parsed as
+  TypeScript. Both blocks now say so in a comment.
+- **`prune()` hides a section heading whose rows it cannot see.** Any new row class
+  must be added to its `querySelectorAll` in `page-chrome.ts`, or the whole section
+  gets `display:none` the moment any button anywhere on the page is tapped.
+
+### ⚠️ My own mistake, recorded because the history is misleading
+
+**`git add -A` swept concurrent work into two of my commits.** Another session was
+editing the vendor-scan files while I was committing; `e5d0700` ("deals page…") and
+`87afd3a` ("deals: say when an item needs a size…") therefore contain vendor
+`floor→ceiling` work that their messages do not mention. Nothing was lost and
+nothing is wrong in the tree, but **do not trust those two commit messages to
+describe their full contents.** The history is pushed, so it was left rather than
+rewritten. Commit `e307c7d` carries the honest description of that feature.
+
+### ⚠️ Blocked on the user — the cloud scan cannot go live without this
+
+`ss-worker` is deployed and holds `SCAN_SECRET`. It has **no `GITHUB_TOKEN`**, so
+the 09:00–11:00 SGT cron fires every 15 minutes and does nothing: it logs
+`skipped — no GITHUB_TOKEN set` and never opens a socket. Harmless, and it stays
+that way until three steps happen, none of which an assistant should do (creating
+credentials is the user's, and a token pasted into a terminal lands in a
+transcript):
+
+1. **Create a fine-grained PAT** at `github.com/settings/personal-access-tokens/new`
+   — this repository only, **Contents: read and write**, nothing else. That one
+   permission covers both jobs: committing the scan file and firing the rebuild.
+2. `cd ss-worker && npx wrangler secret put GITHUB_TOKEN`
+3. **Rotate `SCAN_SECRET`.** The live one was generated for testing and its value
+   is in a scratchpad file — treat it as burned. The same fresh value goes in two
+   places: `wrangler secret put SCAN_SECRET`, and `gh secret set SCAN_SECRET` so
+   the Rescan button can authenticate.
+
+Then, before letting it write anything: run it with `dryRun=1`, which exercises
+Singapore placement and the full parse and returns the scan **without** committing
+it. Only once that output looks right should it be allowed near the repo.
+
+Still open after that: wire `scan-request.yml` to call the Worker instead of
+committing the marker; verify the live cron end to end; then disable (not delete)
+`ShengSiong Daily Scan` and `Grocery New-Item Pricing`, and delete `ShengSiong
+Scan Request` and the marker mailbox. Two decisions nobody has made: whether the
+relay keeps its 15-minute `tgsweep`, and whether `daily.yml` keeps its own
+`schedule:` as a backstop.
+
+*The section below is the 2026-08-12 entry, kept for its detail. Started as "why
+does a CMD window keep opening on me every five minutes". That question turned out
+to be the thread: it led to a cadence nobody had asked for, a job that has been
+failing silently, and the probe that decides whether this laptop is in the system
+at all.*
 
 ### Where this stopped, and what is safe to assume
 
