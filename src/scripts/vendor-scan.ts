@@ -228,13 +228,7 @@ async function main(): Promise<void> {
 					return true;
 				});
 				if (products.length < before) skippedByUser += before - products.length - overFloor;
-				if (overFloor) {
-					skippedOverFloor += overFloor;
-					// Printed per search, because "no candidate" and "no candidate under
-					// your ceiling" are different problems and only one of them is the
-					// ceiling being set too tight.
-					console.log(`    (${overFloor} over this row's ${row.sizeFloor}${unitWord(row)} size ceiling)`);
-				}
+				skippedOverFloor += overFloor;
 				outcome = pickCandidate(row.target, products, {
 					marketplace: route.marketplace,
 					// A price already recorded at ANOTHER shop for this row — the one check
@@ -242,7 +236,12 @@ async function main(): Promise<void> {
 					reference: referencePer100g(row.slots, slot.n, row),
 				});
 				console.log(
-					`    search "${term}" — ${outcome.ok ? "match" : `no candidate (${outcome.reason})`}`,
+					`    search "${term}" — ${outcome.ok ? "match" : `no candidate (${outcome.reason})`}` +
+						// ⚠️ On the SAME line as the result it explains. "No candidate" and "no
+						// candidate under your ceiling" are different problems — the second one
+						// is the ceiling set too tight, and the only way to see that is to read
+						// the two facts together.
+						(overFloor ? ` — ${overFloor} over this row's ${row.sizeFloor}${unitWord(row)} ceiling` : ""),
 				);
 				if (outcome.ok) break;
 			}

@@ -207,9 +207,12 @@ is the one that has been failing silently (below).
    (HANDOVER has the detail). It is lying *right now*, and it stays in the system
    until Phase 4. Two changes: `--autostash` so a dirty dev clone stops blocking the
    pull, and an `errorlevel` check so real failures surface.
-2. **Re-check the placement probe for drift**, then `cd probe/placement && npx
-   wrangler delete`. One curl with `?id=place-msq4fu18-0`. Less load-bearing than it
-   was — Phase 1 does not depend on it — but a `stuck:false` would change Phase 3.
+2. ~~Re-check the placement probe for drift, then delete it.~~ ✅ **Done
+   2026-08-13 — deleted**, Worker and source both. Drift is now visible in the scan
+   itself: every response reports the `object` that served it and the `probes` each
+   candidate returned, so a changed object name in the morning response *is* the
+   drift signal. That is strictly better than a separate probe someone has to
+   remember to re-run, which is why it was deleted rather than fixed.
 
 ## Open — needs a decision
 

@@ -1871,10 +1871,15 @@ conclusion below (a Cloudflare cron can be made to run in Singapore) still holds
 and was confirmed independently by `ss-worker` scanning live from `SIN`. But the
 **numbers** below are wrong: the probe keys on `loc`, which reports the caller's
 country rather than the object's, so "15 of 16" measured the laptop as much as the
-object. Real `apac` hit rate looks closer to half. ⚠️ `probe/placement/` is still
-deployed as `cf-placement-probe` and **will report misleading verdicts** — either
-fix it to key on `colo` or delete it (`cd probe/placement && npx wrangler delete`);
-`ss-worker` no longer depends on it.
+object. Real `apac` hit rate looks closer to half.
+
+✅ **RESOLVED 2026-08-13: the probe is deleted**, both the deployed
+`cf-placement-probe` Worker and `probe/placement/` in the tree. It was a worse
+copy of a check `ss-worker` now runs correctly on every scan, and leaving a live
+endpoint printing `PASS` / `NO SG` from the wrong field would keep telling future
+readers something false. The lesson it taught — read `colo`, never `loc` — is
+recorded in `probe/README.md` and in `ss-worker/worker.ts`. Source is in git
+history if it is ever wanted back.
 
 `probe/placement/` was written the night before and never validly run. It ran
 tonight and the verdict is **PASS**.
@@ -1902,8 +1907,12 @@ retirement of the laptop. It is now answered. Both laptop tasks, and the whole
 have is the one the probe's own docstring names: a DO that drifts "would work for
 days and then quietly stop". Tonight cannot rule that out. Two consequences:
 
-- The probe is **still deployed** so the same objects can be re-queried tomorrow
-  for drift. `cd probe/placement && npx wrangler delete` when done with it.
+- ~~The probe is still deployed so the same objects can be re-queried tomorrow for
+  drift.~~ **Deleted 2026-08-13.** Drift is now watched by `ss-worker` instead,
+  and better: every scan response reports which object served it (`object`) and
+  what each candidate answered (`probes`), so a drift shows up in the run itself
+  rather than in a separate probe someone has to remember to re-run. If the
+  object name in the morning response changes, that is the drift.
 - ⚠️ Whatever gets built **must call `cdn-cgi/trace` before scraping** and refuse
   to believe a "blocked" result from outside SG. That converts a silent drift into
   a loud failure instead of a quietly stale page. The relay README already gives
