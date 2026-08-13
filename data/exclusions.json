@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-13T11:02:07.174Z",
+  "updatedAt": "2026-08-13T11:02:46.885Z",
   "terms": [
     {
       "key": "instant coffe",
@@ -173,6 +173,15 @@
       "name": "White Pepper",
       "note": "ignored from the deals page",
       "addedAt": "2026-08-13T11:02:07.174Z"
+    },
+    {
+      "key": "*",
+      "store": "FairPrice",
+      "product": "Huiji Honey",
+      "url": "https://www.fairprice.com.sg/product/huiji-honey-1kg-10869041",
+      "name": "Honey (Raw)",
+      "note": "ignored from the deals page",
+      "addedAt": "2026-08-13T11:02:46.885Z"
     }
   ]
 }
