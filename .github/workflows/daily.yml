@@ -84,3 +84,37 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           SITE_URL: ${{ steps.deploy.outputs.page_url }}
+
+      # ⚠️ **Silence is the failure mode this exists to remove.** A partial failure
+      # already speaks for itself: `build-site` writes a `warning` into summary.json
+      # (e.g. "Sheng Siong is missing from this scan") and `sendSummary` puts it in
+      # the same message as the deals, sending even on a zero-deal day. But when the
+      # run dies *before* that step — a store throwing, Notion refusing, the deploy
+      # failing — nothing is sent at all, and a broken morning looks exactly like a
+      # morning with no discounts. This says so out loud instead.
+      #
+      # ⚠️ **Raw curl, not `npm run notify`, and that is the point.** Two of the most
+      # likely breakages are `setup-node` and `npm ci`, which leave no node_modules
+      # for a script to run in. A notifier that depends on the thing that just failed
+      # goes quiet exactly when it is needed. curl is on every GitHub runner.
+      #
+      # `failure()` already excludes cancellations, so stopping a run by hand stays
+      # quiet. It does not fire if the runner itself dies — nothing can cover that.
+      - name: Say so in Telegram if the run failed
+        if: failure()
+        env:
+          TG_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TG_CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          TEXT="🛑 <b>The grocery scan failed — nothing is working.</b>
+          No prices were checked today, so there is no deals list and no page update.
+          <a href=\"${RUN_URL}\">See what broke →</a>
+
+          You can retry from the Rescan button, or from the Actions tab."
+          curl -sS --max-time 30 -X POST \
+            "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TG_CHAT}" \
+            --data-urlencode "parse_mode=HTML" \
+            --data-urlencode "disable_web_page_preview=true" \
+            --data-urlencode "text=${TEXT}"
