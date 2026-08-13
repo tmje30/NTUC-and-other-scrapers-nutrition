@@ -222,3 +222,83 @@ export function findReview(
 	}
 	return best;
 }
+
+/**
+ * A right product that cannot be priced **until a weight is written into the row's
+ * name** — and is therefore silently dropped today.
+ *
+ * The case, from the user (2026-08-13): *"found eggs, but only in weight. So I know
+ * I need to add a weight to the name — (xg)"*. Exactly what happens is:
+ *
+ *  1. `Eggs` is a `By Unit` row, so it has a per-piece baseline and IS searched.
+ *  2. Its `baselinePer100g` is null, because no weight appears in its name or in
+ *     any slot's item name — `packWeightOf` correctly invents nothing.
+ *  3. The shop returns the right eggs, but states only a pack weight and no count.
+ *  4. `priceCandidate` finds no per-piece figure (no count) and no per-100g figure
+ *     (no row baseline), returns null, and `findDeal` skips the product.
+ *
+ * Every step is behaving correctly, and the outcome is still that a genuine match
+ * vanishes with no trace. **This is the one drop the user can fix themselves**, by
+ * writing `Eggs (600g)` in Notion — `packWeightOf` reads the weight out of the
+ * name, `baselinePer100g` appears, and step 4 starts succeeding.
+ *
+ * ⚠️ **ACCEPT band only, never review band.** A review-band near-miss might not be
+ * the right product at all, and telling someone to retype their Notion row on the
+ * strength of a maybe is worse than saying nothing — they would edit the row, the
+ * match would still fail, and the advice would have cost them trust. Only a
+ * candidate confident enough to have been published as a deal earns the nudge.
+ *
+ * ⚠️ Returns null when the row already has a weight. A null price there is the
+ * product's doing (a pack that states neither weight nor count) and no amount of
+ * renaming fixes it — a suggestion that cannot work is worse than none.
+ */
+export interface WeightGap {
+	target: PlanTarget;
+	/** The best-priced candidate that would become comparable — the reason to bother. */
+	product: StoreProduct;
+	/**
+	 * The shop's own pack weight, as a worked example for the name.
+	 *
+	 * ⚠️ **An illustration of the format, not a fact about the user's pack.** The
+	 * shop's 600 g carton says nothing about which carton they buy, and the row's
+	 * name is global across all four vendor slots. It is offered as "e.g." for that
+	 * reason and must never be written into Notion automatically.
+	 */
+	exampleGrams: number | null;
+	/** The shop's figure is a volume (ml), so the example should not say grams. */
+	volumetric: boolean;
+}
+
+export function findWeightGap(
+	target: PlanTarget,
+	products: StoreProduct[],
+	exclusions: ExclusionFile = EMPTY_EXCLUSIONS,
+): WeightGap | null {
+	// The row already states a weight — nothing here is the user's to fix.
+	if (target.baselinePer100g != null && target.baselinePer100g > 0) return null;
+
+	let best: WeightGap | null = null;
+	const key = cooldownKey(target.search.searchTerm);
+	for (const product of products) {
+		if (exclusionReason(exclusions, key, product)) continue;
+		if (evaluate(target, product).verdict !== "accept") continue;
+		// Already priceable (the shop gave a count) — no gap, no advice needed.
+		if (priceCandidate(target, product)) continue;
+		// The shop priced by weight and the row cannot meet it. Note that a non-null
+		// `pricePer100g` implies a known pack weight, since it is derived from one.
+		if (!(product.pricePer100g && product.pricePer100g > 0)) continue;
+
+		// Cheapest per 100 wins: among several fixable candidates, the one that would
+		// actually be worth surfacing is the best-value one, and it makes the nudge an
+		// answer to "why bother?" rather than a chore.
+		if (!best || product.pricePer100g < best.product.pricePer100g!) {
+			best = {
+				target,
+				product,
+				exampleGrams: product.packWeightG ?? null,
+				volumetric: product.volumetric === true,
+			};
+		}
+	}
+	return best;
+}

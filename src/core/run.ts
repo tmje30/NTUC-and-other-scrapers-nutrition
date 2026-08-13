@@ -3,7 +3,7 @@ import { vendorLabel } from "./grocery-list.js";
 import { fairprice } from "./stores/fairprice.js";
 import { shengsiong } from "./stores/shengsiong.js";
 import { shengsiongFile, type ShengSiongStatus } from "./stores/shengsiong-file.js";
-import { findDeal, findReview, type Deal, type ReviewMiss } from "./compare.js";
+import { findDeal, findReview, findWeightGap, type Deal, type ReviewMiss, type WeightGap } from "./compare.js";
 import { normSynonyms } from "./match.js";
 import { cooldownKey, findCooldown, type CooldownReason } from "./cooldown.js";
 import { readCooldowns } from "./cooldown-file.js";
@@ -58,6 +58,11 @@ export interface RunResult {
 	 * defining property wasn't met, so it's never a deal, but it's worth seeing.
 	 */
 	recommendations: ReviewMiss[];
+	/**
+	 * Right products that can't be priced until a weight is written into the row's
+	 * name — the one kind of silent drop the user can fix. See `findWeightGap`.
+	 */
+	weightGaps: WeightGap[];
 	/**
 	 * Whether this run had Sheng Siong prices at all. Null when the live module is
 	 * in use (local runs), where the question doesn't arise.
@@ -208,12 +213,19 @@ export async function runOnce(): Promise<RunResult> {
 	const errors: RunResult["errors"] = [];
 	const reviews: RunResult["reviews"] = [];
 	const recommendations: ReviewMiss[] = [];
+	const weightGaps: WeightGap[] = [];
 	for (const target of comparable) {
 		const products = await searchAllStores(target, errors);
 		const deal = findDeal(target, products, exclusions);
 		if (deal) {
 			deals.push(deal);
 		} else {
+			// ⚠️ Only when nothing was published for this item. A row that produced a
+			// deal from some other pack is working; nagging about a second pack it
+			// could ALSO have priced would be noise on a day that already succeeded.
+			const gap = findWeightGap(target, products, exclusions);
+			if (gap) weightGaps.push(gap);
+
 			const rev = findReview(target, products, exclusions);
 			if (rev) {
 				reviews.push({
@@ -243,6 +255,13 @@ export async function runOnce(): Promise<RunResult> {
 	// Best (cheapest relative to its own baseline) recommendations first. A ratio, so
 	// it ranks per-piece and per-100g misses against each other meaningfully.
 	recommendations.sort((a, b) => a.productPrice! / a.baseline! - b.productPrice! / b.baseline!);
+	// Plan items first, then by name: the message shows only the first few, so the
+	// ones the user actually cooks with should be the ones that make the cut.
+	weightGaps.sort(
+		(a, b) =>
+			Number(b.target.inActivePlan) - Number(a.target.inActivePlan) ||
+			a.target.name.localeCompare(b.target.name),
+	);
 	return {
 		planDeals,
 		otherDeals,
@@ -251,6 +270,7 @@ export async function runOnce(): Promise<RunResult> {
 		reviews,
 		snoozed,
 		recommendations,
+		weightGaps,
 		// Only meaningful for the file-backed module the cloud uses; the live module
 		// either worked or threw.
 		shengsiong: ss === shengsiongFile ? shengsiongFile.status() : null,

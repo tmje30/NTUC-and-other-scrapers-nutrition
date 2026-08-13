@@ -95,7 +95,7 @@ export function reviewReasons(
 	product: StoreProduct,
 	{
 		packGrams,
-		sizeFloorOk = false,
+		sizeCeilingOk = false,
 		referencePer100g = null,
 		rescued = false,
 		rejectedCheaper = 0,
@@ -104,7 +104,7 @@ export function reviewReasons(
 		/** What this pack weighs, per `packWeightOf` — null for a piece-priced pack. */
 		packGrams: number | null;
 		/**
-		 * The row states a `Size - floor (g/ml)` ceiling and this pack is inside it.
+		 * The row states a `Size - Ceiling (g/ml)` and this pack is inside it.
 		 *
 		 * ⚠️ Suppresses the `bulk` reason and nothing else. `BULK_GRAMS` is a guess about
 		 * where "a shop" becomes "a caterer", made with no knowledge of the item; a ceiling
@@ -115,7 +115,7 @@ export function reviewReasons(
 		 * The multipack test below still runs: "12 × 1 L" is a statement about how the pack
 		 * is SOLD, which a size ceiling has no opinion on.
 		 */
-		sizeFloorOk?: boolean;
+		sizeCeilingOk?: boolean;
 		referencePer100g?: number | null;
 		/** Allowed back in on seller reputation despite being under the price floor. */
 		rescued?: boolean;
@@ -127,7 +127,7 @@ export function reviewReasons(
 	const out: ReviewReason[] = [];
 	const text = `${product.name ?? ""} ${product.url ?? ""}`;
 
-	if (!sizeFloorOk && packGrams != null && packGrams >= BULK_GRAMS) {
+	if (!sizeCeilingOk && packGrams != null && packGrams >= BULK_GRAMS) {
 		out.push({
 			kind: "bulk",
 			grams: packGrams,

@@ -30,6 +30,7 @@ const {
 	recommendations,
 	snoozed,
 	shengsiong,
+	weightGaps,
 	errors,
 } = await runOnce();
 
@@ -149,10 +150,21 @@ await writeFile(
 		generatedAt: new Date().toISOString(),
 		warning,
 		shengsiong,
+		// Structured, not pre-formatted: summary.json is data and notify.ts is the
+		// only thing that knows it is writing for Telegram. See `formatWeightGaps`.
+		weightGaps: weightGaps.map((g) => ({
+			name: g.target.name,
+			store: g.product.store,
+			size: g.exampleGrams,
+			volumetric: g.volumetric,
+		})),
 	}),
 	"utf8",
 );
 if (warning) console.error(`Warning: ${warning}`);
+for (const g of weightGaps) {
+	console.error(`Needs a size in the name: ${g.target.name} — ${g.product.store} priced it by weight only`);
+}
 console.error(`Wrote public/index.html (${total} deals) and public/summary.json`);
 
 /**

@@ -214,18 +214,71 @@ export async function sendDeals(deals: Deal[]): Promise<number> {
 }
 
 /**
+ * One item that needs a weight typed into its Notion name before it can be
+ * compared. The structured form of `findWeightGap`, as carried in summary.json.
+ */
+export interface WeightGapNote {
+	/** The Notion row's name, exactly as the user will see it when they go to edit it. */
+	name: string;
+	store: string;
+	/** The shop's own pack size, as an example of the format. May be null. */
+	size: number | null;
+	/** The shop's figure is millilitres, not grams. */
+	volumetric: boolean;
+}
+
+/** How many to name before summarising the rest. Three fits a phone notification. */
+const MAX_GAPS_SHOWN = 3;
+
+/**
+ * The "add a weight to the name" lines.
+ *
+ * Phrased as an instruction with a worked example, because that is the whole
+ * value: the user asked for this so they would know *what to type*. `(600g)`
+ * shown literally, with the brackets, since the brackets are the convention
+ * `packWeightOf` actually reads.
+ */
+export function formatWeightGaps(gaps: WeightGapNote[]): string {
+	if (!gaps.length) return "";
+	const shown = gaps.slice(0, MAX_GAPS_SHOWN);
+	const lines = shown.map((g) => {
+		// ⚠️ "e.g." is load-bearing. This is the SHOP's pack, not necessarily the one
+		// bought, and the row's name is shared by all four vendor slots — so it is an
+		// illustration of the format and must not read as the number to enter.
+		const eg = g.size ? ` — e.g. <code>${esc(g.name)} (${g.size}${g.volumetric ? "ml" : "g"})</code>` : "";
+		return `• <b>${esc(g.name)}</b>: ${esc(g.store)} sells these by ${g.volumetric ? "volume" : "weight"}, but the row has no ${g.volumetric ? "volume" : "weight"} to compare against. Add one to the name${eg}`;
+	});
+	const rest = gaps.length - shown.length;
+	const more = rest > 0 ? `\n• …and ${rest} more item${rest === 1 ? "" : "s"} need one too.` : "";
+	return `\n\n📏 <b>Needs a size in the name to be compared:</b>\n${lines.join("\n")}${more}`;
+}
+
+/**
  * Single daily message: "N deals today → tap to view", linking to the page.
  *
  * A `warning` (a shop missing from the scan) is worth a message on its own, even
  * on a day with no deals: silence is what a broken runner looks like, and the
  * whole point is that it should stop looking like a quiet day.
+ *
+ * ⚠️ **`gaps` deliberately do NOT earn a message of their own.** Unlike a warning,
+ * a missing weight is not a fault that appeared today — it is a standing property
+ * of the row, true again tomorrow and every day until the user edits Notion. On
+ * its own it would become a daily nag for a chore already noted, which is how a
+ * useful signal turns into one that gets muted. It rides along with a message that
+ * was being sent anyway, which is exactly what was asked for: mentioned *in* the
+ * discounts text.
  */
-export async function sendSummary(count: number, url: string, warning?: string): Promise<void> {
+export async function sendSummary(
+	count: number,
+	url: string,
+	warning?: string,
+	gaps: WeightGapNote[] = [],
+): Promise<void> {
 	if (count <= 0 && !warning) return; // nothing to say on an ordinary no-deal day
 	const headline =
 		count > 0
 			? `🛒 <b>${count} grocery deal${count === 1 ? "" : "s"}</b> beat your prices today.`
 			: `🛒 No deals beat your prices today.`;
 	const warn = warning ? `\n⚠️ ${esc(warning)}` : "";
-	await sendMessage(`${headline}${warn}\n<a href="${url}">Tap to view →</a>`);
+	await sendMessage(`${headline}${warn}\n<a href="${url}">Tap to view →</a>${formatWeightGaps(gaps)}`);
 }

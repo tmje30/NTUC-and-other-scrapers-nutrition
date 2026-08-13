@@ -12,7 +12,7 @@ import {
 	searchTermsFor,
 	sizeFor,
 	unitKindAgrees,
-	withinSizeFloor,
+	withinSizeCeiling,
 	type CandidateOutcome,
 	type ScanRow,
 	type VendorRoute,
@@ -168,15 +168,15 @@ async function main(): Promise<void> {
 	let written = 0;
 	let refused = 0;
 	let skippedByUser = 0;
-	/** Candidates dropped by the row's own `Size - floor (g/ml)` ceiling. */
-	let skippedOverFloor = 0;
+	/** Candidates dropped by the row's own `Size - Ceiling (g/ml)`. */
+	let skippedOverCeiling = 0;
 	/** Uncertain picks, queued for the Telegram ask at the end of the pass. */
 	const toAsk: PendingReview[] = [];
 
 	for (const row of rows) {
 		console.log(
 			`\n${"─".repeat(78)}\n${row.name}   [${row.unitType}]` +
-				(row.sizeFloor != null ? `   ≤ ${row.sizeFloor}${unitWord(row)}` : ""),
+				(row.sizeCeiling != null ? `   ≤ ${row.sizeCeiling}${unitWord(row)}` : ""),
 		);
 		const terms = searchTermsFor(row.target);
 
@@ -209,16 +209,16 @@ async function main(): Promise<void> {
 				// next week in a smaller size; a ceiling ends it. See `sizeBoundsFor`.
 				const bounds = sizeBoundsFor(review, row.pageId, route.option);
 				const before = products.length;
-				let overFloor = 0;
+				let overCeiling = 0;
 				products = products.filter((p) => {
 					if (isRejectedPick(review, row.pageId, route.option, p)) return false;
 					// ⚠️ The row's own declared ceiling, checked FIRST and in the row's own
-					// units — see `withinSizeFloor`. This is the standing version of the
+					// units — see `withinSizeCeiling`. This is the standing version of the
 					// "Pack too large" button: `sizeBoundsFor` below is what the user taught
-					// the scan one refusal at a time, and `Size - floor (g/ml)` is them
+					// the scan one refusal at a time, and `Size - Ceiling (g/ml)` is them
 					// saying it up front for every shop at once.
-					if (!withinSizeFloor(row.sizeFloor, sizeFor(row.unitType, p))) {
-						overFloor++;
+					if (!withinSizeCeiling(row.sizeCeiling, sizeFor(row.unitType, p))) {
+						overCeiling++;
 						return false;
 					}
 					const g = packWeightOf(row.unitType, sizeFor(row.unitType, p), row.name, p.name);
@@ -227,8 +227,8 @@ async function main(): Promise<void> {
 					if (bounds.minGrams != null && g <= bounds.minGrams) return false;
 					return true;
 				});
-				if (products.length < before) skippedByUser += before - products.length - overFloor;
-				skippedOverFloor += overFloor;
+				if (products.length < before) skippedByUser += before - products.length - overCeiling;
+				skippedOverCeiling += overCeiling;
 				outcome = pickCandidate(row.target, products, {
 					marketplace: route.marketplace,
 					// A price already recorded at ANOTHER shop for this row — the one check
@@ -241,7 +241,7 @@ async function main(): Promise<void> {
 						// candidate under your ceiling" are different problems — the second one
 						// is the ceiling set too tight, and the only way to see that is to read
 						// the two facts together.
-						(overFloor ? ` — ${overFloor} over this row's ${row.sizeFloor}${unitWord(row)} ceiling` : ""),
+						(overCeiling ? ` — ${overCeiling} over this row's ${row.sizeCeiling}${unitWord(row)} ceiling` : ""),
 				);
 				if (outcome.ok) break;
 			}
@@ -340,7 +340,7 @@ async function main(): Promise<void> {
 				// them about. Without this the three whey rows (ceiling 10 kg, real packs
 				// 2.5 kg) would clear the filter and then be queued anyway by `BULK_GRAMS`,
 				// which is 2 kg — asking a question already answered in Notion, every run.
-				sizeFloorOk: row.sizeFloor != null && withinSizeFloor(row.sizeFloor, size),
+				sizeCeilingOk: row.sizeCeiling != null && withinSizeCeiling(row.sizeCeiling, size),
 				referencePer100g: referencePer100g(row.slots, slot.n, row),
 				rescued: !!rescued,
 				rejectedCheaper: !rescued && outcome?.ok ? outcome.rejected.length : 0,
@@ -424,7 +424,7 @@ async function main(): Promise<void> {
 			(doWrite ? `, ${written} written, ${refused} refused/failed` : `, nothing written (no --write)`) +
 			(toAsk.length ? `, ${toAsk.length} awaiting your call` : "") +
 			(skippedByUser ? `, ${skippedByUser} listing(s) skipped as previously refused` : "") +
-			(skippedOverFloor ? `, ${skippedOverFloor} over a row's size ceiling` : "") +
+			(skippedOverCeiling ? `, ${skippedOverCeiling} over a row's size ceiling` : "") +
 			".\n",
 	);
 }

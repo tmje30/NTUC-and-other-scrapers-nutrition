@@ -6,6 +6,37 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+### Added
+- **`Size - Ceiling (g/ml)` caps the pack the price book will record (2026-08-13).** Added
+  by the user after the scan filed a **1 kg** bag of white pepper as the NTUC price:
+  honestly the cheapest per kilo, and not a pack anyone buys pepper in. The column states
+  the largest pack that row will accept — at or below it is fine, above it is not offered —
+  and `vendor-scan` drops the oversized candidates *before* the pick, so the ceiling
+  **promotes the next-best pack** rather than just skipping the big one. White Pepper now
+  records a 100 g FairPrice jar at $4.02 instead.
+  ⚠️ **The column was created as `Size - floor (g/ml)` and renamed within the hour**, since
+  "floor" said the opposite of what the number means. `findSizeCeilingProp` still resolves
+  the old spelling and that alias must stay — same reasoning as `CATEGORY_ALIASES` and
+  `DONT_SEARCH_TAGS`. When this database renamed `Catagory` → `Category` nothing errored;
+  every read just returned `undefined` for weeks. Here the symptom would be a 1 kg bag of
+  pepper quietly back in the price book.
+  ⚠️ **The price book only.** The deals/discovery page never sees it — a 5 kg sack at half
+  price is exactly the one-off purchase that page is for. The user's rule, unchanged from
+  the `vendor-review` one: the vendor slots are for general shopping and price comparison,
+  the discount page is for discounts.
+  ⚠️ Compared against what would land in `Size[Vendor n]`, not against grams: the column
+  says `(g/ml)` but a **By Unit** row states it in the row's own units (the egg row carries
+  30, meaning thirty eggs). Inclusive, because Milk (Low Fat) states 2000 and its recorded
+  NTUC pack is exactly 2000 ml.
+  A pack inside a declared ceiling also stops being queued for Telegram review as "catering
+  size" — `BULK_GRAMS` is a 2 kg guess made with no knowledge of the item, and a number the
+  user typed on that row is the same judgement made with full knowledge of it.
+  Measured on a report-only NTUC pass: 43 of 58 scan rows carry a ceiling, and **129
+  candidates were dropped by it**. Four rows now state a ceiling *below* a pack already in
+  their price book — Sesame Oil (200 ml vs 700 ml), White Pepper, Tau Kwa (200 g vs 450 g)
+  and Instant Coffee (300 g vs 420 g) — so those slots will be re-priced downward or find
+  nothing until the ceiling is raised.
+
 ### Changed
 - **Rescan now actually rescans Sheng Siong (2026-08-12).** Asked for by the user, after
   tapping it and getting the same page back. The button was shown *only* inside the

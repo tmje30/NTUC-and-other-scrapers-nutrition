@@ -119,48 +119,51 @@ export interface ScanRow {
 	slots: VendorSlot[];
 	/** The routes this row actually asks for, in slot order. */
 	routes: { route: VendorRoute; slot: VendorSlot }[];
-	/** The biggest pack worth recording here, per `Size - floor (g/ml)`. Null = no opinion. */
-	sizeFloor: number | null;
+	/** The biggest pack worth recording here, per `Size - Ceiling (g/ml)`. Null = no opinion. */
+	sizeCeiling: number | null;
 }
 
 /**
- * The `Size - floor (g/ml)` column — **the biggest pack this row will accept in its price
+ * The `Size - Ceiling (g/ml)` column — **the biggest pack this row will accept in its price
  * book.** Added to the schema by the user on 2026-08-13 after the scan recorded a **1 kg**
  * bag of white pepper as the NTUC price: honestly the cheapest per kilo, and not a pack
- * anyone buys pepper in.
- *
- * ⚠️ **It is a CEILING, despite the word "floor" in its name.** The user's phrasing was
- * "the floor amount on the largest size the scraper should look for" — floor as in *the
- * line you don't go above*, not as in a minimum. The live data settles it beyond doubt:
- * White Pepper carries 100 against a recorded 1000 g pack, Cinnamon 50 against 28 g, Whey
- * 10000 against a 2.5 kg tub. Read as a minimum, every one of those inverts.
+ * anyone buys pepper in. Sizes at or below it are fine; anything above is not offered.
  *
  * ⚠️ **It bounds the PRICE BOOK only** — the `Vendor n` slots, which exist for general
  * shopping and price comparison. The deals/discovery pipeline never sees it: a 5 kg sack
  * at half price is exactly the one-off purchase that page is for, and the user said so
  * explicitly. Nothing outside `vendor-scan` reads this.
+ *
+ * ⚠️ **`sizefloor` is kept as an alias and must not be dropped.** The column was created
+ * as `Size - floor (g/ml)` and renamed to `Ceiling` the same day, because "floor" said the
+ * opposite of what the number means. Same reasoning as `CATEGORY_ALIASES` and
+ * `DONT_SEARCH_TAGS`: this database has already renamed a property out from under the code
+ * once (`Catagory` → `Category`) and nothing errored — every read just returned `undefined`
+ * for weeks. A bound that silently stops applying is the worst kind of bug here, because
+ * the symptom is a 1 kg bag of pepper quietly reappearing in the price book.
  */
-const SIZE_FLOOR_PREFIX = "sizefloor";
+const SIZE_CEILING_PREFIXES = ["sizeceiling", "sizefloor"];
 
 /**
  * Find the size-ceiling column, whatever its exact spacing and bracketing.
  *
- * Matched on a squashed name (letters and digits only) rather than verbatim, for the
- * reason `CATEGORY_ALIASES` exists: this schema has renamed a property out from under the
- * code once already — `Catagory` → `Category` — and nothing errored, it just silently read
- * `undefined` for weeks. `Size - floor (g/ml)`, `Size floor (g)` and `Size - Floor` all
- * squash to the same prefix, so a tidy-up in Notion cannot quietly disable the ceiling.
+ * Matched on a squashed name (letters and digits only) rather than verbatim, so
+ * `Size - Ceiling (g/ml)`, `Size Ceiling (g)` and `Size-ceiling` are all the same column.
+ * The prefixes are tried in order, so a workspace that somehow holds both spellings uses
+ * the current one.
  */
-export function findSizeFloorProp(schema: Record<string, { type: string }>): string | null {
+export function findSizeCeilingProp(schema: Record<string, { type: string }>): string | null {
 	const squash = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "");
-	for (const [name, def] of Object.entries(schema ?? {})) {
-		if (def?.type === "number" && squash(name).startsWith(SIZE_FLOOR_PREFIX)) return name;
+	for (const prefix of SIZE_CEILING_PREFIXES) {
+		for (const [name, def] of Object.entries(schema ?? {})) {
+			if (def?.type === "number" && squash(name).startsWith(prefix)) return name;
+		}
 	}
 	return null;
 }
 
 /**
- * May this pack be recorded on a row whose ceiling is `floor`?
+ * May this pack be recorded on a row whose ceiling is `ceiling`?
  *
  * ⚠️ **Compared against the number that would land in `Size[Vendor n]`** — `sizeFor`, not
  * `packWeightOf`. The column is labelled `(g/ml)` but a **By Unit** row states it in the
@@ -175,10 +178,10 @@ export function findSizeFloorProp(schema: Record<string, { type: string }>): str
  * A candidate with no readable size gets no opinion, the same answer given everywhere else
  * — it will fail `unitKindAgrees` a few lines later if it truly has none.
  */
-export function withinSizeFloor(floor: number | null, size: number | null): boolean {
-	if (floor == null || !Number.isFinite(floor) || floor <= 0) return true;
+export function withinSizeCeiling(ceiling: number | null, size: number | null): boolean {
+	if (ceiling == null || !Number.isFinite(ceiling) || ceiling <= 0) return true;
 	if (size == null || !Number.isFinite(size) || size <= 0) return true;
-	return size <= floor;
+	return size <= ceiling;
 }
 
 /**
@@ -247,7 +250,7 @@ export async function readScanRows(
 ): Promise<{ rows: ScanRow[]; skipped: { name: string; why: string }[] }> {
 	const dsAny = (await client.dataSources.retrieve({ data_source_id: INGREDIENTS_DS } as any)) as any;
 	const slotDefs = resolveVendorSlotProps(dsAny.properties ?? {});
-	const floorProp = findSizeFloorProp(dsAny.properties ?? {});
+	const ceilingProp = findSizeCeilingProp(dsAny.properties ?? {});
 
 	const pages = await queryAll(client, INGREDIENTS_DS);
 	const rows: ScanRow[] = [];
@@ -296,7 +299,7 @@ export async function readScanRows(
 			}),
 			slots,
 			routes: matched,
-			sizeFloor: floorProp && typeof p[floorProp]?.number === "number" ? p[floorProp].number : null,
+			sizeCeiling: ceilingProp && typeof p[ceilingProp]?.number === "number" ? p[ceilingProp].number : null,
 		});
 	}
 	return { rows, skipped };
