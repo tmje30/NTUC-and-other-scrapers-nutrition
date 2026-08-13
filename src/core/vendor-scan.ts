@@ -123,6 +123,8 @@ export interface ScanRow {
 	sizeCeiling: number | null;
 	/** The same ceiling as a WEIGHT, for candidates a shop lists by weight — `ceilingGramsFor`. */
 	ceilingGrams: number | null;
+	/** What one unit weighs on a By Unit row — `gramsPerUnitFor`. Null on a weighed row. */
+	gramsPerUnit: number | null;
 }
 
 /**
@@ -220,9 +222,137 @@ export function ceilingGramsFor(
 ): number | null {
 	if (ceiling == null || !Number.isFinite(ceiling) || ceiling <= 0) return null;
 	if (isByWeight(unitType)) return ceiling;
+	const perUnit = gramsPerUnitFor(unitType, packWeightG, packSize);
+	return perUnit == null ? null : ceiling * perUnit;
+}
+
+/**
+ * What **one unit weighs** on a By Unit row: the weight its `Name` states, divided by the
+ * count in its cheapest priced slot.
+ *
+ * `Stock cubes (120g)[Knorr]` recorded at 12 pcs ⇒ 10 g per cube. `egg (Omega 3 Enriched)
+ * (550g)` at 10 pcs ⇒ 55 g per egg. This is not a new inference: `packWeightOf` has always
+ * read a counted row's weight out of its `Name`, and `perLabel` already quotes the bread
+ * row at `$4.00/kg` on exactly this arithmetic.
+ *
+ * Null on a weighed row (there are no units) and null whenever either half is missing.
+ */
+export function gramsPerUnitFor(
+	unitType: UnitType,
+	packWeightG: number | null,
+	packSize: number | null,
+): number | null {
+	if (isByWeight(unitType)) return null;
 	if (packWeightG == null || !Number.isFinite(packWeightG) || packWeightG <= 0) return null;
 	if (packSize == null || !Number.isFinite(packSize) || packSize <= 0) return null;
-	return ceiling * (packWeightG / packSize);
+	return packWeightG / packSize;
+}
+
+/**
+ * How close to a whole number a derived count must land to be called clean.
+ *
+ * ⚠️ **Reporting only — it gates nothing.** The user's call, 2026-08-13, after the first
+ * version queued FairPrice's 500 g loaf (16.67 slices) for a Telegram confirmation:
+ *
+ *   > it does not need to be exact. this is just a guide line to help guide a search and
+ *   > calculate a ceiling weight
+ *
+ * Which is right, and the earlier design had the wrong idea of what this number is for. A
+ * `Size[Vendor n]` on a counted row is a shopping aid — it decides roughly what a slice or
+ * a cube costs, and it is compared against other slices and other cubes. Asking a human to
+ * confirm 16.67 → 17 buys a rounding nobody will act on differently, at the cost of a
+ * notification; and a review queue full of questions that did not need asking is one that
+ * stops being read.
+ *
+ * So an inexact division is still written. All this decides is whether the console report
+ * shows the raw figure beside it (`(16.7, rounded)`), which is how a wrong grams-per-unit
+ * stays visible.
+ */
+export const DERIVED_COUNT_SLACK = 0.1;
+
+/**
+ * A **count** for a pack the shop only states a weight for.
+ *
+ * The user's point, 2026-08-13: the weight is right there in the title, and the row already
+ * says what one unit weighs — so refusing the pack throws away information we have. It cost
+ * two real rows on the 2026-08-13 NTUC pass, and one of them is the sharper example: the
+ * top hit for `Stock cubes (120g)[Knorr]` was **the identical product at the identical
+ * price** ($3.83, 120 g) that the row already records as 12 pcs, discarded for being
+ * "measured by weight".
+ *
+ * `exact` says whether the division landed on a whole number (`DERIVED_COUNT_SLACK`). It is
+ * **reporting detail and gates nothing** — an inexact count is written like any other, per
+ * the user: *"it does not need to be exact"*. It only decides whether the report shows the
+ * raw figure beside the rounded one.
+ *
+ * Returns null rather than a fraction below one: half a loaf is not a pack.
+ */
+export function unitCountFromWeight(
+	gramsPerUnit: number | null,
+	packWeightG: number | null,
+): { count: number; exact: boolean } | null {
+	if (gramsPerUnit == null || !Number.isFinite(gramsPerUnit) || gramsPerUnit <= 0) return null;
+	if (packWeightG == null || !Number.isFinite(packWeightG) || packWeightG <= 0) return null;
+	const raw = packWeightG / gramsPerUnit;
+	const count = Math.round(raw);
+	if (count < 1) return null;
+	return { count, exact: Math.abs(raw - count) <= DERIVED_COUNT_SLACK };
+}
+
+/**
+ * The number this candidate would put in `Size[Vendor n]`, and how confident we are in it.
+ *
+ * One gate for the whole write path, replacing a bare `unitKindAgrees` check. The order is
+ * the important part: **a size the shop states always wins**, and the derivation is only
+ * reached when there is nothing to state — so a shop that sells eggs by the dozen is still
+ * recorded as twelve eggs, never as its weight divided by anything.
+ *
+ * ⚠️ It still cannot rescue a **counted** pack on a **weighed** row (a 4-pack of razors on
+ * a By Gram row): that direction needs a weight the listing does not have, and inventing
+ * one would misprice the row against every other vendor on it. `unitKindAgrees` remains the
+ * rule; this only adds the one conversion the row itself supplies the constant for.
+ */
+/**
+ * Is a refusal one the **user** can fix, by typing a size into the Notion name?
+ *
+ * The vendor-scan twin of `findWeightGap`, which does the same job for the deals page — the
+ * "found eggs, but only in weight" nudge. The user's framing, 2026-08-13:
+ *
+ *   > the razor ex. there will never be weight on some items, since they are only sold as
+ *   > x units. and will be labeled 'By unit' if it is mislabeled - it should be flagged
+ *
+ * ⚠️ **Which is why the PRODUCT's weight is required, not just the row's absence of one.**
+ * `Razor Cartridge Refill - Hydro 5` and `Bathroom Tissue Roll - 4 Ply` are genuinely
+ * countable-only: no shop publishes a weight for either, so no candidate ever satisfies
+ * this and neither row is ever nagged about a weight that does not exist. The flag fires
+ * only where a shop *did* state a weight the row had no constant to meet — which is exactly
+ * the mislabelled case, and exactly the one that `Stock cubes (120g)` fixes.
+ *
+ * ⚠️ Callers must apply it only to a candidate the matcher ACCEPTED — same discipline as
+ * `findWeightGap`. Advice to go and retype a Notion row is worth giving only when it will
+ * actually work; sent on a near-miss it costs a trip to Notion and buys nothing.
+ */
+export function needsSizeInName(
+	row: { unitType: UnitType; gramsPerUnit: number | null },
+	product: { packWeightG?: number | null },
+): boolean {
+	if (isByWeight(row.unitType)) return false;
+	if (row.gramsPerUnit != null) return false;
+	const grams = product.packWeightG ?? null;
+	return grams != null && Number.isFinite(grams) && grams > 0;
+}
+
+export function resolveSize(
+	row: { unitType: UnitType; gramsPerUnit: number | null },
+	product: StoreProduct,
+): { size: number; derived: boolean; exact: boolean } | null {
+	if (unitKindAgrees(row.unitType, product)) {
+		const size = sizeFor(row.unitType, product);
+		if (size != null && size > 0) return { size, derived: false, exact: true };
+	}
+	if (isByWeight(row.unitType)) return null;
+	const d = unitCountFromWeight(row.gramsPerUnit, product.packWeightG ?? null);
+	return d ? { size: d.count, derived: true, exact: d.exact } : null;
 }
 
 /**
@@ -367,6 +497,7 @@ export async function readScanRows(
 			routes: matched,
 			sizeCeiling,
 			ceilingGrams: ceilingGramsFor(unitType, sizeCeiling, target.packWeightG, target.packSize),
+			gramsPerUnit: gramsPerUnitFor(unitType, target.packWeightG, target.packSize),
 		});
 	}
 	return { rows, skipped };

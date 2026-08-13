@@ -1,8 +1,12 @@
 import {
 	ceilingGramsFor,
 	findSizeCeilingProp,
+	gramsPerUnitFor,
 	packWithinCeiling,
 	pickCandidate,
+	resolveSize,
+	unitCountFromWeight,
+	needsSizeInName,
 	reputationPasses,
 	searchTermsFor,
 	sizeFor,
@@ -372,4 +376,135 @@ check(
 	reviewReasons(product({ name: "Milk 12 x 1L", packWeightG: 1000 }), { packGrams: 1000, sizeCeilingOk: true }).some(
 		(r) => r.kind === "bulk",
 	),
+);
+
+/**
+ * A count for a pack the shop only weighs.
+ *
+ * ⚠️ The user's point, 2026-08-13: *"there are weights/size in the name which can be used
+ * to scrape/discover"*. Refusing the pack throws away a number the row itself supplies the
+ * constant for, and it cost two real rows on the NTUC pass — one of them badly. The top hit
+ * for `Stock cubes (120g)[Knorr]` was **the identical product at the identical price**
+ * ($3.83, 120 g) that the row already records as 12 pcs, discarded for being "measured by
+ * weight, but this row is By Unit".
+ */
+describe("vendor scan — a count derived from a weight");
+
+eq("the Knorr row: 120 g over 12 cubes is 10 g each", gramsPerUnitFor("By Unit", 120, 12), 10);
+eq("a weighed row has no units to divide into", gramsPerUnitFor("By Gram", 500, 500), null);
+eq("and a row with no stated weight has no constant", gramsPerUnitFor("By Unit", null, 12), null);
+
+// The case that started this: identical pack, identical price, and the arithmetic is 12.000.
+const knorr = unitCountFromWeight(10, 120);
+check("Knorr's 120 g box comes back as 12 cubes", knorr?.count === 12);
+check("…and the division is clean, so the report says nothing extra", knorr?.exact === true);
+
+/**
+ * ⚠️ **The bread loaf is the counter-example: a division that does not land clean.**
+ * FairPrice lists that wholemeal loaf at 500 g; the row's own Name says 600 g over 20
+ * slices, i.e. 30 g each. 500 ÷ 30 = 16.67 — so either the loaf shrank or the slices are
+ * thinner.
+ *
+ * ⚠️ **It is still written.** An earlier design queued this for a Telegram confirmation and
+ * the user reversed it (see the note at the foot of this suite); `exact: false` now only
+ * makes the console report print `(16.7, rounded)` beside the figure, which is how a wrong
+ * grams-per-unit stays visible without costing a notification.
+ */
+const loaf = unitCountFromWeight(30, 500);
+check("the 500 g loaf rounds to 17 slices", loaf?.count === 17);
+check("and is flagged inexact — for the report, not as a refusal", loaf?.exact === false);
+// ⚠️ A percentage tolerance would have called it certain — it is only 2% off. Hence the
+// absolute `DERIVED_COUNT_SLACK`: the question is whether the weight divides cleanly.
+check("a 2% miss is still a miss", Math.abs(500 / 30 - 17) > 0.1);
+
+eq("half a loaf is not a pack", unitCountFromWeight(30, 10), null);
+eq("no constant, no conversion", unitCountFromWeight(null, 500), null);
+
+/**
+ * ⚠️ **A size the shop STATES always wins.** The derivation is only reached when there is
+ * nothing to state, so a shop selling eggs by the dozen is recorded as twelve eggs — never
+ * as its weight divided by anything.
+ */
+const eggRowFull = { unitType: "By Unit" as UnitType, gramsPerUnit: 55 };
+const stated = resolveSize(eggRowFull, product({ unitCount: 12, packWeightG: 900 }));
+check("a stated count is used as-is", stated?.size === 12);
+check("and is not marked derived", stated?.derived === false);
+
+const converted = resolveSize(eggRowFull, product({ unitCount: null, packWeightG: 550 }));
+check("a weight-only pack is converted", converted?.size === 10);
+check("and says so", converted?.derived === true && converted?.exact === true);
+
+/**
+ * ⚠️ **The reverse direction still has no answer.** A 4-pack of razor cartridges on a
+ * By Gram row needs a weight the listing does not have, and inventing one would misprice
+ * the row against every other vendor in its price book. `unitKindAgrees` remains the rule;
+ * the conversion only adds the one direction the row supplies a constant for.
+ */
+eq(
+	"a counted pack on a weighed row is still refused",
+	resolveSize({ unitType: "By Gram", gramsPerUnit: null }, product({ unitCount: 4, packWeightG: null })),
+	null,
+);
+eq(
+	"and a By Unit row with no constant cannot convert either",
+	resolveSize({ unitType: "By Unit", gramsPerUnit: null }, product({ unitCount: null, packWeightG: 500 })),
+	null,
+);
+
+/**
+ * ⚠️⚠️ **An inexact count is written, not queued.** The first version asked over Telegram
+ * before recording 16.67 → 17, and the user's call (2026-08-13) was that this is the wrong
+ * idea of what the number is for:
+ *
+ *   > it does not need to be exact. this is just a guide line to help guide a search and
+ *   > calculate a ceiling weight
+ *
+ * A `Size[Vendor n]` on a counted row decides roughly what a slice costs and is compared
+ * against other slices. Confirming a rounding nobody would act on differently costs a
+ * notification, and a queue full of questions that did not need asking stops being read.
+ * `exact` survives only to decide how the console report phrases itself.
+ */
+check(
+	"an inexact derived count raises no review question",
+	reviewReasons(product(), { packGrams: 500 }).length === 0,
+);
+check("and neither does an exact one", reviewReasons(product(), { packGrams: 120 }).length === 0);
+
+/**
+ * "This row is mislabelled" — the vendor-scan twin of the deals page's eggs nudge.
+ *
+ * ⚠️ The user's framing, 2026-08-13: *"the razor ex. there will never be weight on some
+ * items, since they are only sold as x units. and will be labeled 'By unit' — if it is
+ * mislabeled it should be flagged"*. So the test is not "does the row lack a weight" — a
+ * genuinely countable row lacks one forever and must never be nagged — but **"did a shop
+ * state a weight this row had no constant to meet"**.
+ */
+describe("vendor scan — flagging a row that needs a size in its name");
+
+const countedRow = { unitType: "By Unit" as UnitType, gramsPerUnit: null };
+
+check(
+	"a shop pricing a countable row by weight is flagged",
+	needsSizeInName(countedRow, product({ unitCount: null, packWeightG: 600 })),
+);
+
+/**
+ * ⚠️⚠️ **The razor case, and the whole reason the product's weight is required.** Nobody
+ * publishes a weight for a 4-pack of cartridges or a 10-pack of tissue rolls — both rows
+ * appeared in the live NTUC pass as "none with both a price and a readable size". If the
+ * flag keyed on the ROW alone it would tell the user to go and type a weight that does not
+ * exist, every run, forever.
+ */
+check("but a genuinely countable-only pack is not", !needsSizeInName(countedRow, product({ unitCount: 4, packWeightG: null })));
+
+// Nothing to fix: the row already states a weight, so the conversion works and the pack
+// was recorded rather than refused.
+check(
+	"a row that already has its constant is never flagged",
+	!needsSizeInName({ unitType: "By Unit", gramsPerUnit: 30 }, product({ unitCount: null, packWeightG: 600 })),
+);
+// A weighed row has no units for a name-size to help with — the advice would not work.
+check(
+	"and a weighed row is not this problem",
+	!needsSizeInName({ unitType: "By Gram", gramsPerUnit: null }, product({ unitCount: 4, packWeightG: null })),
 );

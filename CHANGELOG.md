@@ -41,8 +41,40 @@ All notable changes to this project are documented here. Format based on
   still applies. Two rows are in that state today (`Bread, Whole grain (Low GI)` and
   `Eggs, Whole, small`), both because their `Name` states no weight.
   ⚠️ The report now prints both figures on a By Unit row — `≤ 600 pcs (≈ 18kg by weight)` —
-  because a value typed in the wrong dimension is otherwise invisible. That line is how the
-  four rows below were spotted.
+  because a value typed in the wrong dimension is otherwise invisible.
+
+- **A By Unit row can now record a pack the shop only weighs (2026-08-13).** The user's
+  point: the weight is in the title and the row already says what one unit weighs, so
+  refusing the pack throws away information we hold. `resolveSize` converts it —
+  **the shop's grams ÷ the row's grams-per-unit** — and `unitKindAgrees` is no longer the
+  last word on a counted row.
+  It cost two rows on the NTUC pass, and one badly: the top hit for `Stock cubes
+  (120g)[Knorr]` was **the identical product at the identical price** the row already
+  records as 12 pcs, discarded for being "measured by weight". It now records 12 pcs — and
+  finds the $3.38 variant the row was missing, $28.17/kg against the recorded $31.92.
+  ⚠️ **A size the shop STATES always wins.** The conversion is only reached when there is
+  nothing to state, so a shop selling eggs by the dozen is recorded as twelve eggs, never
+  as its weight divided by anything.
+  ⚠️ **The reverse direction is still refused** — a 4-pack of razors on a By Gram row needs
+  a weight the listing does not have, and inventing one would misprice the row against every
+  vendor in its book.
+  ⚠️ **A derived count is written whether or not the division lands clean** — the user's
+  call, reversing this feature's first design:
+  > it does not need to be exact. this is just a guide line to help guide a search and
+  > calculate a ceiling weight
+
+  That first version queued FairPrice's wholemeal loaf for a Telegram confirmation: it is
+  listed at **500 g** while the row's Name says 600 g over 20 slices, so 500 ÷ 30 = **16.67**
+  and rounding to 17 picks an answer. But a `Size[Vendor n]` on a counted row is a shopping
+  aid — it decides roughly what a slice costs and is compared against other slices — so
+  confirming a rounding nobody would act on differently costs a notification, and a review
+  queue full of questions that did not need asking stops being read.
+  `DERIVED_COUNT_SLACK` (absolute 0.1 units) therefore **gates nothing**: it only decides
+  whether the console report prints the raw figure beside the rounded one (`16.7, rounded`),
+  which is how a wrong grams-per-unit stays visible. It is absolute rather than a percentage
+  because the loaf is only 2% off and a percentage tolerance would call it clean.
+  Knorr's 120 g over 10 g a cube is **12.000** and prints nothing extra.
+  After this, the NTUC pass refuses **nothing** on unit-kind grounds — down from 2.
   A pack inside a declared ceiling also stops being queued for Telegram review as "catering
   size" — `BULK_GRAMS` is a 2 kg guess made with no knowledge of the item, and a number the
   user typed on that row is the same judgement made with full knowledge of it.
@@ -50,10 +82,33 @@ All notable changes to this project are documented here. Format based on
   candidates were dropped by it**. Only White Pepper now states a ceiling below a pack
   already in its book, which is the point — that slot re-prices from the 1 kg bag to the
   100 g jar on the next `--write`.
-  ⚠️ **Four By Unit rows carry a number that looks like grams on a column the code reads as
-  a count**: `Bread, Wholemeal (600g)` → 600 slices ≈ 18 kg, `Stock cubes` → 500 cubes ≈
-  5 kg, and both tea rows → 2000 bags ≈ 4 kg. Harmless (a loose ceiling only fails to
-  filter) but not the bound that was meant. Left as typed — the numbers are the user's.
+  ⚠️ **A By Unit row's ceiling is a COUNT, and several were typed as grams** — surfaced by
+  the `(≈ … by weight)` line above. `Bread, Wholemeal` read as 600 slices ≈ 18 kg until the
+  user corrected it to 20 pcs ≈ 600 g. `Stock cubes` (500 pcs ≈ 5 kg) and both tea rows
+  (2000 bags ≈ 4 kg) are still loose; a loose ceiling only fails to filter, so they are left
+  as typed.
+
+- **A mislabelled By Unit row is flagged instead of silently refused (2026-08-13).**
+  `needsSizeInName` is the vendor-scan twin of the deals page's `findWeightGap`, and it
+  reuses that feature's `WeightGapNote` and `formatWeightGaps` so both surfaces give the
+  same advice in the same words: *add a size to the Notion name, e.g. `Stock cubes (120g)`*.
+  ⚠️ **It keys on the PRODUCT's weight, not on the row's lack of one**, and that is the whole
+  design. The user's framing:
+  > the razor ex. there will never be weight on some items, since they are only sold as x
+  > units. and will be labeled 'By unit' — if it is mislabeled it should be flagged
+
+  `Razor Cartridge Refill - Hydro 5` and `Bathroom Tissue Roll - 4 Ply` are genuinely
+  countable-only; both appear in the live pass as "none with both a price and a readable
+  size". A flag keyed on the row alone would tell the user to type a weight that does not
+  exist, every run, forever. It fires only where a shop **did** state a weight the row had
+  no constant to meet — the mislabelled case, and the one `Stock cubes (120g)` fixes.
+  ⚠️ ACCEPT band only, the same discipline as `findWeightGap`: advice to go and retype a
+  Notion row is worth giving only when it will actually work.
+  The note rides along with the review message when one is sent. Unlike the daily digest it
+  will also go **on its own** if nothing else needed saying — `vendor-scan` is run by hand,
+  not on a schedule, so "ride along with a message being sent anyway" would mean never.
+  Nothing was flagged on the 2026-08-13 NTUC pass, which is the correct answer for it: every
+  By Unit row either resolved or had no weighted candidate at all.
 
 ### Changed
 - **Rescan now actually rescans Sheng Siong (2026-08-12).** Asked for by the user, after

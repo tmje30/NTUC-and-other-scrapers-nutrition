@@ -11,7 +11,8 @@ import {
 	REPUTATION_BAR,
 	searchTermsFor,
 	sizeFor,
-	unitKindAgrees,
+	needsSizeInName,
+	resolveSize,
 	packWithinCeiling,
 	type CandidateOutcome,
 	type ScanRow,
@@ -36,7 +37,7 @@ import {
 } from "../core/vendor-review.js";
 import { cooldownKey } from "../core/cooldown.js";
 import { renderReviewPage } from "../core/review-page.js";
-import { sendHtml } from "../core/telegram.js";
+import { formatWeightGaps, sendHtml, type WeightGapNote } from "../core/telegram.js";
 import { config } from "../core/config.js";
 import { commitAndPushData } from "../core/git-data-push.js";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -86,6 +87,7 @@ const only = (flag("only") ?? "").toLowerCase().split(",").filter(Boolean);
 const wanted = (r: VendorRoute) => !only.length || only.some((o) => r.option.toLowerCase().replace(/\s+/g, "").includes(o.replace(/\s+/g, "")));
 
 const money = (n: number) => `$${n.toFixed(2)}`;
+const round1 = (n: number) => Math.round(n * 10) / 10;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /** Politeness between one shop's searches. */
@@ -173,6 +175,8 @@ async function main(): Promise<void> {
 	let skippedOverCeiling = 0;
 	/** Uncertain picks, queued for the Telegram ask at the end of the pass. */
 	const toAsk: PendingReview[] = [];
+	/** By Unit rows a shop prices by weight — fixable by typing a size into the name. */
+	const gaps: WeightGapNote[] = [];
 
 	for (const row of rows) {
 		console.log(
@@ -301,17 +305,43 @@ async function main(): Promise<void> {
 			}
 
 			const p = rescued ? rescued.product : (outcome as Extract<CandidateOutcome, { ok: true }>).product;
-			if (!unitKindAgrees(row.unitType, p)) {
-				// Refused rather than coerced — see `unitKindAgrees`.
+			// ⚠️ One gate for the whole write path — `resolveSize`. A size the shop states
+			// always wins; a By Unit row falls back to converting the stated WEIGHT through
+			// its own grams-per-unit, which is the only case the row supplies the constant
+			// for. The reverse (a counted pack on a weighed row) still has no answer.
+			const resolved = resolveSize(row, p);
+			if (!resolved) {
+				// ⚠️ **A By Unit row that a shop prices by weight is the one refusal the user
+				// can fix**, and it is exactly the eggs case the deals page already nudges
+				// about (`findWeightGap`). Writing `Stock cubes (120g)` into the Notion name
+				// gives the row a grams-per-unit and the conversion above starts working.
+				//
+				// ⚠️ It fires only on a candidate the matcher ACCEPTED, same discipline as
+				// `findWeightGap`: advice to go and retype a Notion row is only worth giving
+				// when it will actually work. Razor cartridges and tissue rolls are genuinely
+				// countable-only — no shop states a weight, so no candidate ever gets here and
+				// no row is nagged about a weight that does not exist.
+				const fixable = needsSizeInName(row, p);
+				if (fixable) {
+					gaps.push({
+						name: row.name,
+						store: p.store,
+						size: p.packWeightG ?? null,
+						volumetric: p.volumetric === true,
+					});
+				}
 				console.log(
 					`    — refused: "${p.name}" is measured by ${p.unitCount ? "the piece" : "weight"}, ` +
-						`but this row is ${row.unitType}. A scan may not change \`Unit type \`.`,
+						`but this row is ${row.unitType}` +
+						(fixable
+							? `.\n      📏 Add a size to the Notion name — e.g. "${row.name.trim()} (${p.packWeightG}${p.volumetric ? "ml" : "g"})" — and this becomes recordable.`
+							: `. A scan may not change \`Unit type \`.`),
 				);
 				refused++;
 				continue;
 			}
 
-			const size = sizeFor(row.unitType, p);
+			const size = resolved.size;
 			found++;
 			// ⚠️ Quoted through `perLabel`, i.e. from what will actually be STORED
 			// (`Price [Vendor n]` and `Size[Vendor n]`), not from the product's own
@@ -321,6 +351,13 @@ async function main(): Promise<void> {
 			console.log(
 				`    ✓ ${money(p.priceSgd)} / ${size}${unitWord(row)}` +
 					(per ? `  =  ${per}` : "") +
+					// The arithmetic in full whenever the count was not the shop's own, so a
+					// wrong grams-per-unit is visible in the report rather than only in the
+					// price book weeks later.
+					(resolved.derived
+						? `  ← derived from ${sizeText(p.packWeightG!)} at ${round1(row.gramsPerUnit!)}g each` +
+							(resolved.exact ? "" : ` (${round1(p.packWeightG! / row.gramsPerUnit!)}, rounded)`)
+						: "") +
 					`\n      ${p.name}` +
 					`\n      ${p.url}` +
 					(p.seller ? `\n      seller: ${p.seller}` : "") +
@@ -428,7 +465,7 @@ async function main(): Promise<void> {
 		}
 	}
 
-	await askAboutUncertain(toAsk, review, written);
+	await askAboutUncertain(toAsk, review, written, gaps);
 
 	console.log(
 		`\n${"─".repeat(78)}\n` +
@@ -437,6 +474,7 @@ async function main(): Promise<void> {
 			(toAsk.length ? `, ${toAsk.length} awaiting your call` : "") +
 			(skippedByUser ? `, ${skippedByUser} listing(s) skipped as previously refused` : "") +
 			(skippedOverCeiling ? `, ${skippedOverCeiling} over a row's size ceiling` : "") +
+			(gaps.length ? `, ${gaps.length} row(s) need a size in their Notion name` : "") +
 			".\n",
 	);
 }
@@ -457,6 +495,7 @@ async function askAboutUncertain(
 	toAsk: PendingReview[],
 	review: Parameters<typeof writeVendorReview>[0],
 	written: number,
+	gaps: WeightGapNote[],
 ): Promise<void> {
 	// ⚠️ **A report-only run writes NOTHING — not Notion, and not this file either.**
 	// It has already printed every reason to the console, which is what it was run for.
@@ -465,11 +504,32 @@ async function askAboutUncertain(
 	// safe thing to reach for.
 	if (!doWrite) {
 		if (toAsk.length) console.log(`\n${toAsk.length} pick(s) would be queued for your review.`);
+		if (gaps.length) {
+			console.log(
+				`\n📏 ${gaps.length} row(s) would be flagged as needing a size in the Notion name:\n` +
+					gaps
+						.map((g) => `   • ${g.name.trim()} — ${g.store} sells these by ${g.volumetric ? "volume" : "weight"}`)
+						.join("\n"),
+			);
+		}
 		return;
 	}
 
 	if (!toAsk.length) {
 		await writeVendorReview(review);
+		// ⚠️ Gaps ride along with a message that was being sent anyway — the deals page's
+		// rule, and for the same reason: a missing weight is a standing property of the row,
+		// true again tomorrow, so a message of its own becomes a nag for a chore already
+		// noted. **But this scan is run by hand, not on a schedule**, so with nothing else
+		// to say the note would otherwise never be sent at all. Once per manual run is not
+		// a nag.
+		if (gaps.length && !noAsk) {
+			try {
+				await sendHtml(`🧾 Nothing needed your call.${formatWeightGaps(gaps)}`);
+			} catch (e) {
+				console.log(`⚠️  Could not send the size-in-name note (${(e as Error).message}).`);
+			}
+		}
 		return;
 	}
 
@@ -514,7 +574,10 @@ async function askAboutUncertain(
 		// ⚠️ Only linked when the queue actually reached the repo. A message pointing at a
 		// page that still shows yesterday's questions is worse than one that says so.
 		await sendHtml(
-			renderReviewSummary(toAsk.length, written, published ? config.reviewUrl() : undefined),
+			renderReviewSummary(toAsk.length, written, published ? config.reviewUrl() : undefined) +
+				// Appended here rather than inside `renderReviewSummary`, which is a pure
+				// module that deliberately knows nothing about the Telegram client.
+				formatWeightGaps(gaps),
 		);
 		console.log(`📨 Sent one review link to Telegram.`);
 	} catch (e) {
