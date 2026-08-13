@@ -1800,34 +1800,53 @@ nothing is wrong in the tree, but **do not trust those two commit messages to
 describe their full contents.** The history is pushed, so it was left rather than
 rewritten. Commit `e307c7d` carries the honest description of that feature.
 
-### ⚠️ Blocked on the user — the cloud scan cannot go live without this
+### ✅ THE CLOUD SCAN IS LIVE — proven end to end 2026-08-13, 14:30 SGT
 
-`ss-worker` is deployed and holds `SCAN_SECRET`. It has **no `GITHUB_TOKEN`**, so
-the 09:00–11:00 SGT cron fires every 15 minutes and does nothing: it logs
-`skipped — no GITHUB_TOKEN set` and never opens a socket. Harmless, and it stays
-that way until three steps happen, none of which an assistant should do (creating
-credentials is the user's, and a token pasted into a terminal lands in a
-transcript):
+**Cloudflare has scanned Sheng Siong, committed the result, and the page and
+Telegram message came from it.** The laptop was not involved.
 
-1. **Create a fine-grained PAT** at `github.com/settings/personal-access-tokens/new`
-   — this repository only, **Contents: read and write**, nothing else. That one
-   permission covers both jobs: committing the scan file and firing the rebuild.
-2. `cd ss-worker && npx wrangler secret put GITHUB_TOKEN`
-3. **Rotate `SCAN_SECRET`.** The live one was generated for testing and its value
-   is in a scratchpad file — treat it as burned. The same fresh value goes in two
-   places: `wrangler secret put SCAN_SECRET`, and `gh secret set SCAN_SECRET` so
-   the Rescan button can authenticate.
+Both secrets are set on `ss-worker` (`SCAN_SECRET` rotated fresh, `GITHUB_TOKEN` a
+second fine-grained PAT kept separate from the relay's). The chain, verified in
+order:
 
-Then, before letting it write anything: run it with `dryRun=1`, which exercises
-Singapore placement and the full parse and returns the scan **without** committing
-it. Only once that output looks right should it be allowed near the repo.
+```
+scan   ok=true  colo=SIN  object=sheng-siong-sg-2  terms=46  products=607  60s
+       probes: sg-0:HKG✗  sg-1:KIX✗  sg-2:SIN✓
+commit 034aed9  data: Sheng Siong scan 2026-08-13 (cloudflare-first-live)
+build  "Sheng Siong: using data/shengsiong-latest.json (source cloudflare-first-live, 607 products)"
+notify "Sent summary: 5 deals"
+```
 
-Still open after that: wire `scan-request.yml` to call the Worker instead of
-committing the marker; verify the live cron end to end; then disable (not delete)
-`ShengSiong Daily Scan` and `Grocery New-Item Pricing`, and delete `ShengSiong
-Scan Request` and the marker mailbox. Two decisions nobody has made: whether the
-relay keeps its 15-minute `tgsweep`, and whether `daily.yml` keeps its own
-`schedule:` as a backstop.
+⚠️ **Fidelity was checked against the laptop before write access was granted**, and
+this is the number to re-run if the port is ever touched: on four real target terms,
+**151 of 152 products byte-identical on every field** — name, price, weight, unit
+count, per-100g, sale flag, list price, volumetric, image key. Zero differing. The
+odd one out was a genuine catalogue change (a honey entering promo pushed an item
+off the 50-per-pass relevance cut).
+
+⚠️ **Compare scans keyed on `url`, never on `name`.** A first attempt keyed on name
+reported 36 "differences" that did not exist: Sheng Siong sells several products
+under one name (`Enriched White Bread` at both 400 g and 600 g), so a name key
+compares a product against an arbitrary same-named sibling. The scan dedupes on
+slug; `url` is the only unique key.
+
+⚠️ **A term-count difference is usually a cooldown, not a fault.** The Worker
+scanned 46 where the laptop had scanned 50 that morning, and the four missing terms
+were all dahl variants — because dahl was bought on the 12th and cooldowns are
+applied *before* search terms are collected, so a snoozed item costs the runner
+nothing. Both read the same published `targets.json` (`ss-scan.ts:24`); the laptop's
+50 was simply the stale number. Check `data/cooldowns.json` before investigating.
+
+**Next: Phase 4 — retire the laptop's jobs.** Nothing depends on them now, but they
+are still enabled and will keep scanning in parallel. Disable (do not delete)
+`ShengSiong Daily Scan` and `Grocery New-Item Pricing`; delete `ShengSiong Scan
+Request` and the marker mailbox. Also still open: wire `scan-request.yml` to call
+the Worker instead of committing a marker (the Actions-side `SCAN_SECRET` is already
+set for this). Two decisions nobody has made: whether the relay keeps its 15-minute
+`tgsweep`, and whether `daily.yml` keeps its own `schedule:` as a backstop.
+
+⚠️ Tomorrow 09:00–11:00 SGT is the first unattended cron run. It stops at the first
+success by checking the committed file, so the later slots no-op.
 
 *The section below is the 2026-08-12 entry, kept for its detail. Started as "why
 does a CMD window keep opening on me every five minutes". That question turned out
