@@ -1,0 +1,42 @@
+# The Sheng Siong scanner. See worker.ts for what it is and why the Durable
+# Object is on every path.
+#
+#   cd ss-worker
+#   npx wrangler secret put GITHUB_TOKEN   # fine-grained PAT, this repo, Contents: rw
+#   npx wrangler secret put SCAN_SECRET    # shared secret; Actions sends it as X-Scan-Secret
+#   npx wrangler deploy
+#
+# ⚠️ Two secrets, and both fail CLOSED. A missing SCAN_SECRET rejects every
+# request rather than accepting all of them; a missing GITHUB_TOKEN cannot commit.
+name = "ss-worker"
+main = "worker.ts"
+compatibility_date = "2026-08-13"
+
+[vars]
+REPO = "tmje30/NTUC-and-other-scrapers-nutrition"
+TARGETS_URL = "https://tmje30.github.io/NTUC-and-other-scrapers-nutrition/targets.json"
+
+[[durable_objects.bindings]]
+name = "SCAN"
+class_name = "ScanRunner"
+
+# ⚠️ `new_sqlite_classes`, not `new_classes`. SQLite-backed Durable Objects are the
+# ones available without a paid Workers plan, and the whole point of running the
+# scan here is that it costs nothing.
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["ScanRunner"]
+
+# The morning retry window: 01:00-02:45 UTC every 15 min, plus a final 03:00 UTC.
+# That is 09:00 to 11:00 Singapore, inclusive at both ends.
+#
+# ⚠️ The second entry is not redundant. A `1-2` hour range stops at 02:45 UTC
+# (10:45 SGT), so without `0 3 * * *` the 11:00 attempt the user asked for would
+# never fire.
+#
+# ⚠️ Cloudflare's cron is the clock because GitHub's cannot be: free public repos
+# queue scheduled workflows by 3-3.75 h, which is why daily.yml's own comment
+# calls its 08:00 SGT trigger a floor. A 09:00 scan that lands at noon is useless
+# for planning a day.
+[triggers]
+crons = ["*/15 1-2 * * *", "0 3 * * *"]

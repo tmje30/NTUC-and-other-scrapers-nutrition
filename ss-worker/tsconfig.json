@@ -1,0 +1,15 @@
+{
+	"//": "Separate from the repo tsconfig on purpose. The repo uses NodeNext, which requires .js suffixes on relative imports; wrangler bundles with esbuild, which resolves extensionless imports to .ts. That difference is why this file exists — it lets scan.ts import the REAL parseWeight from src/core/stores/weight rather than keeping a second copy of it.",
+	"compilerOptions": {
+		"target": "ES2022",
+		"lib": ["ES2022"],
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"types": ["@cloudflare/workers-types"],
+		"strict": true,
+		"skipLibCheck": true,
+		"noEmit": true,
+		"forceConsistentCasingInFileNames": true
+	},
+	"include": ["*.ts", "../src/core/stores/weight.ts"]
+}

@@ -26,7 +26,7 @@
     "ss-on-request": "tsx src/scripts/ss-on-request.ts",
     "scan-request": "tsx src/scripts/file-scan-request.ts",
     "ext:build": "node extension/build.mjs",
-    "test": "tsx src/tests/run.ts && node relay/worker.test.mjs",
+    "test": "tsx src/tests/run.ts && node relay/worker.test.mjs && tsx ss-worker/scan.test.ts",
     "tg-poll": "tsx src/scripts/tg-poll.ts",
     "tg-handle": "tsx src/scripts/tg-handle.ts",
     "tg-drain": "tsx src/scripts/tg-drain.ts",
