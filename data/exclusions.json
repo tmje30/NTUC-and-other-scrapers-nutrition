@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-12T14:34:49.504Z",
+  "updatedAt": "2026-08-13T11:02:07.174Z",
   "terms": [
     {
       "key": "instant coffe",
@@ -164,6 +164,15 @@
       "name": "Honey (Raw)",
       "note": "not raw",
       "addedAt": "2026-08-12T14:34:49.504Z"
+    },
+    {
+      "key": "*",
+      "store": "Sheng Siong",
+      "product": "Sarawak White Pepper Ground",
+      "url": "https://shengsiong.com.sg/product/sun-brand-sarawak-white-pepper-ground-400-g",
+      "name": "White Pepper",
+      "note": "ignored from the deals page",
+      "addedAt": "2026-08-13T11:02:07.174Z"
     }
   ]
 }
