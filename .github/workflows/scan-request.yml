@@ -1,68 +1,116 @@
 name: Sheng Siong scan request
 
-# The page's Rescan button, when Sheng Siong is missing from the scan.
+# The page's Rescan button, shown when Sheng Siong is missing from the scan.
 #
-# It does NOT rebuild the page. Rebuilding is what the old button did, and it is
-# useless in exactly the case the button is shown for: the cloud cannot reach
-# Sheng Siong, so a rebuild returns the same FairPrice-only page. All this does
-# is commit a marker asking the laptop — the only machine with a Singapore
-# address — to scan. The laptop pushes prices and dispatches `rescan` itself, so
-# the rebuild happens once, with the data in it, and the user gets one Telegram
-# message rather than two.
+# ⚠️ **This no longer writes a marker for the laptop to find (changed 2026-08-13).**
+# It calls the Cloudflare Worker, which scans from Singapore, commits the prices and
+# dispatches `rescan` itself — so the page rebuild happens once, with the new data in
+# it, and one Telegram message arrives rather than two. That is the same contract the
+# marker flow had; only the machine doing the scanning changed.
 #
-# ⚠️ If no laptop is awake, nothing happens and the page keeps the page the user
-# was already looking at. The marker expires at midnight SGT — see
-# `src/core/scan-request.ts` for why same-day is the whole safety mechanism.
+# The marker existed because the laptop was the only address Sheng Siong would answer.
+# That stopped being true on 2026-08-13: `ss-worker` reaches it from a Durable Object
+# placed in Singapore, verified against the laptop at 151 of 152 products byte-identical.
+# Nothing writes `data/scan-request.json` any more.
+#
+# ⚠️ **Removing the marker also removed the laptop's on-demand path.** If the Worker
+# cannot reach Sheng Siong, this run FAILS LOUDLY (Telegram, below) instead of quietly
+# leaving a marker for a poller that may be disabled. The emergency runner is now the
+# `ShengSiong Daily Scan` scheduled task — disabled, one click to re-enable. A fallback
+# that depends on a task the user has turned off is worse than no fallback, because it
+# looks like one.
 on:
   repository_dispatch:
     types: [sscan]
-  workflow_dispatch: # so it can be filed by hand from the Actions tab
+  workflow_dispatch: # so it can be run by hand from the Actions tab
 
-# Committing the marker is the entire job.
-permissions:
-  contents: write
+# ⚠️ Nothing here touches the repo. The Worker commits with its own fine-grained PAT,
+# which is also what makes the rebuild work: a `repository_dispatch` sent with this
+# workflow's own `GITHUB_TOKEN` would NOT start another workflow run (GitHub blocks
+# that to prevent recursion), so the rebuild has to be dispatched by the Worker's PAT.
+permissions: {}
 
-# Two taps in quick succession would otherwise race to push the same file, and
-# the loser fails noisily for no reason. The second tap's marker is worth no
-# more than the first's.
+# Two taps in quick succession would otherwise run two full scans against the shop for
+# no benefit. The second tap's scan is worth no more than the first's.
 concurrency:
   group: scan-request
   cancel-in-progress: false
 
+env:
+  WORKER_URL: https://ss-worker.tmje30.workers.dev/scan
+
 jobs:
-  file:
+  scan:
     runs-on: ubuntu-latest
+    # A full 50-term scan measures ~60s. Ten minutes is slack for a slow shop, not a
+    # budget — a run that hangs should fail rather than hold the concurrency group.
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v7
-
-      - uses: actions/setup-node@v7
-        with:
-          node-version: "22"
-          cache: "npm"
-
-      - run: npm ci
-
-      # ⚠️ The reason arrives through `client_payload` from a public page, so it is
-      # untrusted text. It goes in through the environment, never interpolated into
-      # the `run:` line — `${{ }}` is expanded before the shell sees it, so a reason
-      # containing a quote and a semicolon would run as a command on this runner.
-      - name: Write the marker
+      # ⚠️ No checkout and no `npm ci`. The old marker step needed both and cost ~40s
+      # before it did anything; this is one HTTP call. It also means an untrusted
+      # `client_payload.reason` from the public page is no longer handled at all —
+      # `source` below is a fixed literal, so there is nothing to escape.
+      - name: Ask Cloudflare to scan Sheng Siong
         env:
-          REASON: ${{ github.event.client_payload.payload.reason || 'requested from the deals page' }}
-        run: npm run scan-request -- "$REASON"
-
-      - name: Commit it
+          SCAN_SECRET: ${{ secrets.SCAN_SECRET }}
         run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/scan-request.json
-          # `--quiet --exit-code`: nothing staged means the identical marker is
-          # already committed, which is a duplicate tap, not a failure.
-          if git diff --cached --quiet; then
-            echo "Marker unchanged — nothing to commit."
-            exit 0
+          set -o pipefail
+
+          # ⚠️ Fail on the missing secret rather than sending an unauthenticated
+          # request: the Worker answers that with a bare 401, which reads like the
+          # secret is WRONG rather than absent, and that is a slow thing to debug.
+          if [ -z "${SCAN_SECRET}" ]; then
+            echo "::error::SCAN_SECRET is not set on this repository. Set it with: gh secret set SCAN_SECRET"
+            exit 1
           fi
-          git commit -m "chore: Sheng Siong scan requested from the deals page"
-          # The laptop may have pushed a scan in the seconds since checkout.
-          git pull --rebase --autostash
-          git push
+
+          # `force=1` because the button means "get me fresh prices now". Without it the
+          # Worker returns `already-fresh` whenever today's file has landed and never
+          # opens a socket — correct for the morning cron, useless for a person who has
+          # just tapped Rescan.
+          # ⚠️ `|| echo 000` matters: the default shell is `bash -e`, so a curl that
+          # times out or cannot resolve the host would kill this step before any of the
+          # diagnosis below runs, leaving a red X and an empty log. A synthetic 000 lets
+          # the failure be reported as a failure to reach the Worker at all.
+          code=$(curl -sS --max-time 280 -o response.json -w '%{http_code}' \
+            -H "X-Scan-Secret: ${SCAN_SECRET}" \
+            "${WORKER_URL}?force=1&source=rescan-button" || echo "000")
+
+          echo "HTTP ${code}"
+          # The body carries the colo, the Durable Object that served it and what each
+          # placement candidate answered. That is the whole diagnosis for a failed run,
+          # so it is logged before any exit.
+          cat response.json; echo
+
+          if [ "${code}" != "200" ]; then
+            echo "::error::Worker returned HTTP ${code} — see the body above for the reason and the colo."
+            exit 1
+          fi
+          if ! jq -e '.ok == true' response.json >/dev/null; then
+            echo "::error::Worker reported ok=false — see the body above."
+            exit 1
+          fi
+
+          jq -r '"scanned \(.terms) terms, \(.products) products, from \(.colo) via \(.object) — commit \(.commit)"' response.json
+
+      # ⚠️ Silence is the failure mode worth removing here, exactly as in `daily.yml`.
+      # The person who tapped Rescan is waiting for a page that will never change, and
+      # nothing else would tell them. Raw curl for the same reason as there: this must
+      # work when the steps above did not.
+      - name: Say so in Telegram if the rescan failed
+        if: failure()
+        env:
+          TG_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TG_CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          TEXT="🛑 <b>Rescan failed — Sheng Siong prices were not updated.</b>
+          The page still shows what it showed before. <a href=\"${RUN_URL}\">See what broke →</a>
+
+          If Cloudflare cannot reach Sheng Siong, re-enable the <b>ShengSiong Daily Scan</b> task on the laptop and it will scan on its next run."
+          curl -sS --max-time 30 -X POST \
+            "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TG_CHAT}" \
+            --data-urlencode "parse_mode=HTML" \
+            --data-urlencode "disable_web_page_preview=true" \
+            --data-urlencode "text=${TEXT}"

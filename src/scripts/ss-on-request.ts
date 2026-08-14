@@ -7,6 +7,18 @@ import { sgtDate } from "../core/sgt.js";
 /**
  * The laptop's answer to the page's Rescan button.
  *
+ * ⚠️⚠️ **ORPHANED as of 2026-08-13 — nothing writes the marker this reads.**
+ * `scan-request.yml` now calls the Cloudflare Worker directly instead of committing
+ * `data/scan-request.json`, because `ss-worker` reaches Sheng Siong from a Durable
+ * Object placed in Singapore and the laptop is no longer the only address the shop
+ * will answer. This script still works if a marker appears, and the scheduled task
+ * that runs it may still be enabled — but it will now find nothing, every five
+ * minutes, forever. **It is kept, not deleted, as the emergency path**: if the cloud
+ * ever stops reaching the shop, `npm run scan-request` writes a marker by hand and
+ * this drains it. Do not "fix" the silence; the silence is correct.
+ *
+ * The flow it was built for:
+ *
  * ```
  *   tap Rescan → repository_dispatch: sscan → scan-request.yml commits
  *   data/scan-request.json → THIS (every 5 min) pulls, sees it, scans Sheng
@@ -14,9 +26,9 @@ import { sgtDate } from "../core/sgt.js";
  *   and sends ONE Telegram message, with Sheng Siong in it
  * ```
  *
- * It exists because the cloud cannot reach Sheng Siong and cannot reach this
+ * It existed because the cloud could not reach Sheng Siong and cannot reach this
  * laptop either — there is no inbound port here, and there should not be. A
- * file in the repo is the whole channel: the cloud writes it, the laptop pulls
+ * file in the repo was the whole channel: the cloud writes it, the laptop pulls
  * it. Nothing is listening on this machine.
  *
  * ⚠️ **Doing nothing is the common case and must stay cheap.** Most runs find

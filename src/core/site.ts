@@ -660,35 +660,40 @@ function actionMenu(t: PlanTarget, p: StoreProduct, o: PageOptions, missing: str
 }
 
 /**
- * "Rescan" — ask the laptop for fresh Sheng Siong prices. Only ever rendered
- * inside the missing-shop warning, because that is the only time it does
- * anything useful.
+ * "Rescan" — fetch fresh Sheng Siong prices now. Only ever rendered inside the
+ * missing-shop warning, because that is the only time it does anything useful.
  *
- * ⚠️ **It deliberately does NOT rebuild the page.** Rebuilding is what this
+ * ⚠️ **It deliberately does NOT just rebuild the page.** Rebuilding is what this
  * button used to do, and it was useless in exactly the case it is shown for: the
- * cloud cannot reach Sheng Siong, so a rebuild came back with the same
+ * cloud could not reach Sheng Siong, so a rebuild came back with the same
  * FairPrice-only page and the same warning, three minutes later. The button
  * looked broken because it was — it promised a rescan and delivered a redraw.
  *
- * So one tap fires `repository_dispatch: sscan`, which commits a marker; the
- * laptop's five-minute job sees it, scans, pushes and asks for the rebuild
- * itself. That way the rebuild happens once, with the data in it, and one
- * Telegram message arrives rather than two.
+ * One tap fires `repository_dispatch: sscan` → `scan-request.yml` → the Cloudflare
+ * Worker, which scans from Singapore, commits the prices and asks for the rebuild
+ * itself. The rebuild therefore happens once, with the new data already in it, and
+ * one Telegram message arrives rather than two.
  *
- * The cost is honesty about latency: this is roughly ten minutes, not three, and
- * it does nothing at all if no laptop is awake. Hence the label — a tick that
- * says "requested", not "done", and a hint that names the machine it depends on.
+ * ⚠️ **It no longer depends on the laptop being awake (changed 2026-08-13).** The
+ * chain used to be: commit a marker, wait for the laptop's five-minute job to
+ * notice it, scan, push, dispatch. That existed because the laptop was the only
+ * address Sheng Siong would answer, and it meant the button did nothing at all
+ * with the lid shut. `ss-worker` reaches the shop from a Durable Object placed in
+ * Singapore, so the wait and the dependency are both gone — hence the label saying
+ * ~4 min (measured: ~60s to scan, ~2m40s to rebuild and deploy) rather than ~10.
  *
- * Without a token it falls back to that workflow's own page, where "Run
- * workflow" does the same job in one more tap — the same floor as every other
- * button here.
+ * The tick still says "requested" rather than "done": the tap only starts the
+ * chain, and the page you are looking at cannot know when the new one is live.
+ *
+ * Without a token it falls back to that workflow's own page, where "Run workflow"
+ * does the same job in one more tap — the same floor as every other button here.
  */
 function rescanButton(o: PageOptions): string {
 	const payload = esc(JSON.stringify({ v: 1, reason: "rescan requested from the deals page" }));
 	const href = `https://github.com/${o.repo}/actions/workflows/scan-request.yml`;
 	return `<a class="act rescan" href="${esc(href)}" target="_blank" rel="noopener"
-        data-payload="${payload}" data-event="sscan" data-done="✓ requested · ~10 min"
-        aria-label="Ask the laptop to scan Sheng Siong and rebuild this page">↻ Rescan Sheng Siong</a>`;
+        data-payload="${payload}" data-event="sscan" data-done="✓ requested · ~4 min"
+        aria-label="Scan Sheng Siong for fresh prices and rebuild this page">↻ Rescan Sheng Siong</a>`;
 }
 
 /** One line in "Recently bought · not searched": the item, when it's back, its buttons. */
@@ -1069,8 +1074,8 @@ export function renderDealsPage(
 			o.warning
 				? `<div class="warn">⚠️ ${esc(o.warning)}
       <div class="warnrow">${rescanButton(o)}
-        <span class="warnhint">Only your laptop can reach Sheng Siong, so leave it open —
-          Rescan asks it to. Prices and a new message arrive in about 10 minutes.</span>
+        <span class="warnhint">Rescan fetches fresh prices from Sheng Siong — no laptop
+          needed. Prices and a new message arrive in about 4 minutes.</span>
       </div>
     </div>`
 				: ""

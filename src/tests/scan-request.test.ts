@@ -58,13 +58,25 @@ const warned = page("Sheng Siong is missing from this scan — yesterday's data 
 // ⚠️ `sscan`, not `rescan`. Firing `rescan` is what made this button useless: it
 // rebuilt the page from the same file and returned the same warning. If this
 // assertion ever flips back, the button has quietly gone back to redrawing.
-check("Rescan asks the laptop to scan, not the cloud to redraw", /data-event="sscan"/.test(warned));
+check("Rescan asks for a real scan, not a redraw", /data-event="sscan"/.test(warned));
 check("it does not fire a bare rebuild", !/data-event="rescan"/.test(warned));
 check("its tick says requested, not done", /data-done="✓ requested/.test(warned));
 check("it points at the scan-request workflow as a fallback", /workflows\/scan-request\.yml/.test(warned));
 // The latency is the honest part of the promise — the button is worthless if the
 // user taps it and waits three minutes for a page that never changes.
-check("the hint names the wait", /10 minutes/.test(warned));
+//
+// ⚠️ The number changed from 10 minutes to 4 on 2026-08-13, when `scan-request.yml`
+// stopped committing a marker for the laptop's five-minute poller and started
+// calling the Cloudflare Worker directly. Measured end to end: ~60s to scan,
+// ~2m40s to rebuild and deploy. Keep this assertion specific rather than loosening
+// it to /minutes/ — a promise that drifts away from the truth is the exact failure
+// it was written to catch, and only a literal will notice.
+check("the hint names the wait", /4 minutes/.test(warned));
+// ⚠️ Matched on the instruction, not the word "laptop" — the hint deliberately says
+// "no laptop needed", so a bare /laptop/ test fails on the very sentence that fixes
+// the problem. What must not come back is the old *dependency*: "leave it open".
+check("…and no longer tells the user to leave the laptop open", !/leave it open/i.test(warned));
+check("…saying instead that no laptop is needed", /no laptop\s+needed/i.test(warned));
 
 // No missing shop, no button: there is nothing for the laptop to fetch.
 check("no warning means no button", !/data-event="sscan"/.test(page(undefined)));
