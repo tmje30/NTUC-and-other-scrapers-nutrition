@@ -1837,13 +1837,50 @@ applied *before* search terms are collected, so a snoozed item costs the runner
 nothing. Both read the same published `targets.json` (`ss-scan.ts:24`); the laptop's
 50 was simply the stale number. Check `data/cooldowns.json` before investigating.
 
-**Next: Phase 4 — retire the laptop's jobs.** Nothing depends on them now, but they
-are still enabled and will keep scanning in parallel. Disable (do not delete)
-`ShengSiong Daily Scan` and `Grocery New-Item Pricing`; delete `ShengSiong Scan
-Request` and the marker mailbox. Also still open: wire `scan-request.yml` to call
-the Worker instead of committing a marker (the Actions-side `SCAN_SECRET` is already
-set for this). Two decisions nobody has made: whether the relay keeps its 15-minute
-`tgsweep`, and whether `daily.yml` keeps its own `schedule:` as a backstop.
+### ✅ Phase 4 mostly done — the Rescan button is cloud-native too (2026-08-14)
+
+`scan-request.yml` no longer commits a marker for the laptop to find; it calls the
+Worker. Verified end to end by running it: trigger → Telegram in **3m37s**.
+
+```
+scan-request  Worker: 47 terms, 614 products, SIN via sheng-siong-sg-2, commit 2a775f0  (51s)
+              the Worker's PAT dispatched the rebuild 2s later
+build         "using data/shengsiong-latest.json (2026-08-14, source rescan-button, 614 products)"
+notify        "Sent summary: 6 deals"
+```
+
+⚠️ **The rebuild must be dispatched by the Worker's PAT, not from inside Actions.**
+A `repository_dispatch` sent with a workflow's own `GITHUB_TOKEN` does not start
+another workflow run — GitHub blocks that to prevent recursion. Dispatching from
+`scan-request.yml` would commit prices and then silently fail to refresh the page,
+which is the exact bug that whole path exists to fix.
+
+**Scheduled task states now:**
+
+| Task | State | Why |
+| --- | --- | --- |
+| `ShengSiong Daily Scan` | **Disabled** | the Worker's 09:00–11:00 cron replaces it. **This is the emergency runner** — one click to re-enable if Cloudflare ever stops reaching the shop |
+| `ShengSiong Scan Request` | **Disabled** | the 5-minute poller. Nothing writes the marker it read |
+| `Grocery Telegram Inbox` | Disabled | superseded by the relay, earlier |
+| `Grocery New-Item Pricing` | **Ready — still load-bearing** | see below |
+
+⚠️ **`Grocery New-Item Pricing` is NOT a scanner and must not be disabled with the
+others.** It runs `tg-drain-run.cmd` every 15 minutes, and it is the only thing that
+prices genuinely NEW items texted to the bot — `tg-inbox.yml` says so in its own
+header: *"Pricing a genuinely NEW item still does not happen here… the laptop drains
+them."* Disable it and anything texted that is not already in the list sits in the
+queue forever. **Its premise is now obsolete** (that reason was "Sheng Siong
+challenges datacenter IPs", which the Worker disproves) — so moving new-item pricing
+into `ss-worker` is the last piece of laptop retirement, and the only one left.
+
+⚠️ `src/scripts/ss-on-request.ts` is **orphaned but deliberately kept**, and says so
+at the top. Nothing writes its marker any more, so it would find nothing every five
+minutes forever if re-enabled. It is the by-hand emergency path (`npm run
+scan-request` writes a marker, this drains it). Do not "fix" the silence.
+
+Two decisions nobody has made: whether the relay keeps its 15-minute `tgsweep`, and
+whether `daily.yml` keeps its own `schedule:` as a backstop now that the Worker's
+cron is the primary.
 
 ⚠️ Tomorrow 09:00–11:00 SGT is the first unattended cron run. It stops at the first
 success by checking the committed file, so the later slots no-op.
