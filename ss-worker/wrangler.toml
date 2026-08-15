@@ -40,3 +40,16 @@ new_sqlite_classes = ["ScanRunner"]
 # for planning a day.
 [triggers]
 crons = ["*/15 1-2 * * *", "0 3 * * *"]
+
+# ⚠️ **Live tailing is not an option for the job this Worker exists to do.** The
+# scan runs unattended at 09:00 SGT; by the time anyone asks "did it run?", the
+# only honest answer without this is "nobody was watching". Persisted logs make
+# that question answerable after the fact, which is the whole point.
+#
+# ⚠️ Added 2026-08-14 while trying to establish whether the crons fire at all.
+# `wrangler tail` demonstrably shows cron events — `grocery-telegram-relay` logs
+# `"*/15 * * * *" @ ... - Ok` on every tick — but that Worker has observability on
+# and this one did not, so "no cron in the tail" had two possible readings. This
+# removes that ambiguity. Keep it on regardless of how that question resolves.
+[observability]
+enabled = true
