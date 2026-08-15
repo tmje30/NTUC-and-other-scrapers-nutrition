@@ -1,6 +1,6 @@
 # Grocery Deal Scraper — System Guide
 
-*Last updated: 2026-08-12 · Covers changes through commit cee5735*
+*Last updated: 2026-08-15 · Covers changes through commit d9bc370*
 
 ## What this is
 
@@ -107,9 +107,17 @@ of carrots is genuinely the cheapest per kilo and is not a pack anyone buys).
   ⚠️ **"Don't use" is not "ignore forever"**: it declines to *record that pack as
   your price at that shop* and the product still appears on the deals page.
 - **"The page says a shop is missing — can I fix it now?"** Tap **Rescan** in the
-  warning banner. It asks the laptop for fresh Sheng Siong prices, and about ten
-  minutes later the page rebuilds *with the data in it*. If no laptop is awake,
-  nothing happens and the page keeps what it had.
+  warning banner. It fetches fresh Sheng Siong prices from the cloud and rebuilds
+  the page *with the data in it*, in about **four minutes**. **No laptop is
+  needed** — this changed on 2026-08-13; it used to depend on a machine at home
+  being awake, and it no longer does. If the scan fails, Telegram says so rather
+  than leaving you waiting for a page that will never change.
+- **"Some item needs a size in its name — what does that mean?"** At the foot of
+  the deals page, a **"📏 Needs a size in the name"** section lists ingredients
+  where the shop only sells the item by weight, but your Notion row records it by
+  the piece — so the two prices can't be compared. Adding the pack size to the
+  ingredient's name (e.g. `Eggs ( 600g )`) is the fix, and it's a judgement only
+  you can make, so there's no button. The Telegram message mentions these too.
 - **"Can I capture a product I'm looking at in the browser?"** Yes — the Chrome
   extension ("Nutrition Plan Extension") reads the product page you're on and
   writes it into your Ingredients database, either as a new row or over an
@@ -122,61 +130,92 @@ of carrots is genuinely the cheapest per kilo and is not a pack anyone buys).
 
 ## How it fits together
 
-The tricky part is that **Sheng Siong won't answer the cloud.** FairPrice can be
+The tricky part is that **Sheng Siong only answers Singapore.** FairPrice can be
 scraped from anywhere, but Sheng Siong's bot-protection challenges connections from
-**outside Singapore** — and the free cloud runner is US-hosted. So the system is
-split across two places:
+**outside Singapore** — and the free GitHub runner is US-hosted. So the daily work
+is split across two clouds:
 
-⚠️ **It is geography, not "residential vs data-centre" — corrected 2026-08-11.**
-This was designed on the belief that Sheng Siong needed a *home* internet line, and
-that belief was wrong. Measured: a **Singapore data-centre** address completed a full
-60-term scan with 0 errors, while US data-centre addresses (GitHub Actions, and a US
-VPN exit even with a browser-minted cookie) were challenged. The laptop qualifies by
-being **in Singapore**, not by being on a home line. The practical consequence is
-that a **~US$5/month Singapore VPS could replace the laptop entirely** — strongly
-indicated but not proven, because every Singapore success so far came through one
-commercial VPN exit and a VPS is a different address. Run `npm run ss -- "milk"` on
-the box before migrating anything.
+⚠️ **It is geography, not "residential vs data-centre" — corrected 2026-08-11, and
+acted on 2026-08-13.** This was originally designed on the belief that Sheng Siong
+needed a *home* internet line. That was wrong: it blocks by **country**. A
+Singapore **data-centre** address scans it perfectly well, which is what made the
+laptop replaceable. **This is no longer an inference — Cloudflare has been doing
+the daily scan since 2026-08-13.**
 
-1. **The laptop** (a Singapore address, on scheduled jobs) does the parts the cloud
-   can't: it scans Sheng Siong daily and saves the results into a small file
-   (`data/shengsiong-latest.json`) that it commits to the project's GitHub
-   repository. It also prices brand-new items and can serve an on-demand rescan.
+1. **Cloudflare** (`ss-worker/`, free tier) scans Sheng Siong from **inside
+   Singapore**, commits the results to `data/shengsiong-latest.json` in this
+   repository, and asks GitHub to rebuild the page. It runs itself every morning
+   and also serves the page's Rescan button.
 
-2. **The cloud** (a free GitHub Actions job, once a day) does everything else: it
-   reads your Notion ingredient list, scrapes FairPrice live, reads the Sheng
-   Siong file the laptop left behind, combines the two into the best cross-store
-   deals, publishes the web page, and sends the Telegram message.
+2. **GitHub Actions** (`daily.yml`, once a day) does everything else: it reads your
+   Notion ingredient list, scrapes FairPrice live, reads the Sheng Siong file
+   Cloudflare left behind, combines the two into the best cross-store deals,
+   publishes the web page, and sends the Telegram message.
 
 Data flow, end to end:
 
 ```
 Notion Ingredients DB ─┐
-                       ├─► cloud job: scan FairPrice (live)
-laptop (daily) ────────┘            + read Sheng Siong file
-  scan Sheng Siong                        │
-  → commit data file  ──────────────►  compare per 100 g → best deals
-                                          │
-                                          ├─► GitHub Pages web page
-                                          └─► Telegram summary message
+                       ├─► GitHub Actions: scan FairPrice (live)
+Cloudflare ss-worker ──┘                 + read Sheng Siong file
+  09:00 SGT, from Singapore                     │
+  scan Sheng Siong                              │
+  → commit data file ───────────────►  compare per 100 g → best deals
+  → dispatch rebuild                            │
+                                                ├─► GitHub Pages web page
+                                                └─► Telegram summary message
 ```
 
-If the laptop's Sheng Siong file is missing or not from today, the cloud simply
-skips Sheng Siong and publishes a **FairPrice-only** page — it never fails and
-never tries the blocked connection. A ⚠️ banner on the page (and a line in the
-Telegram message) says a shop was missing, so a degraded run is never silent; the
-banner carries a **Rescan** button.
+⚠️ **Why the clock is Cloudflare's and not GitHub's.** Free public repos queue
+`schedule:` workflows by **3–3¾ hours**, so a 09:00 scan asked for on GitHub lands
+around noon — useless for planning a shopping day. Cloudflare's cron fires on time.
+`daily.yml` still has its own `cron: "0 0 * * *"`, but that is a **floor on when
+the shops are scraped**, deliberately, not a delivery time.
 
-⚠️ **Rescan asks the laptop for prices; it does not just redraw the page.** It used
-to fire `rescan` at the cloud, which rebuilt from the same unchanged file — a promise
-of a rescan that delivered a redraw, with the warning still there three minutes
-later. It now fires `sscan` at `scan-request.yml`, which commits a marker file; the
-laptop's 5-minute `ss-on-request` job sees it, scans Sheng Siong, pushes the prices
-and dispatches `rescan` itself. One rebuild with the data in it, one Telegram
-message, about ten minutes — and the button says `✓ requested · ~10 min` rather than
-claiming to be rescanning. ⚠️ The marker **expires at midnight SGT**, so a laptop
-opened at 23:00 (or on Thursday, having been shut since Monday) doesn't wake up and
-scan a shopping day that is already over.
+⚠️ **The morning scan is a retry window, not a single attempt.** `ss-worker` fires
+every 15 minutes from **09:00 to 11:00 SGT** (`*/15 1-2 * * *` plus `0 3 * * *` in
+UTC). The first attempt that succeeds commits the file; every later attempt reads
+that file, sees today's date, and stops without opening a connection. "Stop once it
+works" is that freshness check — a Worker keeps no memory between runs, so the
+committed file is the only durable answer to "did the morning scan happen yet?".
+
+If the Sheng Siong file is missing or not from today, the cloud simply skips Sheng
+Siong and publishes a **FairPrice-only** page — it never fails and never tries a
+blocked connection. A ⚠️ banner on the page (and a line in the Telegram message)
+says a shop was missing, so a degraded run is never silent; the banner carries a
+**Rescan** button.
+
+⚠️ **Rescan fetches real prices; it does not just redraw the page.** It originally
+fired `rescan`, which rebuilt from the same unchanged file — a promise of a rescan
+that delivered a redraw, with the warning still there three minutes later. It then
+spent two days writing a marker file for the laptop to find. **Since 2026-08-13 it
+calls Cloudflare directly**: `scan-request.yml` makes one authenticated HTTP call to
+`ss-worker`, which scans, commits and dispatches the rebuild itself. One rebuild
+with the data in it, one Telegram message, **about four minutes**. The button says
+`✓ requested · ~4 min`.
+
+⚠️ **The marker file is gone.** Nothing writes `data/scan-request.json` any more,
+and the laptop's 5-minute poller that watched for it is switched off. If the Worker
+cannot reach Sheng Siong, the run **fails loudly in Telegram** rather than quietly
+leaving a marker for a job that may be disabled — a fallback that depends on a
+switched-off task is worse than no fallback, because it looks like one.
+
+⚠️ **What still needs the laptop, and why.** The daily deals no longer do — but two
+jobs remain on the machine at home:
+
+- **Pricing brand-new items** (`npm run tg-drain`). A texted line matching no
+  ingredient has no known price, so it must be searched across five shops. Four of
+  those are ordinary HTTP and could move to the cloud tomorrow; **Carousell drives a
+  real Chrome** (`src/core/browser-cdp.ts`), which a Cloudflare Worker cannot do. A
+  GitHub runner *does* have Chrome, so this is movable — it just hasn't been moved.
+  ⚠️ The reason written in `tg-drain.ts` — "Sheng Siong challenges datacenter IPs
+  while answering a residential one" — is **obsolete twice over** and should not be
+  believed: the block is by country, and Cloudflare now scans Sheng Siong daily.
+- **The price book** (`npm run vendor-scan`). Nothing schedules it; it is run by
+  hand and needs the laptop.
+
+The laptop also keeps a **`ShengSiong Daily Scan` scheduled task, switched off**, as
+a one-click emergency scanner if Cloudflare ever cannot reach the shop.
 
 **The inbound leg — Telegram.** Texting the bot is the third way in, and unlike the
 other two it is something *arriving* rather than a page being built. Telegram cannot
@@ -847,9 +886,11 @@ directed search, which needs a row naming the vendor — and a new item has no r
 - **No baseline exists**, so the card compares *shops against each other* and shows
   the shop's own sale %, never a saving against the user's price.
 - Carousell is reduced with `cheapestPlausible` and labelled `[marketplace listing]`.
-- Same hybrid hand-off as the daily scan: the laptop scans and commits
-  `data/new-items-latest.json`, `repository_dispatch: newitems` rebuilds Pages, and a
-  stale file is skipped rather than published.
+- The laptop scans and commits `data/new-items-latest.json`,
+  `repository_dispatch: newitems` rebuilds Pages, and a stale file is skipped rather
+  than published. ⚠️ **This is the hand-off the daily scan used to use** — new-item
+  pricing is now the only job still shaped that way, because it searches Carousell,
+  which needs a real Chrome.
 - ⚠️ It holds **its own shop list and uses the live DDP module**, not `run.ts`'s
   `STORES`. That default is `shengsiong-file`, which only answers terms in that day's
   committed scan — and a new item's term is never among them, so Sheng Siong returned
@@ -949,6 +990,106 @@ Full setup, verification and rollback in [`relay/README.md`](relay/README.md).
 - **Live:** `https://grocery-telegram-relay.tmje30.workers.dev`. `npx wrangler tail`
   from `relay/` is the live log; `relay/worker.test.mjs` has 33 offline cases and runs
   as part of `npm test`.
+
+### The Sheng Siong scanner — `ss-worker/` (added 2026-08-13)
+
+The Worker that replaced the laptop for the daily scan. TypeScript, deployed with
+`npx wrangler deploy` from `ss-worker/`. Live at
+`https://ss-worker.tmje30.workers.dev`.
+
+**The problem it solves.** Sheng Siong answers Singapore and challenges everywhere
+else. A Cloudflare Worker on its own is no help — it runs wherever the *caller* is,
+and the caller is a US GitHub runner. The fix is a **Durable Object**.
+
+- **`worker.ts`** — the entry point. Exports `fetch` (the `/scan` endpoint),
+  `scheduled` (the morning cron), and the `ScanRunner` Durable Object class.
+  - ⚠️⚠️ **Both paths go through the Durable Object, and that is not obvious.** The
+    first design let the on-demand path skip it, reasoning that a request from
+    Singapore is placed in Singapore. True of a tap from your phone — but the tap
+    never reaches this Worker. The deals page is public and cannot hold a secret, so
+    the button fires `repository_dispatch` and **GitHub Actions** calls the Worker,
+    from a US runner. `SCAN.get(id, { locationHint: "apac" })` is what puts the scan
+    in Singapore on *every* path.
+  - `CANDIDATES` — eight named objects, `sheng-siong-sg-0..7`. `pickStub()` probes
+    them in turn and uses the first that can actually reach the shop. `apac` is
+    region-coarse, so some objects land in HKG or KIX rather than SIN; placement per
+    name is sticky, so a working one keeps working.
+  - ⚠️⚠️ **Read `colo`, never `loc`.** `cdn-cgi/trace` fetched inside a Worker
+    reports `loc` as the *original caller's* country, not the object's. A probe that
+    keyed on `loc` produced a confidently wrong result on 2026-08-12. Even `colo` is
+    only a hint — `reachable()` is the real gate, and it tests the one thing that
+    matters: whether the shop returns a `101` WebSocket upgrade rather than the `200`
+    that means a challenge page.
+  - **It refuses rather than scan-and-fail.** An object outside Singapore returns
+    `503 unreachable-from-here` with its datacenter, so the caller can try another.
+- **`ddp.ts`** — `WorkerDdpClient`. Sheng Siong's catalogue is served over **Meteor
+  DDP on a WebSocket**, not the HTML site. The bot-protection guards the front door;
+  the DDP protocol answers directly. **No browser and no Incapsula cookie are
+  involved** — which is exactly why this fits in a Worker at all.
+- **`scan.ts`** — `runScan()`, `fetchTerms()`, `mapProduct()`, `sgtDate()`. Reads the
+  published `targets.json` for its search terms, so it stays in step with Notion
+  without holding any Notion credential.
+- **`github.ts`** — `commitScanFile()`, `readScanFile()`, `dispatchRebuild()`. Commits
+  via the Contents API (GET blob sha → PUT base64 + sha) and then fires the rebuild.
+  - ⚠️ **The Worker must dispatch the rebuild itself, with its own PAT.** GitHub
+    blocks a `repository_dispatch` sent with a workflow's own `GITHUB_TOKEN` from
+    starting another workflow run (anti-recursion), so `scan-request.yml` could not
+    do it even if it wanted to.
+
+**The endpoint.** `GET /scan`, authenticated with an `X-Scan-Secret` header:
+
+| Parameter | Effect |
+|---|---|
+| `force=1` | scan even if today's file is already committed (what Rescan sends) |
+| `source=…` | recorded in the committed file, e.g. `cloudflare-cron`, `rescan-button` |
+| `dryRun=1` | return the scan without writing it — how the port was diffed against the laptop |
+| `probe=1` | cheap yes/no on whether this object can reach the shop |
+| `terms=a\|b` | override the search terms; ⚠️ **only honoured with `dryRun`**, so a two-term "scan" can never overwrite the real file |
+
+**Two secrets, both fail closed** (`npx wrangler secret put`): `SCAN_SECRET` (a
+missing one rejects every request rather than accepting all of them) and
+`GITHUB_TOKEN` (a fine-grained PAT, this repo, **Contents: read and write** — kept
+separate from the relay's).
+
+⚠️ **Cron triggers are registered at deploy time, from `[triggers]` in
+`wrangler.toml`.** Adding that block without redeploying does nothing, and secret
+changes do not re-read it. **The check:** a successful `wrangler deploy` prints the
+schedules back —
+
+```
+Deployed ss-worker triggers (6.93 sec)
+  schedule: */15 1-2 * * *
+  schedule: 0 3 * * *
+```
+
+If those lines are absent, the crons are not registered. Config changes take up to
+**15 minutes** to propagate.
+
+⚠️ **`* * * * *` is not honoured — never use it to test a cron here.** One sat
+deployed for 20 hours across a stale file and never fired once, while the 15-minute
+schedule worked on its first opportunity. It produces a convincing false negative.
+Test with a `*/15`-style expression, or read the history instead (below).
+
+**How to check whether the morning scan ran:**
+1. **Cloudflare dashboard** → Workers & Pages → `ss-worker` → Settings → **Trigger
+   Events** → View events. Keeps the **100 most recent cron invocations** with
+   outcomes. Historical, so it answers the question days later. **Try this first.**
+2. `npx wrangler tail ss-worker --format pretty` from `ss-worker/` — live only, and
+   ⚠️ it can lose its connection while its output still reads `Connected …`, so a
+   silence proves nothing unless the session is confirmed alive.
+3. The repo itself: `data/shengsiong-latest.json` carries `date` and `source`, and
+   the commit is titled `data: Sheng Siong scan <date> (<source>)`.
+
+`[observability] enabled = true` is set so logs persist — the scan runs unattended
+at 09:00, which is precisely when live tailing is not an option.
+
+**Verified against the laptop before it was given write access:** on four real
+target terms, **151 of 152 products byte-identical on every field**, zero differing.
+⚠️ Re-run that diff (with `dryRun=1`) if the port is ever touched, and **key the
+comparison on `url`, never `name`** — Sheng Siong sells several products under one
+name, so a name key compares an item against an arbitrary same-named sibling.
+
+`ss-worker/scan.test.ts` runs offline as part of `npm test`.
 
 ### Chrome extension — "Nutrition Plan Extension"
 
@@ -1253,10 +1394,10 @@ why `vendor-probe` prints its egress IP and flags datacenter addresses.
 - **`npm run vendor-scan`** — fill the price book. No flags = report only, writing
   **nothing** anywhere; `--write` fills the vendor slots and queues the uncertain
   picks for review. Laptop only, and wants `SHENGSIONG_LIVE=1`.
-- **`npm run ss-on-request`** — serves the page's Rescan button: if
-  `data/scan-request.json` holds an unserved marker, scan Sheng Siong, push, and
-  dispatch `rescan`. Runs every 5 minutes on the laptop. **`npm run scan-request`**
-  files such a marker by hand.
+- **`npm run ss-on-request`** — ⚠️ **ORPHANED since 2026-08-13; nothing writes the
+  marker it reads.** Rescan now calls Cloudflare directly. Kept deliberately as a
+  by-hand emergency path: pair it with `npm run scan-request` to file a marker
+  yourself, and it will scan and push. **Its silence is correct — do not "fix" it.**
 - **The Telegram commands** — all read `TELEGRAM_BOT_TOKEN` from `.env`:
 
   | command | what it does |
@@ -1289,13 +1430,14 @@ why `vendor-probe` prints its egress IP and flags datacenter addresses.
 - **Wrapper:** `C:\Users\newuser\shengsiong-runner\run.cmd` — sets
   `RUNNER_SOURCE=laptop`, adds Node + git to `PATH`, runs `git pull` then
   `npm run push-ss`, and appends output to `..\push-ss.log`.
-- **Four Windows Task Scheduler tasks**, as at 2026-08-12:
+- **Four Windows Task Scheduler tasks**, as at **2026-08-14** — ⚠️ **three of the
+  four are now off**; Cloudflare does this work:
 
   | task | script | when | state |
   |---|---|---|---|
-  | **ShengSiong Daily Scan** | `run.cmd` (runner clone) | **05:30 SGT**, then every 30 min until 11:00 | Ready |
-  | **ShengSiong Scan Request** | `ss-request-run.cmd` | every **5 min** | Ready |
-  | **Grocery New-Item Pricing** | `tg-drain-run.cmd` | every **15 min** | Ready |
+  | **Grocery New-Item Pricing** | `tg-drain-run.cmd` | every **15 min** | **Ready** — the one still doing a job |
+  | **ShengSiong Daily Scan** | `run.cmd` (runner clone) | 05:30 SGT, then every 30 min until 11:00 | **Disabled** 2026-08-14 — kept as the one-click emergency scanner |
+  | **ShengSiong Scan Request** | `ss-request-run.cmd` | every 5 min | **Disabled** 2026-08-14 — Rescan calls Cloudflare now |
   | **Grocery Telegram Inbox** | `tg-poll-run.cmd` | at logon, every 15 min | **Disabled** — retired by the relay |
 
   All run as the logged-in user (`/IT`), so Windows Credential Manager provides git
@@ -1329,8 +1471,10 @@ why `vendor-probe` prints its egress IP and flags datacenter addresses.
   state file's `updatedAt`. This is the same silent-degradation shape as the 2 h 45 m
   Modern Standby delay, and it is an argument for the relay rather than a bug to fix.
 - A **phone (Termux/Android)** runner (`phone-run.sh`) exists but is **shelved** by
-  the user (2026-08-11); its push was proven, its scheduling never finished. The
-  Singapore VPS is the direction instead. Do not pick it up as pending work.
+  the user (2026-08-11); its push was proven, its scheduling never finished. Do not
+  pick it up as pending work. ⚠️ **The Singapore VPS it was shelved in favour of was
+  never needed either** — `ss-worker` took that job on Cloudflare's free tier on
+  2026-08-13, at no cost.
 
 ### The cloud jobs
 
@@ -1348,6 +1492,14 @@ Six GitHub Actions workflows:
   earlier cron aimed at an 08:00 *arrival* (`30 20 * * *`) was tried and reverted the
   same day — the delay is a queue, not a promise, and on a quiet night it would scrape
   at 04:30. And it means **"it didn't run" is almost always "it hasn't run yet"**.
+  ⚠️ **It says so in Telegram when it fails outright** (added 2026-08-13). A partial
+  failure already spoke for itself — a missing shop becomes a warning in the same
+  message as the deals — but a run that died *before* the notify step sent nothing at
+  all, so a broken morning looked exactly like a morning with no discounts. The
+  notifier uses **raw `curl`, not `npm run notify`**, on purpose: two of the likeliest
+  breakages are `setup-node` and `npm ci`, which leave no `node_modules` for a script
+  to run in. A notifier that depends on the thing that just failed goes quiet exactly
+  when it is needed.
 - **`.github/workflows/add-to-list.yml`** — the privileged half of the **Buy**
   button: writes the grocery-list row, records the cooldown, appends to the
   purchase log, comments the result on the issue and closes it. No Telegram ping —
@@ -1372,8 +1524,15 @@ Six GitHub Actions workflows:
   cancelling a duplicate *sweep* costs nothing, and two concurrent sweeps would file
   the same ask twice. Most runs exit in seconds having found nothing.
 - **`.github/workflows/scan-request.yml`** — triggered by `repository_dispatch: sscan`
-  from the page's Rescan button; commits the marker in `data/scan-request.json` for the
-  laptop to find. It does not scan anything itself — it can't.
+  from the page's Rescan button. **Rewritten 2026-08-13:** it makes one authenticated
+  HTTP call to `ss-worker` and nothing else — no checkout, no `npm ci`, `permissions:
+  {}`. The Worker scans, commits and dispatches the rebuild itself. It needs the
+  `SCAN_SECRET` repository secret, and fails with a named error if that is missing
+  rather than sending an unauthenticated request (the Worker answers those with a bare
+  `401`, which reads like a *wrong* secret rather than an absent one).
+  ⚠️ It no longer writes `data/scan-request.json`. If the Worker cannot be reached the
+  run **fails loudly in Telegram**, naming the disabled `ShengSiong Daily Scan` task as
+  the emergency runner.
 
 **When two taps land together** — `src/core/merge-data.ts` + `src/scripts/merge-data.ts`.
 Each tap is its own workflow run, and each commits a JSON data file and pushes, so
@@ -1470,10 +1629,21 @@ Other requirements:
   Manager), the scheduled tasks above, and — since the WAF change — **Google Chrome
   installed**, which it launches briefly to earn a session cookie when it gets
   challenged. Four of the nine shops need that headed browser for every search.
-- **A Cloudflare account** (free tier) for the relay, and `npx wrangler` to deploy
-  it — no global install, no build step. ⚠️ `wrangler login` opens a browser and
-  cannot be scripted. The **workers.dev subdomain is global across Cloudflare** and
-  separate from the Worker's name.
+- **A Cloudflare account** (free tier) for the two Workers — the relay (`relay/`)
+  and the Sheng Siong scanner (`ss-worker/`) — with `npx wrangler` to deploy them;
+  no global install, no build step. ⚠️ `wrangler login` opens a browser and cannot
+  be scripted. The **workers.dev subdomain is global across Cloudflare** and separate
+  from the Worker's name.
+  - **Secrets are write-only.** `wrangler secret put` sets them; nothing can read a
+    value back. `wrangler secret list` shows only the names. Losing one means
+    generating a new one on both sides, not recovering it.
+  - ⚠️ The Worker name is a **positional** argument to `wrangler tail`
+    (`wrangler tail ss-worker`), not `--name`.
+  - **Free-plan cron limit is 5 per account**, and this project uses **3** (one on
+    the relay, two on `ss-worker`).
+  - `ss-worker` needs `SCAN_SECRET` and `GITHUB_TOKEN`; the same `SCAN_SECRET` value
+    must also be a **repository secret** on GitHub so `scan-request.yml` can present
+    it.
 - ⚠️ **On a brand-new `workers.dev` subdomain, `setWebhook` will fail first** with
   `bad webhook: Failed to resolve host: Temporary failure in name resolution`.
   Telegram's own resolvers lag a new subdomain by up to about an hour while every
@@ -1504,11 +1674,24 @@ Other requirements:
   2026-08-11). It still matters at other shops: on the same line, `curl` gets 403
   from Watsons while Node's `fetch` gets 200, so the client is an independent
   variable. Pin both before calling anything "blocked".
-- **Runner** — the machine in Singapore (the laptop) that scans Sheng Siong and
-  commits the data file the cloud reads.
+- **Runner** — whatever scans Sheng Siong from Singapore and commits the data file
+  the cloud reads. ⚠️ **Since 2026-08-13 this is `ss-worker`, not the laptop.** The
+  laptop keeps a switched-off scheduled task as an emergency stand-in.
 - **Relay** — the Cloudflare Worker in `relay/`. Turns a Telegram webhook into a
-  GitHub `repository_dispatch`, and carries the 15-minute cron that is the system's
-  only clock. Holds no state.
+  GitHub `repository_dispatch`, and carries the 15-minute cron behind the chat's
+  one-hour rule. Holds no state.
+- **`ss-worker`** — the second Cloudflare Worker (`ss-worker/`). Scans Sheng Siong
+  from Singapore, commits the prices and asks GitHub to rebuild the page. Runs on a
+  morning cron and on demand from the Rescan button.
+- **Durable Object** — a Cloudflare primitive that pins a piece of code to one
+  place, addressed by a name you choose. Here it is used purely for **geography**:
+  `locationHint: "apac"` is what puts the scan inside Singapore no matter where the
+  request came from. Placement per name is sticky, and region-coarse — `apac` can
+  mean Hong Kong or Osaka as well as Singapore, which is why eight candidates are
+  probed and the reachable one is used.
+- **`colo`** — the Cloudflare datacenter serving a request (`SIN`, `HKG`, `NRT`…).
+  ⚠️ Not to be confused with `loc` in `cdn-cgi/trace`, which reports the *caller's*
+  country and produced a confidently wrong measurement on 2026-08-12.
 - **Webhook** — Telegram pushing each message to a URL you registered, instead of
   your program asking repeatedly. A bot can have a webhook **or** serve `getUpdates`,
   never both.
@@ -1560,6 +1743,32 @@ Other requirements:
 
 ## What changed in this update
 
+- **2026-08-15 — The daily Sheng Siong scan no longer needs the laptop.** This is
+  the biggest change since the system was built, and it makes several older
+  paragraphs in this guide obsolete — they have been rewritten. Sheng Siong is now
+  scanned by a Cloudflare Worker (`ss-worker/`) from inside Singapore, on a Durable
+  Object pinned there. It runs itself every morning from 09:00 to 11:00 SGT, retrying
+  every 15 minutes until one attempt succeeds, then commits the prices and asks
+  GitHub to rebuild the page. Proven unattended on 2026-08-15: cron at 09:00:00,
+  prices committed at 09:01:09, page and Telegram from it five seconds later.
+  Before it was reliable, Sheng Siong prices depended on a laptop being awake in
+  Singapore — which is why the page was FairPrice-only for three days running in
+  mid-August.
+- **2026-08-13 — Rescan got four times faster and stopped needing a machine at
+  home.** The button used to commit a marker file for the laptop's five-minute job to
+  notice, taking about ten minutes and only working if something was awake. It now
+  calls Cloudflare directly and takes about four. The marker file is gone entirely.
+- **2026-08-13 — A failed morning now says so.** If the daily run dies before it can
+  send the digest, Telegram gets a plain "nothing is working" message with a link to
+  the failure. Previously a broken morning and a morning with no discounts looked
+  identical — both were silence.
+- **2026-08-13 — The deals page tells you when an item needs a size in its name.** A
+  new section at the foot of the page lists ingredients the shop sells only by weight
+  while your Notion row counts them by the piece, so the two can't be compared. There
+  is no button, because the fix is a judgement about which pack you actually buy.
+- **2026-08-13 — A By-Unit row can record a pack the shop only weighs.** The price
+  book no longer refuses a vendor slot just because the shop states grams where the
+  ingredient counts pieces.
 - **2026-08-12 — Texting the bot now works from the cloud, in under a minute.** A
   list texted at ~18:20 on 08-11 was answered at **21:11**: the laptop had entered
   Modern Standby at 18:26 and Telegram held the message for 2 h 45 m. Nothing was
@@ -1585,6 +1794,8 @@ Other requirements:
   data-centre addresses are challenged, VPN cookie or not. The laptop qualifies by
   being in Singapore. The practical upshot: a **~US$5/month Singapore VPS could take
   the last job off this laptop** — indicated, not proven, so probe the box first.
+  ✅ **Resolved 2026-08-13, and better than proposed:** no VPS was needed. A
+  Cloudflare Durable Object pinned to `apac` scans from Singapore on the free tier.
 - **2026-08-12 — Two silent-failure lessons worth more than the fixes.** The 05:30
   scan failed three days running because a non-zero exit code does **not** buy a Task
   Scheduler retry (Windows retries a task that failed to *launch*), and the page was
