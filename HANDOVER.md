@@ -1729,11 +1729,95 @@ which only appears when a shop is **missing from a build that happened**. "No
 build at all" has no button. Its absence on a healthy page is correct behaviour,
 not a bug — that confused the user on 2026-08-05.
 
-## Next session — pick up here (as of 2026-08-13, afternoon)
+## Next session — pick up here (as of 2026-08-15, morning)
 
 *⚠️ **Everything is committed and pushed.** `main` is clean and in sync with
-origin. That was not true this morning — a whole session's work sat uncommitted,
-which is itself what had been breaking `tg-drain`'s pull.*
+origin.*
+
+### ✅ THE MORNING CRON IS PROVEN — 2026-08-15, 09:01 SGT
+
+**The unattended morning scan works.** This is the thing that had never been
+tested, and it now has been, against a genuinely stale file:
+
+```
+01:00:00 UTC  Cloudflare cron fires (*/15 1-2 * * *)
+01:01:09 UTC  57a54c0  data: Sheng Siong scan 2026-08-15 (cloudflare-cron)
+01:01:14 UTC  daily.yml  event=repository_dispatch  success   ← page + Telegram
+01:15:00 UTC  daily.yml  event=schedule             success
+```
+
+Five seconds from commit to rebuild. Nobody was awake for any of it.
+
+⚠️ **What the 2026-08-13 "CLOUD SCAN IS LIVE" entry below actually proved was the
+`/scan` endpoint, not the schedule.** Those are different claims and it was
+written as though the second followed from the first. It doesn't: the endpoint
+had been called four times by hand and by the Rescan button, while `[triggers]`
+had never been deployed at all. Both are now true, but they were proven two days
+apart.
+
+### ⚠️⚠️ The real bug was one line; the day it cost was diagnostic error
+
+**The bug:** `[triggers]` entered `wrangler.toml` *after* the last `wrangler
+deploy`, so Cloudflare never registered the schedules. Secret changes create new
+versions but never re-read that block. Fixed by a plain `npx wrangler deploy`,
+which prints the schedules back when it registers them:
+
+```
+Deployed ss-worker triggers (6.93 sec)
+  schedule: */15 1-2 * * *
+  schedule: 0 3 * * *
+```
+
+⚠️ **If those `schedule:` lines are absent from a deploy's output, the crons are
+not registered.** That line is the check. It is also the only cheap one.
+
+**Then a full day went into "verifying" it, and every reading was wrong.** Four
+traps, in the order they bit — the pattern matters more than any one of them:
+
+- **⚠️⚠️ `* * * * *` IS NOT HONOURED. Never use it as a test instrument.** Every
+  attempt to force a quick firing used an every-minute cron. One sat deployed for
+  **20 hours** across a file that went stale at midnight SGT and *never scanned
+  once*, while `*/15 1-2 * * *` fired on its first opportunity. Whatever the
+  reason (the docs state no minimum interval), the instrument was the one thing
+  that doesn't work, so every test read negative. **To test a cron here, use a
+  `*/15`-style expression, or just wait for the real window.**
+- **A Worker without `[observability]` makes a silent tail unreadable.** `ss-worker`
+  had none. "No cron event in `wrangler tail`" then had two readings — didn't fire,
+  or didn't emit — and there was no way to tell them apart. Now enabled (`b519d06`).
+  **The relay is the control:** it has observability on, and
+  `wrangler tail grocery-telegram-relay` shows `"*/15 * * * *" @ … - Ok` on every
+  tick. That single comparison would have saved the day if run first.
+- **`wrangler tail` dies silently and keeps looking alive.** One session lost its
+  connection, retried five times, gave up — and the *output file still ended in
+  `Connected to ss-worker, waiting for logs...`* until the error was flushed later.
+  A slot "observed" through a dead tail is not observed. **Check the tail is still
+  alive before believing a negative.**
+- **Config changes take up to 15 minutes to propagate.** Two tests ran inside that
+  window and proved nothing. (This one is real but was *not* the cause — it became
+  a plausible-sounding explanation for results the broken instrument produced.)
+
+⚠️ **The honest shape of the error:** a negative result was reported as settled
+three separate times on evidence that could not distinguish the hypotheses. Silence
+from an unattended job is the weakest evidence there is, and this system is *built*
+around that lesson — `daily.yml`'s failure notifier, the poller that logged nothing
+on success. It applies to diagnosis too.
+
+### ⚠️ The 30-second check nobody used
+
+**Workers & Pages → `ss-worker` → Settings → Trigger Events → View events.**
+Cloudflare keeps the **100 most recent cron invocations** there, with outcomes. It
+is historical, so it answers "did the 09:00 scan run?" directly, days later, with
+no tailing and no inference. It needs a browser login, which is the only reason it
+was not used here. **Try this before instrumenting anything.**
+
+### ⚠️ A diagnostic was left on live infrastructure for 20 hours
+
+A temporary `* * * * *` cron was deployed to `ss-worker` expecting a check-back in
+20 minutes. The background task watching it died on a local network failure and
+nobody looked again until the next day. It turned out harmless — it never fired,
+and the freshness check would have stopped it anyway — but that was luck, not
+design. **Anything temporary on live infrastructure needs a check-back that does
+not depend on a background process surviving.**
 
 ### What shipped today (2026-08-13)
 
@@ -1801,6 +1885,10 @@ describe their full contents.** The history is pushed, so it was left rather tha
 rewritten. Commit `e307c7d` carries the honest description of that feature.
 
 ### ✅ THE CLOUD SCAN IS LIVE — proven end to end 2026-08-13, 14:30 SGT
+
+*⚠️ Read "the `/scan` endpoint is live". This entry proved the scan **on demand**;
+the **morning schedule** was not registered at the time and was not proven until
+2026-08-15 — see the top of this section.*
 
 **Cloudflare has scanned Sheng Siong, committed the result, and the page and
 Telegram message came from it.** The laptop was not involved.
