@@ -1863,13 +1863,36 @@ already fixed on the 14th by a plain redeploy.
      before rendering matters. The job runs Chrome under `xvfb` so `--headed` is
      real — that part is correct and will matter if the address problem is solved.
 
-     ⚠️ **Why it 403s is NOT established.** The runner differs from the laptop in
-     two ways at once — US *and* datacenter — which is the exact confound that made
-     the Sheng Siong "residential vs datacenter" theory wrong. **The clean separator:
-     Carousell listing pages are plain HTTP, so fetch one from `ss-worker`, which is
-     already a Singapore datacenter.** 200 means the block is geographic and
-     Carousell can follow Sheng Siong onto Cloudflare; 403 means it is
-     datacenter-wide and Carousell stays on the laptop, settled rather than assumed.
+     ✅ **RESOLVED the same day, and the answer is better than the question.** Probed
+     from a Cloudflare Worker in Singapore (`probe/carousell.mjs`, `wrangler dev
+     --remote`, `colo=SIN`, nothing deployed). All three targets, **plain `fetch`, no
+     browser**: homepage **200**, search **200 · 2.29 MB · 47 listing links**, listing
+     **200 · `hasJsonLdOffer: true`**.
+
+     1. **The US 403 is GEOGRAPHIC** — a US runner is refused even on listing pages,
+        which answer 200 from Singapore. So Carousell cannot move to GitHub Actions,
+        but **it can move to a Cloudflare Worker**, exactly as Sheng Siong did.
+     2. ⚠️⚠️ **"Carousell search needs a real browser" is FALSE from a Worker.** Both
+        halves — discovery *and* verification — work with no Chrome at all. That was
+        the assumption making this the hard leg, and it does not survive measurement.
+     3. ⚠️ **The HTTP CLIENT is the variable, and it is why the codebase believes
+        otherwise.** Same Singapore address, same minute, same URL, same headers,
+        same `redirect: "follow"`: `curl -L` → 200 / 44 links; Worker `fetch` → 200 /
+        47 links; **Node's `fetch` (undici) → 403 / 0 links** — and undici is what
+        `vendor-probe` uses. Cloudflare fingerprints the TLS handshake and the rule is
+        per-path, which is why listing pages pass on every client and search does not.
+        This is the glossary's "the client is an independent variable" entry, pointing
+        the opposite way from the Watsons case that produced it.
+        ⚠️ So `vendor-probe`'s "Cloudflare serves a shell to bare fetch" is a fact
+        about **undici**, not about Carousell. It also counts links with a trailing
+        slash (`/\/p\/[a-z0-9-]+-\d+\//`, `vendor-probe.ts:300`) which real hrefs do
+        not have — two independent reasons it reports "no-data".
+
+     **What this means for the move:** new-item pricing has no laptop-only leg left.
+     Sheng Siong, FairPrice, Guardian, MyProtein and now Carousell can all be reached
+     without a browser from a Singapore Worker. ⚠️ Still unmeasured: whether Guardian
+     and MyProtein answer a Worker's `fetch` — assume nothing, the client mattered
+     here and it may matter there.
 2. **Two undecided questions**, unchanged from the 13th: does the relay keep its
    15-minute `tgsweep` cron, and does `daily.yml` keep its own `schedule:` as a
    backstop now that Cloudflare is the clock?
