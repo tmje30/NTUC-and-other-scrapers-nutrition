@@ -1851,10 +1851,25 @@ already fixed on the 14th by a plain redeploy.
      loosened.
    - **FairPrice / Guardian / MyProtein** → plain HTTP. FairPrice already runs in
      Actions every day, so this is the easy two-thirds.
-   - **Carousell** → drives a real Chrome via `src/core/browser-cdp.ts`. Cannot run
-     in a Worker at all. A GitHub runner *does* have Chrome. ⚠️ **Untested: whether
-     Carousell answers a US runner.** Measure that before planning around it — it is
-     the only unknown in the whole move.
+   - **Carousell** → ⚠️ **MEASURED 2026-08-16: a US GitHub runner gets HTTP 403.**
+     Run [31929132686](https://github.com/tmje30/NTUC-and-other-scrapers-nutrition/actions/runs/31929132686),
+     from `.github/workflows/carousell-probe.yml` (`workflow_dispatch` only, writes
+     nothing). From `20.169.99.196` · Phoenix US · AS8075 Microsoft: **403 on the
+     search page, 403 on a listing page, 0 cards rendered.**
+
+     ⚠️ **The browser question was never reached, so do not quote the browser
+     result.** The listing-page 403 is the informative part: those are plain
+     HTTP and work fine from the laptop, so this is rejection at the *address*,
+     before rendering matters. The job runs Chrome under `xvfb` so `--headed` is
+     real — that part is correct and will matter if the address problem is solved.
+
+     ⚠️ **Why it 403s is NOT established.** The runner differs from the laptop in
+     two ways at once — US *and* datacenter — which is the exact confound that made
+     the Sheng Siong "residential vs datacenter" theory wrong. **The clean separator:
+     Carousell listing pages are plain HTTP, so fetch one from `ss-worker`, which is
+     already a Singapore datacenter.** 200 means the block is geographic and
+     Carousell can follow Sheng Siong onto Cloudflare; 403 means it is
+     datacenter-wide and Carousell stays on the laptop, settled rather than assumed.
 2. **Two undecided questions**, unchanged from the 13th: does the relay keep its
    15-minute `tgsweep` cron, and does `daily.yml` keep its own `schedule:` as a
    backstop now that Cloudflare is the clock?
