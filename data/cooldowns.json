@@ -1,33 +1,7 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-12T14:34:36.476Z",
+  "updatedAt": "2026-08-16T05:40:11.724Z",
   "entries": [
-    {
-      "key": "chicken thigh",
-      "ingredientId": "39869a18-4fe7-80c6-abc1-d1713f27ac47",
-      "ingredientName": "Chicken thigh, Boneless  [Seara]",
-      "addedAt": "2026-07-30T02:02:14.797Z",
-      "until": "2026-08-13T02:02:14.797Z",
-      "days": 14,
-      "basis": "no monthly usage → flat 14 days",
-      "store": "FairPrice",
-      "product": "Seara Frozen Chicken Thigh",
-      "packSizeG": 2000,
-      "monthlyAmount": 0
-    },
-    {
-      "key": "peanut butter",
-      "ingredientId": "37769a18-4fe7-80d2-941c-f245c5336646",
-      "ingredientName": "Peanut butter [Fair Price]",
-      "addedAt": "2026-07-31T02:15:48.170Z",
-      "until": "2026-08-14T02:15:48.170Z",
-      "days": 14,
-      "basis": "no monthly usage → flat 14 days",
-      "store": "Sheng Siong",
-      "product": "Peanut Butter - Crunchy",
-      "packSizeG": 510,
-      "monthlyAmount": 0
-    },
     {
       "key": "milk",
       "ingredientId": "34b69a18-4fe7-805a-b781-e3300da041a4",
@@ -151,6 +125,19 @@
       "product": "Premium Less Sodium Light Soy Sauce",
       "packSizeG": 500,
       "monthlyAmount": 0
+    },
+    {
+      "key": "frozen vegetabl",
+      "ingredientId": "34b69a18-4fe7-80d2-b17d-d4167b9113c4",
+      "ingredientName": "Frozen Veg(Mixed)",
+      "addedAt": "2026-08-16T05:40:11.724Z",
+      "until": "2026-09-01T05:40:11.724Z",
+      "days": 16,
+      "basis": "1kg ÷ 1.4kg/month = 0.71 months × 0.75 = 0.54 months",
+      "store": "Sheng Siong",
+      "product": "Frozen Mixed Vegetables (SCB)",
+      "packSizeG": 1000,
+      "monthlyAmount": 1400
     },
     {
       "key": "rice wine",

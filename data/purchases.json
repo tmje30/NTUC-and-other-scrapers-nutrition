@@ -1,7 +1,23 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-12T14:34:36.476Z",
+  "updatedAt": "2026-08-16T05:40:11.724Z",
   "entries": [
+    {
+      "id": "frozen-vegetabl-sheng-siong-frozen-mixed-vegetab-202608160540",
+      "ingredientId": "34b69a18-4fe7-80d2-b17d-d4167b9113c4",
+      "ingredientName": "Frozen Veg(Mixed)",
+      "key": "frozen vegetabl",
+      "store": "Sheng Siong",
+      "product": "Frozen Mixed Vegetables (SCB)",
+      "priceSgd": 3.2,
+      "packSizeG": 1000,
+      "unitCount": null,
+      "volumetric": false,
+      "url": "https://shengsiong.com.sg/product/tasty-bites-frozen-mixed-vegetables-scb-1-kg",
+      "listTitle": "Frozen Veg(Mixed) (1kg) [Tasty Bites]",
+      "addedAt": "2026-08-16T05:40:11.724Z",
+      "outcome": "open"
+    },
     {
       "id": "dhall-sheng-siong-masoor-dhall-split-202608121434",
       "ingredientId": "37369a18-4fe7-80c4-861a-c35c73e730d1",
