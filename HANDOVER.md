@@ -1819,6 +1819,59 @@ and the freshness check would have stopped it anyway — but that was luck, not
 design. **Anything temporary on live infrastructure needs a check-back that does
 not depend on a background process surviving.**
 
+### Where this stands right now (2026-08-15, end of session)
+
+`main` is clean and pushed through **`fa009f4`**. Nothing is half-done.
+
+| Job | Runs on | State |
+|---|---|---|
+| Sheng Siong daily scan | **Cloudflare** `ss-worker` | ✅ proven unattended 2026-08-15 |
+| Rescan button | **Cloudflare** `ss-worker` | ✅ proven, ~4 min |
+| FairPrice + page + Telegram | GitHub Actions `daily.yml` | ✅ running |
+| Telegram inbox | Cloudflare relay + Actions | ✅ running |
+| **New-item pricing** | **the laptop** (`tg-drain`, 15 min) | ⬅️ **the only job left on the machine** |
+
+Laptop scheduled tasks: `Grocery New-Item Pricing` **Ready**; the other three
+(`ShengSiong Daily Scan`, `ShengSiong Scan Request`, `Grocery Telegram Inbox`)
+**disabled**. The daily scan is kept disabled-but-present as a one-click emergency
+scanner.
+
+**What this session actually did:** proved the morning cron end to end, added
+`[observability]` to `ss-worker`, and rewrote `SYSTEM-GUIDE.md`, which had gone from
+stale to actively wrong. It shipped **no behaviour change** — the cron bug itself was
+already fixed on the 14th by a plain redeploy.
+
+### Open — in the order I would take them
+
+1. **Move new-item pricing to the cloud.** The last job on the laptop, and it
+   decomposes rather than moving as one piece:
+   - **Sheng Siong** → `ss-worker` already reaches it. `runScan` takes a
+     `termsOverride`, currently gated behind `dryRun` so a short term list can never
+     overwrite the real scan file — pricing would need its own path, not that gate
+     loosened.
+   - **FairPrice / Guardian / MyProtein** → plain HTTP. FairPrice already runs in
+     Actions every day, so this is the easy two-thirds.
+   - **Carousell** → drives a real Chrome via `src/core/browser-cdp.ts`. Cannot run
+     in a Worker at all. A GitHub runner *does* have Chrome. ⚠️ **Untested: whether
+     Carousell answers a US runner.** Measure that before planning around it — it is
+     the only unknown in the whole move.
+2. **Two undecided questions**, unchanged from the 13th: does the relay keep its
+   15-minute `tgsweep` cron, and does `daily.yml` keep its own `schedule:` as a
+   backstop now that Cloudflare is the clock?
+3. **`src/scripts/tg-drain.ts`'s header comment is obsolete** and will mislead
+   whoever reads it next. It says Sheng Siong "challenges datacenter IPs while
+   answering a residential one" — wrong twice over: the block is by **country**, and
+   Cloudflare scans it daily from a datacenter. Fix the comment when that file is
+   next touched.
+
+### ⚠️ Two failure notifiers have still never actually fired
+
+`daily.yml` and `scan-request.yml` both gained an `if: failure()` Telegram step on
+2026-08-13. **Neither has ever sent a message**, because nothing has failed since.
+They are written but unproven — which is the same class of assumption that made
+"the cloud scan is live" wrong. Do not treat them as a safety net until one is seen
+to arrive.
+
 ### What shipped today (2026-08-13)
 
 Nine commits, `a87cd56..e307c7d`. In the order they landed:
@@ -2168,7 +2221,13 @@ nothing. This is why the `INCONCLUSIVE` verdict exists at all — the first atte
 reported a clean `NO SG` when in fact all eight calls had errored before placing
 anything, and a false negative there would have kept the laptop forever.
 
-### ⚠️⚠️ `Grocery New-Item Pricing` reports success while pulling nothing (found 2026-08-12, NOT fixed)
+### ✅ `Grocery New-Item Pricing` reported success while pulling nothing (found 2026-08-12, FIXED 2026-08-13)
+
+*⚠️ This heading said "NOT fixed" until 2026-08-15. It was fixed the day after it
+was written and the heading was never updated — `tg-drain-run.cmd:55` now runs
+`git pull --quiet --rebase --autostash` with an `errorlevel` check that logs
+"queue NOT checked" and stops. Read the rest of this entry as the diagnosis, which
+still stands; the "not fixed" was the stale part.*
 
 Task Scheduler showed **Last Result 0** at 21:29:44 while `tg-drain.log` recorded
 `error: cannot pull with rebase: You have unstaged changes.` for the same run.
