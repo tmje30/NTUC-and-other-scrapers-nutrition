@@ -1894,15 +1894,14 @@ already fixed on the 14th by a plain redeploy.
        Access was never the problem. ⚠️ **0 of 28 titles carry a pack size** (it
        lives in the on-page variant selector), so each product needs a second fetch
        to be comparable. That is a parsing job, not an access one.
-     - **Guardian ⚠️** — the search URL returns the same empty SPA shell to
-       everyone: **139130 bytes to the Worker and 139130 to undici, byte-for-byte
-       identical.** No client variable here, unlike Carousell. A Worker does not fix
-       an SPA and nothing is blocking it.
-       ✅ **But `https://www.guardian.com.sg/graphql` answers, unauthenticated,
-       from both the laptop and the Worker** — `POST {"query":"{__typename}"}`
-       returns a valid GraphQL response. `vendor-probe` has called this "the cheaper
-       long-term route" for weeks without anyone measuring it. **So Guardian needs no
-       browser either** — it needs a product query written against that API.
+     - **Guardian ✅ — ALREADY DONE, and this entry first said otherwise.**
+       `src/core/stores/guardian.ts` has read Magento's `/graphql` since
+       **2026-08-09**: anonymous POST, no browser, no cookies, no WAF. Verified
+       live 2026-08-16 — `"sensodyne"` → 26 in-stock products, 22 with a usable
+       size, sale prices and list prices correct; `"cerave"` → 22 and 21.
+       ⚠️ **The `/catalogsearch/result/?q=` URL that looks like an empty SPA is not
+       the search URL any more — it 302s to the homepage.** Measuring it measures
+       the homepage.
 
      **What this means for the move: new-item pricing has NO laptop-only leg left.**
      All five shops are reachable from a Singapore Worker with no Chrome anywhere:
@@ -1912,11 +1911,26 @@ already fixed on the 14th by a plain redeploy.
      | FairPrice | plain HTTP | ✅ already runs in Actions daily |
      | Carousell | plain `fetch` | ✅ measured 2026-08-16 |
      | MyProtein | plain `fetch` | ✅ measured — needs a 2nd fetch per product for size |
-     | Guardian | **GraphQL API** | ✅ endpoint reachable — query not yet written |
+     | Guardian | Magento GraphQL | ✅ **already written and working since 2026-08-09** |
 
-     ⚠️ **Reachable is not the same as done.** Two real pieces of work remain, both
-     parsing rather than access: MyProtein's per-product size fetch, and a Guardian
-     product query. Neither needs a browser, a laptop, or a Singapore VPS.
+     ⚠️ **One piece of real work remains, and it is parsing, not access:**
+     MyProtein's per-product size fetch. Nothing needs a browser, a laptop, or the
+     Singapore VPS this project spent weeks planning around.
+
+     ### ⚠️⚠️ A stale PROBE, not a stale shop — the mistake this list nearly made
+
+     On 2026-08-16 this entry was first written saying Guardian "needs a product
+     query written". **It did not; the query had been in production for a week.**
+     The error came from reading `vendor-probe`'s verdict as ground truth without
+     opening `stores/guardian.ts`. The probe was GETting a URL the shop had stopped
+     using, so it reported a solved shop as needing a browser.
+
+     ⚠️ **A probe that overstates difficulty does not fail safe.** Nobody re-checks a
+     shop the tooling calls blocked, so the error compounds quietly — this one had
+     survived a week and was about to be written into the handover as a work item.
+     `probeGuardian` now POSTs the same GraphQL the store module uses (fixed
+     2026-08-16); if probe and module ever disagree, that disagreement is the finding.
+     **Check the store module before believing the probe.**
 2. **Two undecided questions**, unchanged from the 13th: does the relay keep its
    15-minute `tgsweep` cron, and does `daily.yml` keep its own `schedule:` as a
    backstop now that Cloudflare is the clock?

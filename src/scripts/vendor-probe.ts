@@ -193,20 +193,86 @@ async function probeMyProtein(term: string): Promise<ProbeResult> {
 	};
 }
 
+/**
+ * ⚠️ **Rewritten 2026-08-16. It had been probing a URL the shop stopped using, and
+ * therefore reporting a solved shop as broken for a week.**
+ *
+ * It used to GET `/catalogsearch/result/?q=` and report "SPA shell — needs the
+ * BROWSER tier". That URL **302s to the homepage**, so what it measured was the
+ * homepage, and "no products on it" was true and meaningless. Meanwhile
+ * `src/core/stores/guardian.ts` had been reading Magento's `/graphql` since
+ * 2026-08-09 — no browser, no cookies, no WAF — and working.
+ *
+ * ⚠️ The cost of that gap: the stale verdict was read as ground truth on 2026-08-16
+ * and Guardian was written into HANDOVER as the last shop still needing work. **A
+ * probe that describes a shop as harder than it is does not fail safe** — nobody
+ * re-checks a shop the tooling says is blocked.
+ *
+ * So this now probes what the store module actually does. If they ever disagree,
+ * that disagreement is the finding.
+ */
 async function probeGuardian(term: string): Promise<ProbeResult> {
-	const url = `https://www.guardian.com.sg/catalogsearch/result/?q=${encodeURIComponent(term)}`;
-	const r = await get(url);
-	const isShell = r.body.length > 100_000 && !/itemprop="price"|"price"\s*:/.test(r.body);
+	const url = "https://www.guardian.com.sg/graphql";
+	const query = `query Search($term: String!, $pageSize: Int!) {
+  products(search: $term, pageSize: $pageSize) {
+    total_count
+    items {
+      name
+      stock_status
+      price_range { minimum_price { final_price { value } } }
+    }
+  }
+}`;
+	let r: { status: number; body: string };
+	try {
+		const res = await fetch(url, {
+			method: "POST",
+			headers: { "Content-Type": "application/json", Accept: "application/json", "User-Agent": UA },
+			body: JSON.stringify({ query, variables: { term, pageSize: 30 } }),
+		});
+		r = { status: res.status, body: await res.text() };
+	} catch (e: any) {
+		r = { status: 0, body: String(e?.message ?? e) };
+	}
+
+	let items: any[] = [];
+	let errors = "";
+	try {
+		const j = JSON.parse(r.body);
+		// ⚠️ GraphQL answers 200 with an `errors` array — a bad query is not an HTTP
+		// failure, and reporting it as "reachable, no data" would hide a broken query
+		// behind a shop-looking verdict.
+		if (j?.errors?.length) errors = j.errors.map((e: any) => e?.message).join("; ");
+		items = j?.data?.products?.items ?? [];
+	} catch {
+		/* not JSON — handled by the empty `items` below */
+	}
+
+	const inStock = items.filter((i) => !i.stock_status || i.stock_status === "IN_STOCK");
+	const cands: Candidate[] = [];
+	for (const i of inStock) {
+		const price = Number(i?.price_range?.minimum_price?.final_price?.value);
+		if (!Number.isFinite(price) || price <= 0) continue;
+		const c = candidateFrom(String(i.name ?? ""), price);
+		if (c) cands.push(c);
+	}
+
 	return {
 		vendor: "Guardian Pharmacy",
 		tier: "fetch",
-		reachable: r.status === 200,
-		detail: `HTTP ${r.status}, ${r.body.length}B${r.server ? `, server=${r.server}` : ""}`,
-		candidates: [],
-		verdict: isShell ? "no-data" : r.status === 200 ? "no-data" : "blocked",
-		fix: isShell
-			? "SPA shell — every Guardian URL returns the same ~137KB page with no products. NO anti-bot (plain 200, Fastly cache). Fix is the BROWSER tier, not a WAF workaround: re-run with --browser. Its /graphql endpoint exists and is the cheaper long-term route."
-			: "Unexpected shape — re-inspect.",
+		reachable: r.status === 200 && !errors,
+		detail: errors
+			? `HTTP ${r.status}, GraphQL errors: ${errors}`
+			: `HTTP ${r.status}, ${items.length} products (${inStock.length} in stock), ${cands.length} with a size`,
+		candidates: cands,
+		verdict: errors ? "blocked" : cands.length ? "works" : items.length ? "no-data" : "blocked",
+		fix: errors
+			? "The GraphQL query itself failed — compare against QUERY in src/core/stores/guardian.ts, which is the one in production."
+			: cands.length
+				? "Magento GraphQL, anonymous POST, no browser and no cookies. This is what stores/guardian.ts uses."
+				: items.length
+					? "Products returned but no pack size in the titles — expected for tablets and gummies, which are counted rather than weighed. Not an access problem."
+					: "No products. ⚠️ Check the endpoint before blaming the shop: /catalogsearch/result/ is NOT the search URL any more and 302s to the homepage.",
 	};
 }
 

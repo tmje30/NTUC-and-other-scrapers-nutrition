@@ -79,16 +79,21 @@
  *    — MyProtein keeps it in the on-page variant selector — so each product needs a
  *    second fetch. A parsing job, not an access one.
  *
- * 5. **Guardian is the one a Worker does NOT fix, and it is not being blocked.**
- *    The search URL returns the same empty SPA shell to everyone: **139130 bytes to
- *    the Worker and 139130 to undici, byte-for-byte identical.** No client variable
- *    here, unlike Carousell — so the "NO anti-bot, plain 200" note was right.
- *    ⚠️ But its **`/graphql` endpoint answers**, unauthenticated, from both the
- *    laptop and the Worker: `POST {"query":"{__typename}"}` → `{"data":{"@typename"
- *    :"Query"}}` (written with an @ here only to keep this comment legal). That is
- *    the route `vendor-probe` has called "the cheaper long-term route" without
- *    anyone measuring it. It means Guardian needs **no browser either** — it needs a
- *    product query written against that API.
+ * 5. ⚠️⚠️ **The `guardian:search` row above is measuring the WRONG URL, and it is
+ *    kept here only as the evidence for that.** `/catalogsearch/result/?q=` **302s to
+ *    the homepage** — it stopped being Guardian's search URL. So "139130 bytes of
+ *    empty SPA, identical from both clients" is a true statement about Guardian's
+ *    *homepage* and says nothing at all about the shop.
+ *
+ *    **Guardian was already solved.** `src/core/stores/guardian.ts` has read
+ *    Magento's `/graphql` since 2026-08-09 — anonymous POST, no browser, no cookies.
+ *    Verified live 2026-08-16: `"sensodyne"` → 26 in-stock products, 22 with a usable
+ *    size, sale and list prices correct.
+ *
+ *    ⚠️ This probe file asserted the opposite for about twenty minutes, because the
+ *    stale `vendor-probe` verdict was believed instead of the store module. **Check
+ *    the store module before believing any probe** — `vendor-probe`'s `probeGuardian`
+ *    was fixed the same day to POST the same GraphQL the module uses.
  */
 
 const UA =
