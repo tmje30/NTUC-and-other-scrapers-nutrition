@@ -1,0 +1,123 @@
+name: Carousell from a US runner (probe)
+
+# Answers one question: **can new-item pricing's Carousell leg run in GitHub Actions?**
+#
+# It is the last unknown in moving new-item pricing off the laptop. The other three
+# shops it searches (FairPrice, Guardian, MyProtein) are plain HTTP, and Sheng Siong
+# is already reached by `ss-worker`. Carousell is the only one that needs a browser,
+# so it is the only one whose answer is not already known.
+#
+# ⚠️⚠️ **A HEADLESS run here proves nothing, and would prove the WRONG thing.**
+# Carousell detects headless Chrome and serves zero cards — see the comment at the
+# top of `src/core/stores/carousell.ts`. A runner has no display, so a naive job gets
+# zero cards, and "Carousell cannot run in the cloud" would be a measurement of the
+# missing screen rather than of Carousell. `xvfb` is what makes the browser tier real:
+# it gives Chrome a virtual display so `--headed` means what it says.
+#
+# ⚠️ This workflow writes NOTHING — not to Notion, not to the repo. `vendor-probe`
+# is read-only by design. It is `workflow_dispatch` only, so it costs nothing sitting
+# here and never runs on its own.
+on:
+  workflow_dispatch:
+    inputs:
+      term:
+        description: "Search term to probe with"
+        required: false
+        default: "whey protein"
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - run: npm ci
+
+      # Where this runner actually is. `loc` here IS the right field to read —
+      # unlike inside a Worker, we genuinely are the caller (see the colo-vs-loc
+      # note in ss-worker/worker.ts). If Carousell turns out to geo-block, this
+      # line is the evidence for it.
+      - name: Where is this runner?
+        run: |
+          echo "--- cloudflare trace ---"
+          curl -sS --max-time 20 https://www.cloudflare.com/cdn-cgi/trace | grep -E '^(ip|loc|colo)=' || true
+
+      # Is the domain reachable from here at all, before any browser is involved?
+      # A 403 or a timeout here means geo-blocking and makes the browser tier moot.
+      - name: Can this runner reach carousell.sg at all?
+        run: |
+          code=$(curl -sS --max-time 30 -o /dev/null -w '%{http_code}' \
+            -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36' \
+            https://www.carousell.sg/ || echo "000")
+          echo "GET https://www.carousell.sg/ -> HTTP ${code}"
+          if [ "${code}" = "000" ]; then
+            echo "::warning::Could not reach carousell.sg at all — geo-block or network. The browser tier below will not mean anything."
+          fi
+
+      # Chrome ships on the ubuntu-latest image. Fail with a NAMED error rather than
+      # letting browser-cdp throw its generic "no Chrome found (set CHROME_PATH)",
+      # which would read like a code fault rather than a missing runner dependency.
+      - name: Check Chrome and a virtual display are available
+        run: |
+          if [ ! -x /usr/bin/google-chrome ]; then
+            echo "::error::/usr/bin/google-chrome is missing on this runner image. findChrome() lists it as a candidate (src/core/stores/incapsula.ts); set CHROME_PATH or install Chrome."
+            exit 1
+          fi
+          /usr/bin/google-chrome --version
+          # xvfb is normally present; install only if it is not, rather than
+          # spending ~20s on apt every run.
+          if ! command -v xvfb-run >/dev/null; then
+            echo "xvfb-run not found — installing"
+            sudo apt-get update -qq && sudo apt-get install -y -qq xvfb
+          fi
+          xvfb-run --help >/dev/null && echo "xvfb-run OK"
+
+      # TIER 1 — plain fetch. Expected outcome per carousell.ts: reachable, but
+      # Cloudflare serves a shell with no cards. That is NOT a failure; it is the
+      # documented baseline, and it confirms the runner reaches the real site.
+      - name: "Tier 1 — plain fetch (expected: shell, no cards)"
+        continue-on-error: true
+        run: npm run vendor-probe -- "${{ inputs.term }}" --only carousell
+
+      # TIER 2 — the actual question. Real Chrome, genuinely headed, on a virtual
+      # display. `-a` picks a free display number so nothing collides.
+      #
+      # ⚠️ If this is ever edited, KEEP `--headed`. Without it the probe prints its
+      # own warning ("You ran HEADLESS, which Carousell detects…") and the result is
+      # meaningless — vendor-probe.ts:452 exists precisely to stop that being misread.
+      - name: "Tier 2 — real Chrome under xvfb (the actual question)"
+        continue-on-error: true
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: xvfb-run -a npm run vendor-probe -- "${{ inputs.term }}" --only carousell --browser --headed
+
+      - name: How to read this run
+        if: always()
+        run: |
+          cat <<'NOTE'
+          ── Reading the result ────────────────────────────────────────────────
+          Tier 2 returned CARDS
+              → Carousell works from a US runner. New-item pricing can move off the
+                laptop entirely.
+
+          Tier 2 returned ZERO CARDS, tier 1 reachable
+              → The site answers this runner but the browser is being detected.
+                Discovery stays local; note that LISTING PAGES are plain-fetchable
+                (carousell.ts), so verification could still move.
+
+          Tier 1 could not reach the site (000 / 403)
+              → Geo-blocking. Nothing about the browser tier matters until that is
+                dealt with, and neither tier's result should be quoted.
+
+          ⚠️ Zero cards from a run WITHOUT --headed measures nothing at all.
+          ──────────────────────────────────────────────────────────────────────
+          NOTE
