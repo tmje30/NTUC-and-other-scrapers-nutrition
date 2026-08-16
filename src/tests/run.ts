@@ -31,6 +31,7 @@ import "./new-items.test.js";
 import "./scan-file.test.js";
 import "./weight-in-text.test.js";
 import "./intake-candidates.test.js";
+import "./item-search.test.js";
 import "./directed-search.test.js";
 import "./sgt.test.js";
 import "./weight-gap.test.js";

@@ -11,7 +11,7 @@ import {
 	type InlineKeyboard,
 	type TgUpdate,
 } from "./telegram.js";
-import { parseList, sizeLabel, type ParsedItem } from "./list-parse.js";
+import { parseList, sizeLabel, splitLines, type ParsedItem } from "./list-parse.js";
 import {
 	decideList,
 	pricePerKgLabelFor,
@@ -32,6 +32,7 @@ import { withRejectedPick, withoutPending } from "./vendor-review.js";
 import { unparkIngredient } from "./park.js";
 import { PARKED_TAG } from "./notion.js";
 import { scanNewItems, type NewItemResult } from "./new-items.js";
+import { SEARCH_HELP, formatSearch, searchAll, searchQuery, searchTerms } from "./item-search.js";
 
 /**
  * The Telegram inbox: text a grocery list, get it filed into Notion.
@@ -234,7 +235,13 @@ const HELP =
 	"<code>2kg chicken breast\n1L milk\nbananas x6\nharissa paste</code>\n\n" +
 	"I'll match each line to your Ingredients DB and add it to the grocery List " +
 	"with its price. Anything I'm unsure about I'll ask. Anything new, I'll price " +
-	"at the shops and send you a page.";
+	"at the shops and send you a page.\n\n" +
+	// ⚠️ Spelled out as "adds nothing", because the rest of this message has just
+	// promised that typing an item files it — and the whole reason search needs a
+	// slash is that those two behaviours share one text box.
+	"🔎 <b>Just checking a price?</b> <code>/search chicken breast</code> — one or " +
+	"several, comma-separated. Shows price, size and price/kg of the cheapest " +
+	"vendor, and adds nothing to your list.";
 
 /** Format one written row for the reply. */
 function wroteLine(name: string, count: number, price?: string): string {
@@ -360,6 +367,42 @@ async function drainQueue(deps: InboxDeps, state: InboxState): Promise<void> {
 	}
 }
 
+/**
+ * Answer a `/search`. Reads, never writes.
+ *
+ * ⚠️ **One `sendHtml`, and that is the requirement, not an implementation
+ * detail** — the user asked for the whole answer as a single text. Several
+ * queries therefore share one message, and the cases that would naturally want a
+ * message of their own (nothing found, too many terms) are folded into it by
+ * `formatSearch` instead.
+ *
+ * The row cache is shared with the intake, so searching immediately before
+ * texting a list costs one Notion query between them rather than two.
+ */
+async function handleSearch(deps: InboxDeps, query: string): Promise<void> {
+	if (!query) {
+		await sendHtml(SEARCH_HELP);
+		return;
+	}
+	const terms = searchTerms(query);
+	if (!terms.length) {
+		await sendHtml(SEARCH_HELP);
+		return;
+	}
+
+	let known: IngredientRow[];
+	try {
+		known = await rows(deps);
+	} catch (e: any) {
+		await sendHtml(`⚠️ Couldn't read your Ingredients DB: ${esc(e.message)}`);
+		return;
+	}
+
+	// `splitLines` caps at MAX_QUERIES; the raw count is passed so the reply can
+	// say what it left out rather than quietly answering the first ten.
+	await sendHtml(formatSearch(searchAll(terms, known), splitLines(query).length));
+}
+
 /** Handle one text message. */
 async function handleMessage(
 	deps: InboxDeps,
@@ -370,6 +413,16 @@ async function handleMessage(
 	const trimmed = text.trim();
 	if (/^\/(start|help)\b/i.test(trimmed)) {
 		await sendHtml(HELP);
+		return;
+	}
+
+	// ⚠️ **Before `parseList`, and it has to be.** Everything that is not a command
+	// is a shopping list here — it gets matched, written to the grocery List, and
+	// anything unrecognised is queued for a shop scan. So a lookup that fell through
+	// to the intake would answer "what does chicken cost?" by adding chicken.
+	const query = searchQuery(trimmed);
+	if (query !== null) {
+		await handleSearch(deps, query);
 		return;
 	}
 
