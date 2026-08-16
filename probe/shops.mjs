@@ -65,6 +65,30 @@
  *    ⚠️ Also note `probeCarousellFetch` counts links with a trailing slash
  *    (`/\/p\/[a-z0-9-]+-\d+\//`) — real hrefs have none, so its count would read 0
  *    even on a page full of them. Two independent reasons that probe says "no-data".
+ *
+ * ## Guardian and MyProtein, same run (2026-08-16)
+ *
+ * | target | status | bytes | signal |
+ * | --- | --- | --- | --- |
+ * | `myprotein:search` | 200 | 637 KB | JSON-LD Product + Offer, 62 price fields |
+ * | `guardian:search` | 200 | 139 KB | nothing — the SPA shell |
+ * | `guardian:graphql` | 200 | 93 B | GraphQL syntax error = **endpoint reachable** |
+ *
+ * 4. **MyProtein works from a Worker.** Access was never the problem: 28 JSON-LD
+ *    products, 28 priced. The real work is that **0 of 28 titles carry a pack size**
+ *    — MyProtein keeps it in the on-page variant selector — so each product needs a
+ *    second fetch. A parsing job, not an access one.
+ *
+ * 5. **Guardian is the one a Worker does NOT fix, and it is not being blocked.**
+ *    The search URL returns the same empty SPA shell to everyone: **139130 bytes to
+ *    the Worker and 139130 to undici, byte-for-byte identical.** No client variable
+ *    here, unlike Carousell — so the "NO anti-bot, plain 200" note was right.
+ *    ⚠️ But its **`/graphql` endpoint answers**, unauthenticated, from both the
+ *    laptop and the Worker: `POST {"query":"{__typename}"}` → `{"data":{"@typename"
+ *    :"Query"}}` (written with an @ here only to keep this comment legal). That is
+ *    the route `vendor-probe` has called "the cheaper long-term route" without
+ *    anyone measuring it. It means Guardian needs **no browser either** — it needs a
+ *    product query written against that API.
  */
 
 const UA =
@@ -109,12 +133,47 @@ async function probe(label, url) {
 			// The one thing that decides whether verification can move: a listing page
 			// carries a JSON-LD Offer. A challenge page never does.
 			hasJsonLdOffer: /"@type"\s*:\s*"Offer"/.test(body),
-			listingLinks: (body.match(/\/p\/[a-z0-9-]+\-\d+/gi) ?? []).length,
+			hasJsonLdProduct: /"@type"\s*:\s*"Product"/.test(body),
+			// ⚠️ No trailing slash. `vendor-probe.ts:300` requires one and real hrefs
+			// do not have it, so its count reads 0 on a page full of listings.
+			listingLinks: new Set(body.match(/\/p\/[a-z0-9-]+\-\d+/gi) ?? []).size,
+			// A cheap "are there products here at all" signal that does not depend on
+			// knowing each shop's markup: how many times a price-shaped field appears.
+			priceMentions: (body.match(/"price"\s*:/gi) ?? []).length,
 		};
 	} catch (e) {
 		return { label, url, status: null, error: String(e?.message ?? e) };
 	}
 }
+
+/**
+ * The other two shops new-item pricing searches.
+ *
+ * ⚠️ Their known failures are DIFFERENT IN KIND from Carousell's, and the difference
+ * decides whether a Worker can help at all:
+ *   - **Guardian** is an SPA shell — every URL returns the same ~137 KB page with no
+ *     products, at a plain 200 with NO anti-bot (Fastly cache). A Worker cannot fix
+ *     that: there is nothing to block and nothing to render. Measured here anyway,
+ *     because "no anti-bot" was itself measured with undici and undici was wrong
+ *     about Carousell.
+ *   - **MyProtein** served a bare `fetch` fine on 2026-08-04; its problem is that
+ *     titles carry no pack size, which is a parsing job, not an access one.
+ */
+const SHOPS = {
+	carousell: [
+		["carousell:homepage", "https://www.carousell.sg/"],
+		["carousell:search", "https://www.carousell.sg/search/whey%20protein"],
+	],
+	myprotein: [["myprotein:search", "https://www.myprotein.com.sg/search/?q=whey%20protein"]],
+	guardian: [
+		["guardian:search", "https://www.guardian.com.sg/catalogsearch/result/?q=vitamin%20d"],
+		// ⚠️ A GET here is EXPECTED to return a GraphQL syntax error — that is a
+		// success, not a failure: a 200 with `Syntax Error: Unexpected <EOF>` proves
+		// the endpoint is reachable and speaking GraphQL. Reachability is all this
+		// probe is for; whether a product query returns useful rows is separate work.
+		["guardian:graphql", "https://www.guardian.com.sg/graphql"],
+	],
+};
 
 export default {
 	async fetch(request) {
@@ -122,27 +181,24 @@ export default {
 		// A listing URL goes stale as sellers delete listings; let it be overridden
 		// rather than editing this file for a 404 that means nothing.
 		const listing = url.searchParams.get("listing");
+		// `?shops=carousell,guardian` narrows the run; default is all of them.
+		const want = (url.searchParams.get("shops") ?? "carousell,myprotein,guardian").split(",");
 
 		const where = await whereAmI();
-		const targets = [
-			["homepage", "https://www.carousell.sg/"],
-			["search", "https://www.carousell.sg/search/whey%20protein"],
-		];
-		if (listing) targets.push(["listing", listing]);
+		const targets = [];
+		for (const s of want) targets.push(...(SHOPS[s.trim()] ?? []));
+		if (listing) targets.push(["carousell:listing", listing]);
 
 		const results = [];
 		for (const [label, target] of targets) results.push(await probe(label, target));
 
-		const blocked = results.every((r) => r.status === 403 || r.status === null);
-		const answered = results.some((r) => r.status === 200);
-
 		return Response.json({
 			...where,
-			verdict: blocked
-				? "403 from Singapore too — the block is DATACENTER-WIDE, not geographic. Carousell stays on the laptop."
-				: answered
-					? "Carousell answers a Singapore datacenter — the US 403 was GEOGRAPHIC. If `search` is 200 with listing links, no browser is needed either; see the measurement table at the top of this file."
-					: "mixed — read the rows",
+			// ⚠️ No single verdict any more: these shops fail in different ways, and a
+			// rolled-up "works/blocked" would hide the only distinction that matters —
+			// a 403 is an access problem a Worker can solve by being in Singapore, an
+			// empty 200 is an SPA and it cannot.
+			readMe: "403 = access (a Worker in SG may fix it). 200 with no products = SPA shell (a Worker cannot). Compare `bytes` against a known-empty page before calling a 200 a success.",
 			note: where.colo === "SIN" ? null : `⚠️ colo=${where.colo}, NOT SIN — this result is about ${where.colo}, not Singapore. Re-run from a Singapore connection.`,
 			results,
 		});

@@ -1,8 +1,9 @@
-# Throwaway probe — NOT part of the running system. See carousell.mjs.
+# Throwaway probe — NOT part of the running system. See shops.mjs.
 #
 #   cd probe
-#   npx wrangler dev -c carousell.toml --remote --port 8799
-#   curl -s localhost:8799 | jq          # in another shell
+#   npx wrangler dev -c shops.toml --remote --port 8799
+#   curl -s "localhost:8799"                       # all three shops
+#   curl -s "localhost:8799?shops=guardian"        # just one
 #
 # ⚠️ `--remote` is the point. A plain `wrangler dev` runs the code on THIS laptop,
 # which already has a Singapore address — it would answer 200 and prove nothing.
@@ -11,6 +12,6 @@
 # itself down when the process exits. Do NOT `wrangler deploy` this.
 #
 # No secrets, no vars, no state, no cron. It reads public URLs and reports.
-name = "carousell-egress-probe"
-main = "carousell.mjs"
+name = "shops-egress-probe"
+main = "shops.mjs"
 compatibility_date = "2026-08-16"

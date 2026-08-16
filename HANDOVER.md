@@ -1864,7 +1864,7 @@ already fixed on the 14th by a plain redeploy.
      real — that part is correct and will matter if the address problem is solved.
 
      ✅ **RESOLVED the same day, and the answer is better than the question.** Probed
-     from a Cloudflare Worker in Singapore (`probe/carousell.mjs`, `wrangler dev
+     from a Cloudflare Worker in Singapore (`probe/shops.mjs`, `wrangler dev
      --remote`, `colo=SIN`, nothing deployed). All three targets, **plain `fetch`, no
      browser**: homepage **200**, search **200 · 2.29 MB · 47 listing links**, listing
      **200 · `hasJsonLdOffer: true`**.
@@ -1888,11 +1888,35 @@ already fixed on the 14th by a plain redeploy.
         slash (`/\/p\/[a-z0-9-]+-\d+\//`, `vendor-probe.ts:300`) which real hrefs do
         not have — two independent reasons it reports "no-data".
 
-     **What this means for the move:** new-item pricing has no laptop-only leg left.
-     Sheng Siong, FairPrice, Guardian, MyProtein and now Carousell can all be reached
-     without a browser from a Singapore Worker. ⚠️ Still unmeasured: whether Guardian
-     and MyProtein answer a Worker's `fetch` — assume nothing, the client mattered
-     here and it may matter there.
+   - **Guardian and MyProtein** → measured from the same Worker, same run
+     (2026-08-16). Both **200**, neither blocked:
+     - **MyProtein ✅** — 637 KB, JSON-LD Product + Offer, 28 products, 28 priced.
+       Access was never the problem. ⚠️ **0 of 28 titles carry a pack size** (it
+       lives in the on-page variant selector), so each product needs a second fetch
+       to be comparable. That is a parsing job, not an access one.
+     - **Guardian ⚠️** — the search URL returns the same empty SPA shell to
+       everyone: **139130 bytes to the Worker and 139130 to undici, byte-for-byte
+       identical.** No client variable here, unlike Carousell. A Worker does not fix
+       an SPA and nothing is blocking it.
+       ✅ **But `https://www.guardian.com.sg/graphql` answers, unauthenticated,
+       from both the laptop and the Worker** — `POST {"query":"{__typename}"}`
+       returns a valid GraphQL response. `vendor-probe` has called this "the cheaper
+       long-term route" for weeks without anyone measuring it. **So Guardian needs no
+       browser either** — it needs a product query written against that API.
+
+     **What this means for the move: new-item pricing has NO laptop-only leg left.**
+     All five shops are reachable from a Singapore Worker with no Chrome anywhere:
+     | shop | route | state |
+     |---|---|---|
+     | Sheng Siong | DDP over WebSocket | ✅ already in production |
+     | FairPrice | plain HTTP | ✅ already runs in Actions daily |
+     | Carousell | plain `fetch` | ✅ measured 2026-08-16 |
+     | MyProtein | plain `fetch` | ✅ measured — needs a 2nd fetch per product for size |
+     | Guardian | **GraphQL API** | ✅ endpoint reachable — query not yet written |
+
+     ⚠️ **Reachable is not the same as done.** Two real pieces of work remain, both
+     parsing rather than access: MyProtein's per-product size fetch, and a Guardian
+     product query. Neither needs a browser, a laptop, or a Singapore VPS.
 2. **Two undecided questions**, unchanged from the 13th: does the relay keep its
    15-minute `tgsweep` cron, and does `daily.yml` keep its own `schedule:` as a
    backstop now that Cloudflare is the clock?
