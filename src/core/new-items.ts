@@ -8,7 +8,7 @@ import { fairprice } from "./stores/fairprice.js";
 import { shengsiong } from "./stores/shengsiong.js";
 import { guardian } from "./stores/guardian.js";
 import { myprotein } from "./stores/myprotein.js";
-import { carousell } from "./stores/carousell.js";
+import { carousellViaWorker } from "./stores/carousell-worker.js";
 import { shengsiongViaWorker } from "./stores/shengsiong-worker.js";
 import type { ParsedItem } from "./list-parse.js";
 import { sizeLabel } from "./list-parse.js";
@@ -73,12 +73,52 @@ export interface ShopRoute {
 	marketplace: boolean;
 }
 
+/**
+ * Run from the laptop — a Singapore address, where every shop answers directly.
+ *
+ * ⚠️ **Carousell goes through `ss-worker` here too, and that is NOT about
+ * geography.** From this machine Carousell is perfectly reachable; what it refuses
+ * is the CLIENT. Measured 2026-08-17, same laptop, same minute, same URL:
+ *
+ * | client | `/search/` | `/p/` listing |
+ * | --- | --- | --- |
+ * | Node's `fetch` (undici) | **403** | ✅ 200 |
+ * | `curl -L` | ✅ 200 | ✅ 200 |
+ * | `ss-worker`'s fetch | ✅ 200 | ✅ 200 |
+ *
+ * So a plain `directHtmlFetcher` cannot harvest the search page from anywhere, and
+ * the Worker is the transport that works without a browser. The rules are per-path,
+ * which is why listing pages were long believed "plain-fetchable" — they are, on
+ * every client; the search page is not.
+ *
+ * ⚠️ **This dropped the Chrome dependency from new-item pricing entirely** (changed
+ * 2026-08-17). The CDP path in `carousell.ts` still exists and still works — it is
+ * what `vendor-probe --browser` exercises — but it carried three traps that cost an
+ * evening each: a hardcoded debug port answering from a STALE browser, Chrome
+ * re-parenting so killing the spawned pid leaves it running, and a retry loop with
+ * no circuit breaker that left 42 stray Chrome processes.
+ *
+ * ⚠️ **Checked for parity before switching, because fewer cards would have been a
+ * SILENT loss.** `bestFromMarketplace` picks with `cheapestPlausible`, whose median
+ * over the whole field is the only thing standing between a card and a scam listing
+ * — a harvest that saw a quarter of the page would still return a price, just a
+ * worse-defended one. Both paths measured on the same term, minutes apart:
+ * **HTML 45 priced cards, CDP 47.** Parity, within ordinary listing churn.
+ * (`vendor-probe.ts` records "188 cards on 2026-08-04"; neither path reaches that
+ * today, so treat that figure as stale rather than as a target.)
+ *
+ * ⚠️ **The cost is a real dependency swap, not a free win.** This path now needs
+ * `SCAN_SECRET` in `.env` and a reachable `ss-worker`. If the secret is missing,
+ * Carousell throws with that message and `scanNewItem` records it against the shop —
+ * it does **not** silently fall back to Chrome, because a silent fallback would hide
+ * a broken configuration behind a slower path that happens to work.
+ */
 export const NEW_ITEM_SHOPS: ShopRoute[] = [
 	{ module: fairprice, marketplace: false },
 	{ module: shengsiong, marketplace: false },
 	{ module: guardian, marketplace: false },
 	{ module: myprotein, marketplace: false },
-	{ module: carousell, marketplace: true },
+	{ module: carousellViaWorker, marketplace: true },
 ];
 
 /**
