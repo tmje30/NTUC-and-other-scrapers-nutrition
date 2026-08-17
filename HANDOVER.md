@@ -1831,23 +1831,29 @@ not depend on a background process surviving.**
 | Telegram inbox | Cloudflare relay + Actions | ✅ running |
 | **New-item pricing** | **GitHub Actions** `price-new-items.yml` | ✅ **moved 2026-08-17** |
 
-**Nothing scheduled runs on the laptop any more.**
+### ✅ Nothing scheduled runs on the laptop any more (2026-08-17)
 
-### ⚠️⚠️ ACTION REQUIRED: disable `Grocery New-Item Pricing` on the laptop
+All four Task Scheduler jobs are **Disabled**, verified by `schtasks /Query`:
 
-**Until that task is disabled, two schedulers drain the same queue every 15
-minutes.** The laptop task and `price-new-items.yml` both read
-`data/tg-inbox-state.json`, both scan the shops, and both push. `commitAndPushData`'s
-re-apply should survive the collision, but the work is duplicated, the shops are hit
-twice, and a new-items page could be published twice for one text. This is not
-tidying-up — it is the last step of the migration.
+| task | state | why |
+|---|---|---|
+| `ShengSiong Daily Scan` | Disabled 2026-08-14 | `ss-worker` does it — kept as the one-click emergency scanner |
+| `ShengSiong Scan Request` | Disabled 2026-08-14 | Rescan calls Cloudflare directly |
+| `Grocery New-Item Pricing` | **Disabled 2026-08-17** | `price-new-items.yml` does it |
+| `Grocery Telegram Inbox` | Disabled 2026-08-12 | retired by the relay |
 
-```
-schtasks /Change /TN "Grocery New-Item Pricing" /DISABLE
-```
+⚠️ **Disabling the pricing task was required, not tidying-up.** Left Ready, it and
+`price-new-items.yml` would both drain `data/tg-inbox-state.json` every 15 minutes —
+`commitAndPushData`'s re-apply should survive the collision, but the shops get hit
+twice and a new-items page could publish twice for one text.
 
 ⚠️ Run `schtasks` from **PowerShell, not Git Bash** — MSYS rewrites `/Change` into a
 path and it fails obscurely.
+
+⚠️ **The laptop is now a dev machine only.** Its scheduled jobs are all off, but the
+dev clone still holds the `.env` that every by-hand command needs (`npm run
+vendor-scan`, `npm run tg-drain`, the probes). Disabled ≠ deleted: re-enabling
+`ShengSiong Daily Scan` is one click if Cloudflare ever cannot reach the shop.
 
 ### What the cloud move actually consists of (2026-08-17)
 
