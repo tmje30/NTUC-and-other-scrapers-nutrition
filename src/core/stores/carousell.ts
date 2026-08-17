@@ -315,11 +315,16 @@ export function workerHtmlFetcher(workerUrl: string, secret: string): HtmlFetche
 				headers: { "X-Scan-Secret": secret },
 				signal: ctl.signal,
 			});
-			// ⚠️ A 403 here is the WORKER refusing the host, not the shop refusing us.
-			// They mean opposite things and only the body distinguishes them.
-			return res.ok ? await res.text() : null;
-		} catch {
-			return null;
+			if (res.ok) return await res.text();
+			// ⚠️ **THROWS with the status and the Worker's own reason, rather than
+			// returning null.** These failures mean opposite things and only the body
+			// tells them apart: 401 is a wrong secret, 403 is the Worker refusing the
+			// HOST, 503 is no Singapore placement, and a 4xx/5xx passed through is the
+			// SHOP refusing us. Collapsing all of them into "could not be fetched" cost
+			// a debugging round-trip on 2026-08-17 — the first cloud run failed and the
+			// message said nothing about why.
+			const detail = (await res.text().catch(() => "")).slice(0, 300);
+			throw new Error(`ss-worker /shop → HTTP ${res.status}${detail ? `: ${detail}` : ""}`);
 		} finally {
 			clearTimeout(t);
 		}
