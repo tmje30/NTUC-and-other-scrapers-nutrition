@@ -23,6 +23,7 @@
 
 import { marketplaceSize, cheapestPlausible } from "../core/marketplace-size.js";
 import { evaluateInPage } from "../core/browser-cdp.js";
+import { myprotein } from "../core/stores/myprotein.js";
 
 const UA =
 	"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
@@ -162,34 +163,77 @@ async function probeIherb(term: string): Promise<ProbeResult> {
 	};
 }
 
+/**
+ * ⚠️ **Rewritten 2026-08-16, for the same reason as `probeGuardian` above.**
+ *
+ * It used to read only the SEARCH page's JSON-LD and conclude: "prices parse fine but
+ * the titles carry no pack size, so this shop needs a SECOND fetch of the product
+ * page — that is the real work here". Every word of that was true on 2026-08-04 and
+ * had been **done since 2026-08-09**: `stores/myprotein.ts` fetches the product pages
+ * and expands each variant into its own sized product. Measured 2026-08-16 —
+ * `"impact whey protein"` → 10 products, **10 with a per-100g**; `"creatine"` → 7 and 7.
+ *
+ * ⚠️ **This is the second probe in this file found describing solved work as
+ * outstanding, and it is a structural fault, not two coincidences.** The probes
+ * reimplement shop access alongside the store modules, so they drift the moment a
+ * module improves — and they drift in the dangerous direction, because nobody
+ * re-checks a shop the tooling says is unfinished.
+ *
+ * **The rule this now follows: if a shop has a store module, probe the MODULE.**
+ * That is what production uses, so it is the only thing worth a verdict. The raw
+ * search fetch is kept only as the fallback diagnosis for when the module yields
+ * nothing, which is exactly when "is the shop reachable at all?" becomes the question.
+ */
 async function probeMyProtein(term: string): Promise<ProbeResult> {
+	const base = { vendor: "My Protein", tier: "fetch" as const, reachable: true, detail: "" };
+	let rows: Awaited<ReturnType<typeof myprotein.search>> = [];
+	let moduleError = "";
+	try {
+		rows = await myprotein.search(term);
+	} catch (e: any) {
+		moduleError = String(e?.message ?? e);
+	}
+
+	const cands: Candidate[] = rows
+		.filter((p) => p.pricePer100g != null && p.priceSgd != null)
+		.map((p) => ({
+			title: p.name,
+			priceSgd: p.priceSgd as number,
+			sizeText: p.packWeightG != null ? `${p.packWeightG}${p.volumetric ? "ml" : "g"}` : null,
+			grams: p.packWeightG ?? null,
+			pricePer100g: p.pricePer100g as number,
+			url: p.url,
+		}));
+
+	if (cands.length) {
+		return {
+			...base,
+			detail: `stores/myprotein.ts → ${rows.length} products, ${cands.length} with a size`,
+			candidates: cands,
+			verdict: "works",
+			fix: "Server-rendered JSON-LD, then one product-page fetch per hit to expand variants — each variant is its own sized product. No browser. This is what production uses.",
+		};
+	}
+
+	// Nothing usable came back. NOW the raw fetch is worth looking at, because the
+	// question has changed from "does the adapter work" to "is the shop still there".
 	const url = `https://www.myprotein.com.sg/search/?q=${encodeURIComponent(term)}`;
-	const r = await get(url);
-	const base = { vendor: "My Protein", tier: "fetch" as const, reachable: r.status === 200, detail: `HTTP ${r.status}` };
-	if (r.status !== 200) {
-		return { ...base, candidates: [], verdict: "blocked", fix: "Unexpected — MyProtein served a bare fetch on 2026-08-04. Check for a new WAF." };
-	}
-	const products = jsonLdProducts(r.body);
-	const cands: Candidate[] = [];
-	let priced = 0;
-	let noSize = 0;
-	for (const p of products) {
-		const price = offerPrice(p);
-		if (price == null) continue;
-		priced++;
-		const c = candidateFrom(String(p.name ?? ""), price, p.url ? `https://www.myprotein.com.sg${p.url}` : undefined);
-		c ? cands.push(c) : noSize++;
-	}
+	const r = await get(url).catch((e) => ({ status: 0, body: String(e), finalUrl: url, server: "" }));
+	const products = r.status === 200 ? jsonLdProducts(r.body) : [];
 	return {
 		...base,
-		detail: `HTTP ${r.status}, ${products.length} JSON-LD products, ${priced} priced, ${cands.length} with a size`,
-		candidates: cands,
-		verdict: cands.length ? "works" : priced ? "no-data" : "no-data",
-		fix: cands.length
-			? "Server-rendered JSON-LD with name + offers.price. Cheapest adapter of the lot."
-			: priced
-				? `⚠️ Prices parse fine (${priced}) but ${noSize} titles carry NO pack size — MyProtein names products "Impact Whey Protein + Collagen" and keeps the size in the on-page variant selector. So this shop needs a SECOND fetch of the product page (or its variant JSON) to be comparable at all. That is the real work here, not the search.`
-				: `Fetched ${r.body.length}B but no JSON-LD products — check the search URL still renders server-side.`,
+		reachable: r.status === 200,
+		detail: moduleError
+			? `module threw: ${moduleError} · raw search HTTP ${r.status}, ${products.length} JSON-LD products`
+			: `module returned 0 usable · raw search HTTP ${r.status}, ${products.length} JSON-LD products`,
+		candidates: [],
+		verdict: r.status === 200 ? "no-data" : "blocked",
+		fix:
+			r.status !== 200
+				? "Search page itself is not answering — MyProtein served a bare fetch on 2026-08-04, so check for a new WAF."
+				: products.length
+					? "Search still returns JSON-LD, so the shop is fine and the VARIANT expansion in stores/myprotein.ts is what broke. Check the product page's ProductGroup shape."
+					: `Fetched ${r.body.length}B but no JSON-LD products — check the search URL still renders server-side.`,
 	};
 }
 

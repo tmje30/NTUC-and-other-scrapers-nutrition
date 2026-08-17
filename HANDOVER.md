@@ -1890,10 +1890,13 @@ already fixed on the 14th by a plain redeploy.
 
    - **Guardian and MyProtein** → measured from the same Worker, same run
      (2026-08-16). Both **200**, neither blocked:
-     - **MyProtein ✅** — 637 KB, JSON-LD Product + Offer, 28 products, 28 priced.
-       Access was never the problem. ⚠️ **0 of 28 titles carry a pack size** (it
-       lives in the on-page variant selector), so each product needs a second fetch
-       to be comparable. That is a parsing job, not an access one.
+     - **MyProtein ✅ — ALSO ALREADY DONE, and this entry first said otherwise.**
+       `stores/myprotein.ts` has fetched the product pages and expanded each variant
+       into its own sized product since **2026-08-09**. Verified live 2026-08-16:
+       `"impact whey protein"` → 10 products, **10 with a per-100g** (345 g … 2.25 kg,
+       real weights); `"creatine"` → 7 and 7. ~6 s per search.
+       ⚠️ The "28 priced, 0 with a size" reading came from the SEARCH page alone,
+       which is the half the module already knows is insufficient.
      - **Guardian ✅ — ALREADY DONE, and this entry first said otherwise.**
        `src/core/stores/guardian.ts` has read Magento's `/graphql` since
        **2026-08-09**: anonymous POST, no browser, no cookies, no WAF. Verified
@@ -1910,27 +1913,39 @@ already fixed on the 14th by a plain redeploy.
      | Sheng Siong | DDP over WebSocket | ✅ already in production |
      | FairPrice | plain HTTP | ✅ already runs in Actions daily |
      | Carousell | plain `fetch` | ✅ measured 2026-08-16 |
-     | MyProtein | plain `fetch` | ✅ measured — needs a 2nd fetch per product for size |
-     | Guardian | Magento GraphQL | ✅ **already written and working since 2026-08-09** |
+     | MyProtein | plain `fetch` + variant expansion | ✅ **working since 2026-08-09** |
+     | Guardian | Magento GraphQL | ✅ **working since 2026-08-09** |
 
-     ⚠️ **One piece of real work remains, and it is parsing, not access:**
-     MyProtein's per-product size fetch. Nothing needs a browser, a laptop, or the
-     Singapore VPS this project spent weeks planning around.
+     ✅ **There is no access work left on new-item pricing at all.** All five shops
+     are reachable from a Singapore Worker, and every adapter already exists and
+     works. Nothing needs a browser, a laptop, or the Singapore VPS this project
+     spent weeks planning around. What remains is only the plumbing: deciding where
+     the job runs and moving it.
 
-     ### ⚠️⚠️ A stale PROBE, not a stale shop — the mistake this list nearly made
+     ### ⚠️⚠️ STALE PROBES, not stale shops — read this before scoping any shop work
 
-     On 2026-08-16 this entry was first written saying Guardian "needs a product
-     query written". **It did not; the query had been in production for a week.**
-     The error came from reading `vendor-probe`'s verdict as ground truth without
-     opening `stores/guardian.ts`. The probe was GETting a URL the shop had stopped
-     using, so it reported a solved shop as needing a browser.
+     On 2026-08-16 this entry was written **twice, wrongly, in the same hour**: first
+     that Guardian "needs a product query written", then that MyProtein "needs a
+     second fetch per product". **Both were already in production and had been for a
+     week.** Each error came from reading `vendor-probe`'s verdict as ground truth
+     without opening the store module.
+
+     The probes had drifted because they **reimplement shop access alongside the
+     store modules**:
+     - `probeGuardian` GET a URL the shop had stopped using (it 302s to the
+       homepage), so it measured the homepage and called Guardian an SPA.
+     - `probeMyProtein` read only the search page — the half `stores/myprotein.ts`
+       already knows is insufficient — and reported its own blind spot as the shop's.
 
      ⚠️ **A probe that overstates difficulty does not fail safe.** Nobody re-checks a
-     shop the tooling calls blocked, so the error compounds quietly — this one had
-     survived a week and was about to be written into the handover as a work item.
-     `probeGuardian` now POSTs the same GraphQL the store module uses (fixed
-     2026-08-16); if probe and module ever disagree, that disagreement is the finding.
-     **Check the store module before believing the probe.**
+     shop the tooling calls unfinished, so the error compounds silently: these
+     survived a week and were minutes from becoming permanent work items.
+
+     **The rule now, and both probes follow it: if a shop has a store module, probe
+     the MODULE.** That is what production runs, so it is the only thing worth a
+     verdict; the raw fetch is kept only as the fallback diagnosis for when the
+     module returns nothing. If probe and module ever disagree, that disagreement is
+     itself the finding. **Check the store module before believing any probe.**
 2. **Two undecided questions**, unchanged from the 13th: does the relay keep its
    15-minute `tgsweep` cron, and does `daily.yml` keep its own `schedule:` as a
    backstop now that Cloudflare is the clock?
