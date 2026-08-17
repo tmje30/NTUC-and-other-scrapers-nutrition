@@ -267,17 +267,23 @@ export interface InboxDeps {
 	/** Overridable for testing; defaults to the live shop scan. */
 	scan?: (items: ParsedItem[]) => Promise<NewItemResult[]>;
 	/**
-	 * Set by any process that **cannot reach the shops** — which in practice means
-	 * the cloud, because Sheng Siong challenges datacenter IPs and answers a
-	 * residential one.
+	 * Set by a process that should **queue the pricing rather than do it inline** —
+	 * in practice `tg-inbox.yml`, which handles one Telegram message and must answer
+	 * the chat in seconds.
 	 *
 	 * ⚠️ **It leaves new items ON the queue instead of pricing them.** The tempting
 	 * alternative — scan anyway, FairPrice-only — produces a new-items page that
-	 * silently compares one shop and looks exactly like one that compared five. The
-	 * residential runner drains the queue on its next wake (`tg-drain.ts`), so the
-	 * answer is late rather than wrong. Everything else the inbox does (parsing,
-	 * matching, writing the grocery-list row, asking questions) needs nothing but
-	 * Notion and runs in the cloud at full speed.
+	 * silently compares one shop and looks exactly like one that compared five.
+	 * `price-new-items.yml` drains the queue within 15 minutes, so the answer is late
+	 * rather than wrong. Everything else the inbox does (parsing, matching, writing
+	 * the grocery-list row, asking questions) needs nothing but Notion and is fast.
+	 *
+	 * ⚠️ **The original reason for this flag is obsolete and was wrong anyway.** It
+	 * read: "cannot reach the shops … Sheng Siong challenges datacenter IPs and
+	 * answers a residential one." The block is by **country**, and since 2026-08-17
+	 * pricing runs in GitHub Actions, reaching Sheng Siong through `ss-worker`. What
+	 * still justifies deferring is latency, not reachability — a four-shop scan takes
+	 * ~a minute and the chat should not wait for it.
 	 */
 	deferPricing?: boolean;
 }

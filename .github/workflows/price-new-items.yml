@@ -1,0 +1,118 @@
+name: Price new items
+
+# Price the items the Telegram inbox queued, in the cloud.
+#
+# **This replaced the laptop's `Grocery New-Item Pricing` task on 2026-08-17** — the
+# last scheduled job that machine was still doing. What made it possible was not new
+# code but a corrected fact: Sheng Siong blocks by COUNTRY, not by datacenter, so
+# `ss-worker` reaches it from Singapore and this runner borrows that.
+#
+# ```
+#   tg-inbox.yml   → queues an item nobody has a price for
+#   tg-sweep.yml   → every 15 min (the relay's cron), then calls THIS
+#      price       → FairPrice · Guardian · MyProtein   direct from the runner
+#                    Sheng Siong                        via ss-worker, from SIN
+#      rebuild     → daily.yml, only when something was actually priced
+# ```
+#
+# ⚠️ **Four shops, not five. Carousell is missing and that is a real reduction.**
+# It 403s a US address on every path, listing pages included (measured 2026-08-16,
+# run 31929132686). It is reachable from Singapore with no browser at all, but
+# harvesting it needs an HTML parser written against obfuscated class names, which
+# does not exist yet. Run `npm run tg-drain` on the laptop and all five are used.
+#
+# ⚠️ This is `workflow_call` only, plus a manual button. It deliberately has NO
+# `schedule:` — free public repos queue those by 3–3¾ h, which would turn a
+# 15-minute promise into a four-hour one. The clock is the relay's Cloudflare cron,
+# exactly as it is for the inbox's one-hour rule.
+on:
+  workflow_call:
+  workflow_dispatch: # so it can be run by hand from the Actions tab
+
+permissions:
+  contents: write # tg-drain commits the priced file and the cleared queue
+
+# ⚠️ One pricing run at a time, and `cancel-in-progress: false`. Two concurrent
+# runs would both read the same queue and both scan it — duplicate shop traffic for
+# one result — and the loser's push would then race the winner's. Cancelling instead
+# would abandon a scan that has already spent a minute against four shops.
+concurrency:
+  group: price-new-items
+  cancel-in-progress: false
+
+jobs:
+  price:
+    runs-on: ubuntu-latest
+    # A four-shop scan measures well under a minute per item, and the queue is
+    # normally one or two. Fifteen minutes is slack for a slow shop, not a budget —
+    # a run that hangs should fail rather than hold the concurrency group past the
+    # next 15-minute tick.
+    timeout-minutes: 15
+    outputs:
+      priced: ${{ steps.drain.outputs.priced }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - run: npm ci
+
+      # `tg-drain` commits and pushes for itself via `commitAndPushData` — the priced
+      # file wholesale, and the queue with a re-apply that keeps whatever the cloud
+      # wrote meanwhile. That needs an identity, exactly as `tg-sweep.yml` does.
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Price whatever is queued
+        id: drain
+        env:
+          # Sheng Siong is reached through ss-worker; this is the same shared secret
+          # `scan-request.yml` presents. ⚠️ Without it the Sheng Siong leg throws and
+          # is recorded as an error against that shop — it does not silently vanish.
+          SCAN_SECRET: ${{ secrets.SCAN_SECRET }}
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: npm run tg-drain
+
+      - name: Say so in Telegram if pricing failed
+        if: failure()
+        env:
+          TG_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TG_CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          TEXT="🛑 <b>Couldn't price the new item(s).</b>
+          They are still on the list — only the price comparison is missing.
+          <a href=\"${RUN_URL}\">See what broke →</a>"
+          curl -sS --max-time 30 -X POST \
+            "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TG_CHAT}" \
+            --data-urlencode "parse_mode=HTML" \
+            --data-urlencode "disable_web_page_preview=true" \
+            --data-urlencode "text=${TEXT}"
+
+  # ⚠️ Only when something was actually priced. This workflow runs every 15 minutes
+  # and finds an empty queue almost every time; rebuilding Pages on each tick would
+  # redeploy the site 96 times a day and bury every real publish in the deployment
+  # history. `tg-drain` writes `priced` to GITHUB_OUTPUT after the push, so this
+  # cannot start before its own input is on the remote.
+  rebuild:
+    needs: price
+    if: needs.price.outputs.priced == 'true'
+    # ⚠️ These must be granted HERE, not just in daily.yml. A called workflow's
+    # token is capped by the calling job's permissions, so inheriting this file's
+    # `contents: write` alone would strip `pages: write` and the deploy would fail
+    # on a run that had already done the expensive part. Mirrors daily.yml's own block.
+    permissions:
+      contents: read
+      actions: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/daily.yml
+    secrets: inherit

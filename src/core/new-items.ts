@@ -9,6 +9,7 @@ import { shengsiong } from "./stores/shengsiong.js";
 import { guardian } from "./stores/guardian.js";
 import { myprotein } from "./stores/myprotein.js";
 import { carousell } from "./stores/carousell.js";
+import { shengsiongViaWorker } from "./stores/shengsiong-worker.js";
 import type { ParsedItem } from "./list-parse.js";
 import { sizeLabel } from "./list-parse.js";
 
@@ -52,12 +53,16 @@ const esc = (s: string) =>
  * into a slot the user didn't ask for; nothing here writes to Notion at all, so it
  * doesn't apply.
  *
- * ⚠️ **Sheng Siong is the LIVE module here, never `shengsiong-file`.** The file
+ * ⚠️ **Sheng Siong must be a LIVE search here, never `shengsiong-file`.** The file
  * reader answers only the terms in that day's committed scan, so a new item's term
  * is never in it and Sheng Siong would contribute **zero results, silently, every
- * time** — no error, just a shop quietly missing from every new-item card. This
- * only runs on the residential runner (see `tg-poll.ts`), which is exactly where
- * the live module works.
+ * time** — no error, just a shop quietly missing from every new-item card.
+ *
+ * ⚠️ **Which live module depends on WHERE this runs, and getting it wrong is the
+ * same silent zero.** `stores/shengsiong.ts` speaks DDP from this machine and works
+ * only from Singapore; from a US GitHub runner it is challenged on every search. Use
+ * `NEW_ITEM_SHOPS` on the laptop and `CLOUD_NEW_ITEM_SHOPS` in Actions — the latter
+ * swaps in `shengsiong-worker.ts`, which borrows `ss-worker`'s Singapore placement.
  */
 export interface ShopRoute {
 	module: StoreModule;
@@ -74,6 +79,40 @@ export const NEW_ITEM_SHOPS: ShopRoute[] = [
 	{ module: guardian, marketplace: false },
 	{ module: myprotein, marketplace: false },
 	{ module: carousell, marketplace: true },
+];
+
+/**
+ * The same shops, as reachable from **GitHub Actions** — a US-hosted runner.
+ *
+ * Measured 2026-08-16/17 from a real runner, not assumed:
+ *
+ * | shop | from a US runner | route here |
+ * | --- | --- | --- |
+ * | FairPrice | ✅ works (runs there daily already) | direct |
+ * | Guardian | ✅ 30 products, 22 sized | direct |
+ * | MyProtein | ✅ 10 products, 10 sized | direct |
+ * | Sheng Siong | ❌ challenged — it answers Singapore only | **via `ss-worker`** |
+ * | Carousell | ❌ **403 on every path**, listing pages included | *omitted — see below* |
+ *
+ * ⚠️ **Carousell is deliberately absent, and its absence is the honest option of
+ * two bad ones.** It 403s a US address outright, so including it would add a
+ * guaranteed error to every single card. It is not blocked from Singapore and needs
+ * no browser there (measured: a plain `fetch` from a Worker returns the search page
+ * whole, 47 listings) — but harvesting it that way needs an HTML parser written
+ * against obfuscated class names, which is its own piece of work and its own risk.
+ * Until that exists, cloud-priced cards compare four shops.
+ *
+ * ⚠️ **Four shops is a REAL reduction, not a technicality**, and the page must not
+ * imply otherwise: Carousell is the only marketplace here, so its absence removes
+ * the second-hand price point entirely. `renderNewItemsPage` reads the offers it is
+ * given and says nothing about shops that were never asked — which is why the
+ * omission is recorded here, loudly, rather than in a commit message nobody reads.
+ */
+export const CLOUD_NEW_ITEM_SHOPS: ShopRoute[] = [
+	{ module: fairprice, marketplace: false },
+	{ module: shengsiongViaWorker, marketplace: false },
+	{ module: guardian, marketplace: false },
+	{ module: myprotein, marketplace: false },
 ];
 
 /** One shop's best plausible listing for a typed item. */
@@ -265,10 +304,13 @@ function bestFromMarketplace(products: StoreProduct[]): StoreProduct | null {
  * process, so an unclosed websocket per batch would accumulate; `search()` calls
  * `ensureConnected()` and reconnects on its own next time.
  */
-export async function scanNewItems(items: ParsedItem[]): Promise<NewItemResult[]> {
+export async function scanNewItems(
+	items: ParsedItem[],
+	shops: ShopRoute[] = NEW_ITEM_SHOPS,
+): Promise<NewItemResult[]> {
 	const out: NewItemResult[] = [];
 	try {
-		for (const item of items) out.push(await scanNewItem(item));
+		for (const item of items) out.push(await scanNewItem(item, shops));
 	} finally {
 		try {
 			shengsiong.close();

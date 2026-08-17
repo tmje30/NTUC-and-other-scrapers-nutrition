@@ -31,6 +31,12 @@ on:
   # could overwrite the deals page.
   repository_dispatch:
     types: [rescan, newitems]
+  # ⚠️ Callable so `price-new-items.yml` can rebuild the site itself after pricing.
+  # It cannot use the `newitems` dispatch above: GitHub refuses to start a workflow
+  # from a `repository_dispatch` sent with a workflow's own `GITHUB_TOKEN`, and does
+  # so SILENTLY (204, nothing runs). A dependent job is the supported way for one
+  # workflow to trigger another without minting a PAT for it.
+  workflow_call:
 
 # Needed for the GitHub Pages deploy. `actions: read` is what deploy-pages needs
 # to resolve the uploaded artifact by id (documented from its v4); the run has

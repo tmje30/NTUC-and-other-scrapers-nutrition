@@ -1,4 +1,5 @@
 import { execSync } from "node:child_process";
+import { appendFileSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { Client } from "@notionhq/client";
 import { config } from "../core/config.js";
@@ -11,26 +12,40 @@ import {
 	type Publisher,
 } from "../core/tg-inbox.js";
 import { useBotToken } from "../core/telegram.js";
-import type { NewItemResult, NewItemsFile } from "../core/new-items.js";
+import {
+	CLOUD_NEW_ITEM_SHOPS,
+	NEW_ITEM_SHOPS,
+	scanNewItems,
+	type NewItemResult,
+	type NewItemsFile,
+} from "../core/new-items.js";
 import { sgtDate } from "../core/sgt.js";
 
 /**
- * Price the new items the cloud couldn't. **The only part of the inbox that still
- * needs this machine.**
+ * Price the new items the inbox queued. **Runs in GitHub Actions since 2026-08-17;
+ * it no longer needs this machine.**
  *
  * ```
  *   cloud (tg-inbox.yml)  →  queue in data/tg-inbox-state.json
- *   laptop (this, every 15 min, self-gating)
- *      → scan FairPrice · Sheng Siong · Guardian · MyProtein · Carousell
- *      → data/new-items-latest.json  →  push + repository_dispatch
+ *   cloud (tg-sweep.yml → price-new-items.yml, every 15 min, self-gating)
+ *      → scan FairPrice · Guardian · MyProtein  (direct)
+ *              Sheng Siong                      (via ss-worker, from Singapore)
+ *      → data/new-items-latest.json  →  push
  *      → clear the queue, push the state file
  * ```
  *
- * ⚠️ **Why it can't move to the cloud, when everything else did.** Pricing an item
- * with no Ingredients row means searching the shops, and Sheng Siong challenges
- * datacenter IPs while answering a residential one. The cloud could only ever produce
- * a FairPrice-only comparison — which is worse than a late one, because a card
- * comparing one shop looks exactly like a card comparing five.
+ * ⚠️⚠️ **The old reason this "could not move to the cloud" was wrong twice over,
+ * and is kept here because it was believed for a fortnight.** It read: "Sheng Siong
+ * challenges datacenter IPs while answering a residential one." The block is by
+ * **country**, not by datacenter — and since 2026-08-13 `ss-worker` has scanned
+ * Sheng Siong daily from a Cloudflare datacenter in Singapore. `SHOPS` below routes
+ * through it, so a US runner gets real Sheng Siong prices.
+ *
+ * ⚠️ **In the cloud this prices FOUR shops, not five.** Carousell 403s a US address
+ * on every path, listing pages included (measured 2026-08-16). It is not blocked
+ * from Singapore and needs no browser there, but harvesting it that way needs an
+ * HTML parser that does not exist yet — see `CLOUD_NEW_ITEM_SHOPS`. Run this on the
+ * laptop (`npm run tg-drain`) and it still uses all five.
  *
  * ⚠️ **It replaces the forever-running poller as this machine's Telegram job.** A
  * webhook and `getUpdates` cannot both serve one bot, so once the relay is live the
@@ -45,7 +60,17 @@ import { sgtDate } from "../core/sgt.js";
 
 const NO_PUSH = process.argv.includes("--no-push");
 const OUT = "data/new-items-latest.json";
-const SOURCE = process.env.RUNNER_SOURCE ?? "laptop";
+
+/**
+ * Where this run is happening, which decides both the shop list and the label that
+ * ends up in the committed file.
+ *
+ * ⚠️ `GITHUB_ACTIONS` is set to `"true"` by the runner itself and by nothing else,
+ * so this cannot be spoofed by a stale `.env` the way a hand-set flag could.
+ */
+const IN_ACTIONS = process.env.GITHUB_ACTIONS === "true";
+const SOURCE = process.env.RUNNER_SOURCE ?? (IN_ACTIONS ? "cloud" : "laptop");
+const SHOPS = IN_ACTIONS ? CLOUD_NEW_ITEM_SHOPS : NEW_ITEM_SHOPS;
 
 /**
  * Ask the cloud to rebuild Pages now — `repository_dispatch`, which runs promptly.
@@ -53,6 +78,15 @@ const SOURCE = process.env.RUNNER_SOURCE ?? "laptop";
  * next daily run: later, never lost. Same as `push-shengsiong.ts`.
  */
 function dispatch(): void {
+	// ⚠️ **From Actions this would be a no-op that LOOKS like it worked.** GitHub
+	// refuses to start a workflow from a `repository_dispatch` sent with a
+	// workflow's own `GITHUB_TOKEN` (anti-recursion) — the API returns 204 and
+	// nothing runs. The rebuild is a dependent job in `price-new-items.yml`
+	// instead, so this path is skipped rather than fired and believed.
+	if (IN_ACTIONS) {
+		console.error("In Actions — the rebuild is a dependent job, not a dispatch.");
+		return;
+	}
 	const token = process.env.GITHUB_TOKEN;
 	if (!token) {
 		console.error("No GITHUB_TOKEN — pushed the file; the page will build on the next run.");
@@ -65,6 +99,27 @@ function dispatch(): void {
 			`-d "{\\"event_type\\":\\"newitems\\"}"`,
 		{ stdio: "inherit" },
 	);
+}
+
+/**
+ * Tell the workflow whether anything was actually priced.
+ *
+ * ⚠️ The rebuild job keys on this. Without it the only alternatives are rebuilding
+ * Pages every 15 minutes — this job runs that often and is a no-op almost every
+ * time — or never rebuilding promptly at all. A no-op that still redeploys the site
+ * would also churn the Pages deployment history and make a real publish impossible
+ * to spot.
+ */
+function reportPriced(priced: boolean): void {
+	const out = process.env.GITHUB_OUTPUT;
+	if (!out) return; // running on the laptop; nothing is listening
+	try {
+		appendFileSync(out, `priced=${priced ? "true" : "false"}\n`);
+	} catch (e: any) {
+		// Never fail a completed scan over its own bookkeeping — the file is
+		// committed and pushed by this point, so the worst case is a late page.
+		console.error(`Could not write GITHUB_OUTPUT: ${e?.message ?? e}`);
+	}
 }
 
 const publisher: Publisher = {
@@ -88,6 +143,10 @@ const publisher: Publisher = {
 			file: OUT,
 			message: `data: priced ${results.length} new item(s) from Telegram (${SOURCE})`,
 		});
+		// ⚠️ Reported AFTER the push, not after the scan. The rebuild job reads the
+		// committed file, so claiming "priced" before it reaches the remote would
+		// race a deploy against its own input.
+		reportPriced(true);
 		dispatch();
 	},
 };
@@ -98,6 +157,7 @@ const state = await readState(COMMITTED_STATE_PATH);
 if (!state.queue.length) {
 	// The common case, and it must be cheap: this runs every 15 minutes.
 	console.error("Nothing queued for pricing.");
+	reportPriced(false);
 	process.exit(0);
 }
 
@@ -107,6 +167,7 @@ if (blocking) {
 	// answered we don't know whether the item is new at all, and pricing something
 	// that turns out to be the milk you already buy puts it on a page nobody wanted.
 	console.error(`${blocking} question(s) still open — leaving ${state.queue.length} item(s) queued.`);
+	reportPriced(false);
 	process.exit(0);
 }
 
@@ -117,7 +178,7 @@ console.error(`Pricing ${priced.length} queued item(s)…`);
 // shops, not Notion. It comes from the same `.env` the poller used, so this costs
 // nothing to provide and keeps the dependency honest rather than optional.
 const notion = new Client({ auth: config.notionToken() });
-await maybeDrain({ notion, publisher }, state);
+await maybeDrain({ notion, publisher, scan: (items) => scanNewItems(items, SHOPS) }, state);
 
 await writeState(state, COMMITTED_STATE_PATH);
 if (NO_PUSH) {

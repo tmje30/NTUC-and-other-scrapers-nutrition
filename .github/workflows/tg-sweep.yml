@@ -54,3 +54,24 @@ jobs:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+
+  # ⚠️ **This is the 15-minute clock for new-item pricing, and it is here rather
+  # than on its own trigger for two reasons.** First, the relay's cron already fires
+  # this workflow every 15 minutes, so pricing needs no second timer and no second
+  # PAT — a `repository_dispatch` sent with a workflow's own `GITHUB_TOKEN` would not
+  # start anything. Second, the ORDER is load-bearing: the sweep above files
+  # questions nobody answered, which is exactly what unblocks a queue that pricing
+  # refuses to touch while any question is still open. Sweeping and then pricing in
+  # one run means a queued item waits one tick, not two.
+  #
+  # It is cheap when idle: `tg-drain` exits in milliseconds on an empty queue, and
+  # the rebuild inside it only runs when something was actually priced.
+  price:
+    needs: sweep
+    permissions:
+      contents: write
+      actions: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/price-new-items.yml
+    secrets: inherit
