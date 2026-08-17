@@ -81,6 +81,20 @@ jobs:
           fi
           xvfb-run --help >/dev/null && echo "xvfb-run OK"
 
+      # ⚠️ Guardian and MyProtein are probed through their STORE MODULES (the probes
+      # were rewritten to do that on 2026-08-16), so this measures what new-item
+      # pricing would actually get from a runner — not a second guess at the shop.
+      #
+      # This is the question that decides where new-item pricing can live: FairPrice
+      # already works from Actions and Sheng Siong provably does not, so these two are
+      # what remains unmeasured from a US address.
+      - name: "Guardian and MyProtein — do their store modules work from here?"
+        continue-on-error: true
+        run: npm run vendor-probe -- "sensodyne" --only guardian
+      - name: "MyProtein from here"
+        continue-on-error: true
+        run: npm run vendor-probe -- "impact whey protein" --only myprotein
+
       # TIER 1 — plain fetch. Expected outcome per carousell.ts: reachable, but
       # Cloudflare serves a shell with no cards. That is NOT a failure; it is the
       # documented baseline, and it confirms the runner reaches the real site.
