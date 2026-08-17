@@ -10,7 +10,6 @@ import { guardian } from "./stores/guardian.js";
 import { myprotein } from "./stores/myprotein.js";
 import { carousell } from "./stores/carousell.js";
 import { shengsiongViaWorker } from "./stores/shengsiong-worker.js";
-import { carousellViaWorker } from "./stores/carousell-worker.js";
 import type { ParsedItem } from "./list-parse.js";
 import { sizeLabel } from "./list-parse.js";
 
@@ -93,26 +92,46 @@ export const NEW_ITEM_SHOPS: ShopRoute[] = [
  * | Guardian | ✅ 30 products, 22 sized | direct |
  * | MyProtein | ✅ 10 products, 10 sized | direct |
  * | Sheng Siong | ❌ challenged — it answers Singapore only | **via `ss-worker`** |
- * | Carousell | ❌ **403 on every path**, listing pages included | **via `ss-worker`** |
+ * | Carousell | ❌ **403 on every path**, listing pages included | *omitted — see below* |
  *
- * ⚠️ **All five shops, and no browser anywhere.** Carousell was briefly omitted here
- * (2026-08-17) on the belief that reaching it needed Chrome. It does not: from
- * Singapore its search page is server-rendered and a plain `fetch` returns it whole,
- * so `carousell-worker.ts` fetches through `ss-worker` and parses the HTML. The
- * "needs a real browser" rule in `carousell.ts` was measured from outside Singapore
- * and is true only there.
+ * ⚠️⚠️ **Carousell CANNOT be reached from a US runner, not even through
+ * `ss-worker`, and the reason is worth understanding before anyone tries again.**
+ * The `/shop` route was built for exactly this and works perfectly from Singapore —
+ * it just cannot help here. Measured 2026-08-17 by fetching Carousell's own
+ * `/cdn-cgi/trace` through the Worker from both places:
  *
- * ⚠️ **`marketplace: true` still matters and is not transport-related.** Carousell
- * listings are strangers' free text, so the pick must come from `cheapestPlausible`'s
- * median rather than the minimum — the cheapest listing is usually the scam. That
- * judgement is unchanged by how the page was fetched.
+ * | as Carousell sees it | call from SG | call from a US runner |
+ * | --- | --- | --- |
+ * | `ip` | `2a06:98c0:3600::103` | **the same** |
+ * | `colo` | `SIN` | **the same** |
+ * | **`loc`** | **SG** → 200 | **US** → 403 challenge |
+ *
+ * Same Cloudflare address, same Singapore datacenter, **different country**.
+ * Cloudflare propagates the ORIGINAL CALLER's country into the Worker's subrequest,
+ * and Carousell — which is itself behind Cloudflare — applies its bot rules to that.
+ * **A Worker cannot launder geography for a Cloudflare-fronted site.**
+ *
+ * ⚠️ This is the `colo`-vs-`loc` trap from 2026-08-12 with real teeth. That entry
+ * records `loc` as reporting the caller's country, which was treated as a
+ * *measurement* quirk. It is not only that: the destination's WAF acts on it.
+ * Sheng Siong is reachable this way **only because it sits behind Imperva, not
+ * Cloudflare**, so nothing is propagated to it.
+ *
+ * ⚠️ **What would actually work**, if this is ever picked up: a call that originates
+ * in Singapore, or one with no client at all — a Worker `scheduled()` handler has no
+ * incoming request and therefore no country to propagate. Untested. What will NOT
+ * work is any variation on proxying a US-initiated request.
+ *
+ * ⚠️ **The parser is not wasted.** `parseSearchHtml` + `carousell-worker.ts` are
+ * proven and used: from Singapore they price Carousell with **no browser at all**,
+ * which is a real simplification of the laptop path. It is the transport that fails
+ * from the cloud, not the parsing.
  */
 export const CLOUD_NEW_ITEM_SHOPS: ShopRoute[] = [
 	{ module: fairprice, marketplace: false },
 	{ module: shengsiongViaWorker, marketplace: false },
 	{ module: guardian, marketplace: false },
 	{ module: myprotein, marketplace: false },
-	{ module: carousellViaWorker, marketplace: true },
 ];
 
 /** One shop's best plausible listing for a typed item. */
