@@ -219,6 +219,113 @@ export function parseCards(anchors: RawAnchor[], limit = 60): Card[] {
 	return out;
 }
 
+/** Tags out, entities decoded, whitespace collapsed. */
+function htmlToText(html: string): string {
+	return html
+		.replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi, " ")
+		.replace(/<[^>]*>/g, " ")
+		.replace(/&nbsp;/gi, " ")
+		.replace(/&amp;/gi, "&")
+		.replace(/&lt;/gi, "<")
+		.replace(/&gt;/gi, ">")
+		.replace(/&quot;/gi, '"')
+		.replace(/&#0?39;|&apos;/gi, "'")
+		.replace(/&#(\d+);/g, (_, d: string) => String.fromCharCode(Number(d)))
+		.replace(/\s+/g, " ")
+		.trim();
+}
+
+/**
+ * Harvest the same `RawAnchor[]` the browser produced, from the SEARCH PAGE'S RAW
+ * HTML — no Chrome anywhere.
+ *
+ * ⚠️⚠️ **This exists because "Carousell search needs a real browser" is only true
+ * from OUTSIDE Singapore.** The module's own header says Cloudflare serves a shell
+ * to a bare fetch. Measured again 2026-08-16/17: from a Cloudflare Worker in `SIN`,
+ * a plain `fetch` returns the whole page — 2.29 MB, 43–47 listings, titles and
+ * prices server-rendered. The shell was the *US* response. Everything downstream is
+ * unchanged: this feeds `parseCards`, which still derives the title from the slug
+ * and the price from the accumulated text.
+ *
+ * ⚠️ **Raw HTML is strictly BETTER input than the browser gave**, which is worth
+ * knowing before anyone "improves" this back into a DOM harvest:
+ *   - the missing lowercase `s` ("U ed", "Mu cleTech") is a rendering artefact and
+ *     does **not** occur here — the markup carries the real title;
+ *   - **the decimal point survives**. `cardSize` prefers the card's text precisely
+ *     because the slug drops it, and a slug-only reading turns a 2.43 kg tub into
+ *     43 kg — a 17× error in the flattering direction.
+ *
+ * ⚠️ **Anchors are windowed, not matched to a closing tag.** A card's markup nests
+ * several elements and the price sits in a sibling of the title, so the text for one
+ * listing is taken from its anchor up to the *next* anchor. That is exactly the
+ * accumulate-per-href behaviour `parseCards` already relies on, so duplicates and
+ * overlap are harmless — it merges by href regardless.
+ */
+export function parseSearchHtml(html: string): RawAnchor[] {
+	// `[^"?]+` stops at the query string so tracking parameters never become part of
+	// the key — `parseCards` splits on `?` too, and this keeps the two in step.
+	const opens = [...html.matchAll(/<a\s[^>]*href="(\/p\/[^"?]+)[^"]*"[^>]*>/gi)];
+	const out: RawAnchor[] = [];
+	for (let i = 0; i < opens.length; i++) {
+		const start = opens[i].index ?? 0;
+		// The tail window is capped rather than run to end-of-document: the last card
+		// is followed by the entire page footer, and sweeping that into one listing's
+		// text would let a footer price attach to it.
+		const end = i + 1 < opens.length ? (opens[i + 1].index ?? start) : Math.min(html.length, start + 4000);
+		out.push({ href: opens[i][1], text: htmlToText(html.slice(start, end)) });
+	}
+	return out;
+}
+
+/**
+ * How this module reaches Carousell. Returns `null` on any failure the caller should
+ * treat as "no page", never a partial one.
+ *
+ * ⚠️ **The transport is injected because it has to change with geography, not with
+ * taste.** From the laptop (Singapore) a direct `fetch` is right. From a GitHub
+ * runner every Carousell URL is 403 — search *and* listing pages — so both legs must
+ * go through `ss-worker`'s allowlisted `/shop` route.
+ */
+export type HtmlFetcher = (url: string) => Promise<string | null>;
+
+/** Straight at the shop. Correct from Singapore, useless from anywhere else. */
+export const directHtmlFetcher: HtmlFetcher = async (url) => {
+	const ctl = new AbortController();
+	const t = setTimeout(() => ctl.abort(), 30_000);
+	try {
+		const res = await fetch(url, { headers: { "User-Agent": UA }, redirect: "follow", signal: ctl.signal });
+		return res.ok ? await res.text() : null;
+	} catch {
+		return null;
+	} finally {
+		clearTimeout(t);
+	}
+};
+
+/**
+ * Via `ss-worker`, which fetches from Singapore. See its `/shop` route: the host
+ * allowlist lives there, so this cannot be pointed at anything else.
+ */
+export function workerHtmlFetcher(workerUrl: string, secret: string): HtmlFetcher {
+	return async (url) => {
+		const ctl = new AbortController();
+		const t = setTimeout(() => ctl.abort(), 60_000);
+		try {
+			const res = await fetch(`${workerUrl}?url=${encodeURIComponent(url)}`, {
+				headers: { "X-Scan-Secret": secret },
+				signal: ctl.signal,
+			});
+			// ⚠️ A 403 here is the WORKER refusing the host, not the shop refusing us.
+			// They mean opposite things and only the body distinguishes them.
+			return res.ok ? await res.text() : null;
+		} catch {
+			return null;
+		} finally {
+			clearTimeout(t);
+		}
+	};
+}
+
 /**
  * Does this look like a handle Carousell generated, rather than one a person chose?
  *
@@ -273,13 +380,15 @@ export function parseOfferPrice(body: string): number | null {
 /** A listing page's own JSON-LD offer — the authoritative price and condition. */
 async function readListing(
 	url: string,
+	// ⚠️ Listing pages need the same transport as the search page. They are plain
+	// HTML and were long described as "plain-fetchable", which is true only from
+	// Singapore — a US runner gets 403 on these too (measured 2026-08-16). Defaulting
+	// to direct keeps the laptop's behaviour byte-identical.
+	fetchHtml: HtmlFetcher = directHtmlFetcher,
 ): Promise<{ price: number | null; condition: string; title: string; seller: string } | null> {
-	const ctl = new AbortController();
-	const t = setTimeout(() => ctl.abort(), 25_000);
 	try {
-		const res = await fetch(url, { headers: { "User-Agent": UA }, redirect: "follow", signal: ctl.signal });
-		if (!res.ok) return null;
-		const body = await res.text();
+		const body = await fetchHtml(url);
+		if (body == null) return null;
 		const cond = body.match(/"itemCondition"\s*:\s*"https:\/\/schema\.org\/(\w+)"/i);
 		const name = body.match(/<title>([^<]{4,200})<\/title>/i);
 		// The seller's handle rides in the page's inline state — free, no browser.
@@ -291,9 +400,8 @@ async function readListing(
 			seller: seller?.[1] ?? "",
 		};
 	} catch {
+		// The timeout now lives in the fetcher, which owns the request.
 		return null;
-	} finally {
-		clearTimeout(t);
 	}
 }
 
@@ -412,6 +520,16 @@ export interface CarousellOptions {
 	 */
 	headed?: boolean;
 	settleMs?: number;
+	/**
+	 * Harvest the search page from RAW HTML through this fetcher, instead of driving
+	 * Chrome. Set it and no browser is launched at all — see `parseSearchHtml`.
+	 *
+	 * ⚠️ Only correct where Carousell actually answers: from Singapore directly, or
+	 * from anywhere via `ss-worker`'s `/shop` route. Pointing it at a plain fetch from
+	 * a US runner yields 403 on every request, which this module reports as an error
+	 * rather than as an empty shop.
+	 */
+	fetchHtml?: HtmlFetcher;
 }
 
 export class Carousell implements StoreModule {
@@ -421,13 +539,40 @@ export class Carousell implements StoreModule {
 
 	async search(term: string): Promise<StoreProduct[]> {
 		const url = `${BASE}/search/${encodeURIComponent(term)}`;
+
+		// The no-browser path. Chosen by configuration rather than by sniffing the
+		// environment, so a caller that wants it locally gets it, and the laptop's
+		// long-proven CDP path is untouched by default.
+		if (this.opts.fetchHtml) {
+			const html = await this.opts.fetchHtml(url);
+			if (html == null) {
+				// ⚠️ Distinguished from "nothing stocked" deliberately, exactly as the
+				// browser path does below. A transport failure reported as no stock is
+				// how a broken scraper looks healthy for weeks.
+				throw new Error("Carousell search page could not be fetched — 403 from outside Singapore, or the Worker refused");
+			}
+			return this.fromAnchors(parseSearchHtml(html), this.opts.fetchHtml);
+		}
+
 		const res = await evaluateInPage(url, EXTRACT, {
 			headed: this.opts.headed ?? true,
 			// ⚠️ 7s was measured as NOT enough — the harvest came back empty on runs where
 			// the page was fine, which reads downstream as "this shop has nothing".
 			settleMs: this.opts.settleMs ?? 12_000,
 		});
-		const anchors = (res.value as RawAnchor[]) ?? [];
+		const browserAnchors = (res.value as RawAnchor[]) ?? [];
+		return this.fromAnchors(browserAnchors, directHtmlFetcher);
+	}
+
+	/**
+	 * Everything after the harvest, shared by both transports.
+	 *
+	 * ⚠️ Kept as ONE path on purpose. The shortlist rule, the marketplace median and
+	 * the price re-check are the judgements that make a stranger's listing usable at
+	 * all; a second copy for the HTML route would drift from them silently, and the
+	 * drift would show up as prices rather than as errors.
+	 */
+	private async fromAnchors(anchors: RawAnchor[], fetchHtml: HtmlFetcher): Promise<StoreProduct[]> {
 		if (!anchors.length) {
 			// Told apart from "this shop has nothing" on purpose: an empty page here means
 			// the render or the harvest failed, and reporting that as no stock is how a
@@ -459,7 +604,7 @@ export class Carousell implements StoreModule {
 		for (const [i, s] of shortlist.slice(0, MAX_VERIFY).entries()) {
 			if (i) await sleep(DELAY_MS);
 			const listingUrl = `${BASE}${s.card.href}`;
-			const listing = await readListing(listingUrl);
+			const listing = await readListing(listingUrl, fetchHtml);
 
 			// ⚠️ The listing is fetched to CONFIRM THE PRICE, and for nothing else. Its
 			// `itemCondition` is deliberately ignored — see `cardCondition` for the

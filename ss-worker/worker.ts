@@ -36,6 +36,26 @@ export interface Env {
 const SCAN_PATH = "data/shengsiong-latest.json";
 
 /**
+ * The only hosts `/shop` will fetch. **This set IS the security model** — see the
+ * route for why it must never be taken from the caller.
+ *
+ * Both spellings are listed because Carousell's own links are host-relative and are
+ * resolved against whichever the caller used; a redirect between the two would
+ * otherwise be refused mid-request.
+ */
+const SHOP_HOSTS = new Set(["www.carousell.sg", "carousell.sg"]);
+
+/**
+ * ⚠️ A browser UA, and it matters. Carousell served the full search page to this
+ * string from Singapore (2026-08-16, 2.29 MB, 47 listings) — the same request
+ * without it is a different fingerprint against a Cloudflare-fronted site, and this
+ * project has already spent a day proving the HTTP client is an independent
+ * variable. Keep it in step with `UA` in `src/core/stores/carousell.ts`.
+ */
+const SHOP_UA =
+	"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
+
+/**
  * Which Cloudflare datacenter this object is being served from.
  *
  * ⚠️⚠️ **Read `colo`, NEVER `loc`.** This cost a wrong conclusion on 2026-08-12.
@@ -117,6 +137,58 @@ export class ScanRunner {
 
 	async fetch(request: Request): Promise<Response> {
 		const url = new URL(request.url);
+
+		/**
+		 * A plain HTML fetch, from Singapore. See the `/shop` route in the outer
+		 * Worker for the allowlist and why this exists.
+		 *
+		 * ⚠️ **The host was already checked out there and is checked AGAIN here.**
+		 * This object is reachable from the outer Worker only, but "only one caller
+		 * today" is not an access rule — a second route added later would inherit an
+		 * unguarded fetch, and the mistake would not look like a mistake.
+		 *
+		 * ⚠️ It deliberately does NOT run `reachable()`. That tests Sheng Siong's DDP
+		 * upgrade and says nothing about Carousell; gating on it would refuse a
+		 * perfectly good Carousell fetch whenever Sheng Siong happened to be down.
+		 */
+		if (url.pathname === "/shop") {
+			const target = url.searchParams.get("url") ?? "";
+			let host = "";
+			try {
+				const u = new URL(target);
+				if (u.protocol !== "https:") throw new Error("not https");
+				host = u.hostname.toLowerCase();
+			} catch {
+				return Response.json({ ok: false, reason: "bad-url" }, { status: 400 });
+			}
+			if (!SHOP_HOSTS.has(host)) {
+				return Response.json({ ok: false, reason: "host-not-allowed", host }, { status: 403 });
+			}
+			const where = await whereAmI();
+			try {
+				const res = await fetch(target, {
+					headers: {
+						"User-Agent": SHOP_UA,
+						Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+						"Accept-Language": "en-SG,en;q=0.9",
+					},
+					redirect: "follow",
+				});
+				const body = await res.text();
+				// The colo rides in a header rather than the body, because the body is
+				// the shop's HTML and must not be wrapped — the caller parses it.
+				return new Response(body, {
+					status: res.status,
+					headers: { "content-type": "text/html; charset=utf-8", "x-colo": where.colo },
+				});
+			} catch (e: any) {
+				return Response.json(
+					{ ok: false, reason: "fetch-failed", error: String(e?.message ?? e), ...where },
+					{ status: 502 },
+				);
+			}
+		}
+
 		const force = url.searchParams.get("force") === "1";
 		const limit = Number(url.searchParams.get("limit")) || undefined;
 		const dryRun = url.searchParams.get("dryRun") === "1";
@@ -232,6 +304,42 @@ export default {
 		if (!env.SCAN_SECRET || request.headers.get("X-Scan-Secret") !== env.SCAN_SECRET) {
 			return new Response("unauthorized", { status: 401 });
 		}
+		// ⚠️ `/shop` is a Singapore FETCH, not a scan: it exists so new-item pricing
+		// can reach Carousell, which 403s a US GitHub runner on every path — search
+		// and listing pages alike (measured 2026-08-16). Sheng Siong gets its own
+		// `/scan?dryRun=1` route because it needs DDP; Carousell is ordinary HTML
+		// and only needs the address.
+		//
+		// ⚠️⚠️ **This is deliberately NOT a general proxy, and must not become one.**
+		// An authenticated open proxy is a stranger fetching anything they like from
+		// the user's Cloudflare account. The host allowlist below is the whole
+		// security model — widen it only for a host this project actually scrapes,
+		// and never accept the host from the caller.
+		if (url.pathname === "/shop") {
+			const target = url.searchParams.get("url") ?? "";
+			let host = "";
+			try {
+				const u = new URL(target);
+				// Scheme is checked too: `file:` and `data:` URLs parse happily.
+				if (u.protocol !== "https:") throw new Error("not https");
+				host = u.hostname.toLowerCase();
+			} catch {
+				return Response.json({ ok: false, reason: "bad-url" }, { status: 400 });
+			}
+			if (!SHOP_HOSTS.has(host)) {
+				return Response.json({ ok: false, reason: "host-not-allowed", host }, { status: 403 });
+			}
+			const picked = await pickStub(env);
+			if (!picked) {
+				return Response.json({ ok: false, reason: "no-singapore-placement" }, { status: 503 });
+			}
+			// Through the Durable Object, for the same reason the scan is: a plain
+			// Worker runs beside the CALLER, and the caller is a US runner.
+			return picked.stub.fetch(
+				new Request(`https://scan/shop?url=${encodeURIComponent(target)}`, { method: "GET" }),
+			);
+		}
+
 		if (url.pathname !== "/scan") return new Response("not found", { status: 404 });
 
 		// ⚠️ Fail closed on a missing token too. Without it the scan would run in

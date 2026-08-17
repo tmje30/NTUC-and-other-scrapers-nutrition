@@ -49,5 +49,6 @@ await import("./tg-state.test.js");
 // the stub — another reason these load one at a time.
 await import("./tg-sweep.test.js");
 await import("./git-data-push.test.js");
+await import("./carousell-html.test.js");
 
 report();

@@ -88,6 +88,28 @@ jobs:
       # This is the question that decides where new-item pricing can live: FairPrice
       # already works from Actions and Sheng Siong provably does not, so these two are
       # what remains unmeasured from a US address.
+      # ⚠️ The whole point of this workflow, now that the parser exists: Carousell
+      # WITHOUT a browser, from a US runner, through ss-worker's /shop route. Every
+      # step below it measures the old direct paths and is kept as the contrast —
+      # they should still 403, and if they ever stop, that is worth knowing too.
+      - name: "Carousell via ss-worker — no browser, from a US runner"
+        env:
+          SCAN_SECRET: ${{ secrets.SCAN_SECRET }}
+        run: |
+          cat > .car-check.mts <<'EOF'
+          import { carousellViaWorker } from "./src/core/stores/carousell-worker.js";
+          const rows = await carousellViaWorker.search("whey protein");
+          console.log(`Carousell via ss-worker -> ${rows.length} products`);
+          for (const r of rows.slice(0, 5)) {
+            console.log(`  S$${r.priceSgd}  ${r.pricePer100g?.toFixed(2)}/100g  ${r.packWeightG}g  ${r.name.slice(0, 50)}`);
+          }
+          if (!rows.length) {
+            console.error("::error::zero products — the Carousell cloud route is NOT working");
+            process.exit(1);
+          }
+          EOF
+          npx tsx .car-check.mts
+
       # ⚠️ The load-bearing test for cloud new-item pricing. Sheng Siong cannot be
       # reached from here directly — that is the whole reason `ss-worker` exists — so
       # this exercises the indirection itself: runner → Worker (SIN) → DDP → shop.

@@ -10,6 +10,7 @@ import { guardian } from "./stores/guardian.js";
 import { myprotein } from "./stores/myprotein.js";
 import { carousell } from "./stores/carousell.js";
 import { shengsiongViaWorker } from "./stores/shengsiong-worker.js";
+import { carousellViaWorker } from "./stores/carousell-worker.js";
 import type { ParsedItem } from "./list-parse.js";
 import { sizeLabel } from "./list-parse.js";
 
@@ -92,27 +93,26 @@ export const NEW_ITEM_SHOPS: ShopRoute[] = [
  * | Guardian | ✅ 30 products, 22 sized | direct |
  * | MyProtein | ✅ 10 products, 10 sized | direct |
  * | Sheng Siong | ❌ challenged — it answers Singapore only | **via `ss-worker`** |
- * | Carousell | ❌ **403 on every path**, listing pages included | *omitted — see below* |
+ * | Carousell | ❌ **403 on every path**, listing pages included | **via `ss-worker`** |
  *
- * ⚠️ **Carousell is deliberately absent, and its absence is the honest option of
- * two bad ones.** It 403s a US address outright, so including it would add a
- * guaranteed error to every single card. It is not blocked from Singapore and needs
- * no browser there (measured: a plain `fetch` from a Worker returns the search page
- * whole, 47 listings) — but harvesting it that way needs an HTML parser written
- * against obfuscated class names, which is its own piece of work and its own risk.
- * Until that exists, cloud-priced cards compare four shops.
+ * ⚠️ **All five shops, and no browser anywhere.** Carousell was briefly omitted here
+ * (2026-08-17) on the belief that reaching it needed Chrome. It does not: from
+ * Singapore its search page is server-rendered and a plain `fetch` returns it whole,
+ * so `carousell-worker.ts` fetches through `ss-worker` and parses the HTML. The
+ * "needs a real browser" rule in `carousell.ts` was measured from outside Singapore
+ * and is true only there.
  *
- * ⚠️ **Four shops is a REAL reduction, not a technicality**, and the page must not
- * imply otherwise: Carousell is the only marketplace here, so its absence removes
- * the second-hand price point entirely. `renderNewItemsPage` reads the offers it is
- * given and says nothing about shops that were never asked — which is why the
- * omission is recorded here, loudly, rather than in a commit message nobody reads.
+ * ⚠️ **`marketplace: true` still matters and is not transport-related.** Carousell
+ * listings are strangers' free text, so the pick must come from `cheapestPlausible`'s
+ * median rather than the minimum — the cheapest listing is usually the scam. That
+ * judgement is unchanged by how the page was fetched.
  */
 export const CLOUD_NEW_ITEM_SHOPS: ShopRoute[] = [
 	{ module: fairprice, marketplace: false },
 	{ module: shengsiongViaWorker, marketplace: false },
 	{ module: guardian, marketplace: false },
 	{ module: myprotein, marketplace: false },
+	{ module: carousellViaWorker, marketplace: true },
 ];
 
 /** One shop's best plausible listing for a typed item. */
