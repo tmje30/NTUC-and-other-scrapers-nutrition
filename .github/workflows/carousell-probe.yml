@@ -92,6 +92,21 @@ jobs:
       # WITHOUT a browser, from a US runner, through ss-worker's /shop route. Every
       # step below it measures the old direct paths and is kept as the contrast —
       # they should still 403, and if they ever stop, that is worth knowing too.
+      # ⚠️ What does CAROUSELL'S OWN EDGE see when this runner calls through the
+      # Worker? Fetching the target's `/cdn-cgi/trace` is the only way to ask: the
+      # `ip`/`loc` it reports are the ones its bot rules are applied to. From a
+      # Singapore-initiated call this reports a Cloudflare address with loc=SG and
+      # the fetch succeeds; if it reports the same here, the 403 is NOT geography and
+      # the Worker hop is not the problem.
+      - name: "What does Carousell see when the runner calls via the Worker?"
+        continue-on-error: true
+        env:
+          SCAN_SECRET: ${{ secrets.SCAN_SECRET }}
+        run: |
+          T=$(node -e 'console.log(encodeURIComponent("https://www.carousell.sg/cdn-cgi/trace"))')
+          curl -sS --max-time 90 -H "X-Scan-Secret: ${SCAN_SECRET}" \
+            "https://ss-worker.tmje30.workers.dev/shop?url=$T" | grep -E '^(ip|loc|colo|warp|uag)=' || true
+
       - name: "Carousell via ss-worker — no browser, from a US runner"
         env:
           SCAN_SECRET: ${{ secrets.SCAN_SECRET }}
