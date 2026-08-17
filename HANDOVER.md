@@ -1825,16 +1825,71 @@ not depend on a background process surviving.**
 
 | Job | Runs on | State |
 |---|---|---|
-| Sheng Siong daily scan | **Cloudflare** `ss-worker` | ✅ proven unattended 2026-08-15 |
+| Sheng Siong daily scan | **Cloudflare** `ss-worker` | ✅ proven unattended, 3 mornings |
 | Rescan button | **Cloudflare** `ss-worker` | ✅ proven, ~4 min |
 | FairPrice + page + Telegram | GitHub Actions `daily.yml` | ✅ running |
 | Telegram inbox | Cloudflare relay + Actions | ✅ running |
-| **New-item pricing** | **the laptop** (`tg-drain`, 15 min) | ⬅️ **the only job left on the machine** |
+| **New-item pricing** | **GitHub Actions** `price-new-items.yml` | ✅ **moved 2026-08-17** |
 
-Laptop scheduled tasks: `Grocery New-Item Pricing` **Ready**; the other three
-(`ShengSiong Daily Scan`, `ShengSiong Scan Request`, `Grocery Telegram Inbox`)
-**disabled**. The daily scan is kept disabled-but-present as a one-click emergency
-scanner.
+**Nothing scheduled runs on the laptop any more.**
+
+### ⚠️⚠️ ACTION REQUIRED: disable `Grocery New-Item Pricing` on the laptop
+
+**Until that task is disabled, two schedulers drain the same queue every 15
+minutes.** The laptop task and `price-new-items.yml` both read
+`data/tg-inbox-state.json`, both scan the shops, and both push. `commitAndPushData`'s
+re-apply should survive the collision, but the work is duplicated, the shops are hit
+twice, and a new-items page could be published twice for one text. This is not
+tidying-up — it is the last step of the migration.
+
+```
+schtasks /Change /TN "Grocery New-Item Pricing" /DISABLE
+```
+
+⚠️ Run `schtasks` from **PowerShell, not Git Bash** — MSYS rewrites `/Change` into a
+path and it fails obscurely.
+
+### What the cloud move actually consists of (2026-08-17)
+
+- **`src/core/stores/shengsiong-worker.ts`** — a `StoreModule` that searches Sheng
+  Siong *through* `ss-worker` (`/scan?dryRun=1&force=1&terms=…`). Reports the store
+  name as plain `"Sheng Siong"`, because everything downstream keys on `product.store`.
+- **`CLOUD_NEW_ITEM_SHOPS`** in `new-items.ts` — FairPrice, Guardian, MyProtein
+  direct; Sheng Siong via the Worker; **Carousell omitted**.
+- **`tg-drain.ts`** picks its shop list from `GITHUB_ACTIONS`, so the laptop still
+  uses all five if run by hand.
+- **`price-new-items.yml`** — `workflow_call` + `workflow_dispatch`, called by
+  `tg-sweep.yml` (which the relay's cron fires every 15 min). Rebuilds via
+  `daily.yml` **only when something was priced**.
+
+**Verified from a real US runner**, not assumed:
+
+| leg | result |
+|---|---|
+| Sheng Siong via `ss-worker` | ✅ 8 products, real weights and per-100g (run 32005000155) |
+| Guardian | ✅ 30 products, 22 sized |
+| MyProtein | ✅ 10 products, 10 sized |
+| `price-new-items.yml`, empty queue | ✅ exits clean, `rebuild` correctly **skipped** |
+
+⚠️ **NOT yet exercised: a run that actually prices something.** That needs a real
+queued item, which means a real text and a real Telegram reply. The empty-queue path
+and every individual shop leg are proven; the two have not been proven *together*.
+
+### ⚠️ Three traps that would have made this fail silently
+
+- **A dry-run term search MUST send `force=1`.** The Worker's freshness check runs
+  *before* the dry-run branch, so with today's scan already committed — which it is
+  by 09:01 every morning — a request without `force` returns **200 `already-fresh`
+  with zero products**. Not an error. Indistinguishable from "Sheng Siong doesn't
+  stock that". `dryRun` is what makes `force` safe, and the Worker refuses `terms`
+  without it.
+- **`repository_dispatch` from Actions does nothing.** GitHub silently refuses to
+  start a workflow from a dispatch sent with a workflow's own `GITHUB_TOKEN` (204,
+  nothing runs). `tg-drain` now skips that path in Actions; the rebuild is a
+  dependent job calling `daily.yml`, which gained `workflow_call`.
+- **A called workflow is capped by its caller's permissions.** The `rebuild` job
+  declares `pages: write` / `id-token: write` itself — inheriting `contents: write`
+  alone would fail the deploy *after* the expensive scan had already run.
 
 **What this session actually did:** proved the morning cron end to end, added
 `[observability]` to `ss-worker`, and rewrote `SYSTEM-GUIDE.md`, which had gone from
