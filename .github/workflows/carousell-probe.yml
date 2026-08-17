@@ -88,6 +88,29 @@ jobs:
       # This is the question that decides where new-item pricing can live: FairPrice
       # already works from Actions and Sheng Siong provably does not, so these two are
       # what remains unmeasured from a US address.
+      # ⚠️ The load-bearing test for cloud new-item pricing. Sheng Siong cannot be
+      # reached from here directly — that is the whole reason `ss-worker` exists — so
+      # this exercises the indirection itself: runner → Worker (SIN) → DDP → shop.
+      # Zero products FAILS this step deliberately: the failure mode it guards against
+      # is a 200 with an empty result set, which reads exactly like "not stocked".
+      - name: "Sheng Siong via ss-worker — the new cloud route"
+        env:
+          SCAN_SECRET: ${{ secrets.SCAN_SECRET }}
+        run: |
+          cat > .ss-check.mts <<'EOF'
+          import { shengsiongViaWorker } from "./src/core/stores/shengsiong-worker.js";
+          const rows = await shengsiongViaWorker.search("greek yogurt");
+          console.log(`Sheng Siong via ss-worker -> ${rows.length} products`);
+          for (const r of rows.slice(0, 3)) {
+            console.log(`  $${r.priceSgd}  ${r.pricePer100g?.toFixed(2) ?? "-"}/100g  ${r.packWeightG}g  ${r.name}`);
+          }
+          if (!rows.length) {
+            console.error("::error::zero products from ss-worker — the cloud route is NOT working");
+            process.exit(1);
+          }
+          EOF
+          npx tsx .ss-check.mts
+
       - name: "Guardian and MyProtein — do their store modules work from here?"
         continue-on-error: true
         run: npm run vendor-probe -- "sensodyne" --only guardian
