@@ -1864,6 +1864,15 @@ vendor-scan`, `npm run tg-drain`, the probes). Disabled ≠ deleted: re-enabling
   direct; Sheng Siong via the Worker; **Carousell omitted**.
 - **`tg-drain.ts`** picks its shop list from `GITHUB_ACTIONS`, so the laptop still
   uses all five if run by hand.
+- **`src/core/stores/carousell-worker.ts`** + `parseSearchHtml` — Carousell with **no
+  browser**, fetched through `ss-worker`'s `/shop` route. Used by `NEW_ITEM_SHOPS`
+  (the laptop). ⚠️ **NOT** by `CLOUD_NEW_ITEM_SHOPS` — see the Carousell entry under
+  "Open" for why a Worker hop cannot help a US runner reach it.
+- **`ss-worker` `/shop`** — a Singapore fetch, **host-allowlisted to `carousell.sg`**,
+  through the Durable Object. ⚠️ **Deliberately not a general proxy and must not
+  become one**; the allowlist is the whole security model and is checked in both the
+  Worker and the object. Verified: 403 off-allowlist, 401 unauthenticated, 400 on
+  non-https.
 - **`price-new-items.yml`** — `workflow_call` + `workflow_dispatch`, called by
   `tg-sweep.yml` (which the relay's cron fires every 15 min). Rebuilds via
   `daily.yml` **only when something was priced**.
@@ -1876,10 +1885,20 @@ vendor-scan`, `npm run tg-drain`, the probes). Disabled ≠ deleted: re-enabling
 | Guardian | ✅ 30 products, 22 sized |
 | MyProtein | ✅ 10 products, 10 sized |
 | `price-new-items.yml`, empty queue | ✅ exits clean, `rebuild` correctly **skipped** |
+| Carousell via `ss-worker` | ❌ **403** — see the Carousell entry under "Open" |
 
-⚠️ **NOT yet exercised: a run that actually prices something.** That needs a real
-queued item, which means a real text and a real Telegram reply. The empty-queue path
-and every individual shop leg are proven; the two have not been proven *together*.
+**Verified from the laptop**, whole pipeline, after Carousell moved off Chrome:
+
+```
+"whey protein" -> 4 offers, 0 errors  (57.5s)
+  Carousell   S$38      1.68/100g      FairPrice   S$103.90  5.20/100g
+  My Protein  S$256.99  11.42/100g     Guardian    S$27.90   13.10/100g
+```
+
+⚠️ **NOT yet exercised: a cloud run that actually prices something.** That needs a
+real queued item, which means a real text and a real Telegram reply. The empty-queue
+path and every individual shop leg are proven; the two have not been proven
+*together*. **The first real text through the new path is the first true test.**
 
 ### ⚠️ Three traps that would have made this fail silently
 
@@ -1897,91 +1916,96 @@ and every individual shop leg are proven; the two have not been proven *together
   declares `pages: write` / `id-token: write` itself — inheriting `contents: write`
   alone would fail the deploy *after* the expensive scan had already run.
 
-**What this session actually did:** proved the morning cron end to end, added
-`[observability]` to `ss-worker`, and rewrote `SYSTEM-GUIDE.md`, which had gone from
-stale to actively wrong. It shipped **no behaviour change** — the cron bug itself was
-already fixed on the 14th by a plain redeploy.
+**What this session did**, in order: proved the morning cron end to end; added
+`[observability]` to `ss-worker`; rewrote `SYSTEM-GUIDE.md`, which had gone from
+stale to actively wrong; measured every shop from a real US runner; **moved
+new-item pricing into GitHub Actions and disabled the last laptop task**; built the
+Carousell HTML parser and removed Chrome from new-item pricing entirely.
+
+⚠️ **The recurring shape of this session, worth reading before trusting any note in
+this file:** four separate "we can't do X" beliefs turned out to be artefacts of the
+measuring, not facts about the world — Sheng Siong's datacenter block (it is by
+country), Guardian's "needs a browser" (solved for a week), MyProtein's "needs a
+second fetch" (also solved for a week), and Carousell's "needs a real browser" (true
+only outside Singapore). Each was recorded confidently. **Check the store module, and
+re-measure, before scoping work off a comment.**
 
 ### Open — in the order I would take them
 
-1. **Move new-item pricing to the cloud.** The last job on the laptop, and it
-   decomposes rather than moving as one piece:
-   - **Sheng Siong** → `ss-worker` already reaches it. `runScan` takes a
-     `termsOverride`, currently gated behind `dryRun` so a short term list can never
-     overwrite the real scan file — pricing would need its own path, not that gate
-     loosened.
-   - **FairPrice / Guardian / MyProtein** → plain HTTP. FairPrice already runs in
-     Actions every day, so this is the easy two-thirds.
-   - **Carousell** → ⚠️ **MEASURED 2026-08-16: a US GitHub runner gets HTTP 403.**
-     Run [31929132686](https://github.com/tmje30/NTUC-and-other-scrapers-nutrition/actions/runs/31929132686),
-     from `.github/workflows/carousell-probe.yml` (`workflow_dispatch` only, writes
-     nothing). From `20.169.99.196` · Phoenix US · AS8075 Microsoft: **403 on the
-     search page, 403 on a listing page, 0 cards rendered.**
+1. ✅ **DONE 2026-08-17 — new-item pricing runs in GitHub Actions.** See "What the
+   cloud move actually consists of" above. Four shops in the cloud; the fifth is
+   below and is not a plumbing problem.
 
-     ⚠️ **The browser question was never reached, so do not quote the browser
-     result.** The listing-page 403 is the informative part: those are plain
-     HTTP and work fine from the laptop, so this is rejection at the *address*,
-     before rendering matters. The job runs Chrome under `xvfb` so `--headed` is
-     real — that part is correct and will matter if the address problem is solved.
+   ### ⚠️⚠️ Carousell: a Worker CANNOT launder geography for a Cloudflare-fronted site
 
-     ✅ **RESOLVED the same day, and the answer is better than the question.** Probed
-     from a Cloudflare Worker in Singapore (`probe/shops.mjs`, `wrangler dev
-     --remote`, `colo=SIN`, nothing deployed). All three targets, **plain `fetch`, no
-     browser**: homepage **200**, search **200 · 2.29 MB · 47 listing links**, listing
-     **200 · `hasJsonLdOffer: true`**.
+   **This is the most reusable thing learned this week, and it decides whether the
+   `ss-worker` trick will work for any future shop.**
 
-     1. **The US 403 is GEOGRAPHIC** — a US runner is refused even on listing pages,
-        which answer 200 from Singapore. So Carousell cannot move to GitHub Actions,
-        but **it can move to a Cloudflare Worker**, exactly as Sheng Siong did.
-     2. ⚠️⚠️ **"Carousell search needs a real browser" is FALSE from a Worker.** Both
-        halves — discovery *and* verification — work with no Chrome at all. That was
-        the assumption making this the hard leg, and it does not survive measurement.
-     3. ⚠️ **The HTTP CLIENT is the variable, and it is why the codebase believes
-        otherwise.** Same Singapore address, same minute, same URL, same headers,
-        same `redirect: "follow"`: `curl -L` → 200 / 44 links; Worker `fetch` → 200 /
-        47 links; **Node's `fetch` (undici) → 403 / 0 links** — and undici is what
-        `vendor-probe` uses. Cloudflare fingerprints the TLS handshake and the rule is
-        per-path, which is why listing pages pass on every client and search does not.
-        This is the glossary's "the client is an independent variable" entry, pointing
-        the opposite way from the Watsons case that produced it.
-        ⚠️ So `vendor-probe`'s "Cloudflare serves a shell to bare fetch" is a fact
-        about **undici**, not about Carousell. It also counts links with a trailing
-        slash (`/\/p\/[a-z0-9-]+-\d+\//`, `vendor-probe.ts:300`) which real hrefs do
-        not have — two independent reasons it reports "no-data".
+   Carousell 403s a US runner on every path. `ss-worker` gained a `/shop` route —
+   host-allowlisted to `carousell.sg`, going through the Durable Object — to fetch
+   it from Singapore. It works perfectly *when called from Singapore* and does not
+   help at all from a runner. Measured by fetching Carousell's own `/cdn-cgi/trace`
+   **through the Worker** from both places:
 
-   - **Guardian and MyProtein** → measured from the same Worker, same run
-     (2026-08-16). Both **200**, neither blocked:
-     - **MyProtein ✅ — ALSO ALREADY DONE, and this entry first said otherwise.**
-       `stores/myprotein.ts` has fetched the product pages and expanded each variant
-       into its own sized product since **2026-08-09**. Verified live 2026-08-16:
-       `"impact whey protein"` → 10 products, **10 with a per-100g** (345 g … 2.25 kg,
-       real weights); `"creatine"` → 7 and 7. ~6 s per search.
-       ⚠️ The "28 priced, 0 with a size" reading came from the SEARCH page alone,
-       which is the half the module already knows is insufficient.
-     - **Guardian ✅ — ALREADY DONE, and this entry first said otherwise.**
-       `src/core/stores/guardian.ts` has read Magento's `/graphql` since
-       **2026-08-09**: anonymous POST, no browser, no cookies, no WAF. Verified
-       live 2026-08-16 — `"sensodyne"` → 26 in-stock products, 22 with a usable
-       size, sale prices and list prices correct; `"cerave"` → 22 and 21.
-       ⚠️ **The `/catalogsearch/result/?q=` URL that looks like an empty SPA is not
-       the search URL any more — it 302s to the homepage.** Measuring it measures
-       the homepage.
+   | as Carousell sees it | call from SG | call from a US runner |
+   |---|---|---|
+   | `ip` | `2a06:98c0:3600::103` | **the same** |
+   | `colo` | `SIN` | **the same** |
+   | **`loc`** | **SG** → 200 | **US** → 403 "Just a moment" |
 
-     **What this means for the move: new-item pricing has NO laptop-only leg left.**
-     All five shops are reachable from a Singapore Worker with no Chrome anywhere:
-     | shop | route | state |
-     |---|---|---|
-     | Sheng Siong | DDP over WebSocket | ✅ already in production |
-     | FairPrice | plain HTTP | ✅ already runs in Actions daily |
-     | Carousell | plain `fetch` | ✅ measured 2026-08-16 |
-     | MyProtein | plain `fetch` + variant expansion | ✅ **working since 2026-08-09** |
-     | Guardian | Magento GraphQL | ✅ **working since 2026-08-09** |
+   Same Cloudflare address, same Singapore datacenter, **different country**.
+   **Cloudflare propagates the ORIGINAL CALLER's country into a Worker's
+   subrequest**, and Carousell is itself behind Cloudflare, so its bot rules are
+   applied to that rather than to the Worker's address.
 
-     ✅ **There is no access work left on new-item pricing at all.** All five shops
-     are reachable from a Singapore Worker, and every adapter already exists and
-     works. Nothing needs a browser, a laptop, or the Singapore VPS this project
-     spent weeks planning around. What remains is only the plumbing: deciding where
-     the job runs and moving it.
+   ⚠️ **This is the `colo`-vs-`loc` entry from 2026-08-12 with real teeth.** That
+   one records `loc` as reporting the caller's country and treats it as a
+   *measurement* quirk. It is not only that — **the destination's WAF acts on it.**
+
+   ⚠️ **So the rule for any future shop is: does it sit behind Cloudflare?**
+   Sheng Siong is reachable through `ss-worker` **only because it sits behind
+   Imperva**, where nothing is propagated. Check the target's edge before assuming
+   a Worker hop can move it.
+
+   **What would work, if picked up:** a call that originates in Singapore, or one
+   with no client at all — a Worker `scheduled()` handler has no incoming request
+   and so no country to propagate. **Untested.** What will *not* work is any
+   variation on proxying a US-initiated request.
+
+   ### ✅ What the Carousell work did deliver: no browser, anywhere
+
+   `parseSearchHtml` harvests the search page from raw HTML into the same
+   `RawAnchor[]` the CDP expression produced, so `parseCards`, the shortlist rule,
+   `cheapestPlausible` and the price re-check are **one shared path** for both
+   transports. 15 tests in `src/tests/carousell-html.test.ts`.
+
+   **Raw HTML is strictly better input than the browser gave**, and both facts are
+   pinned by tests:
+   - the missing lowercase `s` ("U ed", "Mu cleTech") is a *rendering* artefact and
+     does not occur — which matters because it made the second-hand badge
+     undetectable;
+   - **the decimal point survives**. The slug drops it, turning a 2.43 kg tub into
+     **43 kg** — a 17× error in the flattering direction.
+
+   ⚠️ **`NEW_ITEM_SHOPS` (the laptop) now routes Carousell through `ss-worker` too,
+   so NO path in new-item pricing launches Chrome any more.** That is not about
+   geography: from the laptop Carousell is reachable, but it refuses **by client,
+   per path** — Node's `fetch` gets 403 on `/search/` and 200 on `/p/` listings,
+   while `curl -L` and the Worker get 200 on both. So `directHtmlFetcher` cannot
+   replace CDP and the Worker can. It also explains why listing pages were long
+   believed "plain-fetchable": they are, on every client — the search page is not.
+
+   ⚠️ **Parity was checked before switching, because a smaller harvest would have
+   been a SILENT loss.** `cheapestPlausible`'s median over the whole field is the
+   only thing between a card and a scam listing; a parser seeing a quarter of the
+   page still returns a price, just a worse-defended one. Same term, minutes apart:
+   **HTML 45 priced cards, CDP 47.** (`vendor-probe.ts` still claims "188 cards on
+   2026-08-04" — neither path reaches that today. Stale figure, not a target.)
+
+   ⚠️ **The cost is a dependency swap, not a free win.** The laptop path now needs
+   `SCAN_SECRET` in `.env` and a reachable `ss-worker`. A missing secret throws and
+   is recorded against Carousell — it does **not** fall back to Chrome, because a
+   silent fallback hides a broken config behind a slower path that happens to work.
 
      ### ⚠️⚠️ STALE PROBES, not stale shops — read this before scoping any shop work
 
@@ -2010,11 +2034,18 @@ already fixed on the 14th by a plain redeploy.
 2. **Two undecided questions**, unchanged from the 13th: does the relay keep its
    15-minute `tgsweep` cron, and does `daily.yml` keep its own `schedule:` as a
    backstop now that Cloudflare is the clock?
-3. **`src/scripts/tg-drain.ts`'s header comment is obsolete** and will mislead
-   whoever reads it next. It says Sheng Siong "challenges datacenter IPs while
-   answering a residential one" — wrong twice over: the block is by **country**, and
-   Cloudflare scans it daily from a datacenter. Fix the comment when that file is
-   next touched.
+3. ✅ **DONE — `tg-drain.ts`'s obsolete header is corrected.** It had said Sheng
+   Siong "challenges datacenter IPs while answering a residential one", wrong twice
+   over. The same wrong reason was also carried by `deferPricing` in `tg-inbox.ts`
+   and is corrected there too — what still justifies deferring is **latency**, not
+   reachability: a four-shop scan takes about a minute and the chat should not wait.
+
+4. **`ss-worker` has no typecheck.** `ss-worker/tsconfig.json` sets
+   `"types": ["@cloudflare/workers-types"]` but that package is **not installed**, so
+   `npx tsc -p ss-worker` has never run — it fails on the missing type library.
+   `npm test` only runs `scan.test.ts`, and `wrangler deploy` does not typecheck. So
+   the Worker is the least-checked code in the project while being the part nobody
+   can watch run. Installing that devDependency would turn it on.
 
 ### ⚠️ Two failure notifiers have still never actually fired
 
