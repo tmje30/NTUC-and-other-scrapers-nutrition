@@ -1,6 +1,6 @@
 # Grocery Deal Scraper — System Guide
 
-*Last updated: 2026-08-15 · Covers changes through commit d9bc370*
+*Last updated: 2026-08-17 · Covers changes through commit ec5e516*
 
 ## What this is
 
@@ -96,9 +96,20 @@ of carrots is genuinely the cheapest per kilo and is not a pack anyone buys).
   ingredient link — and the chat tells you what was filed. An unlinked row you can
   shop from beats a question you never answered.
 - **"It says it's pricing something — what's that?"** A line matching no
-  ingredient at all has no known price, so the cloud queues it and the laptop
-  prices it across five shops within 15 minutes, then publishes a **New items**
-  page. The chat says `🔎 Pricing 1 new item: …` so the wait is never silent.
+  ingredient at all has no known price, so it is queued and priced across the shops
+  within 15 minutes, then published on a **New items** page. The chat says
+  `🔎 Pricing 1 new item: …` so the wait is never silent. Since 2026-08-17 this runs
+  in the cloud — **no computer of yours needs to be awake.**
+- **"How do I just ask what something costs, without adding it?"** Text
+  **`/search chicken breast`** (or `/find`, `/price`, `/s`). You get one message
+  back: the matching ingredient rows with price, size, price per kg, and which
+  vendor is cheapest. ⚠️ **The slash is what makes it a question.** Anything you
+  text *without* one is treated as a shopping list — it gets written to your Notion
+  List, and anything unrecognised gets priced at the shops. So asking "what does
+  chicken cost?" as plain text would add chicken to your list. `/search` reads only;
+  it never writes, never scans a shop and never spends money.
+  A query that matches nothing well still answers, but labels those rows as merely
+  *similar* rather than presenting a weak match in the same voice as a strong one.
 - **"Where do the prices for other shops come from?"** `npm run vendor-scan`
   searches the shops each ingredient row actually names and fills its
   `Price [Vendor n]` / `Size[Vendor n]` / `URL [Vendor n]` slots. Anything it isn't
@@ -200,19 +211,36 @@ cannot reach Sheng Siong, the run **fails loudly in Telegram** rather than quiet
 leaving a marker for a job that may be disabled — a fallback that depends on a
 switched-off task is worse than no fallback, because it looks like one.
 
-⚠️ **What still needs the laptop, and why.** The daily deals no longer do — but two
-jobs remain on the machine at home:
+✅ **Nothing scheduled runs on the laptop any more (since 2026-08-17).** All four
+Windows Task Scheduler jobs are disabled. New-item pricing — the last one — moved to
+GitHub Actions, and no part of the system now launches a browser.
 
-- **Pricing brand-new items** (`npm run tg-drain`). A texted line matching no
-  ingredient has no known price, so it must be searched across five shops. Four of
-  those are ordinary HTTP and could move to the cloud tomorrow; **Carousell drives a
-  real Chrome** (`src/core/browser-cdp.ts`), which a Cloudflare Worker cannot do. A
-  GitHub runner *does* have Chrome, so this is movable — it just hasn't been moved.
-  ⚠️ The reason written in `tg-drain.ts` — "Sheng Siong challenges datacenter IPs
-  while answering a residential one" — is **obsolete twice over** and should not be
-  believed: the block is by country, and Cloudflare now scans Sheng Siong daily.
-- **The price book** (`npm run vendor-scan`). Nothing schedules it; it is run by
-  hand and needs the laptop.
+The only thing still run **by hand** on that machine is the price book
+(`npm run vendor-scan`), which nothing schedules and never did.
+
+⚠️ **Cloud-priced new items compare FOUR shops, not five — Carousell is missing.**
+That is a real gap and not a rounding error: Carousell is the only marketplace, so
+its absence removes the second-hand price point. Run `npm run tg-drain` by hand on
+the laptop and all five are used.
+
+⚠️ **Why Carousell cannot follow, and the general rule it teaches.** Carousell
+refuses a US address, so a GitHub runner is blocked. A Cloudflare Worker in
+Singapore *does* reach it — but only when the Worker is called from Singapore.
+Measured by asking Carousell's own edge what it sees, through the same Worker, from
+both places:
+
+| as Carousell sees it | called from SG | called from a US runner |
+|---|---|---|
+| IP | a Cloudflare address | **the same** |
+| datacenter | Singapore | **the same** |
+| **country** | **SG** → answers | **US** → challenge page |
+
+**Cloudflare passes the original caller's country through to the site being
+fetched**, and Carousell is itself a Cloudflare customer, so its bot rules are
+applied to *your* country rather than the Worker's. **A Worker hop cannot disguise
+where a request came from, if the destination is also behind Cloudflare.** Sheng
+Siong can be reached this way only because it sits behind a different provider
+(Imperva), which receives no such information.
 
 The laptop also keeps a **`ShengSiong Daily Scan` scheduled task, switched off**, as
 a one-click emergency scanner if Cloudflare ever cannot reach the shop.
@@ -232,9 +260,16 @@ you ──text──▶ Telegram ──webhook──▶ Cloudflare Worker ──
                                             │                            │
                                      every 15 min: tgsweep          a NEW item
                                      (the one-hour rule)            needs a price
-                                                                         │
-                                                                    laptop, ≤15 min
+                                            │                            │
+                                            └──────────▶ price-new-items.yml
+                                               same run,  (4 shops, ≤15 min,
+                                               sweep first  all in the cloud)
 ```
+
+⚠️ **The order in that last step is load-bearing.** The sweep files questions nobody
+answered, and pricing refuses to touch the queue while any question is still open —
+so sweeping *then* pricing in one run means a queued item waits one 15-minute tick
+rather than two.
 
 ⚠️ **The Worker is also the clock, not just the doorbell.** Its
 `crons = ["*/15 * * * *"]` trigger fires a `tgsweep` dispatch that files any question
@@ -459,6 +494,22 @@ store, name, brand, pack price, pack weight (grams), a `volumetric` flag (litres
 vs grams), price-per-100 g, sale info, and URL. Defined in
 `src/core/stores/types.ts`.
 
+⚠️ **Two shops have a second module that reaches them THROUGH `ss-worker`**, because
+where a request comes from decides whether they answer at all. Both report the same
+`store` name as their direct twin, since everything downstream keys on that:
+
+- **`shengsiong-worker.ts`** — searches via `/scan?dryRun=1&force=1&terms=…`.
+  Used by the cloud (`CLOUD_NEW_ITEM_SHOPS`), because Sheng Siong answers Singapore
+  only. ⚠️ **`force=1` is required and omitting it fails silently:** the Worker's
+  freshness check runs before the dry-run branch, so with today's scan already
+  committed it returns `already-fresh` with **zero products** — a 200 that reads
+  exactly like "not stocked". `dryRun` is what keeps `force` safe (it writes
+  nothing), and the Worker refuses `terms` without it.
+- **`carousell-worker.ts`** — fetches the search page via `/shop` and parses raw
+  HTML (`parseSearchHtml`), **no browser**. Used by the **laptop**
+  (`NEW_ITEM_SHOPS`), and *not* by the cloud — see the country pass-through note
+  under "How it fits together".
+
 - **FairPrice** — `src/core/stores/fairprice.ts`. Server-side-render scrape of
   `GET /search?query=…`, parsing the page's `__NEXT_DATA__` JSON. Weight comes
   from `metaData.DisplayUnit` (the raw `Weight` field is unreliable). Works from
@@ -501,9 +552,26 @@ vs grams), price-per-100 g, sale info, and URL. Defined in
   probe once scored Watsons 54 "prices" while it rendered nothing but its footer,
   because skeleton loaders match `[class*="price"]`. It now demands prices containing
   a **number** *and* product links, and reports both counts.
-- **Carousell** — `src/core/stores/carousell.ts`. A marketplace: headed browser for
-  search (headless renders zero cards), plain `fetch` for the listing page, reduced
-  with `cheapestPlausible` and never the minimum.
+- **Carousell** — `src/core/stores/carousell.ts`. A marketplace: reduced with
+  `cheapestPlausible` and never the minimum, because the cheapest listing is usually
+  the scam. **Two transports, one shared pipeline** — the harvest produces
+  `RawAnchor[]` either way, and `parseCards` → shortlist → price re-check is the same
+  code for both:
+  - **`parseSearchHtml`** (default since 2026-08-17) reads the search page's raw
+    HTML. No browser. This is what `NEW_ITEM_SHOPS` uses, via `carousell-worker.ts`.
+  - **the headed-Chrome path** over CDP still exists and is what
+    `vendor-probe --browser` exercises.
+
+  ⚠️ **Carousell refuses by CLIENT, per path** — which is why the parser alone was not
+  enough. Measured from one machine, same minute, same URL: Node's `fetch` gets `403`
+  on `/search/` but `200` on a `/p/` listing; `curl` and the Worker get `200` on both.
+  So listing pages really are "plain-fetchable" on every client, and the search page
+  is not — a distinction that made the older note true and misleading at once.
+
+  ⚠️ **Raw HTML is better input than the browser gave**, and both facts bite:
+  the rendered DOM dropped lowercase `s` ("U ed"), which made the second-hand badge
+  undetectable; and the URL slug drops decimal points, turning a 2.43 kg tub into
+  **43 kg**. The markup keeps both. Pinned by `src/tests/carousell-html.test.ts`.
 - **Weight parsing** — `src/core/stores/weight.ts`: turns pack-size strings
   ("4 x 125 ml", "1 kg") into grams and a volumetric flag.
 - **Incapsula** — `src/core/stores/incapsula.ts`. Sheng Siong's WAF answers plain
@@ -963,6 +1031,32 @@ shop looks exactly like a card comparing five.
 ⚠️ Run it **after** stopping the poller, never before: while the poller is alive it
 owns that file and will answer a tap behind your back.
 
+### Asking a price without buying — `src/core/item-search.ts`
+
+`/search chicken breast` (also `/find`, `/price`, `/s`) answers from the price book:
+the matching Ingredients rows with price, size, price per kg, and which vendor is
+cheapest. **It reads only** — no shop scan, no model call, no Notion write.
+
+⚠️ **The slash is what separates a question from an instruction**, and that is the
+whole reason this is a command. Plain text to this bot is a *shopping list*: it gets
+matched, written to the Notion List, and anything unrecognised gets priced at the
+shops. So "what does chicken cost?" typed without a slash would add chicken to the
+list. There was no way to ask a question until `/search` existed.
+
+- **`searchQuery(text)`** returns the query, `""` for a bare command, or `null` when
+  the message is not a search at all. ⚠️ `""` and `null` are different answers and
+  callers must keep them apart: `""` earns the usage hint, `null` must fall through
+  to the shopping-list path.
+- **`searchAll` / `formatSearch`** — **one message, always.** Several queries in one
+  text share a single reply, and the length cap drops results with a note rather than
+  sending a second message.
+- ⚠️ **Weak matches are labelled as such.** A query that lands on nothing good still
+  answers, but says the rows are merely *similar* — presenting a 0.35 match in the
+  same voice as a 0.95 one is how someone ends up believing they stock something they
+  do not.
+
+Tested offline in `src/tests/item-search.test.ts`.
+
 ### The relay Worker — `relay/`
 
 A single dependency-free ESM file (`relay/worker.mjs`, ~200 lines) deployed to
@@ -1045,6 +1139,25 @@ and the caller is a US GitHub runner. The fix is a **Durable Object**.
 | `dryRun=1` | return the scan without writing it — how the port was diffed against the laptop |
 | `probe=1` | cheap yes/no on whether this object can reach the shop |
 | `terms=a\|b` | override the search terms; ⚠️ **only honoured with `dryRun`**, so a two-term "scan" can never overwrite the real file |
+
+**A second endpoint — `GET /shop?url=…`** (added 2026-08-17), same `X-Scan-Secret`.
+It fetches one page **from Singapore** and returns it unchanged. This is how Carousell
+is reached without a browser: its search page is server-rendered, so plain HTML is
+enough once the request comes from the right country.
+
+⚠️ **It is deliberately NOT a general proxy and must not become one.** An
+authenticated open proxy is a stranger fetching anything they like from this
+Cloudflare account. The **host allowlist is the entire security model** — only
+`carousell.sg` — it is checked in both the Worker and the Durable Object, and the
+host is never taken from the caller. Verified: `403` for any other host, `401`
+without the secret, `400` for a non-`https` URL.
+
+⚠️ It goes through the Durable Object for the same reason the scan does: a plain
+Worker runs beside the *caller*, and the caller is usually a US runner.
+
+⚠️ **It cannot help a US-initiated call reach Carousell** — see the country
+pass-through note under "How it fits together". It works when called from Singapore,
+which is what the laptop does.
 
 **Two secrets, both fail closed** (`npx wrangler secret put`): `SCAN_SECRET` (a
 missing one rejects every request rather than accepting all of them) and
@@ -1403,7 +1516,7 @@ why `vendor-probe` prints its egress IP and flags datacenter addresses.
   | command | what it does |
   |---|---|
   | `npm run tg-handle` | handle **one** update from `TG_UPDATE`. What the cloud runs |
-  | `npm run tg-drain` | price the queued new items. The laptop's 15-minute job |
+  | `npm run tg-drain` | price the queued new items. **Runs in Actions since 2026-08-17**; by hand on the laptop it uses all five shops instead of four |
   | `npm run tg-sweep` | file any ask older than an hour. What the Worker's cron triggers |
   | `npm run tg-webhook` | `show` (default) / `set <url> [secret]` / `delete` |
   | `npm run tg-adopt-state` | carry the poller's open questions into the committed file |
@@ -1478,7 +1591,7 @@ why `vendor-probe` prints its egress IP and flags datacenter addresses.
 
 ### The cloud jobs
 
-Six GitHub Actions workflows:
+Seven GitHub Actions workflows:
 
 - **`.github/workflows/daily.yml`** — the main job. `cron: "0 0 * * *"` (00:00
   UTC), plus a manual "Run workflow" button and `repository_dispatch` triggers for
@@ -1523,6 +1636,21 @@ Six GitHub Actions workflows:
   group, where `tg-inbox.yml` has none: cancelling a duplicate *tap* loses data,
   cancelling a duplicate *sweep* costs nothing, and two concurrent sweeps would file
   the same ask twice. Most runs exit in seconds having found nothing.
+  ⚠️ **It also carries the 15-minute clock for new-item pricing**, as a second job
+  calling `price-new-items.yml`. Sweep first, then price — the sweep files unanswered
+  questions, which is exactly what unblocks a queue pricing refuses to touch.
+- **`.github/workflows/price-new-items.yml`** (added 2026-08-17) — prices the queued
+  items in the cloud, replacing the laptop's `Grocery New-Item Pricing` task.
+  `workflow_call` + `workflow_dispatch` only: **no `schedule:`**, because free public
+  repos queue those by 3–3¾ h, which would turn a 15-minute promise into a four-hour
+  one. Rebuilds the site via `daily.yml` **only when something was actually priced** —
+  it runs 96 times a day and finds an empty queue almost every time.
+  ⚠️ It cannot fire `repository_dispatch` to trigger that rebuild: GitHub refuses to
+  start a workflow from a dispatch sent with a workflow's own token, **silently**
+  (204, nothing runs). Hence a dependent job, and `daily.yml` gained `workflow_call`.
+  ⚠️ The rebuild job declares `pages:`/`id-token:` permissions itself — a called
+  workflow is capped by its caller, so inheriting `contents: write` alone would fail
+  the deploy *after* the expensive scan had already run.
 - **`.github/workflows/scan-request.yml`** — triggered by `repository_dispatch: sscan`
   from the page's Rescan button. **Rewritten 2026-08-13:** it makes one authenticated
   HTTP call to `ss-worker` and nothing else — no checkout, no `npm ci`, `permissions:
@@ -1642,8 +1770,14 @@ Other requirements:
   - **Free-plan cron limit is 5 per account**, and this project uses **3** (one on
     the relay, two on `ss-worker`).
   - `ss-worker` needs `SCAN_SECRET` and `GITHUB_TOKEN`; the same `SCAN_SECRET` value
-    must also be a **repository secret** on GitHub so `scan-request.yml` can present
-    it.
+    must also be a **repository secret** on GitHub, so `scan-request.yml` and
+    `price-new-items.yml` can present it.
+  - ⚠️ **`SCAN_SECRET` is now needed in the LOCAL `.env` too** (since 2026-08-17).
+    New-item pricing reaches Carousell through the Worker on every path, including
+    by-hand runs on the laptop. Without it, Carousell throws with that message and is
+    recorded as an error against the shop — it does **not** fall back to Chrome,
+    because a silent fallback would hide a broken configuration behind a slower path
+    that happens to work.
 - ⚠️ **On a brand-new `workers.dev` subdomain, `setWebhook` will fail first** with
   `bad webhook: Failed to resolve host: Temporary failure in name resolution`.
   Telegram's own resolvers lag a new subdomain by up to about an hour while every
@@ -1742,6 +1876,26 @@ Other requirements:
   token saved in the browser, instead of the default two-tap GitHub-issue flow.
 
 ## What changed in this update
+
+- **2026-08-17 — nothing scheduled runs on your laptop any more.** New-item pricing
+  was the last job on it; it now runs in the cloud, within 15 minutes of you texting
+  something the system has no price for. All four Windows scheduled tasks are off.
+  The daily Sheng Siong scan stays disabled-but-present as a one-click emergency
+  scanner. Nothing in the system launches a web browser any longer either — the last
+  thing that did was the Carousell search, now read from plain HTML.
+- **2026-08-17 — you can ask what something costs without adding it.** Text
+  `/search chicken breast` (or `/find`, `/price`, `/s`). Until now every message to
+  the bot was a shopping list, so asking about an item was the same as adding it.
+- **2026-08-17 — cloud-priced new items compare four shops, not five.** Carousell
+  cannot be reached from the cloud at all: it refuses non-Singapore addresses, and —
+  the part that took a day to establish — routing through the Singapore Worker does
+  **not** disguise that, because Cloudflare passes the original caller's country
+  through to the site being fetched. Running `npm run tg-drain` by hand on the laptop
+  still uses all five. This is a real gap, since Carousell is the only marketplace.
+- **2026-08-16 — two shops turned out to have been working for a week.** Guardian and
+  MyProtein were both recorded as needing more work; both had been finished since
+  2026-08-09. The diagnostic tool had drifted from the code it was describing, and
+  its stale verdict was believed. The probes now test the real modules.
 
 - **2026-08-15 — The daily Sheng Siong scan no longer needs the laptop.** This is
   the biggest change since the system was built, and it makes several older
