@@ -18,7 +18,17 @@ on:
     # guaranteed floor for an average arrival time is the wrong way round when the
     # data has a shelf life.
     - cron: "0 0 * * *"
+  # ⚠️ `drill` fires the failure notifier ON PURPOSE. It is the only way to prove
+  # that step works: it had been written for five days and never once run, because
+  # nothing had failed — the same shape of assumption that made "the cloud scan is
+  # live" wrong. A drill run fails deliberately and therefore shows a red X; that is
+  # what it is for.
   workflow_dispatch: # allow manual runs from the Actions tab
+    inputs:
+      drill:
+        description: "Fire the failure notifier deliberately (the run WILL fail — that is the test)"
+        type: boolean
+        default: false
   # The page's "Rescan" button, shown only when a shop is missing from the scan.
   # The usual cause is the laptop being shut at 05:30: Task Scheduler runs the
   # missed Sheng Siong scan when the laptop next wakes, so by mid-morning fresh
@@ -61,6 +71,14 @@ jobs:
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v7
+
+      # ⚠️ FIRST, so a drill costs seconds rather than a full scan and a Pages
+      # deploy. Everything below it is skipped once this fails.
+      - name: Drill — fail on purpose, so the notifier has something to report
+        if: github.event_name == 'workflow_dispatch' && inputs.drill
+        run: |
+          echo "::notice::Failure-notifier drill — failing deliberately. Nothing was scanned."
+          exit 1
 
       - uses: actions/setup-node@v7
         with:
@@ -112,12 +130,22 @@ jobs:
           TG_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TG_CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          DRILL: ${{ github.event_name == 'workflow_dispatch' && inputs.drill }}
         run: |
-          TEXT="🛑 <b>The grocery scan failed — nothing is working.</b>
+          # ⚠️ A drill says so IN THE MESSAGE. A test that arrives looking like a
+          # real outage teaches the reader to distrust the alarm, which costs more
+          # than never having tested it.
+          if [ "${DRILL}" = "true" ]; then
+            TEXT="🧪 <b>Drill — the failure notifier works.</b>
+          Nothing is wrong. This run failed on purpose to prove this message can still reach you.
+          <a href=\"${RUN_URL}\">The drill run →</a>"
+          else
+            TEXT="🛑 <b>The grocery scan failed — nothing is working.</b>
           No prices were checked today, so there is no deals list and no page update.
           <a href=\"${RUN_URL}\">See what broke →</a>
 
           You can retry from the Rescan button, or from the Actions tab."
+          fi
           curl -sS --max-time 30 -X POST \
             "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
             --data-urlencode "chat_id=${TG_CHAT}" \
