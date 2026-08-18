@@ -1,0 +1,8 @@
+{
+	"//": "The test runs in NODE (via tsx), not at the edge, so it needs @types/node — but the Worker itself must NOT, or a Node API that does not exist in a Worker would typecheck clean and fail only in production. Hence two configs: the base one below stays workers-types-only and is the one that guards the deployed code.",
+	"extends": "./tsconfig.json",
+	"compilerOptions": {
+		"types": ["@cloudflare/workers-types", "node"]
+	},
+	"include": ["*.ts", "../src/core/stores/weight.ts"]
+}

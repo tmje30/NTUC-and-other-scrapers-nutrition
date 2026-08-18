@@ -11,5 +11,7 @@
 		"noEmit": true,
 		"forceConsistentCasingInFileNames": true
 	},
-	"include": ["*.ts", "../src/core/stores/weight.ts"]
+	"include": ["*.ts", "../src/core/stores/weight.ts"],
+	"//exclude": "The test is NODE code, not Worker code, so it is checked by tsconfig.test.json — which is the only config that adds @types/node. Keeping it out of here is what stops a Node-only API from typechecking clean here and then failing at the edge.",
+	"exclude": ["*.test.ts"]
 }
