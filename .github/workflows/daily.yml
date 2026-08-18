@@ -2,22 +2,27 @@ name: Daily grocery deal scan
 
 on:
   schedule:
-    # 00:00 UTC = 08:00 Singapore time. ⚠️ **This is a FLOOR on when the shops are
-    # scraped, and that is the point** (user's call, 2026-08-11): a discount read at
-    # 5am may not be the one on the shelf, so the scan must not run before 08:00.
+    # ⚠️⚠️ **This is the BACKSTOP, not the clock.** The clock is ss-worker's Cloudflare
+    # cron: it scans Sheng Siong from 09:00 SGT, commits the file, and fires a
+    # `rescan` dispatch that runs this whole workflow promptly. That is what has
+    # published the page every morning since 2026-08-14.
     #
-    # ⚠️ **The cron is when the run is REQUESTED; the scrape happens when GitHub
-    # dequeues it.** Free public repos are queued by ~3–3¾ h (measured +3h18 to
-    # +3h46 every day 01–04 Aug; the 08-10 run fired at 02:00 and started 04:00), so
-    # the scrape and the digest both land around **11:30 SGT**. "It didn't run" is
-    # almost always "it hasn't run yet".
+    # ⚠️ Until 2026-08-18 this cron ALSO ran, so the full job ran TWICE every morning
+    # — 09:01 from the Worker and ~09:15 from here — and `npm run notify` has no
+    # condition on it, so two identical digests arrived every day for five days.
+    # Nobody had noticed, which is exactly why it is written down here.
     #
-    # ⚠️ **A cron set EARLY to land at 08:00 was tried and reverted the same day.**
-    # `30 20 * * *` usually produced an 08:00 run — but the delay is a queue, not a
-    # promise, and on a quiet night it would fire the scrape at 04:30. Trading a
-    # guaranteed floor for an average arrival time is the wrong way round when the
-    # data has a shelf life.
-    - cron: "0 0 * * *"
+    # 03:30 UTC = 11:30 SGT, deliberately AFTER the Worker's last retry at 11:00.
+    # Firing earlier would race the thing it is meant to cover for. The `guard` job
+    # below then skips this run entirely if the page has already been built today, so
+    # a second digest arrives only on a morning the Worker never managed one — which
+    # is the morning you would want it.
+    #
+    # ⚠️ The old 00:00 UTC value was a FLOOR on scrape time (user, 2026-08-11): a
+    # discount read at 5am may not be the one on the shelf. 11:30 respects that floor
+    # comfortably. A cron set early to *land* at 08:00 was tried and reverted the same
+    # day — the queue delay is a queue, not a promise.
+    - cron: "30 3 * * *"
   # ⚠️ `drill` fires the failure notifier ON PURPOSE. It is the only way to prove
   # that step works: it had been written for five days and never once run, because
   # nothing had failed — the same shape of assumption that made "the cloud scan is
@@ -29,11 +34,15 @@ on:
         description: "Fire the failure notifier deliberately (the run WILL fail — that is the test)"
         type: boolean
         default: false
-  # The page's "Rescan" button, shown only when a shop is missing from the scan.
-  # The usual cause is the laptop being shut at 05:30: Task Scheduler runs the
-  # missed Sheng Siong scan when the laptop next wakes, so by mid-morning fresh
-  # prices ARE in the repo — but nothing rebuilds the 10:00 page, which sits
-  # there FairPrice-only all day. This lets that page rebuild itself on request.
+  # ⚠️ `rescan` is now the PRIMARY trigger, not a repair button. ss-worker fires it
+  # from Singapore the moment its 09:00 scan commits, and that is what publishes the
+  # page every morning. The page's own Rescan button — shown when a shop is missing
+  # from the scan — sends the same event by hand.
+  #
+  # ⚠️ The old note here said the usual cause was the laptop being shut at 05:30 and
+  # Task Scheduler running the missed scan on wake. That has been wrong since
+  # 2026-08-17: every scheduled task on the laptop is disabled and nothing in this
+  # system runs there any more.
   # `newitems` is the Telegram poller asking for a rebuild after it has priced
   # items the user texted and committed data/new-items-latest.json. It runs the
   # same job — the new-items page is written by build-site alongside the other
@@ -64,7 +73,43 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # ⚠️ Asks one question, and only of the scheduled run: has the page already been
+  # built today? Every other trigger — the Worker's rescan, the Rescan button,
+  # new-item pricing, a manual dispatch — is someone asking for a build on purpose
+  # and is never second-guessed.
+  guard:
+    runs-on: ubuntu-latest
+    outputs:
+      needed: ${{ steps.check.outputs.needed }}
+    steps:
+      - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ github.event_name }}" != "schedule" ]; then
+            echo "needed=true" >> "$GITHUB_OUTPUT"
+            echo "Trigger is ${{ github.event_name }} — someone asked for this build. Running."
+            exit 0
+          fi
+          # ⚠️ Today in SINGAPORE, not in UTC. The 09:01 SGT run is 01:01 UTC the same
+          # day, but an evening rebuild would land on the NEXT UTC day and would make
+          # this look as though nothing had run.
+          today=$(TZ=Asia/Singapore date +%F)
+          built=$(gh run list --workflow=daily.yml --status=success --limit 30 \
+            --json createdAt \
+            --jq "[.[] | select((.createdAt | fromdateiso8601 + 28800 | strftime(\"%Y-%m-%d\")) == \"$today\")] | length")
+          echo "Successful builds already today (SGT $today): $built"
+          if [ "${built:-0}" -gt 0 ]; then
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::The page was already built today — the backstop is standing down."
+          else
+            echo "needed=true" >> "$GITHUB_OUTPUT"
+            echo "::warning::Nothing built the page today, so the 11:30 backstop is running it."
+          fi
+
   scan:
+    needs: guard
+    if: needs.guard.outputs.needed == 'true'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -146,9 +191,19 @@ jobs:
 
           You can retry from the Rescan button, or from the Actions tab."
           fi
-          curl -sS --max-time 30 -X POST \
+          resp=$(curl -sS --max-time 30 -X POST \
             "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
             --data-urlencode "chat_id=${TG_CHAT}" \
             --data-urlencode "parse_mode=HTML" \
             --data-urlencode "disable_web_page_preview=true" \
-            --data-urlencode "text=${TEXT}"
+            --data-urlencode "text=${TEXT}")
+          echo "$resp"
+          # ⚠️ **curl exits 0 when Telegram REFUSES the message**, so a green step is
+          # not delivery — only `"ok":true` is. A wrong chat id, a revoked bot token or
+          # broken HTML would each have looked like a working alarm. Seen on the first
+          # drill, 2026-08-18: the step passed, and the proof of delivery was in the
+          # response body rather than in the exit code.
+          case "$resp" in
+            *'"ok":true'*) ;;
+            *) echo "::error::Telegram refused the failure notice — the alarm itself is broken."; exit 1 ;;
+          esac
