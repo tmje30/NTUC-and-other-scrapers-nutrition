@@ -1,6 +1,6 @@
 # Grocery Deal Scraper — System Guide
 
-*Last updated: 2026-08-17 · Covers changes through commit ec5e516*
+*Last updated: 2026-08-18 · Covers changes through commit 9ee1841*
 
 ## What this is
 
@@ -1155,6 +1155,18 @@ without the secret, `400` for a non-`https` URL.
 ⚠️ It goes through the Durable Object for the same reason the scan does: a plain
 Worker runs beside the *caller*, and the caller is usually a US runner.
 
+⚠️⚠️ **A VPN on your laptop breaks Carousell, and this is why.** The route forwards
+the *caller's* country, and Carousell refuses every country except Singapore — so
+with a VPN on a Danish exit, every Carousell page including the homepage came back
+refused (measured 2026-08-18). Turning the VPN off fixed it in the same minute. The
+error now names the VPN rather than printing the refusal page.
+
+⚠️ **The last idea for reaching Carousell from the cloud was tested on 2026-08-18
+and does not work.** A Durable Object alarm has no incoming request, so it should
+carry no country — and it genuinely sheds the caller's, but presents as **US**,
+which is exactly what Carousell refuses. A scheduled handler works the same way, so
+both are closed. The experiment was removed again rather than left in the code.
+
 ⚠️ **It cannot help a US-initiated call reach Carousell** — see the country
 pass-through note under "How it fits together". It works when called from Singapore,
 which is what the laptop does.
@@ -1304,8 +1316,18 @@ under `src/` imports from `extension/`.
 
 ### Tests — `npm test`
 
-**854 offline cases, free and fast** — 821 across 26 suites in `src/tests/`, plus 33
-in `relay/worker.test.mjs`, which `npm test` runs after them. They cover pack-shot
+**1,046 offline cases, free and fast** — 978 across 29 suites in `src/tests/`, plus
+33 in `relay/worker.test.mjs` and 35 in `ss-worker/scan.test.ts`, which `npm test`
+runs after them.
+
+⚠️ **`npm test` also typechecks the Worker now (2026-08-18), and until that day
+nothing ever had.** `ss-worker` asked for Cloudflare's type definitions but the
+package had never been installed, so the check failed on the missing library and
+nobody ran it twice — leaving the one part of the system nobody can watch run as
+also the least checked. There are deliberately **two** configs: the main one types
+`ss-worker` as a Worker and nothing else, while a second adds Node's types for the
+test file alone. Merging them would let a Node-only API pass the check and then fail
+at the edge, which is precisely the mistake worth catching. They cover pack-shot
 selection and its commodity gate, nutrition-panel parsing, macro-reply parsing, name
 derivation and URL-slug repair, the deals page's markup, marketplace and in-text size
 parsing, cooldown length, the concurrent-write merge, the whole-file re-apply against
@@ -1472,6 +1494,9 @@ why `vendor-probe` prints its egress IP and flags datacenter addresses.
 
 ### Runnable commands (npm scripts)
 
+*`npm test` runs everything below the line automatically; `npm run check:worker`
+typechecks the Cloudflare Worker on its own.*
+
 - **`npm run build-site`** — the cloud's main job. Runs `runOnce()`, writes
   `public/index.html`, `public/summary.json` (deal counts), and
   `public/targets.json` (the search-term list runners fetch). Needs `.env`.
@@ -1593,18 +1618,31 @@ why `vendor-probe` prints its egress IP and flags datacenter addresses.
 
 Seven GitHub Actions workflows:
 
-- **`.github/workflows/daily.yml`** — the main job. `cron: "0 0 * * *"` (00:00
-  UTC), plus a manual "Run workflow" button and `repository_dispatch` triggers for
-  `rescan` and `newitems`. Steps: `npm ci` → `npm run build-site` →
-  deploy `public/` to GitHub Pages → `npm run notify`.
-  ⚠️ **The cron is a floor on when the shops are scraped, not a delivery time.**
-  GitHub queues scheduled runs on free public repos by roughly 3–3¾ h — measured at
-  +3h18 to +3h46 on four consecutive days — so a 00:00 UTC cron means the scrape
-  can't happen before **08:00 SGT** and both page and digest land ~11:30 SGT. That
-  floor is the point: a discount read at 5am may not be the one on the shelf. ⚠️ An
-  earlier cron aimed at an 08:00 *arrival* (`30 20 * * *`) was tried and reverted the
-  same day — the delay is a queue, not a promise, and on a quiet night it would scrape
-  at 04:30. And it means **"it didn't run" is almost always "it hasn't run yet"**.
+- **`.github/workflows/daily.yml`** — the main job: `npm ci` → `npm run build-site`
+  → deploy `public/` to GitHub Pages → `npm run notify`.
+  ⚠️⚠️ **What actually starts it every morning is the Worker, not this cron.**
+  `ss-worker` scans Sheng Siong from 09:00 SGT and fires a `rescan`
+  `repository_dispatch` the moment it commits, which runs this whole workflow at
+  about 09:01. The `schedule:` here is a **backstop** for the morning that never
+  happens.
+  ⚠️ **Until 2026-08-18 it was not a backstop, and it cost you a second digest every
+  day.** Both clocks ran the full job — 09:01 from the Worker, ~09:15 from the cron —
+  and the notify step has no condition on it, so two identical digests arrived every
+  morning for five days without anyone noticing. The cron now fires at **11:30 SGT**
+  (`30 3 * * *`), *after* the Worker's last retry at 11:00 so it never races what it
+  covers for, and a **`guard` job** stands the run down when the page has already
+  been built today.
+  ⚠️ The guard counts today's successful runs in **Singapore** time — a UTC
+  comparison would read an evening rebuild as belonging to the next day — and it
+  **fails toward publishing**: if the API call errors the count is empty, treated as
+  zero, and the backstop runs. A spurious duplicate digest is the safe direction; a
+  silently missing page is not. Only the *scheduled* run is second-guessed. The
+  rescan dispatch, the page's Rescan button, new-item pricing and a manual run all
+  build on request as before.
+  ⚠️ **The old floor still holds.** The reason the cron was 00:00 UTC was that a
+  discount read at 5am may not be the one on the shelf; 11:30 SGT respects that
+  comfortably. An earlier cron aimed at an 08:00 *arrival* (`30 20 * * *`) was tried
+  and reverted the same day — the queue delay is a queue, not a promise.
   ⚠️ **It says so in Telegram when it fails outright** (added 2026-08-13). A partial
   failure already spoke for itself — a missing shop becomes a warning in the same
   message as the deals — but a run that died *before* the notify step sent nothing at
@@ -1613,6 +1651,18 @@ Seven GitHub Actions workflows:
   breakages are `setup-node` and `npm ci`, which leave no `node_modules` for a script
   to run in. A notifier that depends on the thing that just failed goes quiet exactly
   when it is needed.
+  ⚠️ **It had never once fired, and now it can be fired on purpose.** Written on
+  2026-08-13, it sat unused because nothing failed — a safety net nobody had pulled.
+  The "Run workflow" button now offers a **`drill`** tick-box: the run fails
+  deliberately, straight after checkout, so the notifier has something to report and
+  the drill costs seconds instead of a full scan and deploy. **The message says it is
+  a drill**, because a test that arrives looking like a real outage teaches you to
+  distrust the alarm. First fired 2026-08-18; Telegram accepted it and it arrived.
+  ⚠️ **The drill immediately found a weakness worth knowing about:** `curl` exits
+  successfully even when Telegram *refuses* a message, so a green step was not proof
+  of delivery — a wrong chat id or a revoked token would have looked like a working
+  alarm indefinitely. The step now checks the reply and fails if the message was not
+  accepted.
 - **`.github/workflows/add-to-list.yml`** — the privileged half of the **Buy**
   button: writes the grocery-list row, records the cooldown, appends to the
   purchase log, comments the result on the issue and closes it. No Telegram ping —
@@ -1877,6 +1927,28 @@ Other requirements:
 
 ## What changed in this update
 
+- **2026-08-18 — you were getting two identical digests every morning, and now you
+  get one.** The daily job had two clocks: the Worker started it at 09:01, and
+  GitHub's own timer started the whole thing again at about 09:15. Nobody had
+  noticed in five days. GitHub's timer is now a genuine backstop — it waits until
+  11:30, checks whether the page has already been built today, and stands down if it
+  has. On a morning the Worker fails, it still publishes.
+- **2026-08-18 — the "nothing is working" alarm has now actually been tested.** It
+  was written on 2026-08-13 and had never sent a single message, because nothing had
+  failed. There is now a tick-box that fires it deliberately, and the message says
+  it is a drill so a test can't be mistaken for a real outage. Testing it found that
+  the alarm could have been broken without anyone knowing — it now checks that
+  Telegram really accepted the message.
+- **2026-08-18 — if your VPN is on, Carousell will not work.** This was always true
+  and nothing said so. Carousell refuses every country except Singapore, and it is
+  your own machine's country that counts, even though the request goes through the
+  Singapore Worker. The error now tells you to turn the VPN off instead of showing a
+  page of technical noise. Everything else — the two supermarkets, Guardian,
+  MyProtein — is unaffected.
+- **2026-08-18 — the last idea for reaching Carousell from the cloud was tried, and
+  it failed.** Worth recording so nobody spends the day on it again: the four-shop
+  gap below is permanent unless the request comes from a machine actually in
+  Singapore.
 - **2026-08-17 — nothing scheduled runs on your laptop any more.** New-item pricing
   was the last job on it; it now runs in the cloud, within 15 minutes of you texting
   something the system has no price for. All four Windows scheduled tasks are off.

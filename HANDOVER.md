@@ -1729,10 +1729,41 @@ which only appears when a shop is **missing from a build that happened**. "No
 build at all" has no button. Its absence on a healthy page is correct behaviour,
 not a bug — that confused the user on 2026-08-05.
 
-## Next session — pick up here (as of 2026-08-15, morning)
+## Next session — pick up here (as of 2026-08-18)
 
 *⚠️ **Everything is committed and pushed.** `main` is clean and in sync with
 origin.*
+
+### Where the Singapore system actually stands — 2026-08-18
+
+**Asked to "finish up the Singapore side", four loose ends were closed and one
+live fault was found. Every open item on the list below is now resolved.**
+
+Proven today, not assumed:
+
+- **The morning scan ran at 09:01 SGT with the laptop off** — the fourth
+  consecutive Cloudflare-cron morning, and the first with nothing at all
+  scheduled on the laptop.
+- **The failure notifier reached Telegram** for the first time (`"ok":true`,
+  message 60), via a new `drill` input. See its section below.
+- **The full Carousell path works from the laptop** end to end: 48 listing
+  anchors → 8 priced products, no browser anywhere in it.
+- **978 + 33 + 35 tests pass**, and `ss-worker` typechecks for the first time.
+
+⚠️ **The one live fault, and it is not in the code: a VPN breaks Carousell.**
+Measured this afternoon on a Danish exit — 403 on every Carousell path,
+homepage included. Details under item 1.
+
+⚠️ **What is still unproven, and cannot be proven without you.** Cloud new-item
+pricing has never actually priced a real item: the workflow deploys, the four
+shops answer from a runner, but no queued item has passed through it since the
+move on 2026-08-17. **Text the bot something that matches no ingredient** and the
+whole path runs — that is the last unexercised thing in the Singapore system.
+
+⚠️ **Denmark is deliberately untouched.** The user asked for the Singapore side
+first. Nothing in `src/core/stores/` speaks Danish yet; what exists is scoping
+plus the `tmp-dk-*` introspection scripts and an uncommitted
+`VENDOR_SLOT_COUNT` bump in the working tree. See [[denmark-expansion]].
 
 ### ✅ THE MORNING CRON IS PROVEN — 2026-08-15, 09:01 SGT
 
@@ -1967,10 +1998,44 @@ re-measure, before scoping work off a comment.**
    Imperva**, where nothing is propagated. Check the target's edge before assuming
    a Worker hop can move it.
 
-   **What would work, if picked up:** a call that originates in Singapore, or one
-   with no client at all — a Worker `scheduled()` handler has no incoming request
-   and so no country to propagate. **Untested.** What will *not* work is any
-   variation on proxying a US-initiated request.
+   ### ⛔ TESTED 2026-08-18, and it does not work — the idea is closed
+
+   The escape route this entry proposed was "a call with no client at all": a
+   Durable Object alarm or a `scheduled()` handler has no incoming request, so
+   there is no country to propagate. It was built (a `via=alarm` route that parks
+   the request, lets the alarm do the fetching, and returns through a promise),
+   deployed, and measured against Carousell's own `/cdn-cgi/trace`:
+
+   | from the same laptop, same minute | `loc` Carousell sees | search page |
+   |---|---|---|
+   | `via=direct`, VPN on a Danish exit | **DK** | 403 challenge |
+   | `via=alarm` | **US** | 403 challenge |
+   | `via=direct`, VPN off | **SG** | **200, 2.29 MB, 48 listings** |
+
+   **The alarm does shed the caller's country — it just does not inherit the
+   colo's either.** An unattributed subrequest presents as `US`, which is exactly
+   the country Carousell already refuses. The `scheduled()` variant is the same
+   mechanism and would present the same way, so both are closed.
+
+   ⚠️ **The bottom row is the control, and it is why the other two mean anything.**
+   Without it, "403 from everywhere" is equally well explained by Carousell having
+   started refusing the Worker outright. Take that measurement before quoting this
+   table.
+
+   The experiment was reverted rather than left in place — ~60 lines of Durable
+   Object machinery that provably does not help is a maintenance cost, and the
+   finding belongs here instead.
+
+   ⚠️⚠️ **What this makes concrete: a VPN on the laptop breaks Carousell.** The
+   laptop path goes through `ss-worker` since 2026-08-17, the Worker forwards the
+   CALLER's country, and Carousell refuses every country but SG — so a Danish exit
+   node is enough to lose the shop entirely, homepage included. It now says so: a
+   challenge 403 names the VPN instead of printing 300 characters of Cloudflare
+   markup (`carousell.ts`, four tests).
+
+   What is left, for anyone picking this up: a call that genuinely originates in
+   Singapore. That is the laptop today. What will *not* work is any variation on
+   proxying a US-initiated request.
 
    ### ✅ What the Carousell work did deliver: no browser, anywhere
 
@@ -2031,29 +2096,79 @@ re-measure, before scoping work off a comment.**
      verdict; the raw fetch is kept only as the fallback diagnosis for when the
      module returns nothing. If probe and module ever disagree, that disagreement is
      itself the finding. **Check the store module before believing any probe.**
-2. **Two undecided questions**, unchanged from the 13th: does the relay keep its
-   15-minute `tgsweep` cron, and does `daily.yml` keep its own `schedule:` as a
-   backstop now that Cloudflare is the clock?
+2. ✅ **DONE 2026-08-18 — both clocks decided, and one of them was quietly costing
+   a duplicate digest every day.**
+
+   **The relay keeps its 15-minute `tgsweep` cron.** It is not a duplicate of
+   anything: it is the only prompt clock for the inbox sweep's one-hour promise,
+   and GitHub's own `schedule:` would turn that hour into four.
+
+   **`daily.yml` keeps its `schedule:` — as a real backstop, which it was not.**
+   `gh run list` shows the full job running TWICE every morning for five days:
+   09:01 from ss-worker's `rescan` dispatch, and ~09:15 from this cron. `npm run
+   notify` has no condition on it, so **two identical digests were arriving every
+   day since ~2026-08-14 and nobody had noticed.**
+
+   It now fires at **11:30 SGT** — after the Worker's last retry at 11:00, so it
+   never races what it covers for — and a `guard` job stands the run down if the
+   page has already been built today, in **Singapore** time (a UTC comparison would
+   read an evening rebuild as the next day). Only the scheduled run is
+   second-guessed; the rescan dispatch, the Rescan button, new-item pricing and a
+   manual dispatch all build on request as before.
+
+   ⚠️ **It fails toward publishing.** If `gh run list` errors, `built` is empty,
+   `${built:-0}` is 0 and the backstop runs — a duplicate digest, never a missing
+   page. The stand-down branch itself first executes at 11:30 SGT on 2026-08-19;
+   the jq behind it was verified against the live API first (it counted 2 today).
 3. ✅ **DONE — `tg-drain.ts`'s obsolete header is corrected.** It had said Sheng
    Siong "challenges datacenter IPs while answering a residential one", wrong twice
    over. The same wrong reason was also carried by `deferPricing` in `tg-inbox.ts`
    and is corrected there too — what still justifies deferring is **latency**, not
    reachability: a four-shop scan takes about a minute and the chat should not wait.
 
-4. **`ss-worker` has no typecheck.** `ss-worker/tsconfig.json` sets
-   `"types": ["@cloudflare/workers-types"]` but that package is **not installed**, so
-   `npx tsc -p ss-worker` has never run — it fails on the missing type library.
-   `npm test` only runs `scan.test.ts`, and `wrangler deploy` does not typecheck. So
-   the Worker is the least-checked code in the project while being the part nobody
-   can watch run. Installing that devDependency would turn it on.
+4. ✅ **DONE 2026-08-18 — the `ss-worker` typecheck runs, and `npm test` runs it.**
+   The missing `@cloudflare/workers-types` is installed. It exposed exactly one
+   error, and it was the config's fault rather than the code's: `scan.test.ts` is
+   Node code (`node:fs`) living in a directory typed as a Worker.
 
-### ⚠️ Two failure notifiers have still never actually fired
+   ⚠️ **Hence two configs, and do not merge them.** The base `tsconfig.json` stays
+   workers-types-only and is what guards the deployed Worker; `tsconfig.test.json`
+   adds `@types/node` for the test alone. Merging them would let a Node API used in
+   `worker.ts` typecheck clean and fail only in production — the exact class of
+   fault this is meant to catch. `npm run check:worker` runs both.
 
-`daily.yml` and `scan-request.yml` both gained an `if: failure()` Telegram step on
-2026-08-13. **Neither has ever sent a message**, because nothing has failed since.
-They are written but unproven — which is the same class of assumption that made
-"the cloud scan is live" wrong. Do not treat them as a safety net until one is seen
-to arrive.
+   The Worker code was already clean, so nothing was fixed. The point is that
+   `npm test` now proves that rather than assuming it — and it earned its keep the
+   same afternoon, catching a slip in the alarm experiment above before deploy.
+
+### ✅ The failure notifier has now actually fired — 2026-08-18
+
+`daily.yml` gained an `if: failure()` Telegram step on 2026-08-13 and had **never
+sent a single message**, because nothing had failed since. Written but unproven is
+the same class of assumption that made "the cloud scan is live" wrong, so it is now
+provable on demand: `workflow_dispatch` takes a **`drill`** input that fails the run
+deliberately, immediately after checkout, so a drill costs seconds instead of a scan
+and a Pages deploy.
+
+Fired twice on 2026-08-18. Telegram answered `{"ok":true,"message_id":60}` and the
+message arrived.
+
+⚠️ **The drill says so in the message.** A test that arrives looking like a real
+outage teaches the reader to distrust the alarm, which costs more than never having
+tested it.
+
+⚠️⚠️ **The first drill exposed a real weakness: `curl` exits 0 when Telegram REFUSES
+the message.** The step went green and the only proof of delivery was in the response
+body. A wrong chat id, a revoked token or broken HTML would each have looked like a
+working alarm forever. It now checks for `"ok":true` and fails the step otherwise —
+so a green notifier step means delivered, which it did not before.
+
+⚠️ **`scan-request.yml` and `price-new-items.yml` still have not fired.** They carry
+the same inline curl block, so the mechanism is proven; their own wiring is not. The
+curl was deliberately NOT refactored into a shared composite action: a local
+composite needs the repo checked out to exist, so a failure in `actions/checkout`
+would take the notifier with it — which is the specific property the inline curl was
+chosen for. Three copies is the cheaper mistake.
 
 ### What shipped today (2026-08-13)
 
