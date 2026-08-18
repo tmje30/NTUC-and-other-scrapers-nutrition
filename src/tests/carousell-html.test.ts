@@ -1,4 +1,4 @@
-import { cardSize, parseCards, parseSearchHtml } from "../core/stores/carousell.js";
+import { cardSize, parseCards, parseSearchHtml, workerHtmlFetcher } from "../core/stores/carousell.js";
 import { check, describe, eq } from "./harness.js";
 
 /**
@@ -90,3 +90,44 @@ eq("no anchors at all yields nothing to parse", parseSearchHtml("<html><body>not
 // than cards with null prices that later read as free.
 const badgesOnly = parseSearchHtml(`<a href="/p/x-1"><span>Buyer Protection</span></a>`);
 eq("a badge-only anchor yields no priced card", parseCards(badgesOnly).filter((c) => c.price).length, 0);
+
+describe("carousell — a 403 must name the country, not show challenge markup");
+
+/**
+ * ⚠️ **The one failure a reader is guaranteed to meet, and it has a switch.**
+ * Carousell refuses every country but SG, and `ss-worker` forwards the CALLER's
+ * country rather than its own, so a VPN on the laptop is enough to break the
+ * whole shop — measured 2026-08-18, Danish exit, 403 on the homepage as well as
+ * on /search/. Before this, that surfaced as 300 characters of Cloudflare
+ * challenge HTML, which reads like a parser fault and sends the reader to the
+ * wrong file.
+ */
+const CHALLENGE = "<html><head><title>Just a moment...</title></head><body><div id=\"challenge-platform\"></div></body></html>";
+
+const realFetch = globalThis.fetch;
+globalThis.fetch = (async () =>
+	new Response(CHALLENGE, { status: 403 })) as unknown as typeof globalThis.fetch;
+let message = "";
+try {
+	await workerHtmlFetcher("https://example.invalid/shop", "secret")("https://www.carousell.sg/search/x");
+} catch (e: any) {
+	message = String(e?.message ?? e);
+} finally {
+	globalThis.fetch = realFetch;
+}
+check("a challenge 403 says a VPN is the likely cause", /vpn/i.test(message));
+check("…and says the country travels from the CALLER", /caller/i.test(message));
+check("…and does not dump the challenge markup instead", !/challenge-platform/.test(message));
+
+/** The contrast: an ordinary non-challenge failure still reports its status and body. */
+globalThis.fetch = (async () =>
+	new Response("host-not-allowed", { status: 403 })) as unknown as typeof globalThis.fetch;
+let plain = "";
+try {
+	await workerHtmlFetcher("https://example.invalid/shop", "secret")("https://www.carousell.sg/search/x");
+} catch (e: any) {
+	plain = String(e?.message ?? e);
+} finally {
+	globalThis.fetch = realFetch;
+}
+check("a non-challenge 403 keeps its own reason", /host-not-allowed/.test(plain));

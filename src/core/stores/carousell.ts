@@ -324,6 +324,23 @@ export function workerHtmlFetcher(workerUrl: string, secret: string): HtmlFetche
 			// a debugging round-trip on 2026-08-17 — the first cloud run failed and the
 			// message said nothing about why.
 			const detail = (await res.text().catch(() => "")).slice(0, 300);
+			// ⚠️ **A Cloudflare challenge is a GEOGRAPHY fault, and it must say so.**
+			// Carousell 403s any caller whose country is not SG, and the Worker cannot
+			// launder that: Cloudflare propagates the ORIGINAL CALLER's country into the
+			// subrequest, so the country Carousell applies its rules to is the one the
+			// machine running this is in. **A VPN is therefore enough to break it** —
+			// measured 2026-08-18, laptop on a Danish exit: every path 403d, homepage
+			// included, from the same SIN colo that serves a Singapore caller a 200.
+			// Without this line the failure surfaces as 300 characters of challenge
+			// markup, which reads like a parser problem rather than a switch to flip.
+			if (res.status === 403 && /just a moment|cf-browser-verification|challenge-platform/i.test(detail)) {
+				throw new Error(
+					"ss-worker /shop → HTTP 403: Carousell served a Cloudflare challenge. " +
+						"It refuses every country except SG, and the Worker forwards the CALLER's country — " +
+						"so this is where the call came from, not the Worker. If a VPN is on, turn it off; " +
+						"from a GitHub runner this is expected and Carousell cannot run there.",
+				);
+			}
 			throw new Error(`ss-worker /shop → HTTP ${res.status}${detail ? `: ${detail}` : ""}`);
 		} finally {
 			clearTimeout(t);
