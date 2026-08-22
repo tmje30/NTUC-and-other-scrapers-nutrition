@@ -56,6 +56,96 @@ from "not stocked". This is the most likely explanation for the finding recorded
 `CLOUD_NEW_ITEM_SHOPS` already does, rather than through the file. Without that, half
 the sweep is theatre: it would run daily, report success, and write nothing.
 
+## ⛔ BLOCKING prerequisite — the price book has no ratchet
+
+**Found 2026-08-18, raised by the user before it was built. The sweep must not go on
+a schedule until this exists.**
+
+### What the code does today
+
+`chooseVendorSlot` (`src/core/vendor-slots.ts:241`):
+
+```ts
+const mine = slots.find((s) => norm(s.vendorName) === norm(capture.vendor));
+if (mine) return { kind: "update", slot: mine };
+```
+
+**If a slot already names that vendor, it is updated unconditionally — there is no
+price comparison at all.** The cheaper-than-the-dearest test further down (line 274)
+lives in the *eviction* branch, and `recordVendorPrice` calls with
+`allowEvict: false`, so a scan never reaches it.
+
+The one comparison that does run, `referencePer100g`, **deliberately excludes the
+slot being written** (`excludeSlotN: slot.n`). It compares against the row's *other*
+vendors, to catch counterfeits, and only raises a review flag at `OUTLIER_FACTOR`
+(**3×**) or more.
+
+### Why that is fine today and not fine daily
+
+Guardian recorded at $8.50/100g. The scan matches a Guardian product at $12.00/100g.
+That is 1.4× — under the 3× flag, never compared against Guardian's own recorded
+price, and the slot names Guardian. **It is written silently, replacing the cheaper
+figure, and nothing says so.**
+
+⚠️ Run by hand that is survivable: you typed the command and you read the output.
+**Unattended and daily it is a ratchet turning the wrong way** — every morning is
+another chance to overwrite a good price with a worse one, and no one is watching.
+
+### The rule to build
+
+Per row × vendor slot:
+
+| the slot | the find | what happens |
+|---|---|---|
+| no price (or no size) recorded | cheapest plausible match | **write** — unchanged from today |
+| price + size recorded | **cheaper** per kg *at that same vendor* | **write** — unchanged from today |
+| price + size recorded | **dearer** per kg | **do not write** · queue to the review page |
+| price + size recorded | **nothing matched at all** | **do not write** · queue to the review page |
+
+⚠️⚠️ **The comparison is against THAT VENDOR'S OWN recorded price, not against the
+row's cheapest.** Each slot is that shop's price for this item; a Guardian find is
+not disqualified by Sheng Siong being cheaper. That is precisely what
+`referencePer100g` does *not* do, which is why it cannot be reused here.
+
+⚠️ **Dearer is queued, never discarded.** A strict "never go up" rule would freeze a
+stale price forever once a shop genuinely raises it or discontinues the pack. The
+review line states both figures — *"Guardian is now $12.00; you have $8.50
+recorded"* — and one tap accepts it. **The default price is never overwritten
+automatically** (user, 2026-08-18).
+
+⚠️ **"Nothing matched" is queued too, for the same reason**, but only where the slot
+already held a price: a row that has simply never matched at that shop must not
+generate a line every morning. The existing `findPendingFor` / pending-TTL
+de-duplication already suppresses a repeat of a question still awaiting an answer,
+and must be relied on here rather than reinvented.
+
+### Where it goes
+
+⚠️ **In `vendor-scan`, not in `chooseVendorSlot`.** That function is shared with the
+deals page's Add and Replace buttons, where "the user is looking at this exact
+product and pressed the button" is the whole authorisation — a person deliberately
+recording a dearer pack must stay able to. The ratchet belongs to the *scan*, which
+has no such warrant.
+
+Two natural seams, both already load-bearing:
+
+- the uncertainty gate in `src/scripts/vendor-scan.ts` (~line 383), which already
+  computes `reviewReasons` **before** the write; and
+- `reviewReasons` in `src/core/vendor-review.ts`, which needs two new kinds —
+  something like `dearer-than-recorded` and `price-gone`.
+
+**The accept path needs nothing new.** `review-ok` in `src/scripts/item-action.ts:667`
+already records a queued pick through `recordVendorPrice`, so a tap on one of these
+writes the dearer price exactly as intended.
+
+### What it also fixes, retrospectively
+
+This is worth having **regardless of whether the sweep is ever scheduled**. Every
+by-hand `--write` run to date has had the same hole in it, and no record exists of
+whether a recorded price has ever been quietly raised. A one-off report — *"which
+slots would today's scan make dearer?"* — would answer that, and is the cheapest way
+to find out whether the price book has already drifted.
+
 ## Shape
 
 A new job in `daily.yml`, `needs: scan`, running **after** the page is deployed and
@@ -124,7 +214,8 @@ stocked".
 ## Open questions for you
 
 1. **After the digest, or in it?** Recommendation: after (see above).
-2. **`--write` on a schedule at all?** Every automated write so far has been a button
+2. ~~**`--write` on a schedule at all?**~~ **Answered 2026-08-18: not until the
+   ratchet above exists.** Beyond that: Every automated write so far has been a button
    you pressed. This is the first thing that would write to Notion daily, unattended.
    A first run with `--write` omitted would show exactly what it *would* have done.
 3. **How loud should it be?** Recommendation: silent on a clean day, one line in the
@@ -136,3 +227,7 @@ Run the sweep **once, in the cloud, report-only**, with Sheng Siong routed throu
 the Worker. That answers the runtime question, proves the Worker survives the
 pattern, and shows how many of the 106 pairs actually resolve — before anything
 writes to Notion or runs on a schedule.
+
+⚠️ **And read that report for the ratchet**: it will show, for the first time, how
+many slots today's scan would make **dearer**. That number decides how urgent the
+blocking prerequisite above really is — and it costs one run to find out.
