@@ -58,7 +58,7 @@ the sweep is theatre: it would run daily, report success, and write nothing.
 
 ## ⛔ BLOCKING prerequisite — the price book has no ratchet
 
-**Found 2026-08-18, raised by the user before it was built. The sweep must not go on
+**Found 2026-08-22, raised by the user before it was built. The sweep must not go on
 a schedule until this exists.**
 
 ### What the code does today
@@ -111,7 +111,7 @@ not disqualified by Sheng Siong being cheaper. That is precisely what
 stale price forever once a shop genuinely raises it or discontinues the pack. The
 review line states both figures — *"Guardian is now $12.00; you have $8.50
 recorded"* — and one tap accepts it. **The default price is never overwritten
-automatically** (user, 2026-08-18).
+automatically** (user, 2026-08-22).
 
 ⚠️ **"Nothing matched" is queued too, for the same reason**, but only where the slot
 already held a price: a row that has simply never matched at that shop must not
@@ -214,7 +214,7 @@ stocked".
 ## Open questions for you
 
 1. **After the digest, or in it?** Recommendation: after (see above).
-2. ~~**`--write` on a schedule at all?**~~ **Answered 2026-08-18: not until the
+2. ~~**`--write` on a schedule at all?**~~ **Answered 2026-08-22: not until the
    ratchet above exists.** Beyond that: Every automated write so far has been a button
    you pressed. This is the first thing that would write to Notion daily, unattended.
    A first run with `--write` omitted would show exactly what it *would* have done.

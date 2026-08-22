@@ -1734,6 +1734,53 @@ not a bug — that confused the user on 2026-08-05.
 *⚠️ **Everything is committed and pushed.** `main` is clean and in sync with
 origin.*
 
+### ⚠️⚠️ THE BACKSTOP WAS DEAD FOR FOUR MORNINGS — found and fixed 2026-08-22
+
+**The guard job shipped on 2026-08-18 failed every scheduled run afterwards:
+08-19, 08-20, 08-21, 08-22.** One line did it:
+
+    failed to determine base repo: fatal: not a git repository
+
+The `guard` job has no `actions/checkout`, so `gh` had no git remote to infer the
+repository from. `--repo ${{ github.repository }}` fixes it and is cheaper than a
+checkout.
+
+⚠️⚠️ **The bug is not the interesting part. What it took down with it is.** `scan`
+was gated on `needs.guard.outputs.needed == 'true'`; a failed job produces no
+output, so `scan` was **skipped** — and the failure notifier lives inside `scan`.
+**Four failed runs produced four silent mornings.** The alarm was disabled by the
+exact fault it existed to report.
+
+Nothing was actually lost: all four 09:01 Worker-triggered runs succeeded, so the
+page and the digest went out each day. What was lost was the safety net, quietly.
+
+**The gate is now the inverse.** Only an explicit `false` — the guard having looked
+and found today's page already built — stands the build down. A guard that errors,
+times out or is skipped now **builds**:
+
+    if: ${{ !cancelled() && needs.guard.outputs.needed != 'false' }}
+
+⚠️ **HANDOVER's own claim that this "fails toward publishing" was wrong when
+written.** Under `bash -e` a failed command substitution kills the step outright,
+so an API blip meant no page rather than a duplicate digest. `|| true` on the `gh`
+call is what makes the original claim true.
+
+### ⚠️ The lesson, and it is the third time this shape has appeared
+
+**I tested the dispatch path and shipped the schedule path untested**, having
+written in this very file that the stand-down branch "first executes at 11:30 SGT
+on 2026-08-19". It executed, it failed, and nothing said so for four days.
+
+A branch that can only be reached once a day at dawn will not be tested by
+waiting for dawn. `daily.yml` now takes a **`test_backstop`** input that makes the
+guard decide exactly as it would on a schedule — and on a day the page is already
+built it sends nothing, so the failing branch costs a dispatch to exercise.
+Verified 2026-08-22: counted 1 build today, stood down, `scan` skipped, silence.
+
+⚠️ Same family as the two above it: **written-but-never-fired is not a safety
+net.** The drill input exists for the notifier for this reason; `test_backstop`
+exists for the guard for this reason.
+
 ### Where the Singapore system actually stands — 2026-08-18
 
 **Asked to "finish up the Singapore side", four loose ends were closed and one

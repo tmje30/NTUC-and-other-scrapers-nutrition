@@ -1634,9 +1634,21 @@ Seven GitHub Actions workflows:
   been built today.
   ⚠️ The guard counts today's successful runs in **Singapore** time — a UTC
   comparison would read an evening rebuild as belonging to the next day — and it
-  **fails toward publishing**: if the API call errors the count is empty, treated as
-  zero, and the backstop runs. A spurious duplicate digest is the safe direction; a
-  silently missing page is not. Only the *scheduled* run is second-guessed. The
+  **fails toward publishing**: only a definite "already built today" stands the run
+  down. If the check errors, times out, or cannot answer, the page is built anyway.
+  A spurious duplicate digest is the safe direction; a silently missing page is not.
+  ⚠️ **That was not true when first shipped, and it cost four mornings** (2026-08-19
+  to 08-22). The check could not work out which repository to ask about, failed, and
+  because the build was gated on it *succeeding and saying yes*, the build was
+  skipped — taking the "something broke" alarm down with it, since that alarm lives
+  in the build. Four failures, no message. Nothing was lost, because the Worker's
+  09:01 trigger published normally every one of those mornings, but the safety net
+  was not there. Fixed 2026-08-22.
+  ⚠️ **There is now a way to test it without waiting for morning.** The "Run
+  workflow" button offers **`test_backstop`**, which makes the check decide exactly
+  as it would at 11:30. On a day the page is already built it sends nothing — so the
+  branch that failed can be exercised on demand, which is how it should have been
+  proven in the first place. Only the *scheduled* run is second-guessed. The
   rescan dispatch, the page's Rescan button, new-item pricing and a manual run all
   build on request as before.
   ⚠️ **The old floor still holds.** The reason the cron was 00:00 UTC was that a
@@ -1927,6 +1939,15 @@ Other requirements:
 
 ## What changed in this update
 
+- **2026-08-22 — the safety net added on the 18th was itself broken, and is now
+  fixed.** The check that decides whether the late-morning backup run is needed
+  could not work out which repository to look at, so it failed every morning from
+  the 19th — and because the backup run was only allowed to proceed if that check
+  succeeded, the backup never ran. Worse, the "something broke" Telegram alarm sits
+  inside that same run, so four failures passed without a word. **Nothing was
+  actually missed** — your page and digest went out at 09:01 every one of those
+  mornings from the Worker, as designed. What was missing was the fallback. It now
+  errs the other way: if the check cannot answer, the page gets built regardless.
 - **2026-08-18 — you were getting two identical digests every morning, and now you
   get one.** The daily job had two clocks: the Worker started it at 09:01, and
   GitHub's own timer started the whole thing again at about 09:15. Nobody had
