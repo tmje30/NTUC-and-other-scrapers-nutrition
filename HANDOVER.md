@@ -1734,6 +1734,45 @@ not a bug — that confused the user on 2026-08-05.
 *⚠️ **Everything is committed and pushed.** `main` is clean and in sync with
 origin.*
 
+### ✅ THE PRICE BOOK HAS A RATCHET — built 2026-08-22
+
+**A scan could silently replace a recorded price with a DEARER one, and did.**
+Nothing compared a shop's find against that shop's own recorded price:
+`chooseVendorSlot` returns `update` the moment a slot names the vendor, and
+`referencePer100g` — the one comparison that ran — deliberately *excludes* the slot
+being written, comparing against the row's other shops and only at 3×.
+
+⚠️⚠️ **Not hypothetical. On the first live run, six NTUC slots would have been made
+dearer that morning** — $24.50/kg → $40.20/kg, $12.52 → $14.89/kg, and four more.
+Every by-hand `--write` before 2026-08-22 had the same hole.
+
+`dearerThanRecorded` (`src/core/vendor-review.ts`) now queues a dearer find to the
+review page instead of writing it. Cheaper passes through; an equal price still
+refreshes the URL and item name; **an empty slot is untouched** — 36 of the 120
+tagged pairs have no price at all, and gating those would stop the book ever
+filling, which is the circularity `readScanRows` exists to break.
+
+⚠️ **It lives in `vendor-scan`, NOT in `chooseVendorSlot`**, which is shared with the
+deals page's Add and Replace buttons. Someone looking at a product may deliberately
+record a dearer pack; a scan has no such warrant.
+
+⚠️ **The comparison is `pricePer1000` (price ÷ size), not `packWeightOf`.** The
+latter resolves a By-Unit pack to grams and can take its answer from the *item name*,
+so two packs could be measured on different bases and ranked meaninglessly.
+
+⚠️ **What the first live run corrected, and it is the reusable bit:** a wholemeal loaf
+recorded at `$2.40 / 20 pcs` matched at `$2.40 / 17 pcs` — same money, three fewer
+slices, correctly dearer — but both render as `$4.00/kg`, since that figure derives
+from the row's declared 600g either way. The card read *"$4.00/kg → $4.00/kg —
+DEARER"*. **The decision was right and its evidence was invisible**, which is its own
+kind of bug: an unanswerable card teaches the reader to distrust the queue. Cards now
+quote the pack on both sides.
+
+⛔ **Deliberately NOT built: "nothing matched at all".** It was scoped, and building it
+means a review card with no product to accept — a second pending kind, a second accept
+path, a second thing to render. Recorded in the scope doc; those rows behave as they
+always have.
+
 ### ⚠️⚠️ THE BACKSTOP WAS DEAD FOR FOUR MORNINGS — found and fixed 2026-08-22
 
 **The guard job shipped on 2026-08-18 failed every scheduled run afterwards:

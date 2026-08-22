@@ -1939,6 +1939,17 @@ Other requirements:
 
 ## What changed in this update
 
+- **2026-08-22 — a price check can no longer quietly make one of your prices worse.**
+  When the scanner looked up a shop you had already recorded a price for, it wrote
+  whatever it found — including a *higher* price — over the one you had. Nothing
+  compared the two. It now only writes a price that is **cheaper than what that same
+  shop already has**; anything dearer goes to the review page with both figures side
+  by side, and **your recorded price is never replaced unless you tap to accept it**.
+  Checking the 50 NTUC rows the day this was built, **six of them would have been
+  made more expensive that morning** — one from $24.50/kg to $40.20/kg.
+  ⚠️ Worth knowing: this hole existed for every run before the 22nd, so a recorded
+  price may already have drifted upward. Running the check in report-only mode now
+  lists exactly which ones, and writes nothing.
 - **2026-08-22 — the safety net added on the 18th was itself broken, and is now
   fixed.** The check that decides whether the late-morning backup run is needed
   could not work out which repository to look at, so it failed every morning from

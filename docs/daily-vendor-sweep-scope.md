@@ -56,10 +56,16 @@ from "not stocked". This is the most likely explanation for the finding recorded
 `CLOUD_NEW_ITEM_SHOPS` already does, rather than through the file. Without that, half
 the sweep is theatre: it would run daily, report success, and write nothing.
 
-## ⛔ BLOCKING prerequisite — the price book has no ratchet
+## ✅ BUILT 2026-08-22 — the ratchet (was a blocking prerequisite)
 
-**Found 2026-08-22, raised by the user before it was built. The sweep must not go on
-a schedule until this exists.**
+**Found 2026-08-22, raised by the user before it was built, and shipped the same
+day** — `dearerThanRecorded` in `src/core/vendor-review.ts`, wired into
+`vendor-scan` ahead of the write, 15 tests.
+
+⚠️⚠️ **It was not hypothetical. Measured against live NTUC data the day it was
+built: six slots would have been made dearer that morning**, among them
+**$24.50/kg → $40.20/kg** and $12.52 → $14.89/kg. Every by-hand `--write` run
+before this had the same hole.
 
 ### What the code does today
 
@@ -100,7 +106,7 @@ Per row × vendor slot:
 | no price (or no size) recorded | cheapest plausible match | **write** — unchanged from today |
 | price + size recorded | **cheaper** per kg *at that same vendor* | **write** — unchanged from today |
 | price + size recorded | **dearer** per kg | **do not write** · queue to the review page |
-| price + size recorded | **nothing matched at all** | **do not write** · queue to the review page |
+| price + size recorded | **nothing matched at all** | **not built — see below** |
 
 ⚠️⚠️ **The comparison is against THAT VENDOR'S OWN recorded price, not against the
 row's cheapest.** Each slot is that shop's price for this item; a Guardian find is
@@ -113,13 +119,24 @@ review line states both figures — *"Guardian is now $12.00; you have $8.50
 recorded"* — and one tap accepts it. **The default price is never overwritten
 automatically** (user, 2026-08-22).
 
-⚠️ **"Nothing matched" is queued too, for the same reason**, but only where the slot
-already held a price: a row that has simply never matched at that shop must not
-generate a line every morning. The existing `findPendingFor` / pending-TTL
-de-duplication already suppresses a repeat of a question still awaiting an answer,
-and must be relied on here rather than reinvented.
+⛔ **"Nothing matched at all" was scoped here and deliberately NOT built.**
+`PendingReview` requires a real product — price, size, URL, item name — because a
+review card exists to be *accepted*, and accepting writes that product. A "the
+price is gone" entry has nothing to accept and nothing to write, so it would need a
+second kind of card, a second accept path, and a second thing for the page to
+render. That is a feature, not a clause.
 
-### Where it goes
+What it would take, if wanted later: a `kind: "gone"` pending with no product, a
+review card whose only action is "stop asking", and de-duplication so a row that has
+simply never matched at that shop does not generate a line every morning — the
+existing `findPendingFor` / pending-TTL machinery already suppresses repeats of a
+question still awaiting an answer and should be reused rather than reinvented.
+
+**Today those rows behave as they always have**: the scan reports "no candidate" in
+its console output and writes nothing. Nothing is lost — the recorded price stays —
+but you are not told, which is the gap.
+
+### Where it went
 
 ⚠️ **In `vendor-scan`, not in `chooseVendorSlot`.** That function is shared with the
 deals page's Add and Replace buttons, where "the user is looking at this exact
@@ -134,17 +151,27 @@ Two natural seams, both already load-bearing:
 - `reviewReasons` in `src/core/vendor-review.ts`, which needs two new kinds —
   something like `dearer-than-recorded` and `price-gone`.
 
-**The accept path needs nothing new.** `review-ok` in `src/scripts/item-action.ts:667`
+**The accept path needed nothing new.** `review-ok` in `src/scripts/item-action.ts:667`
 already records a queued pick through `recordVendorPrice`, so a tap on one of these
 writes the dearer price exactly as intended.
 
-### What it also fixes, retrospectively
+⚠️ **One thing the first live run changed: the message quotes the PACK, not just the
+per-kilo figure.** A wholemeal loaf recorded at `$2.40 / 20 pcs` matched at
+`$2.40 / 17 pcs` — the same money for three fewer slices, correctly dearer per
+slice — but both sides render as `$4.00/kg`, because that figure is derived from the
+row's declared 600g either way. The card read *"$4.00/kg → $4.00/kg — DEARER"*: the
+decision was right and the evidence for it was invisible. Cards now read
+`$2.40 / 20 pcs = $120.00/1000 pcs → $2.40 / 17 pcs = $141.18/1000 pcs`.
 
-This is worth having **regardless of whether the sweep is ever scheduled**. Every
-by-hand `--write` run to date has had the same hole in it, and no record exists of
-whether a recorded price has ever been quietly raised. A one-off report — *"which
-slots would today's scan make dearer?"* — would answer that, and is the cheapest way
-to find out whether the price book has already drifted.
+### What it also fixed, retrospectively
+
+Worth having **regardless of whether the sweep is ever scheduled**, and the first
+run proved it: `npm run vendor-scan -- --only ntuc` (report-only, writes nothing)
+now names every slot today's scan would make dearer. Six, on the first look.
+
+⚠️ **That report is the honest answer to "has the price book already drifted?"** —
+run it per shop before trusting any recorded figure. It costs nothing and writes
+nothing.
 
 ## Shape
 
