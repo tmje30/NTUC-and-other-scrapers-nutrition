@@ -1,6 +1,7 @@
 import { check, describe, eq } from "./harness.js";
 import {
 	BULK_GRAMS,
+	dearerThanRecorded,
 	EMPTY_REVIEW,
 	REJECT_REASONS,
 	findPendingFor,
@@ -363,3 +364,93 @@ check(
 		"v",
 	).maxGrams === null,
 );
+
+
+describe("the price-book ratchet — a scan must never quietly make a price worse");
+
+/**
+ * ⚠️ **The case that existed unguarded until 2026-08-22, and cost nothing to hit.**
+ * Guardian is recorded at $8.50/kg; the scan matches a Guardian product at $12.00/kg.
+ * That is 1.4× — under `OUTLIER_FACTOR`, never compared against Guardian's OWN price
+ * by `referencePer100g`, and `chooseVendorSlot` updates any slot that names the shop.
+ * It was written silently, replacing the cheaper figure.
+ */
+const dearer = dearerThanRecorded({
+	vendor: "Guardian",
+	recordedPer1000: 8.5,
+	foundPer1000: 12,
+	recordedText: "$0.85 / 100g",
+	foundText: "$1.20 / 100g",
+	perWord: "kg",
+});
+check("a dearer find is flagged rather than written", dearer !== null);
+eq("…and it is the ratchet's own kind", dearer?.kind, "dearer-than-recorded");
+check("…the note names the shop", /Guardian/.test(dearer?.note ?? ""));
+check("…and quotes BOTH figures, so the card can be judged", /\$8\.50\/kg/.test(dearer?.note ?? "") && /\$12\.00\/kg/.test(dearer?.note ?? ""));
+check("…and says plainly that nothing was written", /not written/i.test(dearer?.note ?? ""));
+check("…and the pack behind each of them", /\$0\.85 \/ 100g/.test(dearer?.note ?? ""));
+
+/**
+ * ⚠️⚠️ **The case the first live run produced, and the reason the note quotes packs.**
+ * A wholemeal loaf recorded at `$2.40 / 20 pcs` matched at `$2.40 / 17 pcs` — same
+ * money, three fewer slices, correctly dearer per slice. Both sides render as
+ * `$4.00/kg` because the per-kilo figure is derived from the row's declared 600g
+ * either way, so a card quoting only that read "$4.00/kg → $4.00/kg — DEARER" and
+ * could not be answered.
+ */
+const loaf = dearerThanRecorded({
+	vendor: "NTUC",
+	recordedPer1000: 120,
+	foundPer1000: 141.18,
+	recordedText: "$2.40 / 20 pcs",
+	foundText: "$2.40 / 17 pcs",
+	perWord: "1000 pcs",
+});
+check("a card whose per-unit figures coincide still shows what changed", /20 pcs/.test(loaf?.note ?? "") && /17 pcs/.test(loaf?.note ?? ""));
+check("…and names the units it is comparing in", /1000 pcs/.test(loaf?.note ?? ""));
+
+/** The ordinary case: cheaper is what the scan is FOR, and must not be interrupted. */
+eq(
+	"a cheaper find passes straight through",
+	dearerThanRecorded({ vendor: "Guardian", recordedPer1000: 8.5, foundPer1000: 6.2 }),
+	null,
+);
+
+/**
+ * ⚠️ Equal is not a regression, and re-writing it refreshes a URL and item name that
+ * may have gone stale. Asking about it would be a daily question with no decision in it.
+ */
+eq(
+	"an identical price is not queried",
+	dearerThanRecorded({ vendor: "NTUC", recordedPer1000: 4, foundPer1000: 4 }),
+	null,
+);
+
+/**
+ * ⚠️⚠️ **An empty slot is the whole point of the scan.** 36 of the 120 tagged
+ * row×vendor pairs had no price at all when this was built (measured 2026-08-22);
+ * gating those would stop the price book ever filling — the exact circularity
+ * `readScanRows` was written to break.
+ */
+eq(
+	"a slot with no price recorded is never blocked",
+	dearerThanRecorded({ vendor: "NTUC", recordedPer1000: null, foundPer1000: 4 }),
+	null,
+);
+eq(
+	"…nor is a candidate whose own per-unit price cannot be worked out",
+	dearerThanRecorded({ vendor: "NTUC", recordedPer1000: 4, foundPer1000: null }),
+	null,
+);
+
+/**
+ * ⚠️ The labels are cosmetic and `perLabel` returns "" when it cannot express the
+ * figure. The note must still carry two comparable numbers rather than reading
+ * "( → )", which would put an unanswerable card in front of the user.
+ */
+const unlabelled = dearerThanRecorded({ vendor: "Iherb", recordedPer1000: 10, foundPer1000: 25 });
+check("a missing label falls back to a real number", /10\.00/.test(unlabelled?.note ?? "") && /25\.00/.test(unlabelled?.note ?? ""));
+
+/** The data is kept as numbers too — the note is for a human, these are for a later report. */
+eq("the recorded figure is kept", unlabelled?.kind === "dearer-than-recorded" ? unlabelled.recordedPer1000 : -1, 10);
+eq("the found figure is kept", unlabelled?.kind === "dearer-than-recorded" ? unlabelled.foundPer1000 : -1, 25);

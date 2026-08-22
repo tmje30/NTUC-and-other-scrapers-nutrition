@@ -42,7 +42,94 @@ export type ReviewReason =
 	| { kind: "floor-rescue"; note: string }
 	| { kind: "auto-handle"; note: string }
 	| { kind: "undercut"; rejected: number; note: string }
-	| { kind: "outlier"; factor: number; note: string };
+	| { kind: "outlier"; factor: number; note: string }
+	/**
+	 * ⚠️ **The price-book ratchet.** This shop already has a price recorded on this row
+	 * and today's find is DEARER, so it is queued instead of written. See
+	 * `dearerThanRecorded`.
+	 */
+	| { kind: "dearer-than-recorded"; recordedPer1000: number; foundPer1000: number; note: string };
+
+/**
+ * **The ratchet: never let a scan quietly make a recorded price worse.**
+ *
+ * ⚠️⚠️ **Nothing enforced this until 2026-08-22, and the hole was total.**
+ * `chooseVendorSlot` returns `update` the moment a slot names the shop being written,
+ * with no price comparison at all — the cheaper-than-the-dearest test beside it lives
+ * in the *eviction* branch, which `recordVendorPrice` disables outright. And
+ * `referencePer100g`, the one comparison that did run, deliberately EXCLUDES the slot
+ * being written: it guards against counterfeits by comparing with the row's *other*
+ * shops, and only speaks up at 3×. So Guardian at $8.50 could become Guardian at
+ * $12.00 in silence — 1.4× is under the flag, and the slot names Guardian.
+ *
+ * Run by hand that was survivable, because someone read the output. On a daily
+ * unattended sweep it is a ratchet turning the wrong way, every morning.
+ *
+ * ⚠️ **A dearer find is QUEUED, never discarded** (user's call, 2026-08-22). A strict
+ * "never go up" rule would freeze a stale price forever the day a shop genuinely
+ * raises it or drops the pack. The review card states both figures and one tap
+ * accepts it — but **the recorded price is never replaced automatically**.
+ *
+ * ⚠️ **The comparison is against THIS shop's own recorded price**, not the row's
+ * cheapest. Each slot is one shop's price for this item; a Guardian find is not
+ * disqualified by Sheng Siong being cheaper. That is exactly what `referencePer100g`
+ * does *not* do, which is why it cannot be reused here.
+ *
+ * ⚠️ **Both figures come from `pricePer1000` — `price / size * 1000`, the same
+ * expression Notion's own `Cheapest Price/Kg` formula uses.** Not `packWeightOf`:
+ * that resolves a By-Unit pack to grams and can take its answer from the *item name*,
+ * so a recorded pack and a candidate pack could be measured on different bases and
+ * ranked against each other meaninglessly. Dividing by the stored `Size` is
+ * like-for-like within a row by construction, and on a By-Unit row it is proportional
+ * to the per-kilo figure anyway (grams = size × grams-per-unit), so the ordering is
+ * identical where both exist.
+ *
+ * Returns `null` — meaning "nothing to say, carry on and write" — when the slot holds
+ * no comparable price yet. An empty slot is the case this feature does not touch.
+ */
+export function dearerThanRecorded(args: {
+	/** The shop, named as the `Vendor n` option, for the message. */
+	vendor: string;
+	/** `pricePer1000` of what is already in the slot; null when there is nothing to protect. */
+	recordedPer1000: number | null;
+	/** `pricePer1000` of the candidate about to be written. */
+	foundPer1000: number | null;
+	/** What the slot literally holds, e.g. `$2.40 / 20 pcs`. */
+	recordedText?: string;
+	/** What would replace it, same shape. */
+	foundText?: string;
+	/** What `pricePer1000` means on this row: `kg`, `L`, or `1000 pcs`. */
+	perWord?: string;
+}): ReviewReason | null {
+	const { recordedPer1000, foundPer1000 } = args;
+	if (recordedPer1000 == null || foundPer1000 == null) return null;
+	// ⚠️ Strictly dearer. An equal price is not a regression, and re-writing it
+	// refreshes the URL and item name on a slot that may have gone stale.
+	if (foundPer1000 <= recordedPer1000) return null;
+
+	/**
+	 * ⚠️⚠️ **The message quotes PRICE AND SIZE, not just the per-kilo figure, and the
+	 * first live run is why.** A wholemeal loaf recorded at `$2.40 / 20 pcs` was matched
+	 * at `$2.40 / 17 pcs` — the same money for three fewer slices, correctly dearer per
+	 * slice — but BOTH sides render as `$4.00/kg`, because `perLabel` derives grams from
+	 * the row's declared 600g in either case. The card read "$4.00/kg → $4.00/kg —
+	 * DEARER", which is unanswerable: the decision was right and the evidence for it
+	 * was invisible. Quoting what actually changed makes every card self-explaining.
+	 */
+	const per = args.perWord ?? "1000";
+	const side = (text: string | undefined, per1000: number) =>
+		`${text && text.trim() ? `${text} = ` : ""}$${per1000.toFixed(2)}/${per}`;
+
+	return {
+		kind: "dearer-than-recorded",
+		recordedPer1000,
+		foundPer1000,
+		note:
+			`DEARER than the ${args.vendor} price already recorded: ` +
+			`${side(args.recordedText, recordedPer1000)} → ${side(args.foundText, foundPer1000)}. ` +
+			`Not written — accept only if the old price is gone.`,
+	};
+}
 
 /**
  * A pack big enough that "cheapest per kilo" stops describing a shopping decision.
