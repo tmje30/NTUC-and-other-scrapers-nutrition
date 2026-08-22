@@ -34,6 +34,10 @@ on:
         description: "Fire the failure notifier deliberately (the run WILL fail — that is the test)"
         type: boolean
         default: false
+      test_backstop:
+        description: "Make the guard decide as if this were the 11:30 backstop (sends nothing if the page is already built)"
+        type: boolean
+        default: false
   # ⚠️ `rescan` is now the PRIMARY trigger, not a repair button. ss-worker fires it
   # from Singapore the moment its 09:00 scan commits, and that is what publishes the
   # page every morning. The page's own Rescan button — shown when a shop is missing
@@ -86,7 +90,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if [ "${{ github.event_name }}" != "schedule" ]; then
+          if [ "${{ github.event_name }}" != "schedule" ] && [ "${{ inputs.test_backstop }}" != "true" ]; then
             echo "needed=true" >> "$GITHUB_OUTPUT"
             echo "Trigger is ${{ github.event_name }} — someone asked for this build. Running."
             exit 0
@@ -95,21 +99,43 @@ jobs:
           # day, but an evening rebuild would land on the NEXT UTC day and would make
           # this look as though nothing had run.
           today=$(TZ=Asia/Singapore date +%F)
-          built=$(gh run list --workflow=daily.yml --status=success --limit 30 \
-            --json createdAt \
-            --jq "[.[] | select((.createdAt | fromdateiso8601 + 28800 | strftime(\"%Y-%m-%d\")) == \"$today\")] | length")
-          echo "Successful builds already today (SGT $today): $built"
-          if [ "${built:-0}" -gt 0 ]; then
+          # ⚠️⚠️ **`--repo` is load-bearing, and leaving it out broke this for four
+          # mornings (2026-08-19 to 08-22).** This job has no `actions/checkout`, so
+          # `gh` has no git remote to infer the repository from and dies with
+          # "failed to determine base repo" — which failed the job, skipped `scan`,
+          # and took the failure notifier down with it because that step lives in
+          # `scan`. Four silent failures. Passing the repo explicitly is cheaper than
+          # a checkout and removes the inference entirely.
+          #
+          # ⚠️ `|| true` is the other half: the claim in HANDOVER was that this fails
+          # TOWARD publishing, and it did not. Under `bash -e` a failed command
+          # substitution kills the step, so an API blip meant no page at all rather
+          # than a duplicate digest. Now an empty result falls through to 0 below and
+          # the backstop runs.
+          built=$(gh run list --repo "${{ github.repository }}" --workflow=daily.yml \
+            --status=success --limit 30 --json createdAt \
+            --jq "[.[] | select((.createdAt | fromdateiso8601 + 28800 | strftime(\"%Y-%m-%d\")) == \"$today\")] | length" || true)
+          echo "Successful builds already today (SGT $today): ${built:-<could not tell>}"
+          if [ "${built:-0}" -gt 0 ] 2>/dev/null; then
             echo "needed=false" >> "$GITHUB_OUTPUT"
             echo "::notice::The page was already built today — the backstop is standing down."
           else
             echo "needed=true" >> "$GITHUB_OUTPUT"
-            echo "::warning::Nothing built the page today, so the 11:30 backstop is running it."
+            echo "::warning::Nothing built the page today (or the check could not tell), so the backstop is running it."
           fi
-
   scan:
     needs: guard
-    if: needs.guard.outputs.needed == 'true'
+    # ⚠️⚠️ **Fail OPEN, and note what this is not: it is not `== 'true'`.** A guard
+    # that errors produces no output at all, and the old condition read that as
+    # "don't build" — so between 2026-08-19 and 08-22 a one-line bug in the guard
+    # silently stopped the backstop four mornings running, AND suppressed the
+    # failure notifier, which lives in this job and therefore never ran.
+    #
+    # Only an explicit `false` — the guard having actually looked and found today's
+    # page already built — stands this down. Anything else builds. A duplicate
+    # digest is a nuisance; a missing page nobody is told about is the failure this
+    # whole workflow exists to prevent.
+    if: ${{ !cancelled() && needs.guard.outputs.needed != 'false' }}
     runs-on: ubuntu-latest
     environment:
       name: github-pages
