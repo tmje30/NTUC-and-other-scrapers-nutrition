@@ -1734,7 +1734,15 @@ not a bug — that confused the user on 2026-08-05.
 *⚠️ **Everything is committed and pushed.** `main` is clean and in sync with
 origin.*
 
-### ✅ THE PRICE BOOK HAS A RATCHET — built 2026-08-22
+### ✅ A SCAN CAN NO LONGER RAISE A RECORDED PRICE — built 2026-08-22
+
+**The cheaper-only rule: a scan may lower a recorded price on its own, but never
+raise one — that needs a tap.**
+
+⚠️ *Called "the ratchet" while it was being built; that name is retired. It was used
+for both the fault ("a ratchet turning the wrong way") and the fix, so the same word
+argued both sides of the page. The behaviour is one-directional either way — which
+direction is the entire content of the rule, so the name now says it.*
 
 **A scan could silently replace a recorded price with a DEARER one, and did.**
 Nothing compared a shop's find against that shop's own recorded price:

@@ -56,11 +56,19 @@ from "not stocked". This is the most likely explanation for the finding recorded
 `CLOUD_NEW_ITEM_SHOPS` already does, rather than through the file. Without that, half
 the sweep is theatre: it would run daily, report success, and write nothing.
 
-## ✅ BUILT 2026-08-22 — the ratchet (was a blocking prerequisite)
+## ✅ BUILT 2026-08-22 — the cheaper-only rule (was a blocking prerequisite)
 
 **Found 2026-08-22, raised by the user before it was built, and shipped the same
 day** — `dearerThanRecorded` in `src/core/vendor-review.ts`, wired into
 `vendor-scan` ahead of the write, 15 tests.
+
+**In one sentence: a scan may lower a recorded price on its own, but it may never
+raise one — that needs a tap.**
+
+⚠️ *This was called "the ratchet" while it was being built, and that name is now
+retired. It was used for both the fault ("a ratchet turning the wrong way") and the
+fix, which meant a reader met the same word arguing both sides. The rule is
+one-directional either way; saying which direction is the whole point.*
 
 ⚠️⚠️ **It was not hypothetical. Measured against live NTUC data the day it was
 built: six slots would have been made dearer that morning**, among them
@@ -94,8 +102,9 @@ price, and the slot names Guardian. **It is written silently, replacing the chea
 figure, and nothing says so.**
 
 ⚠️ Run by hand that is survivable: you typed the command and you read the output.
-**Unattended and daily it is a ratchet turning the wrong way** — every morning is
-another chance to overwrite a good price with a worse one, and no one is watching.
+**Unattended and daily, recorded prices could only drift upward** — every morning is
+another chance to overwrite a good price with a worse one, nothing ever pushes them
+back down, and no one is watching.
 
 ### The rule to build
 
@@ -141,8 +150,8 @@ but you are not told, which is the gap.
 ⚠️ **In `vendor-scan`, not in `chooseVendorSlot`.** That function is shared with the
 deals page's Add and Replace buttons, where "the user is looking at this exact
 product and pressed the button" is the whole authorisation — a person deliberately
-recording a dearer pack must stay able to. The ratchet belongs to the *scan*, which
-has no such warrant.
+recording a dearer pack must stay able to. The rule belongs to the *scan*, which has
+no such warrant.
 
 Two natural seams, both already load-bearing:
 
@@ -242,7 +251,7 @@ stocked".
 
 1. **After the digest, or in it?** Recommendation: after (see above).
 2. ~~**`--write` on a schedule at all?**~~ **Answered 2026-08-22: not until the
-   ratchet above exists.** Beyond that: Every automated write so far has been a button
+   cheaper-only rule above exists.** Beyond that: Every automated write so far has been a button
    you pressed. This is the first thing that would write to Notion daily, unattended.
    A first run with `--write` omitted would show exactly what it *would* have done.
 3. **How loud should it be?** Recommendation: silent on a clean day, one line in the
@@ -255,6 +264,6 @@ the Worker. That answers the runtime question, proves the Worker survives the
 pattern, and shows how many of the 106 pairs actually resolve — before anything
 writes to Notion or runs on a schedule.
 
-⚠️ **And read that report for the ratchet**: it will show, for the first time, how
+⚠️ **And read that report for upward drift**: it will show, for the first time, how
 many slots today's scan would make **dearer**. That number decides how urgent the
 blocking prerequisite above really is — and it costs one run to find out.

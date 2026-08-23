@@ -366,7 +366,7 @@ check(
 );
 
 
-describe("the price-book ratchet — a scan must never quietly make a price worse");
+describe("the cheaper-only rule — a scan may lower a recorded price, never raise one");
 
 /**
  * ⚠️ **The case that existed unguarded until 2026-08-22, and cost nothing to hit.**
@@ -384,7 +384,7 @@ const dearer = dearerThanRecorded({
 	perWord: "kg",
 });
 check("a dearer find is flagged rather than written", dearer !== null);
-eq("…and it is the ratchet's own kind", dearer?.kind, "dearer-than-recorded");
+eq("…and it carries its own reason kind", dearer?.kind, "dearer-than-recorded");
 check("…the note names the shop", /Guardian/.test(dearer?.note ?? ""));
 check("…and quotes BOTH figures, so the card can be judged", /\$8\.50\/kg/.test(dearer?.note ?? "") && /\$12\.00\/kg/.test(dearer?.note ?? ""));
 check("…and says plainly that nothing was written", /not written/i.test(dearer?.note ?? ""));

@@ -44,14 +44,17 @@ export type ReviewReason =
 	| { kind: "undercut"; rejected: number; note: string }
 	| { kind: "outlier"; factor: number; note: string }
 	/**
-	 * ⚠️ **The price-book ratchet.** This shop already has a price recorded on this row
+	 * ⚠️ **The cheaper-only rule.** This shop already has a price recorded on this row
 	 * and today's find is DEARER, so it is queued instead of written. See
 	 * `dearerThanRecorded`.
 	 */
 	| { kind: "dearer-than-recorded"; recordedPer1000: number; foundPer1000: number; note: string };
 
 /**
- * **The ratchet: never let a scan quietly make a recorded price worse.**
+ * **The cheaper-only rule: a scan may lower a recorded price, never raise one.**
+ *
+ * A find cheaper than what this shop already has is written as before. A dearer one is
+ * queued for the user instead — one direction automatic, the other by hand.
  *
  * ⚠️⚠️ **Nothing enforced this until 2026-08-22, and the hole was total.**
  * `chooseVendorSlot` returns `update` the moment a slot names the shop being written,
@@ -63,7 +66,8 @@ export type ReviewReason =
  * $12.00 in silence — 1.4× is under the flag, and the slot names Guardian.
  *
  * Run by hand that was survivable, because someone read the output. On a daily
- * unattended sweep it is a ratchet turning the wrong way, every morning.
+ * unattended sweep, recorded prices could only drift upward: every morning another
+ * chance to overwrite a good price with a worse one, and nothing to push them back.
  *
  * ⚠️ **A dearer find is QUEUED, never discarded** (user's call, 2026-08-22). A strict
  * "never go up" rule would freeze a stale price forever the day a shop genuinely
