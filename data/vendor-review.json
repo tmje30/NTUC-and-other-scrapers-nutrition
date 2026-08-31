@@ -1,7 +1,74 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-12T00:52:05.250Z",
-  "pending": [],
+  "updatedAt": "2026-08-31T06:19:01.132Z",
+  "pending": [
+    {
+      "token": "2ak4ok",
+      "ingredientId": "37369a18-4fe7-8053-a67d-f6b383447d7b",
+      "ingredientName": "Whey [Titan]",
+      "key": "whei",
+      "unitType": "By Gram",
+      "vendor": "Carousell",
+      "slotN": 2,
+      "brand": "titan",
+      "priceSgd": 60,
+      "size": 2100,
+      "url": "https://www.carousell.sg/p/titan-whey-protein-2-1kg-70-serving-1208280679/",
+      "itemName": "titan whey protein 2.1kg 70 serving",
+      "perLabel": "$28.57/kg",
+      "reasons": [
+        {
+          "kind": "size-range",
+          "note": "the pack size is a RANGE and was read at its top — the real pack may be smaller (and dearer per kg)"
+        }
+      ],
+      "askedAt": "2026-08-31T06:17:54.959Z"
+    },
+    {
+      "token": "33un1j",
+      "ingredientId": "37369a18-4fe7-8082-b382-e651a025c832",
+      "ingredientName": "whey [Atlas]",
+      "key": "whei",
+      "unitType": "By Gram",
+      "vendor": "Carousell",
+      "slotN": 2,
+      "brand": "atlas",
+      "priceSgd": 50,
+      "size": 2100,
+      "url": "https://www.carousell.sg/p/valiant-advance-atlas-whey-protein-2-1kg-rich-chocolate-1456638432/",
+      "itemName": "valiant advance atlas whey protein 2.1kg rich chocolate",
+      "perLabel": "$23.81/kg",
+      "reasons": [
+        {
+          "kind": "size-range",
+          "note": "the pack size is a RANGE and was read at its top — the real pack may be smaller (and dearer per kg)"
+        }
+      ],
+      "askedAt": "2026-08-31T06:17:59.806Z"
+    },
+    {
+      "token": "23mzyz",
+      "ingredientId": "37369a18-4fe7-80c0-bae0-f52639895b21",
+      "ingredientName": "whey, essential  [MyProtein]",
+      "key": "whei",
+      "unitType": "By Gram",
+      "vendor": "Carousell",
+      "slotN": 2,
+      "brand": "myprotein",
+      "priceSgd": 80,
+      "size": 2500,
+      "url": "https://www.carousell.sg/p/myprotein-meal-replacement-whey-2-5kg-salted-caramel-1456566667/",
+      "itemName": "myprotein meal replacement whey 2.5kg salted caramel",
+      "perLabel": "$32.00/kg",
+      "reasons": [
+        {
+          "kind": "size-range",
+          "note": "the pack size is a RANGE and was read at its top — the real pack may be smaller (and dearer per kg)"
+        }
+      ],
+      "askedAt": "2026-08-31T06:19:01.132Z"
+    }
+  ],
   "rejected": [
     {
       "ingredientId": "34b69a18-4fe7-8089-bff1-d84e43a7b560",
