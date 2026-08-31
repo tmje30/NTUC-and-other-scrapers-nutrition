@@ -128,6 +128,43 @@ The two rejected options, so they are not re-proposed:
 `ShengSiong Scan Request`). Leave them disabled: `MultipleInstancesPolicy` is per-task,
 so two tasks sharing one clone can collide on `git pull` (`index.lock`).
 
+### ✅ The Chrome window is off-screen — BUILT and MEASURED 2026-08-31
+
+Watsons and iHerb need a *headed* Chrome, but headed does not have to mean **on the
+user's screen** — and the window was pinned to `--window-position=0,0`, the most
+visible corner of the desktop. Fine while these shops only ran when someone typed a
+command; not fine every morning, unattended, over whatever the user is doing.
+
+⚠️ **Three anti-throttling flags ship with it and are not optional.** Chrome throttles
+timers and rendering in windows it believes occluded. Watsons depends on a window that
+fails at BOTH ends — nothing at 4 s, 52 prices at 7–16 s, wiped to 484 B at 22 s — so a
+throttled renderer can miss it and return the empty shell, which is indistinguishable
+from bot detection.
+
+Measured rather than assumed, five runs each side, same clone, only `browser-cdp.ts`
+different:
+
+| | matches | failures |
+|---|---|---|
+| before | **3 × 5 runs** — CeraVe, Clinical White, Repair & Protect | 0 |
+| after | **the same three rows, every run** | 0 |
+
+And the window really moves rather than being clamped by Windows, asked of Chrome
+itself via `Browser.getWindowBounds`:
+
+| asked | Chrome reports | |
+|---|---|---|
+| `-32000,-32000` | `left -26214, top -26214, 1281×901` | **off-screen** |
+| `0,0` | `left 0, top 0, 1280×900` | on-screen |
+
+⚠️ **`vendor-probe` is NOT the instrument for this shop.** It settles a fixed time
+instead of polling `waitFor`, so it reports Watsons as a 207 B empty shell even while
+the real path is reading three products off it. That is the same fixed-delay mistake
+behind the two false "dead end" verdicts. Measure Watsons with `vendor-scan`.
+
+⚠️ **The `--login` tier is exempt** (`vendor-probe.ts:595`, the only caller that sets
+`persistProfile`): the user signs in by hand in that window, so it stays visible.
+
 ### ⚠️ Nothing in the laptop path installs dependencies
 
 Latent, not active — the runner clone matches `main` exactly today. But the day a
