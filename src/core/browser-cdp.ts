@@ -143,6 +143,21 @@ export async function evaluateInPage(
 		profile = mkdtempSync(join(tmpdir(), "probe-"));
 	}
 
+	/**
+	 * ⚠️ **Headed does not have to mean "on the user's screen", and this is the whole
+	 * point of the flags below.** Watsons and iHerb detect `--headless=new`, so those
+	 * shops must run a real headed Chrome — but the window was pinned to `0,0`, which
+	 * is the most visible corner of the desktop. Once the sweep runs unattended every
+	 * morning that is a window appearing over whatever the user is doing.
+	 *
+	 * Off-screen keeps a genuinely headed browser and moves the window out of sight.
+	 *
+	 * ⚠️ **EXCEPT when a profile is persisted**, which is the `--login` tier: there the
+	 * user signs in BY HAND in this window, so hiding it makes the feature impossible.
+	 * That is the only caller that sets `persistProfile` (`vendor-probe.ts:595`).
+	 */
+	const hideWindow = opts.headed === true && !opts.persistProfile;
+
 	const args = [
 		`--remote-debugging-port=${port}`,
 		`--user-data-dir=${profile}`,
@@ -150,7 +165,23 @@ export async function evaluateInPage(
 		"--no-default-browser-check",
 		"--disable-features=Translate",
 		"--window-size=1280,900",
-		"--window-position=0,0",
+		hideWindow ? "--window-position=-32000,-32000" : "--window-position=0,0",
+		/**
+		 * ⚠️ **These three are NOT optional once the window is off-screen, and Watsons is
+		 * why.** Chrome throttles timers and rendering in windows it believes are
+		 * occluded or backgrounded. Watsons depends on a timing window that fails at
+		 * BOTH ends — nothing at 4 s, 52 prices at 7–16 s, wiped to 484 B at 22 s — so
+		 * a throttled renderer can miss it entirely and return the empty shell, which
+		 * is indistinguishable from bot detection and is exactly how that shop already
+		 * collected two false "dead end" verdicts.
+		 *
+		 * Harmless when the window is visible or headless, so they are set unconditionally
+		 * rather than paired with `hideWindow` — a flag that only applies in one mode is
+		 * a flag someone will forget to carry when the modes change.
+		 */
+		"--disable-backgrounding-occluded-windows",
+		"--disable-renderer-backgrounding",
+		"--disable-background-timer-throttling",
 	];
 	if (!opts.headed) args.push("--headless=new");
 
