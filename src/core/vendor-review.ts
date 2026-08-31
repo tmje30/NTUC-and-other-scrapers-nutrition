@@ -1,4 +1,5 @@
 import type { StoreProduct } from "./stores/types.js";
+import { marketplaceSize } from "./marketplace-size.js";
 
 /**
  * The scan's third answer: **"I found something, but I'm not sure."**
@@ -162,9 +163,19 @@ const collapse = (s: string) => String(s ?? "").replace(/\s+/g, " ").trim();
  *
  * The URL slug is searched as well as the name because shops routinely put the size in
  * the slug and not the title (`…-pisang-berangan-banana-12-15-kg`).
+ *
+ * ⚠️ **Callers must not hand it a slug when the NAME already resolves** — see the
+ * precedence note in `reviewReasons`. Carousell's slug writes a decimal as a hyphen, so
+ * `2.1kg` arrives here as `2-1kg` and reads as a range that does not exist.
+ *
+ * ⚠️ **`lb`/`oz` are in the unit list deliberately.** They were missing until
+ * 2026-08-31, which made this blind to `1.6-5 LBS` — the exact string
+ * `stores/carousell.ts` cites as the canonical hazard, on the one shop where pounds
+ * dominate. `marketplaceSize` rejects that title as a range; this function said it was
+ * fine. Two range detectors that disagree are worse than one.
  */
 export function statesSizeRange(text: string): boolean {
-	return /\d+(?:\.\d+)?\s*[-–]\s*\d+(?:\.\d+)?\s*-?\s*(?:g|gm|gram|kg|ml|l|lt|litre|liter)\b/i.test(
+	return /\d+(?:\.\d+)?\s*[-–]\s*\d+(?:\.\d+)?\s*-?\s*(?:g|gm|gram|kg|ml|l|lt|litre|liter|lbs?|pounds?|ozs?)\b/i.test(
 		String(text ?? "").replace(/-/g, "-"),
 	);
 }
@@ -228,7 +239,27 @@ export function reviewReasons(
 		out.push({ kind: "bulk", grams: packGrams ?? 0, note: "a multipack, not a single pack" });
 	}
 
-	if (statesSizeRange(text)) {
+	/**
+	 * ⚠️ **The slug is a FALLBACK here, not an equal source** — the same precedence
+	 * `cardSize` documents, and for the same reason.
+	 *
+	 * Carousell's slug writes a decimal as a hyphen: `2.1kg` becomes
+	 * `…/titan-whey-protein-2-1kg-70-serving-…`, which reads as the range "2–1 kg".
+	 * It is not a range, and "2 to 1 kg" is not even ascending. Measured 2026-08-31:
+	 * **all three pending Carousell reviews were this false positive**, and every one
+	 * had a clean, decimal-restored name stating a single size.
+	 *
+	 * ⚠️ A queue full of questions that were never uncertain is not a harmless bug — it
+	 * is how a review page stops being read, and the review page is the only thing
+	 * standing between a marketplace guess and the price book.
+	 *
+	 * So: when the NAME resolves to one unambiguous size, believe it and do not
+	 * range-check the slug. Only a name `marketplaceSize` cannot resolve falls back to
+	 * the slug — which is exactly where genuine ranges still get caught, because
+	 * `marketplaceSize` rejects `600-700 g` and `12-15 kg` as ranges in the first place.
+	 */
+	const namedSize = marketplaceSize(product.name ?? "");
+	if (statesSizeRange(namedSize.ok ? (product.name ?? "") : text)) {
 		out.push({
 			kind: "size-range",
 			note: "the pack size is a RANGE and was read at its top — the real pack may be smaller (and dearer per kg)",

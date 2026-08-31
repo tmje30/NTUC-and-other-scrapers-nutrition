@@ -90,6 +90,47 @@ check("a plain size is not a range", !statesSizeRange("Heinz Apple Cider Vinegar
 // names are everywhere and would queue the entire scan.
 check("a hyphenated name is not a range", !statesSizeRange("Rice Cooking Wine - 16% Alcohol"));
 
+// ⚠️ Pounds were missing from the unit list until 2026-08-31, which made this blind to
+// the exact string stores/carousell.ts cites as the canonical hazard — on the one shop
+// where pounds dominate. marketplaceSize rejected it as a range while this said it was
+// fine; two range detectors that disagree are worse than one.
+check("'1.6-5 LBS' is a range", statesSizeRange("ON Gold Standard 1.6-5 LBS"));
+check("'2-3 lb' is a range", statesSizeRange("MuscleTech Whey 2-3 lb tub"));
+
+// ── the slug is a FALLBACK, not an equal source ─────────────────────────────────
+//
+// ⚠️ Carousell's slug writes a decimal as a hyphen, so "2.1kg" arrives as "2-1kg" and
+// reads as the range "2–1 kg" — which is not a range, and does not even ascend. All
+// three pending Carousell reviews on 2026-08-31 were this false positive. A queue full
+// of questions that were never uncertain is how a review page stops being read.
+const carousellSlugPick = product({
+	store: "Carousell",
+	name: "titan whey protein 2.1kg 70 serving",
+	url: "https://www.carousell.sg/p/titan-whey-protein-2-1kg-70-serving-1208280679/",
+	packWeightG: 2100,
+});
+check(
+	"a slug decimal is not asked about when the name resolves",
+	!reviewReasons(carousellSlugPick, { packGrams: 2100 }).some((r) => r.kind === "size-range"),
+);
+
+// ...but the fallback must still fire when the NAME cannot be resolved, which is the
+// case the flag exists for: the shop states a range and the weight came from elsewhere.
+check(
+	"a genuine range in the name is still asked about",
+	reviewReasons(
+		product({ name: "China Purple Cabbage 600-700 g", url: "…/china-purple-cabbage-600-700-g", packWeightG: 700 }),
+		{ packGrams: 700 },
+	).some((r) => r.kind === "size-range"),
+);
+check(
+	"a genuine range carried only by the slug is still asked about",
+	reviewReasons(
+		product({ name: "Pisang Berangan Banana", url: "…/pisang-berangan-banana-12-15-kg", packWeightG: 15000 }),
+		{ packGrams: 15000, sizeCeilingOk: true },
+	).some((r) => r.kind === "size-range"),
+);
+
 check("'50 x 1.5g' is a multipack", statesMultipack("Heritage Farm Green Tea 50 x 1.5g"));
 check("'12 x 1 L' is a multipack", statesMultipack("UHT Pure Milk 12 x 1 L"));
 check("a lone size is not", !statesMultipack("Fragrant Sesame Oil 2 L"));
