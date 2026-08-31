@@ -12,6 +12,8 @@ import {
 	sizeFor,
 	unitKindAgrees,
 	withinSizeCeiling,
+	renderPriceMoves,
+	type PriceMove,
 } from "../core/vendor-scan.js";
 import { reviewReasons } from "../core/vendor-review.js";
 import { parseName } from "../core/parse.js";
@@ -508,3 +510,51 @@ check(
 	"and a weighed row is not this problem",
 	!needsSizeInName({ unitType: "By Gram", gramsPerUnit: null }, product({ unitCount: 4, packWeightG: null })),
 );
+
+describe("the price book's morning message — only what MOVED");
+
+const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const move = (over: Partial<PriceMove> = {}): PriceMove => ({
+	row: "whey, essential  [MyProtein]",
+	vendor: "Carousell",
+	recordedText: "$85.00 / 2500g",
+	foundText: "$80.00 / 2500g",
+	recordedPer1000: 34,
+	foundPer1000: 32,
+	perWord: "kg",
+	...over,
+});
+
+// ⚠️⚠️ **Silence is the default and it is the point.** The sweep runs unattended every
+// morning; on most days nothing moved, and a "nothing changed" notification is what
+// trains someone to mute the bot — which costs them the deals digest too.
+check("nothing moved sends NOTHING", renderPriceMoves([], 14) === null);
+check("re-confirmations alone send nothing", renderPriceMoves([], 106) === null);
+
+const cheaper = renderPriceMoves([move()], 2)!;
+check("a reduction is reported", /1 price got cheaper/.test(cheaper));
+// ⚠️ Price AND size on both sides, not just the per-kilo figure — same reason
+// `dearerThanRecorded` quotes both: on a By-Unit row the per-kilo numbers can agree
+// while the pack changes underneath them, and "$4.00/kg → $4.00/kg" is unanswerable.
+check("it quotes both sides in full", cheaper.includes("$85.00 / 2500g = $34.00/kg"));
+check("...and what it became", cheaper.includes("$80.00 / 2500g = $32.00/kg"));
+check("re-confirmations are counted, not itemised", /2 others re-confirmed unchanged\./.test(cheaper));
+
+// ⚠️ An empty slot being filled is news too. The 2026-08-11 report found 49 rows tagged
+// Sheng Siong with no price between them — closing that gap is what the price book is for.
+const first = renderPriceMoves([move({ recordedPer1000: null, recordedText: "" })], 0)!;
+check("a first price is reported as new, not as a cut", /1 newly recorded/.test(first));
+check("...and does not claim anything got cheaper", !/got cheaper/.test(first));
+check("...and quotes it as a first price", first.includes("first price: $80.00 / 2500g = $32.00/kg"));
+
+const both = renderPriceMoves([move(), move({ row: "Vitamin -C", recordedPer1000: null, recordedText: "" })], 3)!;
+// Tags stripped: the headline bolds only the reduction, so the two halves are separated
+// by `</b>` in the raw string and asserting on the rendered words is the honest test.
+check("a mixed morning states both", /1 price got cheaper.*1 newly recorded/.test(both.replace(/<[^>]+>/g, "")));
+
+// ⚠️⚠️ **A live row name contains an ampersand** — "Sensitivity & Gum Toothpaste" is one
+// of the five Watsons rows. Unescaped it makes Telegram reject the whole message with
+// parse_mode HTML, so the ONLY notification about a silent write would fail to send.
+const amp = renderPriceMoves([move({ row: "Sensitivity & Gum Toothpaste - Original" })], 0, esc)!;
+check("an ampersand in a row name is escaped", amp.includes("Sensitivity &amp; Gum Toothpaste"));
+check("...and the raw ampersand is gone", !/&(?!amp;|lt;|gt;)/.test(amp));

@@ -16,6 +16,8 @@ import {
 	packWithinCeiling,
 	type CandidateOutcome,
 	type ScanRow,
+	type PriceMove,
+	renderPriceMoves,
 	type VendorRoute,
 } from "../core/vendor-scan.js";
 import { packWeightOf } from "../core/notion.js";
@@ -40,7 +42,7 @@ import {
 } from "../core/vendor-review.js";
 import { cooldownKey } from "../core/cooldown.js";
 import { renderReviewPage } from "../core/review-page.js";
-import { formatWeightGaps, sendHtml, type WeightGapNote } from "../core/telegram.js";
+import { escapeHtml, formatWeightGaps, sendHtml, type WeightGapNote } from "../core/telegram.js";
 import { config } from "../core/config.js";
 import { commitAndPushData } from "../core/git-data-push.js";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -191,6 +193,10 @@ async function main(): Promise<void> {
 	 * asked, which is exactly the case that left three stale questions on the live page.
 	 */
 	let questionsDropped = 0;
+	/** Slots whose recorded price actually moved this run — see `renderPriceMoves`. */
+	const moves: PriceMove[] = [];
+	/** Written, but at the price already recorded. Counted, never itemised. */
+	let reconfirmed = 0;
 	let skippedByUser = 0;
 	/** Candidates dropped by the row's own `Size - Ceiling (g/ml)`. */
 	let skippedOverCeiling = 0;
@@ -473,8 +479,39 @@ async function main(): Promise<void> {
 				continue;
 			}
 
+			/**
+			 * Record whether this pick actually MOVES the recorded price, for the morning
+			 * message. A rewrite at the same price is reassurance, not news — see
+			 * `renderPriceMoves`.
+			 *
+			 * ⚠️ `slot` holds the PRE-write values: `row.slots` was read before the scan and
+			 * `recordVendorPrice` writes to Notion, not to it.
+			 */
+			const notePriceMove = () => {
+				const was = pricePer1000(slot.priceValue, slot.sizeValue);
+				const now = pricePer1000(p.priceSgd, size);
+				if (now != null && (was == null || now < was)) {
+					moves.push({
+						row: row.name,
+						vendor: route.option,
+						recordedText: priceSizeText(row, slot.priceValue, slot.sizeValue),
+						foundText: priceSizeText(row, p.priceSgd, size),
+						recordedPer1000: was,
+						foundPer1000: now,
+						perWord: perWord(row),
+					});
+				} else {
+					reconfirmed++;
+				}
+			};
+
 			if (!doWrite) {
 				console.log(`      → would record into ${slot.vendor}. Re-run with --write.`);
+				// ⚠️ Collected on the report-only path too, so `npm run vendor-scan` with no
+				// flags PREVIEWS the morning message. This file's whole posture is that the
+				// report shows exactly what a real run would do; a notification the user
+				// cannot see until it arrives on their phone would break that promise.
+				notePriceMove();
 				continue;
 			}
 
@@ -493,6 +530,10 @@ async function main(): Promise<void> {
 				if (landed) {
 					written++;
 					console.log(`      ✔ written — ${res.written.join(", ")}`);
+					// ⚠️ **A write is not news; a CHANGE is.** Only counted once the slot
+					// actually landed — a refused write must not report a price cut that
+					// never happened.
+					notePriceMove();
 					// ⚠️ **A question answered by WRITING must leave the queue.** Otherwise the
 					// review page goes on asking about a price that is already recorded, and
 					// tapping OK would re-write it. Live on 2026-08-31: three Carousell picks
@@ -516,7 +557,7 @@ async function main(): Promise<void> {
 		}
 	}
 
-	await askAboutUncertain(toAsk, review, written, gaps, questionsDropped);
+	await askAboutUncertain(toAsk, review, written, gaps, questionsDropped, moves, reconfirmed);
 
 	console.log(
 		`\n${"─".repeat(78)}\n` +
@@ -549,13 +590,26 @@ async function askAboutUncertain(
 	gaps: WeightGapNote[],
 	/** Questions this run took off the queue by recording the price instead. */
 	questionsDropped: number,
+	/** Slots whose recorded price actually moved this run. */
+	moves: PriceMove[],
+	/** Written at the price already recorded — reassurance, not news. */
+	reconfirmed: number,
 ): Promise<void> {
 	// ⚠️ **A report-only run writes NOTHING — not Notion, and not this file either.**
 	// It has already printed every reason to the console, which is what it was run for.
 	// Persisting a queue would make `npm run vendor-scan` with no flags leave state
 	// behind, and "report only" has to mean exactly what it says or it stops being the
 	// safe thing to reach for.
+	/**
+	 * ⚠️ **Built once and appended to whatever message goes out, never sent as a second
+	 * one.** "One page, one message" is this project's rule and it is what keeps the bot
+	 * un-muted; a morning that produced both a question and a price cut should still be
+	 * one notification. `null` here means nothing moved — see `renderPriceMoves`.
+	 */
+	const movesText = renderPriceMoves(moves, reconfirmed, escapeHtml);
+
 	if (!doWrite) {
+		if (movesText) console.log(`\nWould report:\n${movesText.replace(/<[^>]+>/g, "")}`);
 		if (toAsk.length) console.log(`\n${toAsk.length} pick(s) would be queued for your review.`);
 		if (gaps.length) {
 			console.log(
@@ -581,11 +635,15 @@ async function askAboutUncertain(
 		// noted. **But this scan is run by hand, not on a schedule**, so with nothing else
 		// to say the note would otherwise never be sent at all. Once per manual run is not
 		// a nag.
-		if (gaps.length && !noAsk) {
+		// ⚠️ **This is the branch the user asked about**: nothing needed their call, but a
+		// recorded price may still have MOVED — and until 2026-08-31 that was written into
+		// Notion and never mentioned. A daily unattended writer that reports nothing is the
+		// silence this project has been bitten by four times.
+		if ((movesText || gaps.length) && !noAsk) {
 			try {
-				await sendHtml(`🧾 Nothing needed your call.${formatWeightGaps(gaps)}`);
+				await sendHtml(movesText ? movesText + formatWeightGaps(gaps) : `🧾 Nothing needed your call.${formatWeightGaps(gaps)}`);
 			} catch (e) {
-				console.log(`⚠️  Could not send the size-in-name note (${(e as Error).message}).`);
+				console.log(`⚠️  Could not send the price-book note (${(e as Error).message}).`);
 			}
 		}
 		return;
@@ -635,6 +693,15 @@ async function askAboutUncertain(
 	// doc asks for the same.
 	if (!toAsk.length) {
 		console.log(`\n${questionsDropped} stale question(s) dropped — page republished, nothing to ask.`);
+		// Still worth a word if a price moved on the same run — the queue shrinking is not
+		// itself news, but a cheaper price is.
+		if (movesText && !noAsk) {
+			try {
+				await sendHtml(movesText + formatWeightGaps(gaps));
+			} catch (e) {
+				console.log(`⚠️  Could not send the price-book note (${(e as Error).message}).`);
+			}
+		}
 		return;
 	}
 
@@ -643,6 +710,9 @@ async function askAboutUncertain(
 		// page that still shows yesterday's questions is worse than one that says so.
 		await sendHtml(
 			renderReviewSummary(toAsk.length, written, published ? config.reviewUrl() : undefined) +
+				// ⚠️ Appended, not sent separately — see `movesText`. A morning with both a
+				// question and a price cut is still one notification.
+				(movesText ? `\n\n${movesText}` : "") +
 				// Appended here rather than inside `renderReviewSummary`, which is a pure
 				// module that deliberately knows nothing about the Telegram client.
 				formatWeightGaps(gaps),

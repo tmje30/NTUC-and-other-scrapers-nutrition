@@ -841,3 +841,79 @@ export function sizeFor(unitType: UnitType, product: StoreProduct): number | nul
 export function notionClient(): Client {
 	return new Client({ auth: config.notionToken() });
 }
+
+/**
+ * One slot whose recorded price actually MOVED this run.
+ *
+ * ⚠️ **A write is not news; a change is.** The sweep rewrites a slot even when the shop
+ * is charging exactly what it charged yesterday — that refreshes the URL and item name,
+ * which is worth doing and worth saying nothing about. Reporting every write would make
+ * the daily message a wall of unchanged numbers, and a message nobody reads is worse
+ * than no message, because muting the bot costs the deals digest with it.
+ */
+export interface PriceMove {
+	/** The Ingredients row, for the line the user reads. */
+	row: string;
+	/** The shop, named as the `Vendor n` option. */
+	vendor: string;
+	/** What the slot held, e.g. `$85.00 / 2500g`. Empty when the slot had no price. */
+	recordedText: string;
+	/** What it holds now, same shape. */
+	foundText: string;
+	/** `pricePer1000` of the old value — **null means the slot was empty**, which is a
+	 *  first price rather than a reduction, and is reported as such. */
+	recordedPer1000: number | null;
+	foundPer1000: number;
+	/** What `pricePer1000` means on this row: `kg`, `L`, or `1000 pcs`. */
+	perWord: string;
+}
+
+/**
+ * The morning message about the price book — or **null when there is nothing to say**.
+ *
+ * ⚠️ **Silence is the default and it is deliberate.** The sweep runs unattended every
+ * day; on most days every price is the same as yesterday's and the honest report is
+ * nothing at all. `null` here means "send no message", not "send an empty one".
+ *
+ * ⚠️ **An empty slot being filled is news too**, not just a reduction. A row that has
+ * never had a price at this shop is exactly the gap the price book exists to close — the
+ * 2026-08-11 report found 49 rows tagged Sheng Siong with no price between them — so a
+ * first price is reported alongside the reductions rather than folded into the silent
+ * "re-confirmed" count.
+ *
+ * `reconfirmed` is stated but never itemised: it is the reassurance that the sweep ran
+ * and looked at things, in one number, which is all it is worth.
+ */
+export function renderPriceMoves(
+	moves: PriceMove[],
+	reconfirmed: number,
+	esc: (s: string) => string = (s) => s,
+): string | null {
+	const cheaper = moves.filter((m) => m.recordedPer1000 != null);
+	const first = moves.filter((m) => m.recordedPer1000 == null);
+	if (!cheaper.length && !first.length) return null;
+
+	const money = (n: number, per: string) => `$${n.toFixed(2)}/${per}`;
+	const headline = [
+		cheaper.length ? `<b>${cheaper.length} price${cheaper.length === 1 ? "" : "s"} got cheaper</b>` : "",
+		first.length ? `${first.length} newly recorded` : "",
+	]
+		.filter(Boolean)
+		.join(" · ");
+
+	const line = (m: PriceMove) =>
+		m.recordedPer1000 == null
+			? `• ${esc(m.row.trim())} — ${esc(m.vendor)}, first price: ${esc(m.foundText)} = ${money(m.foundPer1000, m.perWord)}`
+			: // ⚠️ Price AND size on both sides, not just the per-kilo figure — the same
+				// reason `dearerThanRecorded` quotes both: on a By-Unit row the per-kilo
+				// numbers can agree while the pack changes underneath them, and a line
+				// reading "$4.00/kg → $4.00/kg" is unanswerable.
+				`• ${esc(m.row.trim())} — ${esc(m.vendor)} ${esc(m.recordedText)} = ${money(m.recordedPer1000!, m.perWord)}` +
+				` → <b>${esc(m.foundText)} = ${money(m.foundPer1000, m.perWord)}</b>`;
+
+	return (
+		`🧾 ${headline}\n` +
+		[...cheaper, ...first].map(line).join("\n") +
+		(reconfirmed ? `\n\n${reconfirmed} other${reconfirmed === 1 ? "" : "s"} re-confirmed unchanged.` : "")
+	);
+}
