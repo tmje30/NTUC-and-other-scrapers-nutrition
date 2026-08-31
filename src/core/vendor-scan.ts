@@ -27,7 +27,7 @@ import {
 import type { StoreModule, StoreProduct } from "./stores/types.js";
 import { guardian } from "./stores/guardian.js";
 import { myprotein } from "./stores/myprotein.js";
-import { carousell } from "./stores/carousell.js";
+import { carousellViaWorker } from "./stores/carousell-worker.js";
 import { watsons } from "./stores/watsons.js";
 import { iherb } from "./stores/iherb.js";
 import { fairprice } from "./stores/fairprice.js";
@@ -97,7 +97,17 @@ export const ROUTES: VendorRoute[] = [
 	{ option: "Sheng Siong", module: ss, marketplace: false },
 	{ option: "Guardian", module: guardian, marketplace: false },
 	{ option: "My Protein", module: myprotein, marketplace: false },
-	{ option: "Carousell", module: carousell, marketplace: true },
+	// ⚠️ **Through `ss-worker`, and NOT because of geography** — this route only ever
+	// runs from Singapore anyway. What Carousell refuses is the CLIENT: measured
+	// 2026-08-17 from the laptop, Node's `fetch` gets 403 on `/search/` while `curl`
+	// and the Worker's fetch both get 200. So the Worker is the transport that works
+	// without a browser, and this shop stopped needing Chrome. `new-items.ts` made the
+	// same swap that day and checked parity first: HTML 45 priced cards, CDP 47.
+	// ⚠️ Needs `SCAN_SECRET` and a reachable `ss-worker`; a missing secret THROWS rather
+	// than falling back to Chrome, so a broken config cannot hide behind a slower path
+	// that happens to work. The CDP `carousell` export is untouched and is still what
+	// `vendor-probe --browser` exercises.
+	{ option: "Carousell", module: carousellViaWorker, marketplace: true },
 	// ⚠️ **Laptop only.** Watsons needs a real HEADED Chrome (headless renders its footer
 	// and nothing else), so this route cannot run in GitHub Actions — same constraint as
 	// Carousell. Added 2026-08-11 for the 5 rows that named it and had no price at all:
