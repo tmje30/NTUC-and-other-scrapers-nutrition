@@ -524,6 +524,34 @@ export function withoutPending(
 }
 
 /**
+ * Drop every question about one row's slot at one shop, whatever pick it named.
+ *
+ * ⚠️ **A question the scan has since ANSWERED BY WRITING must leave the queue, or the
+ * review page asks about a price that is already recorded.** Found live on 2026-08-31:
+ * three Carousell picks were queued on a false size-range flag, the flag was fixed, the
+ * next run wrote all three into Notion — and all three questions stayed on the page.
+ * Tapping OK on one would have re-written a price that was already there, and the page
+ * would have gone on asking until the 7-day TTL expired it.
+ *
+ * ⚠️ **Matched on row + shop, NOT on the product**, unlike `findPendingFor`. The unit of
+ * the price book is the slot: once a Carousell price is recorded for this row, a question
+ * about some *other* Carousell listing for the same row is stale too — answering it would
+ * overwrite the newer figure with an older one.
+ */
+export function withoutPendingForSlot(
+	file: VendorReviewFile,
+	ingredientId: string,
+	vendor: string,
+	now: Date = new Date(),
+): VendorReviewFile {
+	const pending = (file.pending ?? []).filter(
+		(p) => !(same(p.ingredientId, ingredientId) && same(p.vendor, vendor)),
+	);
+	if (pending.length === (file.pending ?? []).length) return file;
+	return { version: 1, updatedAt: now.toISOString(), pending, rejected: file.rejected ?? [] };
+}
+
+/**
  * ⚠️ **A stale question is dropped, not answered.** A pending pick quotes a price that
  * was true when the scan ran; tapping OK on a fortnight-old question would write a price
  * the shop has since changed. The scan re-queues anything still uncertain, so dropping

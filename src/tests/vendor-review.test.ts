@@ -18,6 +18,7 @@ import {
 	withPending,
 	withRejectedPick,
 	withoutPending,
+	withoutPendingForSlot,
 	type PendingReview,
 	type VendorReviewFile,
 } from "../core/vendor-review.js";
@@ -130,6 +131,62 @@ check(
 		{ packGrams: 15000, sizeCeilingOk: true },
 	).some((r) => r.kind === "size-range"),
 );
+
+// ── a question answered by WRITING leaves the queue ─────────────────────────────
+//
+// ⚠️ Live on 2026-08-31: three Carousell picks were queued on a false size-range flag,
+// the flag was fixed, the next run wrote all three into Notion — and all three questions
+// stayed on the review page. Tapping OK would have re-written a price already recorded.
+{
+	const q = (over: Partial<PendingReview>): PendingReview =>
+		({
+			token: "aaa111",
+			ingredientId: "row-1",
+			ingredientName: "Whey [Titan]",
+			key: "whei",
+			unitType: "By Gram",
+			vendor: "Carousell",
+			slotN: 2,
+			priceSgd: 60,
+			size: 2100,
+			url: "https://example/a",
+			itemName: "titan whey 2.1kg",
+			perLabel: "$28.57/kg",
+			reasons: [],
+			askedAt: new Date().toISOString(),
+			...over,
+		}) as PendingReview;
+
+	const file = {
+		version: 1 as const,
+		updatedAt: new Date().toISOString(),
+		pending: [
+			q({}),
+			q({ token: "bbb222", ingredientId: "row-2" }),
+			q({ token: "ccc333", vendor: "Watsons", slotN: 3 }),
+		],
+		rejected: [],
+	};
+
+	const after = withoutPendingForSlot(file, "row-1", "Carousell");
+	check("the answered row/shop question is dropped", !after.pending.some((p) => p.token === "aaa111"));
+	check("another ROW's question survives", after.pending.some((p) => p.token === "bbb222"));
+	check("the same row at another SHOP survives", after.pending.some((p) => p.token === "ccc333"));
+
+	// ⚠️ Matched on row + shop, NOT on the product: once a Carousell price is recorded for
+	// this row, a question about a DIFFERENT Carousell listing for it is stale too —
+	// answering it would overwrite the newer figure with an older one.
+	const other = withoutPendingForSlot(
+		{ ...file, pending: [q({ url: "https://example/z", itemName: "some other listing" })] },
+		"row-1",
+		"Carousell",
+	);
+	check("a different listing for the same slot is dropped too", other.pending.length === 0);
+
+	// Returns the SAME object when nothing matched, which is what lets the caller tell
+	// "queue changed" from "queue untouched" without a deep compare.
+	check("an untouched queue is returned unchanged", withoutPendingForSlot(file, "row-9", "Carousell") === file);
+}
 
 check("'50 x 1.5g' is a multipack", statesMultipack("Heritage Farm Green Tea 50 x 1.5g"));
 check("'12 x 1 L' is a multipack", statesMultipack("UHT Pure Milk 12 x 1 L"));

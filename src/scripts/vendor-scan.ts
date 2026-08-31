@@ -34,6 +34,7 @@ import {
 	sizeBoundsFor,
 	sizeText,
 	withPending,
+	withoutPendingForSlot,
 	type PendingReview,
 	type ReviewReason,
 } from "../core/vendor-review.js";
@@ -183,6 +184,13 @@ async function main(): Promise<void> {
 	let found = 0;
 	let written = 0;
 	let refused = 0;
+	/**
+	 * Questions this run took OFF the queue by recording the price instead — not the same
+	 * as an answered tap, and not counted among `written` for the Telegram summary. It
+	 * exists so the publish path below knows the queue changed even when nothing new was
+	 * asked, which is exactly the case that left three stale questions on the live page.
+	 */
+	let questionsDropped = 0;
 	let skippedByUser = 0;
 	/** Candidates dropped by the row's own `Size - Ceiling (g/ml)`. */
 	let skippedOverCeiling = 0;
@@ -485,6 +493,17 @@ async function main(): Promise<void> {
 				if (landed) {
 					written++;
 					console.log(`      ✔ written — ${res.written.join(", ")}`);
+					// ⚠️ **A question answered by WRITING must leave the queue.** Otherwise the
+					// review page goes on asking about a price that is already recorded, and
+					// tapping OK would re-write it. Live on 2026-08-31: three Carousell picks
+					// were queued on a false size-range flag, the flag was fixed, the next run
+					// wrote all three into Notion — and all three questions stayed on the page.
+					const answered = withoutPendingForSlot(review, row.pageId, route.option);
+					if (answered !== review) {
+						review = answered;
+						questionsDropped++;
+						console.log(`      ↩ an outstanding review question is now recorded — dropped.`);
+					}
 				} else {
 					refused++;
 					console.log(`      ✗ not written — ${describeSlotDecision(res.slot)}`);
@@ -497,7 +516,7 @@ async function main(): Promise<void> {
 		}
 	}
 
-	await askAboutUncertain(toAsk, review, written, gaps);
+	await askAboutUncertain(toAsk, review, written, gaps, questionsDropped);
 
 	console.log(
 		`\n${"─".repeat(78)}\n` +
@@ -528,6 +547,8 @@ async function askAboutUncertain(
 	review: Parameters<typeof writeVendorReview>[0],
 	written: number,
 	gaps: WeightGapNote[],
+	/** Questions this run took off the queue by recording the price instead. */
+	questionsDropped: number,
 ): Promise<void> {
 	// ⚠️ **A report-only run writes NOTHING — not Notion, and not this file either.**
 	// It has already printed every reason to the console, which is what it was run for.
@@ -547,7 +568,12 @@ async function askAboutUncertain(
 		return;
 	}
 
-	if (!toAsk.length) {
+	// ⚠️ **`questionsDropped` has to open this gate too, or a shrinking queue never reaches the
+	// cloud.** `public/` is gitignored and the live page is rebuilt from
+	// `data/vendor-review.json` in the repo, so a run that only DROPS questions used to
+	// write the local file, return here, and leave the phone showing questions that were
+	// already answered. Measured 2026-08-31: 3 written, 0 pushed, 3 still on the page.
+	if (!toAsk.length && !questionsDropped) {
 		await writeVendorReview(review);
 		// ⚠️ Gaps ride along with a message that was being sent anyway — the deals page's
 		// rule, and for the same reason: a missing weight is a standing property of the row,
@@ -600,6 +626,16 @@ async function askAboutUncertain(
 		} catch (e) {
 			console.log(`⚠️  Could not push the review queue (${(e as Error).message}).`);
 		}
+	}
+
+	// ⚠️ **A run that only DROPS questions publishes silently.** The page still has to be
+	// rebuilt and pushed — that is the whole point of getting here — but there is nothing
+	// to ask, and a message saying "0 picks need your call" is a notification that trains
+	// the user to ignore the next one that matters. Silent on a clean day; the sweep scope
+	// doc asks for the same.
+	if (!toAsk.length) {
+		console.log(`\n${questionsDropped} stale question(s) dropped — page republished, nothing to ask.`);
+		return;
 	}
 
 	try {
