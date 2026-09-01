@@ -62,7 +62,8 @@ const BETWEEN_SEARCHES_MS = 800;
 const sameMoney = (a: number, b: number) => Math.abs(a - b) < 0.005;
 
 /**
- * The product this slot is a record OF — not the best product on offer today.
+ * The product this slot is a record OF — not the best product on offer today, and WHY
+ * there isn't one when there isn't.
  *
  * ⚠️ **Identity comes from the URL first, and the shop's own product name second.** A
  * repair must re-price the pack that was recorded; picking the cheapest match instead
@@ -73,18 +74,30 @@ const sameMoney = (a: number, b: number) => Math.abs(a - b) < 0.005;
  * this project from the shop's own payload — it is not a human's wording, so a fuzzy match
  * would only ever loosen a comparison that is already exact.
  */
-function productForSlot(slot: VendorSlot, products: StoreProduct[]): StoreProduct | null {
+type Identified =
+	| { kind: "found"; product: StoreProduct }
+	/** Had a handle to search on, and the shop did not return it. */
+	| { kind: "missing" }
+	/** No URL and no item name — there was never anything to match on. */
+	| { kind: "unidentifiable" };
+
+function productForSlot(slot: VendorSlot, products: StoreProduct[]): Identified {
 	const url = slot.urlValue.trim();
+	const name = slot.itemNameValue.trim().toLowerCase();
+	// ⚠️ Reported apart from "not found", because they need opposite fixes and the
+	// counts are very different: measured 2026-09-01, 14 of the 23 slots this pass
+	// could not re-price had NEITHER, so nothing was ever searched for them.
+	if (!url && !name) return { kind: "unidentifiable" };
+
 	if (url) {
 		const byUrl = products.find((p) => p.url.trim() === url);
-		if (byUrl) return byUrl;
+		if (byUrl) return { kind: "found", product: byUrl };
 	}
-	const name = slot.itemNameValue.trim().toLowerCase();
 	if (name) {
 		const byName = products.find((p) => p.name.trim().toLowerCase() === name);
-		if (byName) return byName;
+		if (byName) return { kind: "found", product: byName };
 	}
-	return null;
+	return { kind: "missing" };
 }
 
 type Verdict =
@@ -142,7 +155,9 @@ let checked = 0;
 let promos = 0;
 let stale = 0;
 let resized = 0;
-let unidentified = 0;
+let unidentifiable = 0;
+let missing = 0;
+let searchFailed = 0;
 let repaired = 0;
 let refused = 0;
 
@@ -159,7 +174,12 @@ for (const row of rows) {
 
 		let products: StoreProduct[] = [];
 		let failed: string | null = null;
-		for (const [t, term] of searchTermsFor(row.target).entries()) {
+		// ⚠️ A slot with no URL and no item name is not searchable at all, so don't spend
+		// three searches and a politeness delay per term proving it. Reported as its own
+		// outcome below.
+		let id: Identified = productForSlot(slot, []);
+		if (id.kind !== "unidentifiable")
+			for (const [t, term] of searchTermsFor(row.target).entries()) {
 			if (t) await sleep(BETWEEN_SEARCHES_MS);
 			try {
 				products = await route.module.search(term);
@@ -168,25 +188,33 @@ for (const row of rows) {
 				break;
 			}
 			// The slot names one exact product; the first term that returns it is enough.
-			if (productForSlot(slot, products)) break;
+			id = productForSlot(slot, products);
+			if (id.kind === "found") break;
 		}
 		if (failed) {
 			lines.push(`  ${route.option} — ✗ search failed: ${failed}`);
-			unidentified++;
+			searchFailed++;
 			continue;
 		}
 
-		const raw = productForSlot(slot, products);
-		if (!raw) {
-			// Not a failure worth acting on: a delisted product, or a shop that has since
-			// reworded its own title. Reported so a slot quietly frozen in time is visible.
+		if (id.kind !== "found") {
+			// ⚠️ Two different problems, said differently. `unidentifiable` means the slot
+			// carries neither a URL nor an item name — it predates `item Name [Vendor n]`
+			// (added 2026-08-09), so nothing was ever searched for and this price cannot be
+			// re-checked as itself at all. `missing` means the shop WAS asked, with a handle
+			// to ask by, and did not return the product recorded here.
 			lines.push(
-				`  ${route.option} — ? the recorded product did not come back` +
-					`\n      recorded: ${money(slot.priceValue)} "${slot.itemNameValue || "(no name recorded)"}"`,
+				id.kind === "unidentifiable"
+					? `  ${route.option} — ? ${money(slot.priceValue)} recorded with no URL and no item name` +
+		`\n      nothing identifies the pack, so this price can never be re-checked as itself`
+					: `  ${route.option} — ? the recorded product did not come back` +
+		`\nrecorded: ${money(slot.priceValue)} "${slot.itemNameValue}"`,
 			);
-			unidentified++;
+			if (id.kind === "unidentifiable") unidentifiable++;
+			else missing++;
 			continue;
 		}
+		const raw = id.product;
 
 		const verdict = verdictFor(row, slot, raw);
 		if (verdict.kind === "agrees") continue;
@@ -253,7 +281,11 @@ for (const row of rows) {
 console.log(
 	`\n${"─".repeat(78)}\n` +
 		`${checked} recorded price(s) checked — ${promos} on a promo price, ${stale} otherwise stale, ` +
-		`${resized} where the pack changed size, ${unidentified} whose product did not come back.\n` +
+		`${resized} where the pack changed size.` +
+		`\n${missing} recorded product(s) the shop no longer returns; ${unidentifiable} slot(s) carry no URL ` +
+		`and no item name, so they can never be re-checked as themselves` +
+		(searchFailed ? `; ${searchFailed} search failure(s)` : "") +
+		"."+"\n" +
 		(doWrite
 			? `${repaired} repaired, ${refused} refused.\n`
 			: `Nothing written (no --write).\n`),
