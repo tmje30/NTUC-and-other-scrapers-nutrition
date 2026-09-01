@@ -84,7 +84,17 @@ const flag = (name: string): string | undefined => {
 	return i >= 0 ? argv[i + 1] : undefined;
 };
 const doWrite = argv.includes("--write");
-/** Queue the uncertain picks but send no Telegram message — for an unattended run. */
+/**
+ * Queue the uncertain picks and publish the review page, but send no Telegram QUESTION —
+ * for an unattended run, where a daily "N picks need your call" is a nag.
+ *
+ * ⚠️ **It still records and still publishes.** Until 2026-09-01 this returned before the
+ * push, which loses the whole queue on an ephemeral Actions runner. `--no-push` is the
+ * flag for not committing.
+ *
+ * ⚠️ **It does not silence a price that MOVED.** That message only fires on a real
+ * change, so it is not the daily nag this flag exists to prevent.
+ */
 const noAsk = argv.includes("--no-ask");
 /** Write the queue locally but don't commit it — the live review page stays as it was. */
 const noPush = argv.includes("--no-push");
@@ -639,7 +649,10 @@ async function askAboutUncertain(
 		// recorded price may still have MOVED — and until 2026-08-31 that was written into
 		// Notion and never mentioned. A daily unattended writer that reports nothing is the
 		// silence this project has been bitten by four times.
-		if ((movesText || gaps.length) && !noAsk) {
+		// ⚠️ `movesText` is NOT gated on `--no-ask` — see the note on the message block
+		// below. A price that moved is news the user asked for; only the question is
+		// suppressed. The bare gaps note stays gated, because that one IS a standing nag.
+		if (movesText || (gaps.length && !noAsk)) {
 			try {
 				await sendHtml(movesText ? movesText + formatWeightGaps(gaps) : `🧾 Nothing needed your call.${formatWeightGaps(gaps)}`);
 			} catch (e) {
@@ -649,11 +662,16 @@ async function askAboutUncertain(
 		return;
 	}
 
-	if (noAsk) {
-		await writeVendorReview(review);
-		console.log(`\n${toAsk.length} pick(s) queued for review — not sent (--no-ask).`);
-		return;
-	}
+	// ⚠️⚠️ **`--no-ask` used to return HERE, and in the cloud that destroys the queue.**
+	// It wrote `data/vendor-review.json` and stopped — no page, no commit, no push. On a
+	// laptop that is merely useless; on an Actions runner the filesystem goes away, so
+	// every uncertain pick is discarded. `daily-vendor-sweep-scope.md` recommends
+	// `--write --no-ask` for the cloud sweep, so shipping it that way would have silently
+	// lost every question about the 106 cloud-reachable pairs — while reporting success.
+	//
+	// **`--no-ask` means DO NOT ASK ME, not do not record.** `--no-push` is the flag for
+	// not committing, and it is honoured below. So the queue is now published either way
+	// and only the Telegram question is suppressed.
 
 	// ⚠️ **One page, one message — never one message per pick.** The first live run
 	// queued 16 picks and sent 16 separate cards, which is not a review queue, it is a
@@ -694,8 +712,8 @@ async function askAboutUncertain(
 	if (!toAsk.length) {
 		console.log(`\n${questionsDropped} stale question(s) dropped — page republished, nothing to ask.`);
 		// Still worth a word if a price moved on the same run — the queue shrinking is not
-		// itself news, but a cheaper price is.
-		if (movesText && !noAsk) {
+		// itself news, but a cheaper price is. Not gated on `--no-ask`, same reasoning.
+		if (movesText) {
 			try {
 				await sendHtml(movesText + formatWeightGaps(gaps));
 			} catch (e) {
@@ -705,21 +723,37 @@ async function askAboutUncertain(
 		return;
 	}
 
-	try {
+	/**
+	 * ⚠️ **One message, or none — never two.** A morning that produced both a question and
+	 * a price cut is still one notification. "One page, one message" is what keeps the bot
+	 * un-muted, and a muted bot loses the daily deals digest with it.
+	 *
+	 * ⚠️ **`--no-ask` silences the QUESTION, not the price news.** The questions are a
+	 * standing queue the user visits when they choose — that is what the review page is
+	 * for, and it is now published even under `--no-ask`. A price that actually MOVED is
+	 * the thing they asked to be told about, and it only fires when something really
+	 * changed, so it is not the daily nag `--no-ask` exists to prevent.
+	 */
+	const parts: string[] = [];
+	if (!noAsk) {
 		// ⚠️ Only linked when the queue actually reached the repo. A message pointing at a
 		// page that still shows yesterday's questions is worse than one that says so.
-		await sendHtml(
-			renderReviewSummary(toAsk.length, written, published ? config.reviewUrl() : undefined) +
-				// ⚠️ Appended, not sent separately — see `movesText`. A morning with both a
-				// question and a price cut is still one notification.
-				(movesText ? `\n\n${movesText}` : "") +
-				// Appended here rather than inside `renderReviewSummary`, which is a pure
-				// module that deliberately knows nothing about the Telegram client.
-				formatWeightGaps(gaps),
-		);
-		console.log(`📨 Sent one review link to Telegram.`);
+		parts.push(renderReviewSummary(toAsk.length, written, published ? config.reviewUrl() : undefined));
+	}
+	if (movesText) parts.push(movesText);
+
+	if (noAsk) {
+		console.log(`\n${toAsk.length} pick(s) queued for review — not sent (--no-ask). The page IS published.`);
+	}
+
+	if (!parts.length) return;
+	try {
+		// Gaps appended here rather than inside the pure renderers, which deliberately know
+		// nothing about the Telegram client.
+		await sendHtml(parts.join("\n\n") + formatWeightGaps(gaps));
+		console.log(`📨 Sent one message to Telegram.`);
 	} catch (e) {
-		console.log(`⚠️  Could not send the review link (${(e as Error).message}).`);
+		console.log(`⚠️  Could not send the message (${(e as Error).message}).`);
 		console.log(`   The picks stay queued in data/vendor-review.json; the page is still written.`);
 	}
 }

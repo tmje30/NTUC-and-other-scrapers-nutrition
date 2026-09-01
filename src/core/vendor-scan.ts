@@ -33,6 +33,7 @@ import { iherb } from "./stores/iherb.js";
 import { fairprice } from "./stores/fairprice.js";
 import { shengsiong } from "./stores/shengsiong.js";
 import { shengsiongFile } from "./stores/shengsiong-file.js";
+import { shengsiongViaWorker } from "./stores/shengsiong-worker.js";
 
 /**
  * Fill the price book by asking the shops each row already names in `Vendor 1..4`.
@@ -74,12 +75,35 @@ export interface VendorRoute {
 }
 
 /**
- * The same switch the daily scan uses (`run.ts`). Sheng Siong blocks datacenter IPs, so
- * the cloud reads the residential runner's committed file and only a local run with
- * `SHENGSIONG_LIVE=1` hits the live API. Two surfaces that can disagree about which
- * module a shop means is how one of them quietly stops seeing that shop.
+ * Which Sheng Siong this scan speaks to. **Three answers, and picking the wrong one is
+ * silent** — every one of them returns products, or plausibly nothing.
+ *
+ * | env | module | where it works |
+ * | --- | --- | --- |
+ * | *(default)* | `shengsiongFile` | anywhere — reads the committed scan file |
+ * | `SHENGSIONG_LIVE=1` | `shengsiong` | Singapore only — the live DDP API |
+ * | `SHENGSIONG_VIA_WORKER=1` | `shengsiongViaWorker` | **anywhere**, borrowing `ss-worker`'s Singapore placement |
+ *
+ * ⚠️⚠️ **The file is the wrong source for a vendor sweep, and this is the single decision
+ * that decides whether a cloud sweep is real or theatre.** `data/shengsiong-latest.json`
+ * holds only the ~60 terms the daily DEALS scan searched. A vendor-scan row whose term is
+ * not one of them finds nothing — and finding nothing is indistinguishable from "not
+ * stocked". That is the most likely explanation for the 2026-08-11 finding that **49 rows
+ * tagged Sheng Siong had no price between them**, against 57 for NTUC.
+ *
+ * So a scheduled sweep in Actions MUST set `SHENGSIONG_VIA_WORKER=1`. Without it the job
+ * runs daily, reports success, and writes nothing for the shop that is half the workload
+ * (50 of the 120 row×vendor pairs). See `docs/daily-vendor-sweep-scope.md`.
+ *
+ * ⚠️ `run.ts` keeps the two-way switch on purpose: the daily deals scan is what PRODUCES
+ * the file, so reading it there would be circular.
  */
-const ss = process.env.SHENGSIONG_LIVE === "1" ? shengsiong : shengsiongFile;
+const ss =
+	process.env.SHENGSIONG_VIA_WORKER === "1"
+		? shengsiongViaWorker
+		: process.env.SHENGSIONG_LIVE === "1"
+			? shengsiong
+			: shengsiongFile;
 
 /**
  * ⚠️ **`option` must be the live `Vendor n` select option, not the shop's own name.**

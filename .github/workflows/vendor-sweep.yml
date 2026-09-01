@@ -1,0 +1,122 @@
+name: Vendor sweep (cloud)
+
+# Fill the price book from the shops the CLOUD can reach — NTUC, Sheng Siong,
+# Guardian and My Protein. That is **106 of the 120 row×vendor pairs**; the other 14
+# (Watsons, iHerb, Carousell) need a headed Chrome or a Singapore-originating call and
+# are swept by the laptop's `Grocery Vendor Sweep` task. See docs/finish-singapore.md.
+#
+# ⚠️⚠️ **`SHENGSIONG_VIA_WORKER=1` is the line that decides whether this job is real.**
+# By default `vendor-scan` reads `data/shengsiong-latest.json`, which holds only the ~60
+# terms the daily DEALS scan searched. A vendor-scan row whose term is not one of them
+# finds nothing — and finding nothing is indistinguishable from "not stocked". Sheng
+# Siong is 50 of the 120 pairs, so without this the job would run every morning, report
+# success, and write nothing for half the workload. It is the most likely explanation
+# for the 2026-08-11 finding that 49 rows tagged Sheng Siong had no price between them.
+#
+# ⚠️ **This is a separate workflow, NOT a job in `daily.yml`, on purpose.** `daily.yml`
+# is re-entered by `price-new-items.yml` on every rebuild — up to 96 times a day — and a
+# sweep job living there would go with it. The sweep is a once-a-morning thing.
+#
+# ⚠️ **No `schedule:` here, deliberately — the same reason `price-new-items.yml` has
+# none.** GitHub queues scheduled runs on this repo by 3–3¾ hours. The clock for
+# everything time-sensitive in this project is the relay's Cloudflare cron, which
+# already dispatches `rescan` and `tgsweep`; `vendorsweep` is meant to join them once
+# this has been watched for a few mornings.
+on:
+  workflow_dispatch:
+    inputs:
+      write:
+        description: "Record the clear picks in Notion (off = report only, writes nothing)"
+        type: boolean
+        default: false
+  repository_dispatch:
+    types: [vendorsweep]
+
+permissions:
+  contents: write # the review queue is committed by commitAndPushData
+
+# ⚠️ One sweep at a time, and `cancel-in-progress: false`. Two concurrent sweeps would
+# both read the same queue, both scan ~300 search terms, and the loser's push would race
+# the winner's. Cancelling instead would abandon a scan that has already spent minutes
+# against four shops.
+concurrency:
+  group: vendor-sweep
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    # 302 search terms across four shops, with a politeness delay between each. Thirty
+    # minutes is slack for a slow shop, not a budget — a run that hangs should fail
+    # rather than hold the concurrency group all morning.
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - run: npm ci
+
+      # `vendor-scan` commits the review queue itself via `commitAndPushData`, which
+      # needs an identity — same as tg-sweep.yml and price-new-items.yml.
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Sweep the cloud-reachable vendors
+        env:
+          # ⚠️ See the header. Without this the Sheng Siong leg reads a 60-term file
+          # and silently finds nothing for most rows.
+          SHENGSIONG_VIA_WORKER: "1"
+          # Reaches ss-worker, which does the Singapore-side fetch. ⚠️ Missing it makes
+          # the Sheng Siong module THROW rather than fall back — a broken config must
+          # not hide behind a slower path that happens to work.
+          SCAN_SECRET: ${{ secrets.SCAN_SECRET }}
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        # ⚠️ **Report-only unless explicitly asked.** A manual run defaults to writing
+        # NOTHING, so the first look at what a cloud sweep would do costs nothing and
+        # changes nothing. A `repository_dispatch` (the eventual cron) writes.
+        #
+        # ⚠️ `--no-ask` suppresses the daily "N picks need your call" nag but STILL
+        # publishes the review page and still reports a price that actually moved.
+        # It used to return before the push, which on an ephemeral runner discarded
+        # the entire queue — fixed 2026-09-01.
+        #
+        # ⚠️ The four shops are named explicitly rather than left to default. Watsons,
+        # iHerb and Carousell would each fail here for their own reason, and three
+        # daily errors that are expected is how a real one gets ignored.
+        run: |
+          if [ "${{ github.event_name }}" = "repository_dispatch" ] || [ "${{ inputs.write }}" = "true" ]; then
+            echo "::notice::Sweeping WITH --write — picks will be recorded in Notion."
+            npm run vendor-scan -- --only ntuc,shengsiong,guardian,myprotein --write --no-ask
+          else
+            echo "::notice::Report-only sweep — nothing will be written."
+            npm run vendor-scan -- --only ntuc,shengsiong,guardian,myprotein
+          fi
+
+      # ⚠️ **Raw curl, not `npm run notify`.** Two of the likeliest breakages are
+      # `setup-node` and `npm ci`, which leave no node_modules for a script to run in —
+      # a notifier that depends on the thing that just failed goes quiet exactly when it
+      # is needed. Same reasoning as daily.yml's own notifier.
+      - name: Say so in Telegram if the sweep failed
+        if: failure()
+        env:
+          TG_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TG_CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          TEXT="🛑 <b>The vendor sweep failed.</b>
+          The price book was not updated today. Your deals page is unaffected.
+          <a href=\"${RUN_URL}\">See what broke →</a>"
+          curl -sS --max-time 30 -X POST \
+            "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TG_CHAT}" \
+            --data-urlencode "parse_mode=HTML" \
+            --data-urlencode "disable_web_page_preview=true" \
+            --data-urlencode "text=${TEXT}"
