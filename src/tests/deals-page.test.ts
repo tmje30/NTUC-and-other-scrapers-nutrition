@@ -376,3 +376,18 @@ check("it still closes the menu", dismiss.includes("open.open = false;"));
 // ⚠️ Capture phase. In bubble phase the click has already reached the anchor by
 // the time this runs, and stopping propagation there stops nothing.
 check("and runs before anything else can", /\}, true\);/.test(dismiss));
+
+/**
+ * **The price book records the shelf price; the deals page records the offer.**
+ *
+ * ⚠️ These two must disagree, and the fixture product is on offer ($5.65 against a $6.65
+ * list) precisely so this test can see them disagree. The Buy button feeds the shopping
+ * list — what you will actually pay. The Add button feeds `Vendor n`, which answers a
+ * different question: what this ingredient normally costs at this shop.
+ *
+ * A promo price in the price book is close to unrecoverable — it writes silently because
+ * it is cheaper, and the correction is then refused as "dearer". Measured 2026-09-01:
+ * 14 of the first cloud sweep's 52 picks were promo prices, 6 already recorded.
+ */
+check("the Buy button carries the price you will pay", html.includes("&quot;priceSgd&quot;:5.65"));
+check("...and Add to Ingredients carries the PRE-PROMO price", html.includes("&quot;priceSgd&quot;:6.65"));

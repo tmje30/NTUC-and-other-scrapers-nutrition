@@ -28,6 +28,16 @@ export interface StoreProduct {
 	onSale: boolean;
 	/** List/normal price when on sale, SGD. */
 	listPriceSgd: number | null;
+	/**
+	 * What the shop is charging TODAY, kept only when `atShelfPrice` has replaced
+	 * `priceSgd` with the pre-promo figure. Undefined everywhere else, including on
+	 * a product that simply isn't discounted.
+	 *
+	 * ⚠️ Nothing prices off this. It exists so a report can explain why the price
+	 * book is recording $7.50 for a pack the shop is selling at $4.90 — a number
+	 * that looks like a bug until you are told about the 35% tag.
+	 */
+	promoPriceSgd?: number;
 	/** ISO date the promo ends, if the store provides it (many don't). */
 	saleEndsAt: string | null;
 	/** Product page URL. */

@@ -22,6 +22,7 @@
     "macro-test": "tsx src/scripts/macro-test.ts",
     "vendor-probe": "tsx src/scripts/vendor-probe.ts",
     "vendor-scan": "tsx src/scripts/vendor-scan.ts",
+    "vendor-repair-promo": "tsx src/scripts/vendor-repair-promo.ts",
     "push-ss": "tsx src/scripts/push-shengsiong.ts",
     "ss-on-request": "tsx src/scripts/ss-on-request.ts",
     "scan-request": "tsx src/scripts/file-scan-request.ts",

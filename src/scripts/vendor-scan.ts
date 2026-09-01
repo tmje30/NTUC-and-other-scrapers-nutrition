@@ -50,6 +50,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 /** Where the review page is written. Built into `public/` like every other page. */
 const REVIEW_PAGE_PATH = "public/review.html";
 import type { StoreProduct } from "../core/stores/types.js";
+import { atShelfPrice } from "../core/stores/shelf-price.js";
 
 /**
  * Fill the price book from the shops each Ingredients row already names.
@@ -242,7 +243,11 @@ async function main(): Promise<void> {
 				if (t) await sleep(BETWEEN_SEARCHES_MS);
 				let products;
 				try {
-					products = await route.module.search(term);
+					// ⚠️ **Pre-promo prices, applied here and not later.** Everything below —
+					// the size filters, `pickCandidate`'s ranking, the review card, the write —
+					// reads whatever this returns. See `atShelfPrice` for why a promo price must
+					// never reach the price book, and why ranking on one picks the dearer pack.
+					products = (await route.module.search(term)).map(atShelfPrice);
 				} catch (e) {
 					console.log(`    search "${term}" — ✗ failed: ${(e as Error).message}`);
 					failed = true;
@@ -398,6 +403,13 @@ async function main(): Promise<void> {
 					`\n      ${p.name}` +
 					`\n      ${p.url}` +
 					(p.seller ? `\n      seller: ${p.seller}` : "") +
+					// ⚠️ Say it out loud. The figure above is the SHELF price, so a run that sees
+					// a 35%-off tag and records the HIGHER number reads as a bug until the report
+					// explains itself. See `atShelfPrice`.
+					(p.promoPriceSgd != null
+						? `\n      🏷️ on promo at ${money(p.promoPriceSgd)} — recording the ${money(p.priceSgd)} shelf price;` +
+							` the offer belongs on the deals page`
+						: "") +
 					// Shown even on an above-floor pick: a normal price from a
 					// never-personalised account is not a refusal, but it is worth a look
 					// before you hand over money.

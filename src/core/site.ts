@@ -8,6 +8,7 @@ import { categorize } from "./categorize.js";
 import { packShotsFor } from "./macro-prompt.js";
 import { parseNutritionPanel, type PanelMacros } from "./nutrition-panel.js";
 import type { StoreProduct } from "./stores/types.js";
+import { atShelfPrice } from "./stores/shelf-price.js";
 import { parseUnitCount, parseWeight } from "./stores/weight.js";
 import { PAGE_CSS, addScript, menuScript, type ChromeOptions } from "./page-chrome.js";
 
@@ -467,7 +468,13 @@ function ingredientPayload(
 		store: p.store,
 		product: p.name,
 		url: p.url,
-		priceSgd: p.priceSgd,
+		// ⚠️⚠️ **The PRE-PROMO price, and this is the one payload where that is true.**
+		// Adding a deal to Ingredients is the commonest way a promo price reaches the
+		// price book: the card you tapped is on the deals page precisely BECAUSE it is
+		// discounted today. `addPayload` above keeps `p.priceSgd` on purpose — the
+		// shopping list is what you will actually pay, and that is a different question
+		// from what this ingredient normally costs. See `atShelfPrice`.
+		priceSgd: atShelfPrice(p).priceSgd,
 		packSizeG: p.packWeightG,
 		// The count travels alongside the weight, not instead of it. A shop that
 		// publishes only a count (a 30-egg tray) gets `Size[Vendor n] = 30` and

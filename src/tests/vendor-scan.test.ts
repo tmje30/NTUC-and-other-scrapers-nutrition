@@ -19,6 +19,7 @@ import { reviewReasons } from "../core/vendor-review.js";
 import { parseName } from "../core/parse.js";
 import type { PlanTarget, UnitType } from "../core/notion.js";
 import type { StoreProduct } from "../core/stores/types.js";
+import { atShelfPrice } from "../core/stores/shelf-price.js";
 import { check, describe, eq } from "./harness.js";
 
 /**
@@ -558,3 +559,57 @@ check("a mixed morning states both", /1 price got cheaper.*1 newly recorded/.tes
 const amp = renderPriceMoves([move({ row: "Sensitivity & Gum Toothpaste - Original" })], 0, esc)!;
 check("an ampersand in a row name is escaped", amp.includes("Sensitivity &amp; Gum Toothpaste"));
 check("...and the raw ampersand is gone", !/&(?!amp;|lt;|gt;)/.test(amp));
+
+describe("vendor scan — a promo price must never reach the price book");
+
+/**
+ * ⚠️ See `atShelfPrice`. A discount belongs on the deals page; `Vendor n` answers "what
+ * does this normally cost here?". The trap is that the cheaper-only rule makes the
+ * mistake one-way: a promo writes silently BECAUSE it is cheaper, and when the offer ends
+ * the shop's real price is refused as "dearer" and queued as a question forever.
+ *
+ * The fixture is the live case. Guardian recorded $8.65 for Sensodyne Repair & Protect
+ * while the shop's own not-on-sale price was $10.20 — 15% off, baked in by an earlier run.
+ */
+const onOffer = product({ priceSgd: 8.65, onSale: true, listPriceSgd: 10.2, pricePer100g: 8.65 });
+
+eq("a promo pick records the shelf price", atShelfPrice(onOffer).priceSgd, 10.2);
+eq("...and re-derives price per 100g from it", atShelfPrice(onOffer).pricePer100g, 10.2);
+eq("...and keeps what the shop is charging today, for the report", atShelfPrice(onOffer).promoPriceSgd, 8.65);
+check("...and leaves the shop's own flags alone", atShelfPrice(onOffer).onSale === true);
+
+// Nothing to correct is nothing to touch — the SAME object comes back, so a run over a
+// catalogue with no offers allocates nothing and cannot drift.
+const plain = product();
+check("a product that isn't discounted is returned untouched", atShelfPrice(plain) === plain);
+
+// ⚠️ Shops that publish no list price hardcode `listPriceSgd: null` — Carousell, and My
+// Protein's JSON-LD. Their selling price is the only price they state, and inventing a
+// pre-promo figure would be worse than recording the one they publish.
+const marketplace = product({ store: "Carousell", priceSgd: 40, onSale: false, listPriceSgd: null });
+eq("a shop with no list price records what it publishes", atShelfPrice(marketplace).priceSgd, 40);
+
+// Bad data, not a bargain: a "sale" that is not cheaper must not raise the recorded price.
+const notCheaper = product({ priceSgd: 9, onSale: true, listPriceSgd: 8 });
+eq("a sale price above its own list price is ignored", atShelfPrice(notCheaper).priceSgd, 9);
+
+// No weight is no opinion, here as everywhere else in this file.
+check(
+	"a pack with no weight keeps a null price per 100g",
+	atShelfPrice(product({ packWeightG: null, pricePer100g: null, priceSgd: 5, onSale: true, listPriceSgd: 9 }))
+		.pricePer100g === null,
+);
+
+/**
+ * ⚠️⚠️ **The reason this is applied before the pick, not after it.**
+ *
+ * Ranking on the promo price chooses the $10 tube at 50% off over the $6 one — and then
+ * records $10, the dearer of the two, picked because it looked cheaper. The pick and the
+ * price written have to be decided on the same number.
+ */
+const halfOff = product({ priceSgd: 5, onSale: true, listPriceSgd: 10, pricePer100g: 5, url: "https://example.test/a" });
+const plainSix = product({ priceSgd: 6, pricePer100g: 6, url: "https://example.test/b" });
+const ranked = pickCandidate(toothpaste, [halfOff, plainSix].map(atShelfPrice), { marketplace: false });
+check("ranking on the promo price would pick the dearer pack", pickCandidate(toothpaste, [halfOff, plainSix], { marketplace: false }).ok);
+eq("...so the shelf price decides the pick", ranked.ok ? ranked.product.priceSgd : null, 6);
+eq("...and the cheaper OFFER is not what gets recorded", ranked.ok ? ranked.product.url : null, "https://example.test/b");
