@@ -621,7 +621,18 @@ export type CandidateOutcome =
 			/** Cheaper matches that failed the price floor, cheapest first — see `belowFloor`. */
 			belowFloor: StoreProduct[];
 	  }
-	| { ok: false; reason: string; considered: number; belowFloor: StoreProduct[] };
+	| {
+			ok: false;
+			reason: string;
+			considered: number;
+			belowFloor: StoreProduct[];
+			/**
+			 * ⚠️ The most plausible product that did NOT match — review band, never accept.
+			 * Offered as a suggestion so a pair that finds nothing says WHAT it nearly found.
+			 * See `bestNearMiss`.
+			 */
+			nearMiss?: StoreProduct | null;
+	  };
 
 /**
  * How far below a KNOWN price for the same ingredient a marketplace listing may sit
@@ -756,6 +767,27 @@ export function referencePer100g(
  *    minimum is usually the scam (ON Gold Standard 5 lbs at S$37 against ~S$120 retail),
  *    so `cheapestPlausible` drops everything under ~55% of the median first.
  */
+/**
+ * **The best of the ones that didn't quite make it.**
+ *
+ * ⚠️ Review band only — `accept` is a match and belongs in the price book; anything
+ * below the review threshold is not worth showing. Ranked by how well it matched, NOT
+ * by price: a suggestion is a question about identity, and the cheapest near-miss is
+ * usually the least like the thing asked for.
+ *
+ * ⚠️⚠️ Measured 2026-09-02: Sheng Siong stocks Meiji's *pasteurized* skimmed milk,
+ * which is fresh milk but never prints the word, so `Milk (Fresh) (Skimmed)` searched
+ * three terms across 85 results and reported nothing at all. The product was there the
+ * whole time.
+ */
+export function bestNearMiss(target: PlanTarget, priced: StoreProduct[]): StoreProduct | null {
+	const scored = priced
+		.map((p) => ({ p, m: evaluate(target, p) }))
+		.filter((x) => x.m.verdict === "review")
+		.sort((a, b) => b.m.adjusted - a.m.adjusted);
+	return scored[0]?.p ?? null;
+}
+
 export function pickCandidate(
 	target: PlanTarget,
 	products: StoreProduct[],
@@ -779,6 +811,7 @@ export function pickCandidate(
 			ok: false,
 			considered: priced.length,
 			belowFloor: [],
+			nearMiss: bestNearMiss(target, priced),
 			reason: `${priced.length} priced result(s), none matched "${target.name}"`,
 		};
 	}

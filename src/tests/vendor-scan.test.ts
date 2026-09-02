@@ -3,6 +3,7 @@ import {
 	findSizeCeilingProp,
 	gramsPerUnitFor,
 	packWithinCeiling,
+	bestNearMiss,
 	pickCandidate,
 	resolveSize,
 	unitCountFromWeight,
@@ -560,6 +561,40 @@ check("a mixed morning states both", /1 price got cheaper.*1 newly recorded/.tes
 const amp = renderPriceMoves([move({ row: "Sensitivity & Gum Toothpaste - Original" })], 0, esc)!;
 check("an ampersand in a row name is escaped", amp.includes("Sensitivity &amp; Gum Toothpaste"));
 check("...and the raw ampersand is gone", !/&(?!amp;|lt;|gt;)/.test(amp));
+
+describe("vendor scan — a pair that matches nothing still says what it nearly found");
+
+/**
+ * ⚠️ A shop returning no MATCH used to report nothing at all, which reads exactly like
+ * "this shop does not stock it". Measured 2026-09-02: Sheng Siong stocks Meiji's
+ * *pasteurized* skimmed milk — fresh milk that never prints the word — so
+ * `Milk (Fresh) (Skimmed)` searched three terms across 85 results and went silent.
+ *
+ * The suggestion is never written. It carries a `near-miss` reason, and carrying any
+ * reason is what routes a pick to the review queue instead of the write path.
+ */
+const freshSkim = targetFrom("Milk  (Fresh) (Skimmed)", { unitType: "By ml" as UnitType });
+const pasteurized = product({ store: "Sheng Siong", name: "Pasteurized Skimmed Milk", packWeightG: 2000, pricePer100g: 0.348, priceSgd: 6.97 });
+const notMilk = product({ store: "Sheng Siong", name: "Dishwashing Liquid - Lime", packWeightG: 900, pricePer100g: 0.2, priceSgd: 1.8 });
+
+const outcome = pickCandidate(freshSkim, [pasteurized, notMilk], { marketplace: false });
+check("a near-miss is still not a match", !outcome.ok);
+eq(
+	"...but the closest one comes back as a suggestion",
+	!outcome.ok ? (outcome.nearMiss?.name ?? null) : null,
+	"Pasteurized Skimmed Milk",
+);
+
+// ⚠️ Ranked by how well it matched, never by price. The cheapest near-miss is usually
+// the least like the thing asked for — here a dishwashing liquid at half the price.
+eq("ranking is by match quality, not price", bestNearMiss(freshSkim, [notMilk, pasteurized])?.name, "Pasteurized Skimmed Milk");
+
+// Nothing plausible at all is still nothing — a suggestion has to clear the review band.
+eq("an unrelated aisle offers no suggestion", bestNearMiss(freshSkim, [notMilk]), null);
+
+// An accepted match is a match; it must never be demoted to a suggestion.
+const plainSkim = product({ store: "Sheng Siong", name: "Meiji Fresh Skimmed Milk", packWeightG: 1000, pricePer100g: 0.3, priceSgd: 3 });
+check("a real match is not offered as a suggestion", pickCandidate(freshSkim, [plainSkim, pasteurized], { marketplace: false }).ok);
 
 describe("vendor scan — a basic range rejects flavoured and plant versions");
 

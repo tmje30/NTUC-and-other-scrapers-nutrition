@@ -49,7 +49,17 @@ export type ReviewReason =
 	 * and today's find is DEARER, so it is queued instead of written. See
 	 * `dearerThanRecorded`.
 	 */
-	| { kind: "dearer-than-recorded"; recordedPer1000: number; foundPer1000: number; note: string };
+	| { kind: "dearer-than-recorded"; recordedPer1000: number; foundPer1000: number; note: string }
+	/**
+	 * ⚠️⚠️ **A suggestion, not a find.** No product this shop returned actually MATCHED
+	 * the row, but one landed in the review band — plausible, unconfirmed. Without this
+	 * the pair simply goes quiet, and quiet is indistinguishable from "this shop does not
+	 * stock it".
+	 *
+	 * ⚠️ It can never be written by the scan: carrying a reason at all is what routes a
+	 * pick to the queue instead of the write path, and this one is always present.
+	 */
+	| { kind: "near-miss"; note: string };
 
 /**
  * **The cheaper-only rule: a scan may lower a recorded price, never raise one.**
