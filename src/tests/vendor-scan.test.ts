@@ -16,6 +16,7 @@ import {
 	type PriceMove,
 } from "../core/vendor-scan.js";
 import { reviewReasons } from "../core/vendor-review.js";
+import { evaluate } from "../core/match.js";
 import { parseName } from "../core/parse.js";
 import type { PlanTarget, UnitType } from "../core/notion.js";
 import type { StoreProduct } from "../core/stores/types.js";
@@ -559,6 +560,50 @@ check("a mixed morning states both", /1 price got cheaper.*1 newly recorded/.tes
 const amp = renderPriceMoves([move({ row: "Sensitivity & Gum Toothpaste - Original" })], 0, esc)!;
 check("an ampersand in a row name is escaped", amp.includes("Sensitivity &amp; Gum Toothpaste"));
 check("...and the raw ampersand is gone", !/&(?!amp;|lt;|gt;)/.test(amp));
+
+describe("vendor scan — a basic range rejects flavoured and plant versions");
+
+/**
+ * The measured case, 2026-09-02. `Milk ( Normal)` parses to the BASIC RANGE: the
+ * unadjusted product. `ADJUSTED_RE` already rejected low-fat / skimmed / lactose-free,
+ * but it lists only DIETARY modifiers, so nothing stopped a flavoured milk — and
+ * "Pokka Bandung Rose Milk 6 x 250ml" won Sheng Siong on price at $2.32/L and was
+ * written into the row as its plain-milk price. See `FLAVOURED_RE`.
+ */
+const plainMilk = targetFrom("Milk ( Normal)", { unitType: "By ml" as UnitType });
+check("a basic range is what \"( Normal)\" means", parseName("Milk ( Normal)").basicRange);
+
+const bandung = product({ store: "Sheng Siong", name: "Bandung Rose Milk", packWeightG: 1500, pricePer100g: 0.232, priceSgd: 3.48 });
+const realMilk = product({ store: "Sheng Siong", name: "Farm Fresh Milk - Pure", packWeightG: 2000, pricePer100g: 0.335, priceSgd: 6.7 });
+
+eq("a flavoured version is not the basic product", evaluate(plainMilk, bandung).verdict, "miss");
+eq("...while the plain product still matches", evaluate(plainMilk, realMilk).verdict, "accept");
+
+// The whole point of the bug: it was CHEAPEST, so the ranking preferred it.
+const picked = pickCandidate(plainMilk, [bandung, realMilk], { marketplace: false });
+eq("so the cheaper flavoured pack no longer wins the row", picked.ok ? picked.product.name : null, "Farm Fresh Milk - Pure");
+
+// ⚠️⚠️ And only for a base whose PLAIN form is the one normally sold. Flavour is the
+// norm for whey — a global rule made "Whey Protein Isolate Vanilla" unmatchable for a
+// plain `whey` row, which is why `FLAVOURABLE_BASE_RE` exists.
+eq(
+	"a flavoured whey is still the product for a plain whey row",
+	evaluate(targetFrom("Whey"), product({ name: "Whey Protein Isolate Vanilla 1kg", packWeightG: 1000, pricePer100g: 4.5 })).verdict,
+	"accept",
+);
+
+// ⚠️ Skipped when the ITEM names the word, exactly like the other basic-range guards —
+// otherwise this would make every flavoured row unmatchable.
+eq(
+	"a row that asks for the flavour still gets it",
+	evaluate(targetFrom("Chocolate Milk", { unitType: "By ml" as UnitType }), product({ name: "Chocolate Milk", packWeightG: 1000, pricePer100g: 0.3 })).verdict,
+	"accept",
+);
+eq(
+	"and so does a plant-milk row",
+	evaluate(targetFrom("Soy Milk", { unitType: "By ml" as UnitType }), product({ name: "Unisoy Soy Milk", packWeightG: 1000, pricePer100g: 0.3 })).verdict,
+	"accept",
+);
 
 describe("vendor scan — a promo price must never reach the price book");
 

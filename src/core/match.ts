@@ -247,6 +247,28 @@ const GENERIC_FORM_RES = GENERIC_FORM_PATTERNS.map((p) => new RegExp(`\\b${p}\\b
 const ADJUSTED_RE =
 	/\b(low[\s-]?fat|lowfat|reduced[\s-]?fat|fat[\s-]?free|non[\s-]?fat|skim|skimmed|full[\s-]?cream|sugar[\s-]?free|no[\s-]?added[\s-]?sugar|reduced[\s-]?sugar|unsweetened|diet|zero|lactose[\s-]?free|decaf\w*|lite)\b/i;
 
+// FLAVOURED and PLANT versions of a basic product — a separate axis from
+// `ADJUSTED_RE`, which lists only DIETARY modifiers (low fat, sugar-free) and so left
+// `Milk ( Normal)` with no guard against a flavour at all.
+//
+// Measured 2026-09-02 by the vendor sweep: "Pokka Bandung Rose Milk 6 x 250ml" was the
+// accepted Sheng Siong match for `Milk ( Normal)` and won on price at $2.32/L, so a
+// rose-syrup drink was written into the row as its plain-milk price. `parse.ts` already
+// documented that a basic range "rejects low-fat / skimmed / lactose-free / flavoured /
+// plant milk"; the first three were true and the last two were not.
+//
+// ⚠️⚠️ **Only for the bases in `FLAVOURABLE_BASE_RE`, NOT every basic-range row.**
+// Flavour is a deviation from plain milk, but it is the NORM for whey, coffee and tea —
+// unflavoured whey is the rarity, and a global rule made "Whey Protein Isolate Vanilla"
+// unmatchable for a plain `whey` row. Keep this list to products whose plain form is the
+// one normally sold.
+//
+// Skipped whenever the ITEM ITSELF names the word, exactly like the other guards, so a
+// row for "Chocolate Milk" or "Soy Milk" is unaffected.
+const FLAVOURABLE_BASE_RE = /\b(milk|yogh?urt)\b/i;
+const FLAVOURED_RE =
+	/\b(chocolate|choco|strawberr(?:y|ies)|banana|vanilla|rose|bandung|mango|melon|honeydew|matcha|caramel|mocha|hazelnut|taro|pandan|durian|lychee|peach|blueberr(?:y|ies)|yuzu|soy|soya|oat|almond|coconut|cashew|macadamia)\b/i;
+
 // PLANT-PART groups, ported from the sibling inventory project. An item declaring
 // a category names one part of the plant; a candidate naming ONLY a different part
 // is a different product — "Banana (Fruit)" vs "Banana Leaves".
@@ -398,6 +420,14 @@ export function matchPenalty(target: PlanTarget, product: StoreProduct): number 
 	// skimmed, lactose-free or sugar-free versions. Only applies when the item
 	// itself named no such variant.
 	if (s.basicRange && !has(ADJUSTED_RE, itemText) && has(ADJUSTED_RE, title)) mult *= 0.2;
+	// Same rule on the flavour axis, for plain-form bases only. See `FLAVOURED_RE`.
+	if (
+		s.basicRange &&
+		has(FLAVOURABLE_BASE_RE, itemText) &&
+		!has(FLAVOURED_RE, itemText) &&
+		has(FLAVOURED_RE, title)
+	)
+		mult *= 0.2;
 
 	// Fresh produce, either declared in the name ("Banana (Fruit)") or — for every
 	// row — inferred from the Notion `Catagory` select, so the guards work without
