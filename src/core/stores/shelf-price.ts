@@ -31,12 +31,23 @@ import type { StoreProduct } from "./types.js";
  * being replaced is kept as `promoPriceSgd`. Nothing downstream prices off any of the
  * three — they are there so the report can say out loud that a pick was on offer.
  *
+ * ⚠️⚠️ **A price of ZERO is a missing price, not a 100% discount.** FairPrice sends
+ * `final_price: 0` with the `mrp` still populated for a product it is not selling at the
+ * chosen store, which makes its `onSale` test true. Those listings used to be dropped by
+ * `pickCandidate`'s `pricePer100g > 0` filter and never reached a decision; rescuing them
+ * to `mrp` here would put them back in the running, and being multipacks they win on unit
+ * price. Measured 2026-09-02: searching "Sensitivity Gum Toothpaste - Original" returns 7
+ * FairPrice results and 6 of them are priced 0 — including three 300g Sensodyne packs at
+ * an mrp of $22.80 ($76.00/kg) that would beat the one genuinely priced result, the
+ * $10.20 100g Original ($102.00/kg), on a row that names Original.
+ *
  * ⚠️ A shop that publishes no list price is returned UNTOUCHED — Carousell, and My
  * Protein's JSON-LD, both hardcode `listPriceSgd: null`. Their selling price is the only
  * price they state, and inventing a pre-promo figure would be worse than recording the
  * one they publish.
  */
 export function atShelfPrice(p: StoreProduct): StoreProduct {
+	if (!(p.priceSgd > 0)) return p;
 	if (!p.onSale || p.listPriceSgd == null || !(p.listPriceSgd > p.priceSgd)) return p;
 	const shelf = p.listPriceSgd;
 	return {

@@ -593,6 +593,16 @@ eq("a shop with no list price records what it publishes", atShelfPrice(marketpla
 const notCheaper = product({ priceSgd: 9, onSale: true, listPriceSgd: 8 });
 eq("a sale price above its own list price is ignored", atShelfPrice(notCheaper).priceSgd, 9);
 
+// ⚠️⚠️ A price of ZERO is a MISSING price, not a 100% discount. FairPrice sends
+// `final_price: 0` with `mrp` still populated for a product it isn't selling at the chosen
+// store, so its `onSale` test comes out true. `pickCandidate` drops those on
+// `pricePer100g > 0`; rescuing them to `mrp` here would put them back in the running, and
+// being multipacks they win on unit price. Measured 2026-09-02, six of seven FairPrice
+// results for "Sensitivity Gum Toothpaste - Original" were priced 0.
+const unavailable = product({ priceSgd: 0, pricePer100g: 0, onSale: true, listPriceSgd: 22.8, packWeightG: 300 });
+check("a zero price is left at zero, not read as a free gift", atShelfPrice(unavailable) === unavailable);
+eq("...so it stays below pickCandidate's price floor", atShelfPrice(unavailable).pricePer100g, 0);
+
 // No weight is no opinion, here as everywhere else in this file.
 check(
 	"a pack with no weight keeps a null price per 100g",
