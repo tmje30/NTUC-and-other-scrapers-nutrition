@@ -1,7 +1,30 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-02T03:57:40.577Z",
+  "updatedAt": "2026-09-02T06:04:35.863Z",
   "pending": [
+    {
+      "token": "4087nh",
+      "ingredientId": "34c69a18-4fe7-80a9-af53-cf0c2e5cf7f8",
+      "ingredientName": "Oil (Bran)",
+      "key": "oil",
+      "unitType": "By ml",
+      "vendor": "NTUC",
+      "slotN": 1,
+      "priceSgd": 6.3,
+      "size": 1000,
+      "url": "https://www.fairprice.com.sg/product/rice-field-100-pure-rice-bran-oil-1-l-90089704",
+      "itemName": "Rice Field 100% Pure Rice Bran Oil",
+      "perLabel": "$6.30/L",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer1000": 5.2,
+          "foundPer1000": 6.3,
+          "note": "DEARER than the NTUC price already recorded: $5.20 / 1000ml = $5.20/L → $6.30 / 1000ml = $6.30/L. Not written — accept only if the old price is gone."
+        }
+      ],
+      "askedAt": "2026-09-02T03:55:39.346Z"
+    },
     {
       "token": "yrxust",
       "ingredientId": "39869a18-4fe7-8033-b52c-c02424bf56df",
@@ -24,7 +47,7 @@
           "note": "DEARER than the NTUC price already recorded: $2.40 / 20 pcs = $120.00/1000 pcs → $2.40 / 17 pcs = $141.18/1000 pcs. Not written — accept only if the old price is gone."
         }
       ],
-      "askedAt": "2026-09-02T03:51:56.095Z"
+      "askedAt": "2026-09-02T05:57:52.238Z"
     },
     {
       "token": "t5i5hm",
@@ -45,7 +68,7 @@
           "note": "the pack size is a RANGE and was read at its top — the real pack may be smaller (and dearer per kg)"
         }
       ],
-      "askedAt": "2026-09-02T03:52:12.668Z"
+      "askedAt": "2026-09-02T05:58:09.842Z"
     },
     {
       "token": "qb1z8m",
@@ -72,7 +95,7 @@
           "note": "the pack size is a RANGE and was read at its top — the real pack may be smaller (and dearer per kg)"
         }
       ],
-      "askedAt": "2026-09-02T03:52:18.552Z"
+      "askedAt": "2026-09-02T05:58:18.146Z"
     },
     {
       "token": "4rtdm5",
@@ -101,7 +124,30 @@
           "note": "4.8× DEARER than this row's other shop"
         }
       ],
-      "askedAt": "2026-09-02T03:53:00.862Z"
+      "askedAt": "2026-09-02T05:58:56.760Z"
+    },
+    {
+      "token": "89lydj",
+      "ingredientId": "36e69a18-4fe7-802b-a8b0-c58108df75df",
+      "ingredientName": "Milk  (Fresh) (Skimmed)",
+      "key": "milk",
+      "unitType": "By ml",
+      "vendor": "NTUC",
+      "slotN": 1,
+      "priceSgd": 2.9,
+      "size": 1000,
+      "url": "https://www.fairprice.com.sg/product/harvey-fresh-uht-milk-skim-1lt-10905401",
+      "itemName": "Harvey Fresh UHT Milk - Skim",
+      "perLabel": "$2.90/L",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer1000": 2.05,
+          "foundPer1000": 2.9,
+          "note": "DEARER than the NTUC price already recorded: $2.05 / 1000ml = $2.05/L → $2.90 / 1000ml = $2.90/L. Not written — accept only if the old price is gone."
+        }
+      ],
+      "askedAt": "2026-09-02T05:59:31.802Z"
     },
     {
       "token": "84vaf7",
@@ -123,7 +169,7 @@
           "note": "11.1× DEARER than this row's other shop"
         }
       ],
-      "askedAt": "2026-09-02T03:53:54.011Z"
+      "askedAt": "2026-09-02T05:59:44.468Z"
     },
     {
       "token": "j017sn",
@@ -145,7 +191,7 @@
           "note": "11.1× cheaper than this row's other shop"
         }
       ],
-      "askedAt": "2026-09-02T03:53:57.161Z"
+      "askedAt": "2026-09-02T05:59:46.952Z"
     },
     {
       "token": "qpptkl",
@@ -168,30 +214,35 @@
           "note": "DEARER than the NTUC price already recorded: $24.50 / 1000g = $24.50/kg → $4.02 / 100g = $40.20/kg. Not written — accept only if the old price is gone."
         }
       ],
-      "askedAt": "2026-09-02T03:54:45.988Z"
+      "askedAt": "2026-09-02T06:00:42.772Z"
     },
     {
-      "token": "4087nh",
+      "token": "xor4mu",
       "ingredientId": "34c69a18-4fe7-80a9-af53-cf0c2e5cf7f8",
       "ingredientName": "Oil (Bran)",
       "key": "oil",
       "unitType": "By ml",
       "vendor": "NTUC",
       "slotN": 1,
-      "priceSgd": 6.3,
-      "size": 1000,
-      "url": "https://www.fairprice.com.sg/product/rice-field-100-pure-rice-bran-oil-1-l-90089704",
-      "itemName": "Rice Field 100% Pure Rice Bran Oil",
-      "perLabel": "$6.30/L",
+      "priceSgd": 15.9,
+      "size": 600,
+      "url": "https://www.fairprice.com.sg/product/nissin-rice-bran-oil-600-g-90098236",
+      "itemName": "Nissin Rice Bran Oil",
+      "perLabel": "$26.50/L",
       "reasons": [
         {
           "kind": "dearer-than-recorded",
           "recordedPer1000": 5.2,
-          "foundPer1000": 6.3,
-          "note": "DEARER than the NTUC price already recorded: $5.20 / 1000ml = $5.20/L → $6.30 / 1000ml = $6.30/L. Not written — accept only if the old price is gone."
+          "foundPer1000": 26.5,
+          "note": "DEARER than the NTUC price already recorded: $5.20 / 1000ml = $5.20/L → $15.90 / 600ml = $26.50/L. Not written — accept only if the old price is gone."
+        },
+        {
+          "kind": "outlier",
+          "factor": 4.274193548387097,
+          "note": "4.3× DEARER than this row's other shop"
         }
       ],
-      "askedAt": "2026-09-02T03:55:39.346Z"
+      "askedAt": "2026-09-02T06:01:48.953Z"
     },
     {
       "token": "p1lawb",
@@ -212,7 +263,7 @@
           "note": "the pack size is a RANGE and was read at its top — the real pack may be smaller (and dearer per kg)"
         }
       ],
-      "askedAt": "2026-09-02T03:56:15.730Z"
+      "askedAt": "2026-09-02T06:02:35.622Z"
     },
     {
       "token": "k2ioco",
@@ -235,12 +286,58 @@
           "note": "DEARER than the NTUC price already recorded: $4.60 / 1000g = $4.60/kg → $2.40 / 500g = $4.80/kg. Not written — accept only if the old price is gone."
         }
       ],
-      "askedAt": "2026-09-02T03:56:23.952Z"
+      "askedAt": "2026-09-02T06:02:43.969Z"
+    },
+    {
+      "token": "t70wc0",
+      "ingredientId": "34b69a18-4fe7-805a-b781-e3300da041a4",
+      "ingredientName": "Milk  (Fresh) (Low Fat)",
+      "key": "milk",
+      "unitType": "By ml",
+      "vendor": "NTUC",
+      "slotN": 1,
+      "priceSgd": 2.42,
+      "size": 1000,
+      "url": "https://www.fairprice.com.sg/product/meadow-fresh-uht-milk-low-fast-1l-13230402",
+      "itemName": "Meadow Fresh UHT Milk - Low Fat",
+      "perLabel": "$2.42/L",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer1000": 2.05,
+          "foundPer1000": 2.42,
+          "note": "DEARER than the NTUC price already recorded: $2.05 / 1000ml = $2.05/L → $2.42 / 1000ml = $2.42/L. Not written — accept only if the old price is gone."
+        }
+      ],
+      "askedAt": "2026-09-02T06:03:14.897Z"
+    },
+    {
+      "token": "u14vbg",
+      "ingredientId": "34b69a18-4fe7-805a-b781-e3300da041a4",
+      "ingredientName": "Milk  (Fresh) (Low Fat)",
+      "key": "milk",
+      "unitType": "By ml",
+      "vendor": "Sheng Siong",
+      "slotN": 2,
+      "priceSgd": 3.63,
+      "size": 946,
+      "url": "https://shengsiong.com.sg/product/magnolia-low-fat-fresh-milk-946-ml",
+      "itemName": "Low Fat Fresh Milk",
+      "perLabel": "$3.84/L",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer1000": 3.07,
+          "foundPer1000": 3.837209302325581,
+          "note": "DEARER than the Sheng Siong price already recorded: $3.07 / 1000ml = $3.07/L → $3.63 / 946ml = $3.84/L. Not written — accept only if the old price is gone."
+        }
+      ],
+      "askedAt": "2026-09-02T06:03:20.805Z"
     },
     {
       "token": "islmr1",
       "ingredientId": "34b69a18-4fe7-8020-b136-ebb02d41c6ef",
-      "ingredientName": "Milk ( Normal)",
+      "ingredientName": "Milk (Fresh) (Normal)",
       "key": "milk",
       "unitType": "By ml",
       "vendor": "NTUC",
@@ -258,7 +355,7 @@
           "note": "DEARER than the NTUC price already recorded: $6.05 / 1890ml = $3.20/L → $6.70 / 2000ml = $3.35/L. Not written — accept only if the old price is gone."
         }
       ],
-      "askedAt": "2026-09-02T03:57:03.726Z"
+      "askedAt": "2026-09-02T06:03:28.359Z"
     },
     {
       "token": "92soy4",
@@ -280,7 +377,7 @@
           "note": "3.7× cheaper than this row's other shop"
         }
       ],
-      "askedAt": "2026-09-02T03:57:10.243Z"
+      "askedAt": "2026-09-02T06:03:35.656Z"
     },
     {
       "token": "va71ta",
@@ -302,7 +399,30 @@
           "note": "3.7× DEARER than this row's other shop"
         }
       ],
-      "askedAt": "2026-09-02T03:57:13.092Z"
+      "askedAt": "2026-09-02T06:03:38.617Z"
+    },
+    {
+      "token": "j2f8ac",
+      "ingredientId": "34b69a18-4fe7-80f1-8ecb-d764d2abe554",
+      "ingredientName": "Green Tea (50 x 2g)",
+      "key": "green tea",
+      "unitType": "By Unit",
+      "vendor": "NTUC",
+      "slotN": 1,
+      "priceSgd": 7.92,
+      "size": 50,
+      "url": "https://www.fairprice.com.sg/product/lipton-fresh-green-tea-50s-x-15g-13011589",
+      "itemName": "Lipton Green Tea Bags - Lively Fresh",
+      "perLabel": "$79.20/kg",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer1000": 125.2,
+          "foundPer1000": 158.39999999999998,
+          "note": "DEARER than the NTUC price already recorded: $6.26 / 50 pcs = $125.20/1000 pcs → $7.92 / 50 pcs = $158.40/1000 pcs. Not written — accept only if the old price is gone."
+        }
+      ],
+      "askedAt": "2026-09-02T06:03:44.258Z"
     },
     {
       "token": "918cko",
@@ -325,7 +445,7 @@
           "note": "DEARER than the Sheng Siong price already recorded: $6.90 / 50 pcs = $138.00/1000 pcs → $7.75 / 50 pcs = $155.00/1000 pcs. Not written — accept only if the old price is gone."
         }
       ],
-      "askedAt": "2026-09-02T03:57:22.702Z"
+      "askedAt": "2026-09-02T06:03:48.547Z"
     },
     {
       "token": "5ouerp",
@@ -348,29 +468,7 @@
           "note": "DEARER than the NTUC price already recorded: $5.70 / 250g = $22.80/kg → $6.10 / 250g = $24.40/kg. Not written — accept only if the old price is gone."
         }
       ],
-      "askedAt": "2026-09-02T03:57:28.970Z"
-    },
-    {
-      "token": "6si0v1",
-      "ingredientId": "34b69a18-4fe7-8089-bff1-d84e43a7b560",
-      "ingredientName": "Cinnamon",
-      "key": "cinnamon",
-      "unitType": "By Gram",
-      "vendor": "Sheng Siong",
-      "slotN": 2,
-      "priceSgd": 1.92,
-      "size": 50,
-      "url": "https://shengsiong.com.sg/product/0101-cinnamon-powder-50-g",
-      "itemName": "Cinnamon Powder",
-      "perLabel": "$38.40/kg",
-      "reasons": [
-        {
-          "kind": "outlier",
-          "factor": 0.22032786885245897,
-          "note": "4.5× cheaper than this row's other shop"
-        }
-      ],
-      "askedAt": "2026-09-02T03:57:39.586Z"
+      "askedAt": "2026-09-02T06:03:54.747Z"
     },
     {
       "token": "r515iw",
@@ -393,7 +491,30 @@
           "note": "DEARER than the NTUC price already recorded: $3.13 / 250g = $12.52/kg → $6.05 / 325g = $18.62/kg. Not written — accept only if the old price is gone."
         }
       ],
-      "askedAt": "2026-09-02T03:57:40.577Z"
+      "askedAt": "2026-09-02T06:04:07.494Z"
+    },
+    {
+      "token": "1gqw65",
+      "ingredientId": "34b69a18-4fe7-807d-8439-fea7f149877f",
+      "ingredientName": "Eggs, Whole, small (1650g), {cheap}",
+      "key": "egg",
+      "unitType": "By Unit",
+      "vendor": "Sheng Siong",
+      "slotN": 2,
+      "priceSgd": 6.65,
+      "size": 10,
+      "url": "https://shengsiong.com.sg/product/egg-for-you-fresh-eggs-30s-1650-g",
+      "itemName": "Fresh Eggs (30s)",
+      "perLabel": "$4.03/kg",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer1000": 443.33333333333337,
+          "foundPer1000": 665,
+          "note": "DEARER than the Sheng Siong price already recorded: $6.65 / 15 pcs = $443.33/1000 pcs → $6.65 / 10 pcs = $665.00/1000 pcs. Not written — accept only if the old price is gone."
+        }
+      ],
+      "askedAt": "2026-09-02T06:04:35.863Z"
     }
   ],
   "rejected": [
