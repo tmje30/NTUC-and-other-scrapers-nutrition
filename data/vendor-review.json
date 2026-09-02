@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-02T06:04:35.863Z",
+  "updatedAt": "2026-09-02T08:48:51.608Z",
   "pending": [
     {
       "token": "4087nh",
@@ -125,29 +125,6 @@
         }
       ],
       "askedAt": "2026-09-02T05:58:56.760Z"
-    },
-    {
-      "token": "89lydj",
-      "ingredientId": "36e69a18-4fe7-802b-a8b0-c58108df75df",
-      "ingredientName": "Milk  (Fresh) (Skimmed)",
-      "key": "milk",
-      "unitType": "By ml",
-      "vendor": "NTUC",
-      "slotN": 1,
-      "priceSgd": 2.9,
-      "size": 1000,
-      "url": "https://www.fairprice.com.sg/product/harvey-fresh-uht-milk-skim-1lt-10905401",
-      "itemName": "Harvey Fresh UHT Milk - Skim",
-      "perLabel": "$2.90/L",
-      "reasons": [
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer1000": 2.05,
-          "foundPer1000": 2.9,
-          "note": "DEARER than the NTUC price already recorded: $2.05 / 1000ml = $2.05/L → $2.90 / 1000ml = $2.90/L. Not written — accept only if the old price is gone."
-        }
-      ],
-      "askedAt": "2026-09-02T05:59:31.802Z"
     },
     {
       "token": "84vaf7",
@@ -287,75 +264,6 @@
         }
       ],
       "askedAt": "2026-09-02T06:02:43.969Z"
-    },
-    {
-      "token": "t70wc0",
-      "ingredientId": "34b69a18-4fe7-805a-b781-e3300da041a4",
-      "ingredientName": "Milk  (Fresh) (Low Fat)",
-      "key": "milk",
-      "unitType": "By ml",
-      "vendor": "NTUC",
-      "slotN": 1,
-      "priceSgd": 2.42,
-      "size": 1000,
-      "url": "https://www.fairprice.com.sg/product/meadow-fresh-uht-milk-low-fast-1l-13230402",
-      "itemName": "Meadow Fresh UHT Milk - Low Fat",
-      "perLabel": "$2.42/L",
-      "reasons": [
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer1000": 2.05,
-          "foundPer1000": 2.42,
-          "note": "DEARER than the NTUC price already recorded: $2.05 / 1000ml = $2.05/L → $2.42 / 1000ml = $2.42/L. Not written — accept only if the old price is gone."
-        }
-      ],
-      "askedAt": "2026-09-02T06:03:14.897Z"
-    },
-    {
-      "token": "u14vbg",
-      "ingredientId": "34b69a18-4fe7-805a-b781-e3300da041a4",
-      "ingredientName": "Milk  (Fresh) (Low Fat)",
-      "key": "milk",
-      "unitType": "By ml",
-      "vendor": "Sheng Siong",
-      "slotN": 2,
-      "priceSgd": 3.63,
-      "size": 946,
-      "url": "https://shengsiong.com.sg/product/magnolia-low-fat-fresh-milk-946-ml",
-      "itemName": "Low Fat Fresh Milk",
-      "perLabel": "$3.84/L",
-      "reasons": [
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer1000": 3.07,
-          "foundPer1000": 3.837209302325581,
-          "note": "DEARER than the Sheng Siong price already recorded: $3.07 / 1000ml = $3.07/L → $3.63 / 946ml = $3.84/L. Not written — accept only if the old price is gone."
-        }
-      ],
-      "askedAt": "2026-09-02T06:03:20.805Z"
-    },
-    {
-      "token": "islmr1",
-      "ingredientId": "34b69a18-4fe7-8020-b136-ebb02d41c6ef",
-      "ingredientName": "Milk (Fresh) (Normal)",
-      "key": "milk",
-      "unitType": "By ml",
-      "vendor": "NTUC",
-      "slotN": 1,
-      "priceSgd": 6.7,
-      "size": 2000,
-      "url": "https://www.fairprice.com.sg/product/farm-fresh-milk-pure-2l-13287436",
-      "itemName": "[BCRS] Farm Fresh Milk - Pure",
-      "perLabel": "$3.35/L",
-      "reasons": [
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer1000": 3.201058201058201,
-          "foundPer1000": 3.35,
-          "note": "DEARER than the NTUC price already recorded: $6.05 / 1890ml = $3.20/L → $6.70 / 2000ml = $3.35/L. Not written — accept only if the old price is gone."
-        }
-      ],
-      "askedAt": "2026-09-02T06:03:28.359Z"
     },
     {
       "token": "92soy4",
