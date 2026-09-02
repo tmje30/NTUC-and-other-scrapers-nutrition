@@ -245,7 +245,23 @@ const GENERIC_FORM_RES = GENERIC_FORM_PATTERNS.map((p) => new RegExp(`\\b${p}\\b
 // conservative list: only modifiers that are always a deviation from the plain
 // product (so "powder" is absent — whey protein is legitimately a powder).
 const ADJUSTED_RE =
-	/\b(low[\s-]?fat|lowfat|reduced[\s-]?fat|fat[\s-]?free|non[\s-]?fat|skim|skimmed|full[\s-]?cream|sugar[\s-]?free|no[\s-]?added[\s-]?sugar|reduced[\s-]?sugar|unsweetened|diet|zero|lactose[\s-]?free|decaf\w*|lite)\b/i;
+	/\b(low[\s-]?fat|lowfat|reduced[\s-]?fat|fat[\s-]?free|non[\s-]?fat|skim|skimmed|sugar[\s-]?free|no[\s-]?added[\s-]?sugar|reduced[\s-]?sugar|unsweetened|diet|zero|lactose[\s-]?free|decaf\w*|lite)\b/i;
+
+/**
+ * ⚠️ **"Full cream" is the PLAIN form of milk, not an adjusted one.** It sat in
+ * `ADJUSTED_RE` beside low-fat and skimmed, so a basic-range milk row rejected
+ * "Meiji Fresh Milk - Full Cream" — the standard product — while accepting UHT.
+ *
+ * User's call, 2026-09-02: full cream is fine *when accompanied by milk*. Elsewhere the
+ * word still marks a variant (a full-cream milk POWDER, a cream product), so it is only
+ * forgiven when the title says milk, rather than deleted from the list outright.
+ */
+const FULL_CREAM_RE = /\bfull[\s-]?cream\b/i;
+const MILK_RE = /\bmilk\b/i;
+
+/** An adjusted variant, with the full-cream-milk exception applied. */
+const isAdjusted = (text: string): boolean =>
+	has(ADJUSTED_RE, text) || (has(FULL_CREAM_RE, text) && !has(MILK_RE, text));
 
 // FLAVOURED and PLANT versions of a basic product — a separate axis from
 // `ADJUSTED_RE`, which lists only DIETARY modifiers (low fat, sugar-free) and so left
@@ -419,7 +435,7 @@ export function matchPenalty(target: PlanTarget, product: StoreProduct): number 
 	// the general form of the plain-milk rule: plain "Milk" must not match low-fat,
 	// skimmed, lactose-free or sugar-free versions. Only applies when the item
 	// itself named no such variant.
-	if (s.basicRange && !has(ADJUSTED_RE, itemText) && has(ADJUSTED_RE, title)) mult *= 0.2;
+	if (s.basicRange && !isAdjusted(itemText) && !has(FULL_CREAM_RE, itemText) && isAdjusted(title)) mult *= 0.2;
 	// Same rule on the flavour axis, for plain-form bases only. See `FLAVOURED_RE`.
 	if (
 		s.basicRange &&

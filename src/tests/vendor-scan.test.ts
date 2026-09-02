@@ -583,6 +583,25 @@ eq("...while the plain product still matches", evaluate(plainMilk, realMilk).ver
 const picked = pickCandidate(plainMilk, [bandung, realMilk], { marketplace: false });
 eq("so the cheaper flavoured pack no longer wins the row", picked.ok ? picked.product.name : null, "Farm Fresh Milk - Pure");
 
+// ⚠️ "Full cream" is the PLAIN form of milk, not an adjusted one — it used to sit in
+// `ADJUSTED_RE` beside low-fat and skimmed, so the standard product was rejected while
+// UHT was accepted. Forgiven only when the title says milk (user's call, 2026-09-02).
+eq(
+	"full-cream milk is the plain product, not a variant",
+	evaluate(targetFrom("Milk (Fresh) (Normal)", { unitType: "By ml" as UnitType }), product({ name: "Meiji Fresh Milk - Full Cream", packWeightG: 1000, pricePer100g: 0.3 })).verdict,
+	"accept",
+);
+eq(
+	"...but low fat still is one",
+	evaluate(targetFrom("Milk (Fresh) (Normal)", { unitType: "By ml" as UnitType }), product({ name: "Meiji Low Fat Fresh Milk", packWeightG: 1000, pricePer100g: 0.3 })).verdict,
+	"miss",
+);
+eq(
+	"...and full cream WITHOUT milk keeps its old meaning",
+	evaluate(targetFrom("Yoghurt"), product({ name: "Full Cream Yoghurt", packWeightG: 500, pricePer100g: 0.5 })).verdict,
+	"miss",
+);
+
 // ⚠️⚠️ And only for a base whose PLAIN form is the one normally sold. Flavour is the
 // norm for whey — a global rule made "Whey Protein Isolate Vanilla" unmatchable for a
 // plain `whey` row, which is why `FLAVOURABLE_BASE_RE` exists.
