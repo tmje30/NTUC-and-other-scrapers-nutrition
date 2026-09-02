@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-13T11:02:46.885Z",
+  "updatedAt": "2026-09-02T01:42:48.788Z",
   "terms": [
     {
       "key": "instant coffe",
@@ -182,6 +182,15 @@
       "name": "Honey (Raw)",
       "note": "ignored from the deals page",
       "addedAt": "2026-08-13T11:02:46.885Z"
+    },
+    {
+      "key": "banana",
+      "store": "Sheng Siong",
+      "product": "Malaysia Pisang Berangan Banana",
+      "url": "https://shengsiong.com.sg/product/malaysia-pisang-berangan-banana-12-15-kg",
+      "name": "Banana (Fruit)",
+      "note": "close, but not confirmed",
+      "addedAt": "2026-09-02T01:42:48.788Z"
     }
   ]
 }
