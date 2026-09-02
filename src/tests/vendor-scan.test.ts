@@ -592,6 +592,20 @@ eq("ranking is by match quality, not price", bestNearMiss(freshSkim, [notMilk, p
 // Nothing plausible at all is still nothing — a suggestion has to clear the review band.
 eq("an unrelated aisle offers no suggestion", bestNearMiss(freshSkim, [notMilk]), null);
 
+// ⚠️⚠️ A suggestion must at least NAME the thing. The review band alone is too loose:
+// measured 2026-09-02, a `Banana (Fruit)` row whose Sheng Siong search returned one
+// priced result offered "3 Mixed Cargo Rice".
+const banana = targetFrom("Banana (Fruit)");
+const cargoRice = product({ store: "Sheng Siong", name: "3 Mixed Cargo Rice", packWeightG: 1800, pricePer100g: 0.4, priceSgd: 7.2 });
+eq("a product sharing no word with the row is never suggested", bestNearMiss(banana, [cargoRice]), null);
+
+// ...and it is applied BEFORE the band, so a real near-miss beside junk still survives.
+eq(
+	"junk is dropped and the real near-miss still comes back",
+	bestNearMiss(freshSkim, [cargoRice, pasteurized])?.name,
+	"Pasteurized Skimmed Milk",
+);
+
 // An accepted match is a match; it must never be demoted to a suggestion.
 const plainSkim = product({ store: "Sheng Siong", name: "Meiji Fresh Skimmed Milk", packWeightG: 1000, pricePer100g: 0.3, priceSgd: 3 });
 check("a real match is not offered as a suggestion", pickCandidate(freshSkim, [plainSkim, pasteurized], { marketplace: false }).ok);
