@@ -1,7 +1,401 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-31T09:25:15.069Z",
-  "pending": [],
+  "updatedAt": "2026-09-02T03:57:40.577Z",
+  "pending": [
+    {
+      "token": "yrxust",
+      "ingredientId": "39869a18-4fe7-8033-b52c-c02424bf56df",
+      "ingredientName": "Bread, Wholemeal, [FairPrice] (600g)",
+      "key": "bread",
+      "unitType": "By Unit",
+      "vendor": "NTUC",
+      "slotN": 1,
+      "brand": "fairprice",
+      "priceSgd": 2.4,
+      "size": 17,
+      "url": "https://www.fairprice.com.sg/product/fairprice-bread-wholemeal-500g-13200668",
+      "itemName": "FairPrice Bread - Wholemeal",
+      "perLabel": "$4.00/kg",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer1000": 120,
+          "foundPer1000": 141.1764705882353,
+          "note": "DEARER than the NTUC price already recorded: $2.40 / 20 pcs = $120.00/1000 pcs → $2.40 / 17 pcs = $141.18/1000 pcs. Not written — accept only if the old price is gone."
+        }
+      ],
+      "askedAt": "2026-09-02T03:51:56.095Z"
+    },
+    {
+      "token": "t5i5hm",
+      "ingredientId": "39869a18-4fe7-800c-b229-f5fefe795809",
+      "ingredientName": "Purple Cabbage",
+      "key": "purpl cabbag",
+      "unitType": "By Gram",
+      "vendor": "Sheng Siong",
+      "slotN": 2,
+      "priceSgd": 1.3,
+      "size": 700,
+      "url": "https://shengsiong.com.sg/product/china-purple-cabbage-600-700-g",
+      "itemName": "China Purple Cabbage",
+      "perLabel": "$1.86/kg",
+      "reasons": [
+        {
+          "kind": "size-range",
+          "note": "the pack size is a RANGE and was read at its top — the real pack may be smaller (and dearer per kg)"
+        }
+      ],
+      "askedAt": "2026-09-02T03:52:12.668Z"
+    },
+    {
+      "token": "qb1z8m",
+      "ingredientId": "39869a18-4fe7-8029-9609-ea147e99672e",
+      "ingredientName": "carrots, Normal",
+      "key": "carrot",
+      "unitType": "By Gram",
+      "vendor": "Sheng Siong",
+      "slotN": 2,
+      "priceSgd": 1.6,
+      "size": 900,
+      "url": "https://shengsiong.com.sg/product/australia-china-carrots-850-900-g",
+      "itemName": "Australia / China Carrots",
+      "perLabel": "$1.78/kg",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer1000": 1.68,
+          "foundPer1000": 1.777777777777778,
+          "note": "DEARER than the Sheng Siong price already recorded: $1.68 / 1000g = $1.68/kg → $1.60 / 900g = $1.78/kg. Not written — accept only if the old price is gone."
+        },
+        {
+          "kind": "size-range",
+          "note": "the pack size is a RANGE and was read at its top — the real pack may be smaller (and dearer per kg)"
+        }
+      ],
+      "askedAt": "2026-09-02T03:52:18.552Z"
+    },
+    {
+      "token": "4rtdm5",
+      "ingredientId": "37369a18-4fe7-80c0-bae0-f52639895b21",
+      "ingredientName": "whey, essential  [MyProtein]",
+      "key": "whei",
+      "unitType": "By Gram",
+      "vendor": "My Protein",
+      "slotN": 3,
+      "brand": "myprotein",
+      "priceSgd": 302.99,
+      "size": 1980,
+      "url": "https://www.myprotein.com.sg/p/sports-nutrition/the-whey/11353515/?variation=12968620",
+      "itemName": "THE Whey 1.98kg - 60servings Strawberry",
+      "perLabel": "$153.03/kg",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer1000": 76.00800000000001,
+          "foundPer1000": 153.02525252525254,
+          "note": "DEARER than the My Protein price already recorded: $190.02 / 2500g = $76.01/kg → $302.99 / 1980g = $153.03/kg. Not written — accept only if the old price is gone."
+        },
+        {
+          "kind": "outlier",
+          "factor": 4.782039141414141,
+          "note": "4.8× DEARER than this row's other shop"
+        }
+      ],
+      "askedAt": "2026-09-02T03:53:00.862Z"
+    },
+    {
+      "token": "84vaf7",
+      "ingredientId": "34e69a18-4fe7-80ba-a84f-c9e6a8eb9d1c",
+      "ingredientName": "Ginger (Bentong)",
+      "key": "ginger",
+      "unitType": "By Gram",
+      "vendor": "NTUC",
+      "slotN": 1,
+      "priceSgd": 16.5,
+      "size": 160,
+      "url": "https://www.fairprice.com.sg/product/green-earth-old-bentong-ginger-160-g-90030893",
+      "itemName": "Green Earth Old Bentong Ginger",
+      "perLabel": "$103.13/kg",
+      "reasons": [
+        {
+          "kind": "outlier",
+          "factor": 11.128597122302159,
+          "note": "11.1× DEARER than this row's other shop"
+        }
+      ],
+      "askedAt": "2026-09-02T03:53:54.011Z"
+    },
+    {
+      "token": "j017sn",
+      "ingredientId": "34e69a18-4fe7-80ba-a84f-c9e6a8eb9d1c",
+      "ingredientName": "Ginger (Bentong)",
+      "key": "ginger",
+      "unitType": "By Gram",
+      "vendor": "Sheng Siong",
+      "slotN": 2,
+      "priceSgd": 2.78,
+      "size": 300,
+      "url": "https://shengsiong.com.sg/product/thailand-bentong-ginger-300-g",
+      "itemName": "Thailand Bentong Ginger",
+      "perLabel": "$9.27/kg",
+      "reasons": [
+        {
+          "kind": "outlier",
+          "factor": 0.08985858585858586,
+          "note": "11.1× cheaper than this row's other shop"
+        }
+      ],
+      "askedAt": "2026-09-02T03:53:57.161Z"
+    },
+    {
+      "token": "qpptkl",
+      "ingredientId": "34c69a18-4fe7-80e2-af0a-f43a16115231",
+      "ingredientName": "White Pepper",
+      "key": "whit pepper",
+      "unitType": "By Gram",
+      "vendor": "NTUC",
+      "slotN": 1,
+      "priceSgd": 4.02,
+      "size": 100,
+      "url": "https://www.fairprice.com.sg/product/fairprice-white-pepper-seed-100g-11046880",
+      "itemName": "FairPrice White Pepper - Seed",
+      "perLabel": "$40.20/kg",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer1000": 24.5,
+          "foundPer1000": 40.199999999999996,
+          "note": "DEARER than the NTUC price already recorded: $24.50 / 1000g = $24.50/kg → $4.02 / 100g = $40.20/kg. Not written — accept only if the old price is gone."
+        }
+      ],
+      "askedAt": "2026-09-02T03:54:45.988Z"
+    },
+    {
+      "token": "4087nh",
+      "ingredientId": "34c69a18-4fe7-80a9-af53-cf0c2e5cf7f8",
+      "ingredientName": "Oil (Bran)",
+      "key": "oil",
+      "unitType": "By ml",
+      "vendor": "NTUC",
+      "slotN": 1,
+      "priceSgd": 6.3,
+      "size": 1000,
+      "url": "https://www.fairprice.com.sg/product/rice-field-100-pure-rice-bran-oil-1-l-90089704",
+      "itemName": "Rice Field 100% Pure Rice Bran Oil",
+      "perLabel": "$6.30/L",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer1000": 5.2,
+          "foundPer1000": 6.3,
+          "note": "DEARER than the NTUC price already recorded: $5.20 / 1000ml = $5.20/L → $6.30 / 1000ml = $6.30/L. Not written — accept only if the old price is gone."
+        }
+      ],
+      "askedAt": "2026-09-02T03:55:39.346Z"
+    },
+    {
+      "token": "p1lawb",
+      "ingredientId": "34b69a18-4fe7-80c7-9de6-fa3234a2a9d8",
+      "ingredientName": "Banana (Fruit)",
+      "key": "banana",
+      "unitType": "By Gram",
+      "vendor": "Sheng Siong",
+      "slotN": 2,
+      "priceSgd": 3.48,
+      "size": 1200,
+      "url": "https://shengsiong.com.sg/product/ecuador-philippines-indonesia-cavendish-banana-1-12-kg",
+      "itemName": "Ecuador / Philippines / Indonesia Cavendish Banana",
+      "perLabel": "$2.90/kg",
+      "reasons": [
+        {
+          "kind": "size-range",
+          "note": "the pack size is a RANGE and was read at its top — the real pack may be smaller (and dearer per kg)"
+        }
+      ],
+      "askedAt": "2026-09-02T03:56:15.730Z"
+    },
+    {
+      "token": "k2ioco",
+      "ingredientId": "34b69a18-4fe7-80d2-b17d-d4167b9113c4",
+      "ingredientName": "Frozen Veg(Mixed)",
+      "key": "frozen vegetabl",
+      "unitType": "By Gram",
+      "vendor": "NTUC",
+      "slotN": 1,
+      "priceSgd": 2.4,
+      "size": 500,
+      "url": "https://www.fairprice.com.sg/product/churo-frozen-mixed-vegetables-1-x-500g-90043495",
+      "itemName": "Churo Frozen Mixed Vegetables",
+      "perLabel": "$4.80/kg",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer1000": 4.6,
+          "foundPer1000": 4.8,
+          "note": "DEARER than the NTUC price already recorded: $4.60 / 1000g = $4.60/kg → $2.40 / 500g = $4.80/kg. Not written — accept only if the old price is gone."
+        }
+      ],
+      "askedAt": "2026-09-02T03:56:23.952Z"
+    },
+    {
+      "token": "islmr1",
+      "ingredientId": "34b69a18-4fe7-8020-b136-ebb02d41c6ef",
+      "ingredientName": "Milk ( Normal)",
+      "key": "milk",
+      "unitType": "By ml",
+      "vendor": "NTUC",
+      "slotN": 1,
+      "priceSgd": 6.7,
+      "size": 2000,
+      "url": "https://www.fairprice.com.sg/product/farm-fresh-milk-pure-2l-13287436",
+      "itemName": "[BCRS] Farm Fresh Milk - Pure",
+      "perLabel": "$3.35/L",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer1000": 3.201058201058201,
+          "foundPer1000": 3.35,
+          "note": "DEARER than the NTUC price already recorded: $6.05 / 1890ml = $3.20/L → $6.70 / 2000ml = $3.35/L. Not written — accept only if the old price is gone."
+        }
+      ],
+      "askedAt": "2026-09-02T03:57:03.726Z"
+    },
+    {
+      "token": "92soy4",
+      "ingredientId": "34b69a18-4fe7-805e-aedc-c6f292e6007e",
+      "ingredientName": "Instant Coffee (plain)",
+      "key": "instant coffe",
+      "unitType": "By Gram",
+      "vendor": "NTUC",
+      "slotN": 1,
+      "priceSgd": 8.45,
+      "size": 420,
+      "url": "https://www.fairprice.com.sg/product/nescafe-ipoh-white-coffee-gao-siew-dai-15s-x-31g-13083149",
+      "itemName": "Nescafe Instant Ipoh White Coffee - Gao Siew Dai",
+      "perLabel": "$20.12/kg",
+      "reasons": [
+        {
+          "kind": "outlier",
+          "factor": 0.270054330457015,
+          "note": "3.7× cheaper than this row's other shop"
+        }
+      ],
+      "askedAt": "2026-09-02T03:57:10.243Z"
+    },
+    {
+      "token": "va71ta",
+      "ingredientId": "34b69a18-4fe7-805e-aedc-c6f292e6007e",
+      "ingredientName": "Instant Coffee (plain)",
+      "key": "instant coffe",
+      "unitType": "By Gram",
+      "vendor": "Sheng Siong",
+      "slotN": 2,
+      "priceSgd": 7.45,
+      "size": 100,
+      "url": "https://shengsiong.com.sg/product/nescafe-classic-jar-instant-soluble-coffee-100-g",
+      "itemName": "Classic Jar Instant Soluble Coffee",
+      "perLabel": "$74.50/kg",
+      "reasons": [
+        {
+          "kind": "outlier",
+          "factor": 3.7029585798816576,
+          "note": "3.7× DEARER than this row's other shop"
+        }
+      ],
+      "askedAt": "2026-09-02T03:57:13.092Z"
+    },
+    {
+      "token": "918cko",
+      "ingredientId": "34b69a18-4fe7-80f1-8ecb-d764d2abe554",
+      "ingredientName": "Green Tea (50 x 2g)",
+      "key": "green tea",
+      "unitType": "By Unit",
+      "vendor": "Sheng Siong",
+      "slotN": 2,
+      "priceSgd": 7.75,
+      "size": 50,
+      "url": "https://shengsiong.com.sg/product/osk-japanese-green-tea-teabag-50-x-2-g",
+      "itemName": "Japanese Green Tea Teabag",
+      "perLabel": "$77.50/kg",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer1000": 138,
+          "foundPer1000": 155,
+          "note": "DEARER than the Sheng Siong price already recorded: $6.90 / 50 pcs = $138.00/1000 pcs → $7.75 / 50 pcs = $155.00/1000 pcs. Not written — accept only if the old price is gone."
+        }
+      ],
+      "askedAt": "2026-09-02T03:57:22.702Z"
+    },
+    {
+      "token": "5ouerp",
+      "ingredientId": "34b69a18-4fe7-804a-b0d1-f396d121b472",
+      "ingredientName": "Butter",
+      "key": "butter",
+      "unitType": "By Gram",
+      "vendor": "NTUC",
+      "slotN": 1,
+      "priceSgd": 6.1,
+      "size": 250,
+      "url": "https://www.fairprice.com.sg/product/westgold-block-butter-unsalted-250g-13067250",
+      "itemName": "Westgold Block Butter - Unsalted",
+      "perLabel": "$24.40/kg",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer1000": 22.8,
+          "foundPer1000": 24.4,
+          "note": "DEARER than the NTUC price already recorded: $5.70 / 250g = $22.80/kg → $6.10 / 250g = $24.40/kg. Not written — accept only if the old price is gone."
+        }
+      ],
+      "askedAt": "2026-09-02T03:57:28.970Z"
+    },
+    {
+      "token": "6si0v1",
+      "ingredientId": "34b69a18-4fe7-8089-bff1-d84e43a7b560",
+      "ingredientName": "Cinnamon",
+      "key": "cinnamon",
+      "unitType": "By Gram",
+      "vendor": "Sheng Siong",
+      "slotN": 2,
+      "priceSgd": 1.92,
+      "size": 50,
+      "url": "https://shengsiong.com.sg/product/0101-cinnamon-powder-50-g",
+      "itemName": "Cinnamon Powder",
+      "perLabel": "$38.40/kg",
+      "reasons": [
+        {
+          "kind": "outlier",
+          "factor": 0.22032786885245897,
+          "note": "4.5× cheaper than this row's other shop"
+        }
+      ],
+      "askedAt": "2026-09-02T03:57:39.586Z"
+    },
+    {
+      "token": "r515iw",
+      "ingredientId": "34b69a18-4fe7-8079-955e-ef44e9443bac",
+      "ingredientName": "Muscovado Sugar (Brown)",
+      "key": "brown muscovado sugar",
+      "unitType": "By Gram",
+      "vendor": "NTUC",
+      "slotN": 1,
+      "priceSgd": 6.05,
+      "size": 325,
+      "url": "https://www.fairprice.com.sg/product/tate-and-lyle-dark-muscovado-sugar",
+      "itemName": "Tate and Lyle Dark Muscovado Sugar",
+      "perLabel": "$18.62/kg",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer1000": 12.52,
+          "foundPer1000": 18.615384615384613,
+          "note": "DEARER than the NTUC price already recorded: $3.13 / 250g = $12.52/kg → $6.05 / 325g = $18.62/kg. Not written — accept only if the old price is gone."
+        }
+      ],
+      "askedAt": "2026-09-02T03:57:40.577Z"
+    }
+  ],
   "rejected": [
     {
       "ingredientId": "34b69a18-4fe7-8089-bff1-d84e43a7b560",
