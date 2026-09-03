@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-03T02:02:55.109Z",
+  "updatedAt": "2026-09-03T02:02:41.718Z",
   "pending": [
     {
       "token": "4087nh",
@@ -103,56 +103,6 @@
       "askedAt": "2026-09-03T00:35:11.257Z"
     },
     {
-      "token": "xg0651",
-      "ingredientId": "3b269a18-4fe7-81d4-8025-e6004ddc5b24",
-      "ingredientName": "AM facial moisturizing lotion (SPF 30) [cerave]",
-      "key": "am facial moisturizing lotion",
-      "unitType": "By ml",
-      "vendor": "Guardian",
-      "slotN": 4,
-      "brand": "cerave",
-      "priceSgd": 29.9,
-      "size": 52,
-      "url": "https://www.guardian.com.sg/cerave-am-facial-moisturizer-lotion-52ml-630064.html",
-      "itemName": "CeraVe AM Facial Moisturizing Lotion SPF30 52ML",
-      "perLabel": "$575.00/L",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 2 of 2, offered as a suggestion. Accept only if it is the same thing."
-        }
-      ],
-      "askedAt": "2026-09-03T01:54:47.979Z"
-    },
-    {
-      "token": "m6g2t5",
-      "ingredientId": "3b269a18-4fe7-81d4-8025-e6004ddc5b24",
-      "ingredientName": "AM facial moisturizing lotion (SPF 30) [cerave]",
-      "key": "am facial moisturizing lotion",
-      "unitType": "By ml",
-      "vendor": "Guardian",
-      "slotN": 4,
-      "brand": "cerave",
-      "priceSgd": 30.9,
-      "size": 52,
-      "url": "https://www.guardian.com.sg/crv-am-facial-moisturising-lot-635747.html",
-      "itemName": "CeraVe AM Facial Moisturizing Lotion SPF50 52ML",
-      "perLabel": "$594.23/L",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is the closest of 2 offered, best first. Accept only if it is the same thing."
-        },
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer1000": 575,
-          "foundPer1000": 594.2307692307693,
-          "note": "DEARER than the Guardian price already recorded: $29.90 / 52ml = $575.00/L → $30.90 / 52ml = $594.23/L. Not written — accept only if the old price is gone."
-        }
-      ],
-      "askedAt": "2026-09-03T01:54:47.981Z"
-    },
-    {
       "token": "yrxust",
       "ingredientId": "39869a18-4fe7-8033-b52c-c02424bf56df",
       "ingredientName": "Bread, Wholemeal, [FairPrice] (600g)",
@@ -174,7 +124,7 @@
           "note": "DEARER than the NTUC price already recorded: $2.40 / 20 pcs = $120.00/1000 pcs → $2.40 / 17 pcs = $141.18/1000 pcs. Not written — accept only if the old price is gone."
         }
       ],
-      "askedAt": "2026-09-03T01:56:23.138Z"
+      "askedAt": "2026-09-03T00:37:14.944Z"
     },
     {
       "token": "t5i5hm",
@@ -195,7 +145,7 @@
           "note": "the pack size is a RANGE and was read at its top — the real pack may be smaller (and dearer per kg)"
         }
       ],
-      "askedAt": "2026-09-03T01:56:38.886Z"
+      "askedAt": "2026-09-03T00:37:33.841Z"
     },
     {
       "token": "qb1z8m",
@@ -222,7 +172,7 @@
           "note": "the pack size is a RANGE and was read at its top — the real pack may be smaller (and dearer per kg)"
         }
       ],
-      "askedAt": "2026-09-03T01:56:45.149Z"
+      "askedAt": "2026-09-03T00:37:40.968Z"
     },
     {
       "token": "4rtdm5",
@@ -251,49 +201,7 @@
           "note": "4.8× DEARER than this row's other shop"
         }
       ],
-      "askedAt": "2026-09-03T01:57:26.206Z"
-    },
-    {
-      "token": "x5bx8x",
-      "ingredientId": "36e69a18-4fe7-802b-a8b0-c58108df75df",
-      "ingredientName": "Milk  (Fresh) (Skimmed)",
-      "key": "milk",
-      "unitType": "By ml",
-      "vendor": "Sheng Siong",
-      "slotN": 2,
-      "priceSgd": 6.97,
-      "size": 2000,
-      "url": "https://shengsiong.com.sg/product/meiji-pasteurized-skimmed-milk-2-l-3128883",
-      "itemName": "Pasteurized Skimmed Milk",
-      "perLabel": "$3.48/L",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 2 of 2, offered as a suggestion. Accept only if it is the same thing."
-        }
-      ],
-      "askedAt": "2026-09-03T01:58:10.880Z"
-    },
-    {
-      "token": "i1kjos",
-      "ingredientId": "36e69a18-4fe7-802b-a8b0-c58108df75df",
-      "ingredientName": "Milk  (Fresh) (Skimmed)",
-      "key": "milk",
-      "unitType": "By ml",
-      "vendor": "Sheng Siong",
-      "slotN": 2,
-      "priceSgd": 3.51,
-      "size": 1000,
-      "url": "https://shengsiong.com.sg/product/greenfields-skimmed-milk-1-l",
-      "itemName": "Skimmed Milk",
-      "perLabel": "$3.51/L",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is the closest of 2 offered, best first. Accept only if it is the same thing."
-        }
-      ],
-      "askedAt": "2026-09-03T01:58:10.881Z"
+      "askedAt": "2026-09-03T00:38:19.808Z"
     },
     {
       "token": "84vaf7",
@@ -315,7 +223,7 @@
           "note": "11.1× DEARER than this row's other shop"
         }
       ],
-      "askedAt": "2026-09-03T01:58:19.253Z"
+      "askedAt": "2026-09-03T00:39:18.568Z"
     },
     {
       "token": "j017sn",
@@ -337,7 +245,7 @@
           "note": "11.1× cheaper than this row's other shop"
         }
       ],
-      "askedAt": "2026-09-03T01:58:22.077Z"
+      "askedAt": "2026-09-03T00:39:21.978Z"
     },
     {
       "token": "qpptkl",
@@ -360,7 +268,7 @@
           "note": "DEARER than the NTUC price already recorded: $24.50 / 1000g = $24.50/kg → $4.02 / 100g = $40.20/kg. Not written — accept only if the old price is gone."
         }
       ],
-      "askedAt": "2026-09-03T01:59:13.419Z"
+      "askedAt": "2026-09-03T00:40:24.035Z"
     },
     {
       "token": "xor4mu",
@@ -388,7 +296,7 @@
           "note": "4.3× DEARER than this row's other shop"
         }
       ],
-      "askedAt": "2026-09-03T02:00:08.012Z"
+      "askedAt": "2026-09-03T00:41:35.085Z"
     },
     {
       "token": "1f9o64",
@@ -411,7 +319,7 @@
           "note": "DEARER than the NTUC price already recorded: $2.55 / 700g = $3.64/kg → $4.55 / 820g = $5.55/kg. Not written — accept only if the old price is gone."
         }
       ],
-      "askedAt": "2026-09-03T02:00:43.642Z"
+      "askedAt": "2026-09-03T00:42:18.742Z"
     },
     {
       "token": "p1lawb",
@@ -432,7 +340,7 @@
           "note": "the pack size is a RANGE and was read at its top — the real pack may be smaller (and dearer per kg)"
         }
       ],
-      "askedAt": "2026-09-03T02:00:46.099Z"
+      "askedAt": "2026-09-03T00:42:21.807Z"
     },
     {
       "token": "9evl12",
@@ -454,7 +362,7 @@
           "note": "no product here MATCHED this row — this is the closest one, offered as a suggestion. Accept only if it is the same thing."
         }
       ],
-      "askedAt": "2026-09-03T02:00:56.209Z"
+      "askedAt": "2026-09-03T00:42:30.618Z"
     },
     {
       "token": "k2ioco",
@@ -477,7 +385,7 @@
           "note": "DEARER than the NTUC price already recorded: $4.60 / 1000g = $4.60/kg → $2.40 / 500g = $4.80/kg. Not written — accept only if the old price is gone."
         }
       ],
-      "askedAt": "2026-09-03T02:00:59.314Z"
+      "askedAt": "2026-09-03T00:42:32.309Z"
     },
     {
       "token": "atcu4x",
@@ -500,7 +408,7 @@
           "note": "DEARER than the Sheng Siong price already recorded: $3.07 / 1000ml = $3.07/L → $6.70 / 2000ml = $3.35/L. Not written — accept only if the old price is gone."
         }
       ],
-      "askedAt": "2026-09-03T02:01:46.333Z"
+      "askedAt": "2026-09-03T00:43:30.214Z"
     },
     {
       "token": "18ft5v",
@@ -522,7 +430,7 @@
           "note": "3.7× cheaper than this row's other shop"
         }
       ],
-      "askedAt": "2026-09-03T02:01:49.738Z"
+      "askedAt": "2026-09-03T00:43:32.161Z"
     },
     {
       "token": "va71ta",
@@ -544,7 +452,7 @@
           "note": "3.7× DEARER than this row's other shop"
         }
       ],
-      "askedAt": "2026-09-03T02:01:53.799Z"
+      "askedAt": "2026-09-03T00:43:35.480Z"
     },
     {
       "token": "918cko",
@@ -567,7 +475,7 @@
           "note": "DEARER than the Sheng Siong price already recorded: $6.90 / 50 pcs = $138.00/1000 pcs → $7.75 / 50 pcs = $155.00/1000 pcs. Not written — accept only if the old price is gone."
         }
       ],
-      "askedAt": "2026-09-03T02:02:05.218Z"
+      "askedAt": "2026-09-03T00:43:46.623Z"
     },
     {
       "token": "5ouerp",
@@ -590,7 +498,7 @@
           "note": "DEARER than the NTUC price already recorded: $5.70 / 250g = $22.80/kg → $6.10 / 250g = $24.40/kg. Not written — accept only if the old price is gone."
         }
       ],
-      "askedAt": "2026-09-03T02:02:11.226Z"
+      "askedAt": "2026-09-03T00:43:52.593Z"
     },
     {
       "token": "zlg42m",
@@ -613,7 +521,7 @@
           "note": "DEARER than the NTUC price already recorded: $3.13 / 250g = $12.52/kg → $4.00 / 250g = $16.00/kg. Not written — accept only if the old price is gone."
         }
       ],
-      "askedAt": "2026-09-03T02:02:25.511Z"
+      "askedAt": "2026-09-03T00:44:10.138Z"
     },
     {
       "token": "1gqw65",
@@ -636,7 +544,206 @@
           "note": "DEARER than the Sheng Siong price already recorded: $6.65 / 15 pcs = $443.33/1000 pcs → $6.65 / 10 pcs = $665.00/1000 pcs. Not written — accept only if the old price is gone."
         }
       ],
-      "askedAt": "2026-09-03T02:02:55.109Z"
+      "askedAt": "2026-09-03T00:44:48.461Z"
+    },
+    {
+      "token": "027xa9",
+      "ingredientId": "3b269a18-4fe7-81d4-8025-e6004ddc5b24",
+      "ingredientName": "AM facial moisturizing lotion (SPF 30) [cerave]",
+      "key": "am facial moisturizing lotion",
+      "unitType": "By ml",
+      "vendor": "Watsons",
+      "slotN": 3,
+      "brand": "cerave",
+      "priceSgd": 29.9,
+      "size": 52,
+      "url": "https://www.watsons.com.sg/cerave-am-facial-moisturizing-lotion-spf30-52ml/p/BP_51157",
+      "itemName": "CERAVE AM Facial Moisturizing Lotion SPF30 52ml",
+      "perLabel": "$575.00/L",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is the closest one, offered as a suggestion. Accept only if it is the same thing."
+        }
+      ],
+      "askedAt": "2026-09-03T02:00:31.814Z"
+    },
+    {
+      "token": "wd6tb9",
+      "ingredientId": "3b269a18-4fe7-8123-a0ae-ccda5c7a3415",
+      "ingredientName": "Toothpaste  - Multi Care [Sensodyne]",
+      "key": "toothpast multi care",
+      "unitType": "By Gram",
+      "vendor": "Watsons",
+      "slotN": 3,
+      "brand": "sensodyne",
+      "priceSgd": 7.5,
+      "size": 100,
+      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-gum-care-toothpaste-dental-sensitivity-relief-100g/p/BP_45477",
+      "itemName": "SENSODYNE Sensitive Teeth Gum Care Toothpaste (Dental Sensitivity Relief) 100g",
+      "perLabel": "$75.00/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 2 of 3, offered as a suggestion. Accept only if it is the same thing."
+        }
+      ],
+      "askedAt": "2026-09-03T02:00:52.146Z"
+    },
+    {
+      "token": "m5yaj9",
+      "ingredientId": "3b269a18-4fe7-8123-a0ae-ccda5c7a3415",
+      "ingredientName": "Toothpaste  - Multi Care [Sensodyne]",
+      "key": "toothpast multi care",
+      "unitType": "By Gram",
+      "vendor": "Watsons",
+      "slotN": 3,
+      "brand": "sensodyne",
+      "priceSgd": 7.8,
+      "size": 100,
+      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-oral-care-toothpaste-gentle-whitening-dental-sensitivity-relief-100g/p/BP_47922",
+      "itemName": "SENSODYNE Sensitive Teeth Oral Care Toothpaste Gentle Whitening (Dental Sensitivity Relief) 100g",
+      "perLabel": "$78.00/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
+        }
+      ],
+      "askedAt": "2026-09-03T02:00:52.148Z"
+    },
+    {
+      "token": "44qgz7",
+      "ingredientId": "3b269a18-4fe7-8123-a0ae-ccda5c7a3415",
+      "ingredientName": "Toothpaste  - Multi Care [Sensodyne]",
+      "key": "toothpast multi care",
+      "unitType": "By Gram",
+      "vendor": "Watsons",
+      "slotN": 3,
+      "brand": "sensodyne",
+      "priceSgd": 7.5,
+      "size": 100,
+      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-multi-care-dental-sensitivity-relief-100g/p/BP_92324",
+      "itemName": "SENSODYNE Sensitive Teeth Multi Care (Dental Sensitivity Relief) 100g",
+      "perLabel": "$75.00/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is the closest of 3 offered, best first. Accept only if it is the same thing."
+        }
+      ],
+      "askedAt": "2026-09-03T02:00:52.158Z"
+    },
+    {
+      "token": "rypsw0",
+      "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
+      "ingredientName": "Sensitivity & Gum Toothpaste - Original",
+      "key": "sensitiviti gum toothpast original",
+      "unitType": "By Gram",
+      "vendor": "Watsons",
+      "slotN": 3,
+      "priceSgd": 10.2,
+      "size": 100,
+      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-oral-care-toothpaste-sensitivity-and-gum-extra-fresh-dental-sensitivity-relief-100g/p/BP_51696",
+      "itemName": "SENSODYNE Sensitive Teeth Oral Care Toothpaste Sensitivity and Gum Extra Fresh (Dental Sensitivity Relief) 100g",
+      "perLabel": "$102.00/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 2 of 2, offered as a suggestion. Accept only if it is the same thing."
+        }
+      ],
+      "askedAt": "2026-09-03T02:01:22.803Z"
+    },
+    {
+      "token": "1egnl6",
+      "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
+      "ingredientName": "Sensitivity & Gum Toothpaste - Original",
+      "key": "sensitiviti gum toothpast original",
+      "unitType": "By Gram",
+      "vendor": "Watsons",
+      "slotN": 3,
+      "priceSgd": 10.2,
+      "size": 100,
+      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-oral-care-toothpaste-sensitivity-and-gum-whitening-dental-sensitivity-relief-100g/p/BP_45103",
+      "itemName": "SENSODYNE Sensitive Teeth Oral Care Toothpaste Sensitivity and Gum Whitening (Dental Sensitivity Relief) 100g",
+      "perLabel": "$102.00/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is the closest of 2 offered, best first. Accept only if it is the same thing."
+        }
+      ],
+      "askedAt": "2026-09-03T02:01:22.804Z"
+    },
+    {
+      "token": "bklb5n",
+      "ingredientId": "37369a18-4fe7-809b-b3bb-cc640507e5a9",
+      "ingredientName": "Creatine monohydrate (Cali gold)",
+      "key": "creatin monohydrat",
+      "unitType": "By Gram",
+      "vendor": "Iherb",
+      "slotN": 1,
+      "priceSgd": 32.96,
+      "size": 150.25,
+      "url": "https://sg.iherb.com/pr/bpn-creatine-monohydrate-unflavored-5-3-oz-150-g/141831",
+      "itemName": "BPN, Creatine Monohydrate, Unflavored , 5.3 oz (150 g)",
+      "perLabel": "$219.37/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 2 of 3, offered as a suggestion. Accept only if it is the same thing."
+        }
+      ],
+      "askedAt": "2026-09-03T02:02:41.713Z"
+    },
+    {
+      "token": "uog344",
+      "ingredientId": "37369a18-4fe7-809b-b3bb-cc640507e5a9",
+      "ingredientName": "Creatine monohydrate (Cali gold)",
+      "key": "creatin monohydrat",
+      "unitType": "By Gram",
+      "vendor": "Iherb",
+      "slotN": 1,
+      "priceSgd": 54.95,
+      "size": 300.5,
+      "url": "https://sg.iherb.com/pr/bpn-creatine-monohydrate-unflavored-10-6-oz-300-g/131350",
+      "itemName": "BPN, Creatine Monohydrate, Unflavored, 10.6 oz (300 g)",
+      "perLabel": "$182.86/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
+        }
+      ],
+      "askedAt": "2026-09-03T02:02:41.714Z"
+    },
+    {
+      "token": "gb3oxa",
+      "ingredientId": "37369a18-4fe7-809b-b3bb-cc640507e5a9",
+      "ingredientName": "Creatine monohydrate (Cali gold)",
+      "key": "creatin monohydrat",
+      "unitType": "By Gram",
+      "vendor": "Iherb",
+      "slotN": 1,
+      "priceSgd": 45.19,
+      "size": 500,
+      "url": "https://sg.iherb.com/pr/paradise-herbs-creatine-monohydrate-unflavored-500-g/141315",
+      "itemName": "Paradise Herbs, Creatine Monohydrate, Unflavored, 500 g",
+      "perLabel": "$90.38/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is the closest of 3 offered, best first. Accept only if it is the same thing."
+        },
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer1000": 42.12637913741224,
+          "foundPer1000": 90.38,
+          "note": "DEARER than the Iherb price already recorded: $42.00 / 997g = $42.13/kg → $45.19 / 500g = $90.38/kg. Not written — accept only if the old price is gone."
+        }
+      ],
+      "askedAt": "2026-09-03T02:02:41.718Z"
     }
   ],
   "rejected": [
