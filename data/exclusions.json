@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-02T01:42:48.788Z",
+  "updatedAt": "2026-09-03T08:04:21.172Z",
   "terms": [
     {
       "key": "instant coffe",
@@ -191,6 +191,15 @@
       "name": "Banana (Fruit)",
       "note": "close, but not confirmed",
       "addedAt": "2026-09-02T01:42:48.788Z"
+    },
+    {
+      "key": "instant coffe",
+      "store": "NTUC",
+      "product": "Nescafe Instant Ipoh White Coffee - Gao Siew Dai",
+      "url": "https://www.fairprice.com.sg/product/nescafe-ipoh-white-coffee-gao-siew-dai-15s-x-31g-13083149",
+      "name": "Instant Coffee (plain)",
+      "note": "wrong item, from the review page",
+      "addedAt": "2026-09-03T08:04:21.172Z"
     }
   ]
 }
