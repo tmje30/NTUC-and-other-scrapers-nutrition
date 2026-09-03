@@ -31,6 +31,9 @@ export async function readVendorReview(path = VENDOR_REVIEW_PATH): Promise<Vendo
 			updatedAt: parsed.updatedAt ?? "",
 			pending: Array.isArray(parsed.pending) ? parsed.pending : [],
 			rejected: Array.isArray(parsed.rejected) ? parsed.rejected : [],
+			// A snapshot of the last sweep, not queue state — carried through untouched
+			// so reading and writing the file cannot silently drop the page's data.
+			moves: parsed.moves ?? undefined,
 		};
 	} catch {
 		return EMPTY_REVIEW; // never let a bad file stop a scan

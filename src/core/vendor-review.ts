@@ -1,4 +1,5 @@
 import type { StoreProduct } from "./stores/types.js";
+import type { PriceMove } from "./vendor-scan.js";
 import { marketplaceSize } from "./marketplace-size.js";
 
 /**
@@ -407,11 +408,31 @@ export function sizeBoundsFor(
 	return { maxGrams, minGrams };
 }
 
+/**
+ * **What the last sweep CHANGED**, kept so a page can render it.
+ *
+ * ⚠️⚠️ Stored beside the queue rather than in a file of its own, because it has to
+ * reach the cloud the same way and `commitAndPushData` commits one path. Splitting it
+ * would mean either a second push or a partial one — a page built from half of a run.
+ *
+ * ⚠️ A snapshot, not a log: it is replaced whole every write sweep and holds no
+ * history. Price history lives in the daily scan's commits, which is where the user
+ * asked for it.
+ */
+export interface MovesSnapshot {
+	generatedAt: string;
+	/** Written at the price already recorded — a count, never itemised. */
+	reconfirmed: number;
+	moves: PriceMove[];
+}
+
 export interface VendorReviewFile {
 	version: 1;
 	updatedAt: string;
 	pending: PendingReview[];
 	rejected: RejectedPick[];
+	/** The last write sweep's price movements — see `MovesSnapshot`. */
+	moves?: MovesSnapshot;
 }
 
 export const EMPTY_REVIEW: VendorReviewFile = {
@@ -618,7 +639,7 @@ export const REJECT_REASONS = [
 	},
 	{
 		key: "missing-property",
-		label: "Missing something it needs",
+		label: "Item is slightly off criteria",
 		hint: "unpasteurized, organic, steel-cut, unflavoured…",
 		research: true,
 	},

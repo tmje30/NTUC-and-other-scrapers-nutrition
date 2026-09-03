@@ -444,6 +444,8 @@ async function main(): Promise<void> {
 						store: p.store,
 						size: p.packWeightG ?? null,
 						volumetric: p.volumetric === true,
+						product: p.name,
+						url: p.url,
 					});
 				}
 				console.log(
@@ -719,7 +721,27 @@ async function askAboutUncertain(
 	 * un-muted; a morning that produced both a question and a price cut should still be
 	 * one notification. `null` here means nothing moved — see `renderPriceMoves`.
 	 */
-	const movesText = renderPriceMoves(moves, reconfirmed, escapeHtml);
+	// ⚠️ The link is offered only by a run that will actually publish. A report-only
+	// sweep writes no page, so it falls back to the full list and prints it — which is
+	// exactly what it was run for.
+	const movesText = renderPriceMoves(
+		moves,
+		reconfirmed,
+		escapeHtml,
+		doWrite && !noPush ? config.movesUrl() : undefined,
+	);
+
+	// ⚠️⚠️ **Persisted so a PAGE can render it, not just a message.** The list ran to
+	// nineteen lines on 2026-09-02, each carrying two prices, two pack sizes and two
+	// per-unit figures — a table pretending to be a sentence. The user asked for it as a
+	// page (2026-09-03). It rides inside the review file because `commitAndPushData`
+	// commits one path, and a page built from half a run is worse than no page.
+	//
+	// ⚠️ Written on every `--write` sweep including a quiet one, so the page says
+	// "nothing moved" today rather than still showing yesterday's cuts as if they were
+	// news. Silence on the page is a fact; a stale page is a lie.
+	if (doWrite)
+		review.moves = { generatedAt: new Date().toISOString(), reconfirmed, moves };
 
 	if (!doWrite) {
 		if (movesText) console.log(`\nWould report:\n${movesText.replace(/<[^>]+>/g, "")}`);
@@ -740,7 +762,12 @@ async function askAboutUncertain(
 	// `data/vendor-review.json` in the repo, so a run that only DROPS questions used to
 	// write the local file, return here, and leave the phone showing questions that were
 	// already answered. Measured 2026-08-31: 3 written, 0 pushed, 3 still on the page.
-	if (!toAsk.length && !questionsDropped) {
+	// ⚠️⚠️ `moves.length` opens this gate too. The page is built from the snapshot in
+	// `data/vendor-review.json`, so a sweep that moved a price but asked nothing used to
+	// write the file locally, send its message, and return without pushing — leaving the
+	// phone on a link to yesterday's page. Same failure as the dropped-questions one
+	// above, measured 2026-08-31, and the same fix.
+	if (!toAsk.length && !questionsDropped && !moves.length) {
 		await writeVendorReview(review);
 		// ⚠️ Gaps ride along with a message that was being sent anyway — the deals page's
 		// rule, and for the same reason: a missing weight is a standing property of the row,
@@ -799,7 +826,9 @@ async function askAboutUncertain(
 		try {
 			await commitAndPushData({
 				file: "data/vendor-review.json",
-				message: `data: ${review.pending.length} price(s) awaiting review`,
+				message: review.pending.length
+					? `data: ${review.pending.length} price(s) awaiting review`
+					: `data: ${moves.length} price(s) moved`,
 			});
 			published = true;
 		} catch (e) {

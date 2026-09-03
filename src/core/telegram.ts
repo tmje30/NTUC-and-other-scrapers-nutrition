@@ -225,6 +225,17 @@ export interface WeightGapNote {
 	size: number | null;
 	/** The shop's figure is millilitres, not grams. */
 	volumetric: boolean;
+	/**
+	 * The listing whose size prompted this, so the example can be checked.
+	 *
+	 * ⚠️⚠️ **Without it the note is unanswerable.** It quotes a weight off a product
+	 * the user never sees — "Iherb sells these by weight ... e.g. (358.34g)" — and the
+	 * first sensible question is whether that is even the right item. Asked
+	 * 2026-09-03, and the honest answer was that nothing in the message could say.
+	 * Optional: a note built before this field existed still renders, without a link.
+	 */
+	product?: string;
+	url?: string;
 }
 
 /** How many to name before summarising the rest. Three fits a phone notification. */
@@ -246,7 +257,16 @@ export function formatWeightGaps(gaps: WeightGapNote[]): string {
 		// bought, and the row's name is shared by all four vendor slots — so it is an
 		// illustration of the format and must not read as the number to enter.
 		const eg = g.size ? ` — e.g. <code>${esc(g.name)} (${g.size}${g.volumetric ? "ml" : "g"})</code>` : "";
-		return `• <b>${esc(g.name)}</b>: ${esc(g.store)} sells these by ${g.volumetric ? "volume" : "weight"}, but the row has no ${g.volumetric ? "volume" : "weight"} to compare against. Add one to the name${eg}`;
+		// The listing the figure came off, named and linked — an example is only
+		// checkable against the thing it was measured from.
+		const from = g.url
+			? `
+   from <a href="${esc(g.url)}">${esc(g.product || "this listing")}</a>`
+			: g.product
+				? `
+   from ${esc(g.product)}`
+				: "";
+		return `• <b>${esc(g.name)}</b>: ${esc(g.store)} sells these by ${g.volumetric ? "volume" : "weight"}, but the row has no ${g.volumetric ? "volume" : "weight"} to compare against. Add one to the name${eg}${from}`;
 	});
 	const rest = gaps.length - shown.length;
 	const more = rest > 0 ? `\n• …and ${rest} more item${rest === 1 ? "" : "s"} need one too.` : "";

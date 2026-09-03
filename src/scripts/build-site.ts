@@ -11,6 +11,7 @@ import { readExclusions } from "../core/exclusions-file.js";
 import { readVendorReview } from "../core/vendor-review-file.js";
 import { prunePending } from "../core/vendor-review.js";
 import { renderReviewPage } from "../core/review-page.js";
+import { renderMovesPage } from "../core/moves-page.js";
 import { config } from "../core/config.js";
 import { sgtDate } from "../core/sgt.js";
 
@@ -270,6 +271,25 @@ try {
 	);
 } catch (e: any) {
 	console.error(`Warning: failed to write public/review.html: ${e.message}`);
+}
+
+/**
+ * `moves.html` — what the last sweep changed in the price book.
+ *
+ * ⚠️ Built from the snapshot the sweep committed inside `data/vendor-review.json`,
+ * exactly like the review queue: the laptop or the runner decides, the cloud only
+ * renders. A missing snapshot renders the empty state rather than skipping the page,
+ * because the Telegram message links here unconditionally.
+ */
+try {
+	const review = await readVendorReview();
+	await writeFile("public/moves.html", renderMovesPage(review.moves ?? null), "utf8");
+	console.error(
+		`Wrote public/moves.html (${review.moves?.moves.length ?? 0} movement(s), ` +
+			`${review.moves?.reconfirmed ?? 0} re-confirmed)`,
+	);
+} catch (e: any) {
+	console.error(`Warning: failed to write public/moves.html: ${e.message}`);
 }
 
 // Publish the search terms so residential runners (phone/laptop) can fetch them

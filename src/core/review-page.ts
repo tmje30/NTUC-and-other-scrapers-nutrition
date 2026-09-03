@@ -1,6 +1,7 @@
 import { reasonsFor, type PendingReview, type ReviewReason } from "./vendor-review.js";
 import { cooldownKey } from "./cooldown.js";
 import { parseName } from "./parse.js";
+import { githubOneTapScript } from "./page-chrome.js";
 
 /**
  * **`review.html` — the fourth page.** Every price the scan is unsure about, on one page.
@@ -14,6 +15,19 @@ import { parseName } from "./parse.js";
  * The buttons use the same path as the deals page — a pre-filled GitHub issue carrying a
  * JSON payload, gated on the `Item: ` title prefix and the `grocery-add` label, handled by
  * `item-action.ts`. No new mechanism, no server, and it works from a phone.
+ *
+ * ⚠️⚠️ **The same one-tap script the deals page uses, for the same reason.** The
+ * buttons already carried `data-payload` and `data-event="item-action"` — the
+ * attributes that script reads — but the page never emitted the script, so every tap
+ * opened GitHub. Reported 2026-09-03: *"when i click a button, it goes into github. i
+ * don't want that."* The token lives in `localStorage` on this origin, so a token
+ * already pasted on the deals page works here with nothing further to do.
+ *
+ * ⚠️ Strictly an upgrade over the links underneath. No token, a cancelled prompt, a
+ * revoked token, JavaScript off: every one falls back to the two-tap issue flow.
+ *
+ * ⚠️ Never the relay `addEndpoint` path, which only knows how to ADD — an item action
+ * sent there is silently dropped. Same rule as the deals page's own action buttons.
  *
  * ⚠️ **The payload carries the whole pick, not just its token.** A token would mean the
  * action had to find the record in `data/vendor-review.json`, which makes the button
@@ -197,6 +211,8 @@ h1 { font-size:1.25rem; margin:0 0 4px; }
 .reasons { display:flex; flex-direction:column; gap:6px; padding:8px;
   border:1px solid var(--no); border-top:0; border-radius:0 0 8px 8px; }
 .empty { color:var(--mut); }
+.foot { color:var(--mut); font-size:.82rem; margin-top:22px; }
+.foot a { color:inherit; }
 </style></head>
 <body>
 <h1>Prices to check</h1>
@@ -204,5 +220,7 @@ h1 { font-size:1.25rem; margin:0 0 4px; }
 <p class="note"><b>OK</b> records the price. <b>Don't use</b> doesn't — and that is all it does:
 the product still appears on your deals page. To drop it from there too, use <b>Ignore</b> on the deals page.</p>
 ${body}
+<p class="foot"><a href="#" id="onetap">⚡ enable one-tap</a></p>
+${githubOneTapScript({ repo: o.repo })}
 </body></html>`;
 }

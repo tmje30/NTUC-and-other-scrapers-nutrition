@@ -388,7 +388,7 @@ function macroToggleScript(): string {
  * prompt, a revoked token, JavaScript disabled: every one of those falls back to
  * the two-tap issue flow instead of failing.
  */
-function githubOneTapScript(o: ChromeOptions): string {
+export function githubOneTapScript(o: ChromeOptions): string {
 	return `<script>
 (function () {
   var REPO = ${JSON.stringify(o.repo)};

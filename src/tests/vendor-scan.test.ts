@@ -5,6 +5,8 @@ import {
 	packWithinCeiling,
 	MAX_SUGGESTIONS,
 	nearMisses,
+	renderPriceMoves,
+	type PriceMove,
 	pickCandidate,
 	resolveSize,
 	unitCountFromWeight,
@@ -14,10 +16,9 @@ import {
 	sizeFor,
 	unitKindAgrees,
 	withinSizeCeiling,
-	renderPriceMoves,
-	type PriceMove,
 } from "../core/vendor-scan.js";
 import { reviewReasons } from "../core/vendor-review.js";
+import { renderMovesPage } from "../core/moves-page.js";
 import { evaluate } from "../core/match.js";
 import { parseName } from "../core/parse.js";
 import type { PlanTarget, UnitType } from "../core/notion.js";
@@ -682,6 +683,47 @@ eq(
 	evaluate(targetFrom("Soy Milk", { unitType: "By ml" as UnitType }), product({ name: "Unisoy Soy Milk", packWeightG: 1000, pricePer100g: 0.3 })).verdict,
 	"accept",
 );
+
+describe("price moves — the detail belongs on a page");
+
+/**
+ * ⚠️ The list ran to nineteen lines on 2026-09-02, each carrying two prices, two pack
+ * sizes and two per-unit figures. The user asked for it as a page (2026-09-03); the
+ * message keeps the headline and a link.
+ */
+const cut: PriceMove = {
+	row: "Cinnamon", vendor: "NTUC", recordedText: "$4.88 / 28g", foundText: "$1.55 / 30g",
+	recordedPer1000: 174.29, foundPer1000: 51.67, perWord: "kg",
+};
+const firstPrice: PriceMove = {
+	row: "Oil (Bran)", vendor: "Sheng Siong", recordedText: "", foundText: "$6.20 / 1000ml",
+	recordedPer1000: null, foundPer1000: 6.2, perWord: "L",
+};
+
+const linked = renderPriceMoves([cut, firstPrice], 41, (x) => x, "https://e.test/moves.html") ?? "";
+check("the linked message names both kinds of news", linked.includes("1 price got cheaper") && linked.includes("1 newly recorded"));
+check("...and says how many were unchanged", linked.includes("41 unchanged"));
+check("...and links to the page", linked.includes("https://e.test/moves.html"));
+check("...and lists no rows at all", !linked.includes("Cinnamon") && !linked.includes("Oil (Bran)"));
+
+// ⚠️ Without a URL there is no page to point at, so the full list is still the message.
+const unlinked = renderPriceMoves([cut, firstPrice], 41, (x) => x) ?? "";
+check("an unlinked message still carries the detail", unlinked.includes("Cinnamon") && unlinked.includes("Oil (Bran)"));
+
+// Silence is the default: nothing moved is no message, not an empty one.
+eq("nothing moved is no message", renderPriceMoves([], 60, (x) => x, "https://e.test/moves.html"), null);
+
+const page = renderMovesPage({ generatedAt: "2026-09-03T00:00:00.000Z", reconfirmed: 41, moves: [cut, firstPrice] });
+check("the page separates cuts from first prices", page.includes("Cheaper than what was recorded") && page.includes("Newly recorded"));
+check("a cut shows both sides", page.includes("$4.88 / 28g") && page.includes("$1.55 / 30g"));
+// ⚠️ From `pricePer1000`, never the pack price: Tau Kwa went $1.40 -> $1.40 across a
+// 400g -> 500g pack, a 20% cut a pack-price comparison reports as no change.
+check("...with the drop worked out per unit", page.includes("70% cheaper"));
+check("a first price is never shown as a reduction", !page.includes("$0.00/L"));
+check("the unchanged count is stated", page.includes("41 others re-confirmed unchanged"));
+
+// The empty state is rendered, not skipped — the message links here unconditionally.
+check("an empty snapshot still renders a page", renderMovesPage(null).includes("Nothing moved"));
 
 describe("vendor scan — a promo price must never reach the price book");
 

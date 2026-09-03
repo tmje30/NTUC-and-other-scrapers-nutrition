@@ -966,6 +966,18 @@ export function renderPriceMoves(
 	moves: PriceMove[],
 	reconfirmed: number,
 	esc: (s: string) => string = (s) => s,
+	/**
+	 * ⚠️⚠️ **When given, the message is the headline and this link — nothing else.**
+	 * The full list ran to nineteen lines on 2026-09-02, each carrying two prices, two
+	 * pack sizes and two per-unit figures. That is a table pretending to be a sentence,
+	 * and on a phone it wraps into a wall read once and never referred back to. The user
+	 * asked for it as a page (2026-09-03); this keeps the notification worth opening.
+	 *
+	 * ⚠️ Omitted — by a report-only run, and by anything with no published page to
+	 * point at — falls back to the full list. A summary linking nowhere says less than
+	 * nothing.
+	 */
+	pageUrl?: string,
 ): string | null {
 	const cheaper = moves.filter((m) => m.recordedPer1000 != null);
 	const first = moves.filter((m) => m.recordedPer1000 == null);
@@ -988,6 +1000,13 @@ export function renderPriceMoves(
 				// reading "$4.00/kg → $4.00/kg" is unanswerable.
 				`• ${esc(m.row.trim())} — ${esc(m.vendor)} ${esc(m.recordedText)} = ${money(m.recordedPer1000!, m.perWord)}` +
 				` → <b>${esc(m.foundText)} = ${money(m.foundPer1000, m.perWord)}</b>`;
+
+	if (pageUrl)
+		return (
+			`🧾 ${headline}` +
+			(reconfirmed ? ` · ${reconfirmed} unchanged` : "") +
+			`\n<a href="${esc(pageUrl)}">See what changed →</a>`
+		);
 
 	return (
 		`🧾 ${headline}\n` +
