@@ -347,10 +347,59 @@ async function main(): Promise<void> {
 			// pair goes silent, and silence reads as "this shop does not stock it": measured
 			// 2026-09-02, `Milk (Fresh) (Skimmed)` searched three terms across 85 Sheng Siong
 			// results and said nothing, while Meiji's pasteurized skimmed milk sat in them.
-			const suggestion = !rescued && outcome && !outcome.ok ? (outcome.nearMiss ?? null) : null;
+			const suggestions = !rescued && outcome && !outcome.ok ? (outcome.nearMisses ?? []) : [];
+			const suggestion = suggestions[0] ?? null;
 			if (!rescued && !suggestion && (!outcome || !outcome.ok)) {
 				console.log(`    — nothing usable after ${terms.length} search term(s).`);
 				continue;
+			}
+
+			// ⚠️⚠️ **The runners-up get their own cards.** One suggestion is not enough when a
+			// shop stocks siblings: FairPrice lists `Cerave Facial Moisturising Lotion - AM` at
+			// $29.90/52ml — the SPF30 this row names, already its recorded price — beside an
+			// `AM SPF50` at $30.90, and the SPF50 outranked it. Showing only the top pick hid
+			// the right product. Each alternative is a separate card so any one can be accepted.
+			//
+			// ⚠️ Deliberately BEFORE the main path and deliberately not sharing it: everything
+			// below decides whether to WRITE, and an alternative may never be written.
+			for (const [k, alt] of suggestions.slice(1).entries()) {
+				const altSize = resolveSize(row, alt);
+				// Same gate as the write path — a pack this row cannot measure is not offerable.
+				if (!altSize) continue;
+				const outstandingAlt = findPendingFor(review, row.pageId, route.option, alt);
+				if (outstandingAlt?.messageId) continue;
+				const altPending: PendingReview = {
+					token: outstandingAlt?.token ?? reviewToken(review),
+					ingredientId: row.pageId,
+					ingredientName: row.name,
+					key: cooldownKey(row.target.search.searchTerm),
+					unitType: row.unitType,
+					vendor: route.option,
+					slotN: slot.n,
+					brand: row.target.search.brand || undefined,
+					priceSgd: alt.priceSgd,
+					size: altSize.size,
+					url: alt.url,
+					itemName: alt.name,
+					perLabel: perLabel(row, alt.priceSgd, altSize.size, alt.name),
+					reasons: [
+						{
+							kind: "near-miss",
+							note:
+								`no product here MATCHED this row — this is alternative ${k + 2} of ` +
+								`${suggestions.length}, offered as a suggestion. Accept only if it is the same thing.`,
+						},
+					],
+					askedAt: new Date().toISOString(),
+				};
+				review = withPending(review, altPending);
+				toAsk.push(altPending);
+				console.log(
+					`    ≋ ${money(alt.priceSgd)} / ${altSize.size}${unitWord(row)}` +
+						`\n      ${alt.name}` +
+						`\n      ${alt.url}` +
+						`\n      ≈ alternative ${k + 2} of ${suggestions.length}, offered as a suggestion`,
+				);
 			}
 
 			const p = rescued
@@ -483,8 +532,11 @@ async function main(): Promise<void> {
 				reasons.unshift({
 					kind: "near-miss",
 					note:
-						"no product here MATCHED this row — this is the closest one, offered as a suggestion. " +
-						"Accept only if it is the same thing.",
+						suggestions.length > 1
+							? `no product here MATCHED this row — this is the closest of ${suggestions.length} ` +
+								"offered, best first. Accept only if it is the same thing."
+							: "no product here MATCHED this row — this is the closest one, offered as a suggestion. " +
+								"Accept only if it is the same thing.",
 				});
 
 			if (reasons.length) {

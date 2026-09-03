@@ -627,11 +627,12 @@ export type CandidateOutcome =
 			considered: number;
 			belowFloor: StoreProduct[];
 			/**
-			 * ⚠️ The most plausible product that did NOT match — review band, never accept.
-			 * Offered as a suggestion so a pair that finds nothing says WHAT it nearly found.
-			 * See `bestNearMiss`.
+			 * ⚠️ The plausible products that did NOT match — review band, never accept, best
+			 * first. Offered as suggestions, so a pair that finds nothing says what it nearly
+			 * found and the user can pick the sibling the matcher could not.
+			 * See `nearMisses`.
 			 */
-			nearMiss?: StoreProduct | null;
+			nearMisses?: StoreProduct[];
 	  };
 
 /**
@@ -780,12 +781,31 @@ export function referencePer100g(
  * three terms across 85 results and reported nothing at all. The product was there the
  * whole time.
  */
-export function bestNearMiss(target: PlanTarget, priced: StoreProduct[]): StoreProduct | null {
-	const scored = priced
-		.map((p) => ({ p, m: evaluate(target, p) }))
+/** How many near-misses one pair may offer. Enough to tell siblings apart, few enough to read. */
+export const MAX_SUGGESTIONS = 3;
+
+/**
+ * **The ones that didn't quite match, best first.**
+ *
+ * ⚠️ Review band only — `accept` is a match and belongs in the price book. Ranked by
+ * how well each matched, NOT by price: a suggestion is a question about identity, and
+ * the cheapest near-miss is usually the least like the thing asked for.
+ *
+ * ⚠️⚠️ **More than one, because only the user can tell a sibling from a rebrand.**
+ * Measured 2026-09-03: FairPrice lists both `Cerave Facial Moisturising Lotion - AM`
+ * at $29.90/52ml — the SPF30, whose price was already recorded — and an `AM SPF50` at
+ * $30.90/52ml. Offering only the top-ranked one showed the SPF50 and hid the product the
+ * row actually names. Same shape as Sheng Siong stocking Meiji's *pasteurized* skimmed
+ * milk beside Greenfields': one is the row, one is a near neighbour, and the matcher
+ * cannot tell which without being told.
+ */
+export function nearMisses(target: PlanTarget, priced: StoreProduct[]): StoreProduct[] {
+	return priced
+		.map((product) => ({ product, m: evaluate(target, product) }))
 		.filter((x) => x.m.verdict === "review")
-		.sort((a, b) => b.m.adjusted - a.m.adjusted);
-	return scored[0]?.p ?? null;
+		.sort((a, b) => b.m.adjusted - a.m.adjusted)
+		.slice(0, MAX_SUGGESTIONS)
+		.map((x) => x.product);
 }
 
 export function pickCandidate(
@@ -811,7 +831,7 @@ export function pickCandidate(
 			ok: false,
 			considered: priced.length,
 			belowFloor: [],
-			nearMiss: bestNearMiss(target, priced),
+			nearMisses: nearMisses(target, priced),
 			reason: `${priced.length} priced result(s), none matched "${target.name}"`,
 		};
 	}

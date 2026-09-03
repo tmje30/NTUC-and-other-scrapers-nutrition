@@ -3,7 +3,8 @@ import {
 	findSizeCeilingProp,
 	gramsPerUnitFor,
 	packWithinCeiling,
-	bestNearMiss,
+	MAX_SUGGESTIONS,
+	nearMisses,
 	pickCandidate,
 	resolveSize,
 	unitCountFromWeight,
@@ -581,16 +582,39 @@ const outcome = pickCandidate(freshSkim, [pasteurized, notMilk], { marketplace: 
 check("a near-miss is still not a match", !outcome.ok);
 eq(
 	"...but the closest one comes back as a suggestion",
-	!outcome.ok ? (outcome.nearMiss?.name ?? null) : null,
+	!outcome.ok ? (outcome.nearMisses?.[0]?.name ?? null) : null,
 	"Pasteurized Skimmed Milk",
 );
 
 // ⚠️ Ranked by how well it matched, never by price. The cheapest near-miss is usually
 // the least like the thing asked for — here a dishwashing liquid at half the price.
-eq("ranking is by match quality, not price", bestNearMiss(freshSkim, [notMilk, pasteurized])?.name, "Pasteurized Skimmed Milk");
+eq("ranking is by match quality, not price", nearMisses(freshSkim, [notMilk, pasteurized])[0]?.name, "Pasteurized Skimmed Milk");
 
 // Nothing plausible at all is still nothing — a suggestion has to clear the review band.
-eq("an unrelated aisle offers no suggestion", bestNearMiss(freshSkim, [notMilk]), null);
+eq("an unrelated aisle offers no suggestion", nearMisses(freshSkim, [notMilk]).length, 0);
+
+// ⚠️⚠️ More than one, because only a human can tell a sibling from a rebrand. The live
+// case, 2026-09-03: FairPrice lists `Cerave Facial Moisturising Lotion - AM` at
+// $29.90/52ml — the SPF30 the row names, and already its recorded price — beside an
+// `AM SPF50` at $30.90, and the SPF50 ranked first. One suggestion hid the right one.
+const cerave = targetFrom("AM facial moisturizing lotion (SPF30) [cerave]", { unitType: "By ml" as UnitType });
+const amSpf50 = product({ store: "NTUC", name: "Cerave Facial Moisturising Lotion - AM SPF50", packWeightG: 52, pricePer100g: 59.42, priceSgd: 30.9 });
+const amPlain = product({ store: "NTUC", name: "Cerave Facial Moisturising Lotion - AM", packWeightG: 52, pricePer100g: 57.5, priceSgd: 29.9 });
+
+const ceravePair = nearMisses(cerave, [amSpf50, amPlain]);
+eq("a shop stocking siblings offers both", ceravePair.length, 2);
+check(
+	"...and the row's own product is among them",
+	ceravePair.some((x: StoreProduct) => x.name === "Cerave Facial Moisturising Lotion - AM"),
+);
+
+// The cap keeps a card list readable; the ranking decides which survive it.
+eq("no more than MAX_SUGGESTIONS are ever offered", MAX_SUGGESTIONS, 3);
+eq(
+	"a long aisle is capped",
+	nearMisses(cerave, [amSpf50, amPlain, product({ store: "NTUC", name: "Cerave Facial Moisturising Lotion - PM", packWeightG: 52, pricePer100g: 55, priceSgd: 28.6 }), product({ store: "NTUC", name: "Cerave Facial Moisturising Lotion - AM Travel", packWeightG: 52, pricePer100g: 50, priceSgd: 26 })]).length,
+	3,
+);
 
 // An accepted match is a match; it must never be demoted to a suggestion.
 const plainSkim = product({ store: "Sheng Siong", name: "Meiji Fresh Skimmed Milk", packWeightG: 1000, pricePer100g: 0.3, priceSgd: 3 });
