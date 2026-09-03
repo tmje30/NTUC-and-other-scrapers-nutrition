@@ -238,6 +238,14 @@ async function main(): Promise<void> {
 			// Each term is tried only when the one before it produced no candidate, so
 			// the common case is still a single request.
 			let outcome = null;
+			// ⚠️⚠️ **Suggestions survive a later search term that finds nothing.** Terms are
+			// tried in order and `outcome` holds only the LAST one, so a first term that
+			// returned near-misses and a second that returned zero results left the pair
+			// silent. Measured 2026-09-03: `AM facial moisturizing lotion (SPF 30) [cerave]`
+			// at NTUC — term 1 found 2 priced results, terms 2 and 3 found none, and the two
+			// CeraVe lotions vanished. Guardian, whose last term did return results, offered
+			// them correctly.
+			let carried: { products: StoreProduct[]; considered: number } | null = null;
 			let failed = false;
 			for (const [t, term] of terms.entries()) {
 				if (t) await sleep(BETWEEN_SEARCHES_MS);
@@ -302,6 +310,10 @@ async function main(): Promise<void> {
 					(overCeiling ? ` — ${overCeiling} over this row's size ceiling` : ""),
 				);
 				if (outcome.ok) break;
+				// The first term to offer any is kept: terms run broadest-first, so its result
+				// set is the widest this pair will see.
+				if (!carried && outcome.nearMisses?.length)
+					carried = { products: outcome.nearMisses, considered: outcome.considered };
 			}
 			if (failed) continue;
 
@@ -347,7 +359,11 @@ async function main(): Promise<void> {
 			// pair goes silent, and silence reads as "this shop does not stock it": measured
 			// 2026-09-02, `Milk (Fresh) (Skimmed)` searched three terms across 85 Sheng Siong
 			// results and said nothing, while Meiji's pasteurized skimmed milk sat in them.
-			const suggestions = !rescued && outcome && !outcome.ok ? (outcome.nearMisses ?? []) : [];
+			const fallback = !rescued && outcome && !outcome.ok ? carried : null;
+			const suggestions =
+				!rescued && outcome && !outcome.ok
+					? (outcome.nearMisses?.length ? outcome.nearMisses : (fallback?.products ?? []))
+					: [];
 			const suggestion = suggestions[0] ?? null;
 			if (!rescued && !suggestion && (!outcome || !outcome.ok)) {
 				console.log(`    — nothing usable after ${terms.length} search term(s).`);
@@ -464,7 +480,7 @@ async function main(): Promise<void> {
 					// ⚠️ A suggestion is NOT a match, and the report must not let the two look alike.
 					// The queue is where it can be accepted; nothing on this path writes it.
 					(suggestion
-						? `\n      ≈ nothing here matched this row — closest of ${outcome && !outcome.ok ? outcome.considered : 0}, offered as a suggestion`
+						? `\n      ≈ nothing here matched this row — closest of ${outcome && !outcome.ok ? (outcome.nearMisses?.length ? outcome.considered : (fallback?.considered ?? 0)) : 0}, offered as a suggestion`
 						: "") +
 					// ⚠️ Say it out loud. The figure above is the SHELF price, so a run that sees
 					// a 35%-off tag and records the HIGHER number reads as a bug until the report
