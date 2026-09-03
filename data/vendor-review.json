@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-03T00:44:48.461Z",
+  "updatedAt": "2026-09-03T01:25:48.777Z",
   "pending": [
     {
       "token": "4087nh",
@@ -202,27 +202,6 @@
         }
       ],
       "askedAt": "2026-09-03T00:38:19.808Z"
-    },
-    {
-      "token": "4ve4pa",
-      "ingredientId": "36e69a18-4fe7-802b-a8b0-c58108df75df",
-      "ingredientName": "Milk  (Fresh) (Skimmed)",
-      "key": "milk",
-      "unitType": "By ml",
-      "vendor": "Sheng Siong",
-      "slotN": 2,
-      "priceSgd": 3.51,
-      "size": 1000,
-      "url": "https://shengsiong.com.sg/product/greenfields-skimmed-milk-1-l",
-      "itemName": "Skimmed Milk",
-      "perLabel": "$3.51/L",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is the closest one, offered as a suggestion. Accept only if it is the same thing."
-        }
-      ],
-      "askedAt": "2026-09-03T00:39:12.880Z"
     },
     {
       "token": "84vaf7",
