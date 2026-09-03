@@ -16,7 +16,7 @@ import {
 	type UnitType,
 } from "./notion.js";
 import { parseName } from "./parse.js";
-import { evaluate, tokens } from "./match.js";
+import { evaluate } from "./match.js";
 import { cheapestPlausible } from "./marketplace-size.js";
 import {
 	cheapestVendorSlot,
@@ -781,25 +781,11 @@ export function referencePer100g(
  * whole time.
  */
 export function bestNearMiss(target: PlanTarget, priced: StoreProduct[]): StoreProduct | null {
-	// ⚠️⚠️ **A suggestion must at least NAME the thing.** The review band alone is too
-	// loose to offer a product by: measured 2026-09-02, a `Banana (Fruit)` row whose Sheng
-	// Siong search returned a single priced result offered "3 Mixed Cargo Rice" — nothing
-	// in common with the row at all. One shared token with the row's own search term is a
-	// low bar, and it is exactly the bar that junk fails.
-	const wanted = new Set(tokens(target.search.searchTerm));
-	const namesIt = (product: StoreProduct): boolean => {
-		if (!wanted.size) return false;
-		const have = new Set(tokens(`${product.name} ${product.brand ?? ""}`));
-		for (const t of wanted) if (have.has(t)) return true;
-		return false;
-	};
-
 	const scored = priced
-		.filter(namesIt)
-		.map((product) => ({ product, m: evaluate(target, product) }))
+		.map((p) => ({ p, m: evaluate(target, p) }))
 		.filter((x) => x.m.verdict === "review")
 		.sort((a, b) => b.m.adjusted - a.m.adjusted);
-	return scored[0]?.product ?? null;
+	return scored[0]?.p ?? null;
 }
 
 export function pickCandidate(
