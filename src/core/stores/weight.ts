@@ -13,7 +13,7 @@ export interface ParsedWeight {
 	volumetric: boolean;
 }
 
-const VOLUME_UNITS = new Set(["l", "lt", "ltr", "litre", "liter", "ml", "cl", "dl"]);
+const VOLUME_UNITS = new Set(["l", "lt", "ltr", "litre", "liter", "ml"]);
 
 export function parseWeight(input: string | null | undefined): ParsedWeight | null {
 	if (!input) return null;
@@ -29,8 +29,6 @@ export function parseWeight(input: string | null | undefined): ParsedWeight | nu
 			case "gms":
 			case "gram":
 			case "grams":
-			// Danish shelf label — REMA writes every weight as "300 GR.".
-			case "gr":
 				return n;
 			case "l":
 			case "lt":
@@ -40,22 +38,12 @@ export function parseWeight(input: string | null | undefined): ParsedWeight | nu
 				return n * 1000;
 			case "ml":
 				return n;
-			// Danish volume units. REMA prices 299 of its 3,849 lines in centilitres
-			// ("33 CL. / TUBORG") and a few in decilitres; neither ever appears on a
-			// Singapore label, and both are silently unreadable without these.
-			case "cl":
-				return n * 10;
-			case "dl":
-				return n * 100;
 			default:
 				return null;
 		}
 	};
 
-	// `gr` is Danish for grams and is listed BEFORE the bare `g` so "300 GR."
-	// matches as a unit in its own right rather than as `g` with a stray "r"
-	// left over — same result today, but not by accident.
-	const unitRe = "(kg|kgs|gm|gms|grams?|gr|g|ml|cl|dl|ltr|litre|liter|lt|l)";
+	const unitRe = "(kg|kgs|gm|gms|grams?|g|ml|ltr|litre|liter|lt|l)";
 
 	// Multi-pack: "6 x 250ml", "2 x 1kg"
 	const multi = s.match(new RegExp(`(\\d+(?:\\.\\d+)?)\\s*[x×]\\s*(\\d+(?:\\.\\d+)?)\\s*${unitRe}`));
