@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-02T08:48:51.608Z",
+  "updatedAt": "2026-09-03T00:44:48.461Z",
   "pending": [
     {
       "token": "4087nh",
@@ -26,6 +26,83 @@
       "askedAt": "2026-09-02T03:55:39.346Z"
     },
     {
+      "token": "92soy4",
+      "ingredientId": "34b69a18-4fe7-805e-aedc-c6f292e6007e",
+      "ingredientName": "Instant Coffee (plain)",
+      "key": "instant coffe",
+      "unitType": "By Gram",
+      "vendor": "NTUC",
+      "slotN": 1,
+      "priceSgd": 8.45,
+      "size": 420,
+      "url": "https://www.fairprice.com.sg/product/nescafe-ipoh-white-coffee-gao-siew-dai-15s-x-31g-13083149",
+      "itemName": "Nescafe Instant Ipoh White Coffee - Gao Siew Dai",
+      "perLabel": "$20.12/kg",
+      "reasons": [
+        {
+          "kind": "outlier",
+          "factor": 0.270054330457015,
+          "note": "3.7× cheaper than this row's other shop"
+        }
+      ],
+      "askedAt": "2026-09-02T06:03:35.656Z"
+    },
+    {
+      "token": "r515iw",
+      "ingredientId": "34b69a18-4fe7-8079-955e-ef44e9443bac",
+      "ingredientName": "Muscovado Sugar (Brown)",
+      "key": "brown muscovado sugar",
+      "unitType": "By Gram",
+      "vendor": "NTUC",
+      "slotN": 1,
+      "priceSgd": 6.05,
+      "size": 325,
+      "url": "https://www.fairprice.com.sg/product/tate-and-lyle-dark-muscovado-sugar",
+      "itemName": "Tate and Lyle Dark Muscovado Sugar",
+      "perLabel": "$18.62/kg",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer1000": 12.52,
+          "foundPer1000": 18.615384615384613,
+          "note": "DEARER than the NTUC price already recorded: $3.13 / 250g = $12.52/kg → $6.05 / 325g = $18.62/kg. Not written — accept only if the old price is gone."
+        }
+      ],
+      "askedAt": "2026-09-02T06:04:07.494Z"
+    },
+    {
+      "token": "1x0vjf",
+      "ingredientId": "3b269a18-4fe7-81d4-8025-e6004ddc5b24",
+      "ingredientName": "AM facial moisturizing lotion (SPF30) [cerave]",
+      "key": "am facial moisturizing lotion",
+      "unitType": "By ml",
+      "vendor": "NTUC",
+      "slotN": 1,
+      "brand": "cerave",
+      "priceSgd": 30.9,
+      "size": 52,
+      "url": "https://www.fairprice.com.sg/product/cerave-facial-moisturising-lotion-am-spf50-52ml-13270899",
+      "itemName": "Cerave Facial Moisturising Lotion - AM SPF50",
+      "perLabel": "$594.23/L",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is the closest one, offered as a suggestion. Accept only if it is the same thing."
+        },
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer1000": 575,
+          "foundPer1000": 594.2307692307693,
+          "note": "DEARER than the NTUC price already recorded: $29.90 / 52ml = $575.00/L → $30.90 / 52ml = $594.23/L. Not written — accept only if the old price is gone."
+        },
+        {
+          "kind": "size-range",
+          "note": "the pack size is a RANGE and was read at its top — the real pack may be smaller (and dearer per kg)"
+        }
+      ],
+      "askedAt": "2026-09-03T00:35:11.257Z"
+    },
+    {
       "token": "yrxust",
       "ingredientId": "39869a18-4fe7-8033-b52c-c02424bf56df",
       "ingredientName": "Bread, Wholemeal, [FairPrice] (600g)",
@@ -47,7 +124,7 @@
           "note": "DEARER than the NTUC price already recorded: $2.40 / 20 pcs = $120.00/1000 pcs → $2.40 / 17 pcs = $141.18/1000 pcs. Not written — accept only if the old price is gone."
         }
       ],
-      "askedAt": "2026-09-02T05:57:52.238Z"
+      "askedAt": "2026-09-03T00:37:14.944Z"
     },
     {
       "token": "t5i5hm",
@@ -68,7 +145,7 @@
           "note": "the pack size is a RANGE and was read at its top — the real pack may be smaller (and dearer per kg)"
         }
       ],
-      "askedAt": "2026-09-02T05:58:09.842Z"
+      "askedAt": "2026-09-03T00:37:33.841Z"
     },
     {
       "token": "qb1z8m",
@@ -95,7 +172,7 @@
           "note": "the pack size is a RANGE and was read at its top — the real pack may be smaller (and dearer per kg)"
         }
       ],
-      "askedAt": "2026-09-02T05:58:18.146Z"
+      "askedAt": "2026-09-03T00:37:40.968Z"
     },
     {
       "token": "4rtdm5",
@@ -124,7 +201,28 @@
           "note": "4.8× DEARER than this row's other shop"
         }
       ],
-      "askedAt": "2026-09-02T05:58:56.760Z"
+      "askedAt": "2026-09-03T00:38:19.808Z"
+    },
+    {
+      "token": "4ve4pa",
+      "ingredientId": "36e69a18-4fe7-802b-a8b0-c58108df75df",
+      "ingredientName": "Milk  (Fresh) (Skimmed)",
+      "key": "milk",
+      "unitType": "By ml",
+      "vendor": "Sheng Siong",
+      "slotN": 2,
+      "priceSgd": 3.51,
+      "size": 1000,
+      "url": "https://shengsiong.com.sg/product/greenfields-skimmed-milk-1-l",
+      "itemName": "Skimmed Milk",
+      "perLabel": "$3.51/L",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is the closest one, offered as a suggestion. Accept only if it is the same thing."
+        }
+      ],
+      "askedAt": "2026-09-03T00:39:12.880Z"
     },
     {
       "token": "84vaf7",
@@ -146,7 +244,7 @@
           "note": "11.1× DEARER than this row's other shop"
         }
       ],
-      "askedAt": "2026-09-02T05:59:44.468Z"
+      "askedAt": "2026-09-03T00:39:18.568Z"
     },
     {
       "token": "j017sn",
@@ -168,7 +266,7 @@
           "note": "11.1× cheaper than this row's other shop"
         }
       ],
-      "askedAt": "2026-09-02T05:59:46.952Z"
+      "askedAt": "2026-09-03T00:39:21.978Z"
     },
     {
       "token": "qpptkl",
@@ -191,7 +289,7 @@
           "note": "DEARER than the NTUC price already recorded: $24.50 / 1000g = $24.50/kg → $4.02 / 100g = $40.20/kg. Not written — accept only if the old price is gone."
         }
       ],
-      "askedAt": "2026-09-02T06:00:42.772Z"
+      "askedAt": "2026-09-03T00:40:24.035Z"
     },
     {
       "token": "xor4mu",
@@ -219,7 +317,30 @@
           "note": "4.3× DEARER than this row's other shop"
         }
       ],
-      "askedAt": "2026-09-02T06:01:48.953Z"
+      "askedAt": "2026-09-03T00:41:35.085Z"
+    },
+    {
+      "token": "1f9o64",
+      "ingredientId": "34b69a18-4fe7-80c7-9de6-fa3234a2a9d8",
+      "ingredientName": "Banana (Fruit)",
+      "key": "banana",
+      "unitType": "By Gram",
+      "vendor": "NTUC",
+      "slotN": 1,
+      "priceSgd": 4.55,
+      "size": 820,
+      "url": "https://www.fairprice.com.sg/product/sumifru-sweet-mountain-bananas-820g-13137896",
+      "itemName": "Sumifru Sweet Mountain Bananas",
+      "perLabel": "$5.55/kg",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer1000": 3.6428571428571423,
+          "foundPer1000": 5.548780487804878,
+          "note": "DEARER than the NTUC price already recorded: $2.55 / 700g = $3.64/kg → $4.55 / 820g = $5.55/kg. Not written — accept only if the old price is gone."
+        }
+      ],
+      "askedAt": "2026-09-03T00:42:18.742Z"
     },
     {
       "token": "p1lawb",
@@ -240,7 +361,29 @@
           "note": "the pack size is a RANGE and was read at its top — the real pack may be smaller (and dearer per kg)"
         }
       ],
-      "askedAt": "2026-09-02T06:02:35.622Z"
+      "askedAt": "2026-09-03T00:42:21.807Z"
+    },
+    {
+      "token": "9evl12",
+      "ingredientId": "34b69a18-4fe7-806a-95e9-d3a10118ccb4",
+      "ingredientName": "3 mix cargo Rice [Happy family]",
+      "key": "3 mix cargo rice",
+      "unitType": "By Gram",
+      "vendor": "Sheng Siong",
+      "slotN": 2,
+      "brand": "happy family",
+      "priceSgd": 7.2,
+      "size": 1800,
+      "url": "https://shengsiong.com.sg/product/happy-family-3-mixed-cargo-rice-18-kg",
+      "itemName": "3 Mixed Cargo Rice",
+      "perLabel": "$4.00/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is the closest one, offered as a suggestion. Accept only if it is the same thing."
+        }
+      ],
+      "askedAt": "2026-09-03T00:42:30.618Z"
     },
     {
       "token": "k2ioco",
@@ -263,10 +406,33 @@
           "note": "DEARER than the NTUC price already recorded: $4.60 / 1000g = $4.60/kg → $2.40 / 500g = $4.80/kg. Not written — accept only if the old price is gone."
         }
       ],
-      "askedAt": "2026-09-02T06:02:43.969Z"
+      "askedAt": "2026-09-03T00:42:32.309Z"
     },
     {
-      "token": "92soy4",
+      "token": "atcu4x",
+      "ingredientId": "34b69a18-4fe7-8020-b136-ebb02d41c6ef",
+      "ingredientName": "Milk (Fresh) (Normal)",
+      "key": "milk",
+      "unitType": "By ml",
+      "vendor": "Sheng Siong",
+      "slotN": 2,
+      "priceSgd": 6.7,
+      "size": 2000,
+      "url": "https://shengsiong.com.sg/product/farm-fresh-pure-fresh-milk-2-l-3116304",
+      "itemName": "Pure Fresh Milk",
+      "perLabel": "$3.35/L",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer1000": 3.07,
+          "foundPer1000": 3.35,
+          "note": "DEARER than the Sheng Siong price already recorded: $3.07 / 1000ml = $3.07/L → $6.70 / 2000ml = $3.35/L. Not written — accept only if the old price is gone."
+        }
+      ],
+      "askedAt": "2026-09-03T00:43:30.214Z"
+    },
+    {
+      "token": "18ft5v",
       "ingredientId": "34b69a18-4fe7-805e-aedc-c6f292e6007e",
       "ingredientName": "Instant Coffee (plain)",
       "key": "instant coffe",
@@ -275,8 +441,8 @@
       "slotN": 1,
       "priceSgd": 8.45,
       "size": 420,
-      "url": "https://www.fairprice.com.sg/product/nescafe-ipoh-white-coffee-gao-siew-dai-15s-x-31g-13083149",
-      "itemName": "Nescafe Instant Ipoh White Coffee - Gao Siew Dai",
+      "url": "https://www.fairprice.com.sg/product/nescafe-instant-ipoh-white-coffee-original-15s-x-36g-13079647",
+      "itemName": "Nescafe Instant White Coffee - Original",
       "perLabel": "$20.12/kg",
       "reasons": [
         {
@@ -285,7 +451,7 @@
           "note": "3.7× cheaper than this row's other shop"
         }
       ],
-      "askedAt": "2026-09-02T06:03:35.656Z"
+      "askedAt": "2026-09-03T00:43:32.161Z"
     },
     {
       "token": "va71ta",
@@ -307,30 +473,7 @@
           "note": "3.7× DEARER than this row's other shop"
         }
       ],
-      "askedAt": "2026-09-02T06:03:38.617Z"
-    },
-    {
-      "token": "j2f8ac",
-      "ingredientId": "34b69a18-4fe7-80f1-8ecb-d764d2abe554",
-      "ingredientName": "Green Tea (50 x 2g)",
-      "key": "green tea",
-      "unitType": "By Unit",
-      "vendor": "NTUC",
-      "slotN": 1,
-      "priceSgd": 7.92,
-      "size": 50,
-      "url": "https://www.fairprice.com.sg/product/lipton-fresh-green-tea-50s-x-15g-13011589",
-      "itemName": "Lipton Green Tea Bags - Lively Fresh",
-      "perLabel": "$79.20/kg",
-      "reasons": [
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer1000": 125.2,
-          "foundPer1000": 158.39999999999998,
-          "note": "DEARER than the NTUC price already recorded: $6.26 / 50 pcs = $125.20/1000 pcs → $7.92 / 50 pcs = $158.40/1000 pcs. Not written — accept only if the old price is gone."
-        }
-      ],
-      "askedAt": "2026-09-02T06:03:44.258Z"
+      "askedAt": "2026-09-03T00:43:35.480Z"
     },
     {
       "token": "918cko",
@@ -353,7 +496,7 @@
           "note": "DEARER than the Sheng Siong price already recorded: $6.90 / 50 pcs = $138.00/1000 pcs → $7.75 / 50 pcs = $155.00/1000 pcs. Not written — accept only if the old price is gone."
         }
       ],
-      "askedAt": "2026-09-02T06:03:48.547Z"
+      "askedAt": "2026-09-03T00:43:46.623Z"
     },
     {
       "token": "5ouerp",
@@ -376,30 +519,30 @@
           "note": "DEARER than the NTUC price already recorded: $5.70 / 250g = $22.80/kg → $6.10 / 250g = $24.40/kg. Not written — accept only if the old price is gone."
         }
       ],
-      "askedAt": "2026-09-02T06:03:54.747Z"
+      "askedAt": "2026-09-03T00:43:52.593Z"
     },
     {
-      "token": "r515iw",
+      "token": "zlg42m",
       "ingredientId": "34b69a18-4fe7-8079-955e-ef44e9443bac",
       "ingredientName": "Muscovado Sugar (Brown)",
       "key": "brown muscovado sugar",
       "unitType": "By Gram",
       "vendor": "NTUC",
       "slotN": 1,
-      "priceSgd": 6.05,
-      "size": 325,
-      "url": "https://www.fairprice.com.sg/product/tate-and-lyle-dark-muscovado-sugar",
-      "itemName": "Tate and Lyle Dark Muscovado Sugar",
-      "perLabel": "$18.62/kg",
+      "priceSgd": 4,
+      "size": 250,
+      "url": "https://www.fairprice.com.sg/product/redman-dark-muscovado-sugar",
+      "itemName": "RedMan Dark Muscovado Sugar",
+      "perLabel": "$16.00/kg",
       "reasons": [
         {
           "kind": "dearer-than-recorded",
           "recordedPer1000": 12.52,
-          "foundPer1000": 18.615384615384613,
-          "note": "DEARER than the NTUC price already recorded: $3.13 / 250g = $12.52/kg → $6.05 / 325g = $18.62/kg. Not written — accept only if the old price is gone."
+          "foundPer1000": 16,
+          "note": "DEARER than the NTUC price already recorded: $3.13 / 250g = $12.52/kg → $4.00 / 250g = $16.00/kg. Not written — accept only if the old price is gone."
         }
       ],
-      "askedAt": "2026-09-02T06:04:07.494Z"
+      "askedAt": "2026-09-03T00:44:10.138Z"
     },
     {
       "token": "1gqw65",
@@ -422,7 +565,7 @@
           "note": "DEARER than the Sheng Siong price already recorded: $6.65 / 15 pcs = $443.33/1000 pcs → $6.65 / 10 pcs = $665.00/1000 pcs. Not written — accept only if the old price is gone."
         }
       ],
-      "askedAt": "2026-09-02T06:04:35.863Z"
+      "askedAt": "2026-09-03T00:44:48.461Z"
     }
   ],
   "rejected": [
