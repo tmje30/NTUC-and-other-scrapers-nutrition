@@ -203,8 +203,27 @@ const PROCESSED_RE = /\b(jam|puree|sauce|cider|vinegar|sorbet|concentrate|essenc
 // let any item whose own name contains one of these words (a "Milk" item, a
 // "Peanut Butter" item) switch off the guard for ALL the others — which is how
 // "Milk (Low Fat)" once accepted "Low Fat High Protein Milk - Green Tea".
+/**
+ * ⚠️⚠️ **A closed compound has no word boundary in it.** Every pattern here is compiled
+ * as `\b<p>\b`, so `cake` catches "Moon Cake" and misses "Mooncake" — two words guarded,
+ * one word not.
+ *
+ * Measured 2026-09-04 on the live deals page: `Green Tea (50 x 2g)` published **Mini
+ * Green Tea Mooncake** at 79% off, comparing a mooncake's $13.00/kg against tea bags at
+ * $62.60/kg. `Green Tea Moon Cake` was correctly refused the whole time.
+ *
+ * ⚠️ The leading `\w*` is what does the work — fishcake, cupcake, cheesecake, pancake,
+ * hotcake all end the same way. Still skipped when the ITEM itself names cake, so a row
+ * for mooncakes is unaffected.
+ *
+ * ⚠️ This is a CLASS of hole, not one entry. `bread` has the same shape (flatbread,
+ * shortbread, gingerbread) and has not been measured; fixed here only where a real
+ * miss was observed.
+ */
+const COMPOUND_CAKE = "\\w*cakes?";
+
 const GENERIC_FORM_PATTERNS = [
-	"spread", "seasoning", "marinade", "tea", "cake", "biscuits?", "crackers?",
+	"spread", "seasoning", "marinade", "tea", COMPOUND_CAKE, "biscuits?", "crackers?",
 	"milk", "milkshake", "yogh?urt", "smoothie", "cereal", "sandwich", "chips?",
 	"snack", "pudding", "jelly", "candy", "ice\\s*cream", "vermicelli", "noodles?",
 	"oatmeal", "porridge", "granola", "muesli", "oats",

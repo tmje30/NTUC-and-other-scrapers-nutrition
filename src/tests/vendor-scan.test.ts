@@ -736,6 +736,37 @@ check("a movement with no url is still a card", older.includes("Oil (Bran)") && 
 
 check("an empty snapshot still renders a page", renderMovesPage(null).includes("Nothing moved"));
 
+describe("generic-form guards — a closed compound has no word boundary in it");
+
+/**
+ * ⚠️ Every generic-form pattern compiles as `\b<p>\b`, so "cake" caught "Moon Cake" and
+ * missed "Mooncake". Measured 2026-09-04 on the live deals page: `Green Tea (50 x 2g)`
+ * published **Mini Green Tea Mooncake** at 79% off, pricing a mooncake's $13.00/kg
+ * against tea bags at $62.60/kg. The two-word spelling had been refused all along.
+ */
+const greenTea = targetFrom("Green Tea (50 x 2g)");
+const tea = (name: string) =>
+	product({ store: "Sheng Siong", name, packWeightG: 100, pricePer100g: 1.3, priceSgd: 1.3 });
+
+eq("a mooncake is not tea", evaluate(greenTea, tea("Mini Green Tea Mooncake")).verdict, "miss");
+eq("...spelled as one word", evaluate(greenTea, tea("Green Tea Mooncake")).verdict, "miss");
+eq("...or as two, as before", evaluate(greenTea, tea("Green Tea Moon Cake")).verdict, "miss");
+eq("...and other compounds close the same way", evaluate(greenTea, tea("Green Tea Cheesecake")).verdict, "miss");
+
+// The guard must not swallow the thing the row is actually for.
+eq("real tea still matches", evaluate(greenTea, tea("Japanese Green Tea Teabag")).verdict, "accept");
+eq("...however it is titled", evaluate(greenTea, tea("Green Tea Bags 50s")).verdict, "accept");
+
+// ⚠️ Skipped when the ITEM names it, like every other generic-form guard — otherwise a
+// row for mooncakes could never match one. The fixture avoids "Green Tea Mooncake" on
+// purpose: that trips the separate TEA guard, correctly, and would prove nothing here.
+// row for mooncakes could never match one.
+eq(
+	"a row that asks for cake still gets cake",
+	evaluate(targetFrom("Mooncake"), tea("Lotus Paste Mooncake")).verdict,
+	"accept",
+);
+
 describe("vendor scan — a promo price must never reach the price book");
 
 /**
