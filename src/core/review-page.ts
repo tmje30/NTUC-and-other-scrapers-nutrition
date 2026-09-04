@@ -54,9 +54,42 @@ function unitWord(unitType: string): string {
  * ⚠️ The reason a pick is here is the whole point of the card — a bulk pack and a
  * marketplace rescue are completely different questions and must not look alike.
  */
+/**
+ * ⚠️⚠️ **The price comparison is a table, not a sentence.** It was one line carrying
+ * two prices, two pack sizes and two per-unit figures joined by an arrow — the reader has
+ * to parse it before they can judge it, and judging it is the entire question. Asked for
+ * 2026-09-04: the two per-unit figures stacked, labelled, and the new one coloured by
+ * direction.
+ *
+ * ⚠️ Colour is decided by the NUMBERS, not by the reason's name. A `dearer-than-
+ * recorded` card is red by construction, but the same block renders a near-miss whose
+ * price happens to be lower, and painting that red because of the label would be the
+ * card contradicting its own figures.
+ *
+ * ⚠️ Colour is never the only signal — each row is labelled *current* / *new* in text.
+ * Red and green alone would say nothing to a red-green colourblind reader, and this is
+ * the one control on the page that writes to the price book.
+ */
+function comparison(r: Extract<ReviewReason, { kind: "dearer-than-recorded" }>): string {
+	const per = r.perWord ?? "1000";
+	const money = (n: number) => `$${n.toFixed(2)}/${esc(per)}`;
+	const cheaper = r.foundPer1000 < r.recordedPer1000;
+	return `<div class="cmp">
+  <div class="cmp-h">Dearer than current${r.vendor ? ` ${esc(r.vendor)}` : ""} price</div>
+  <div class="cmp-r"><span class="fig cur">${money(r.recordedPer1000)}</span><span class="lab">current</span></div>
+  <div class="cmp-r"><span class="fig ${cheaper ? "down" : "up"}">${money(r.foundPer1000)}</span><span class="lab">new</span></div>
+  <div class="cmp-f">Accept only if the price is acceptable.</div>
+</div>`;
+}
+
 function reasonList(reasons: ReviewReason[]): string {
 	if (!reasons.length) return "";
-	return `<ul class="why">${reasons.map((r) => `<li class="r-${esc(r.kind)}">${esc(r.note)}</li>`).join("")}</ul>`;
+	const cmp = reasons.filter((r) => r.kind === "dearer-than-recorded").map(comparison).join("");
+	const rest = reasons.filter((r) => r.kind !== "dearer-than-recorded");
+	return (
+		cmp +
+		(rest.length ? `<ul class="why">${rest.map((r) => `<li class="r-${esc(r.kind)}">${esc(r.note)}</li>`).join("")}</ul>` : "")
+	);
 }
 
 function button(
@@ -210,6 +243,15 @@ h1 { font-size:1.25rem; margin:0 0 4px; }
 .why-not[open] > summary { border-bottom-left-radius:0; border-bottom-right-radius:0; }
 .reasons { display:flex; flex-direction:column; gap:6px; padding:8px;
   border:1px solid var(--no); border-top:0; border-radius:0 0 8px 8px; }
+.cmp { margin:10px 0; border:1px solid var(--line); border-radius:8px; padding:9px 11px; }
+.cmp-h { font-size:.82rem; font-weight:600; color:var(--mut); margin-bottom:7px; }
+.cmp-r { display:flex; align-items:baseline; gap:9px; margin:3px 0; }
+.cmp-r .fig { font-size:1.02rem; font-weight:600; font-variant-numeric:tabular-nums; min-width:8.5ch; }
+.cmp-r .fig.cur { color:var(--fg); }
+.cmp-r .fig.up { color:var(--no); }
+.cmp-r .fig.down { color:var(--ok); }
+.cmp-r .lab { font-size:.8rem; color:var(--mut); }
+.cmp-f { font-size:.8rem; color:var(--mut); margin-top:7px; }
 .empty { color:var(--mut); }
 .foot { color:var(--mut); font-size:.82rem; margin-top:22px; }
 .foot a { color:inherit; }

@@ -50,7 +50,20 @@ export type ReviewReason =
 	 * and today's find is DEARER, so it is queued instead of written. See
 	 * `dearerThanRecorded`.
 	 */
-	| { kind: "dearer-than-recorded"; recordedPer1000: number; foundPer1000: number; note: string }
+	/**
+	 * ⚠️ `perWord` and `vendor` are carried so `review.html` can lay the comparison out
+	 * as a table instead of a sentence — the two figures side by side, the new one
+	 * coloured by direction. `note` stays the one-line form, because Telegram has no
+	 * table and a message must still read as a message.
+	 */
+	| {
+			kind: "dearer-than-recorded";
+			recordedPer1000: number;
+			foundPer1000: number;
+			perWord?: string;
+			vendor?: string;
+			note: string;
+	  }
 	/**
 	 * ⚠️⚠️ **A suggestion, not a find.** No product this shop returned actually MATCHED
 	 * the row, but one landed in the review band — plausible, unconfirmed. Without this
@@ -140,6 +153,8 @@ export function dearerThanRecorded(args: {
 		kind: "dearer-than-recorded",
 		recordedPer1000,
 		foundPer1000,
+		perWord: per,
+		vendor: args.vendor,
 		note:
 			`DEARER than the ${args.vendor} price already recorded: ` +
 			`${side(args.recordedText, recordedPer1000)} → ${side(args.foundText, foundPer1000)}. ` +

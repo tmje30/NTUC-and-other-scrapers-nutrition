@@ -1,4 +1,5 @@
 import { check, describe, eq } from "./harness.js";
+import { renderReviewPage } from "../core/review-page.js";
 import {
 	BULK_GRAMS,
 	dearerThanRecorded,
@@ -487,6 +488,39 @@ check("…the note names the shop", /Guardian/.test(dearer?.note ?? ""));
 check("…and quotes BOTH figures, so the card can be judged", /\$8\.50\/kg/.test(dearer?.note ?? "") && /\$12\.00\/kg/.test(dearer?.note ?? ""));
 check("…and says plainly that nothing was written", /not written/i.test(dearer?.note ?? ""));
 check("…and the pack behind each of them", /\$0\.85 \/ 100g/.test(dearer?.note ?? ""));
+
+/**
+ * ⚠️⚠️ **The page lays this out as a table; the message keeps the sentence.** One line
+ * carrying two prices, two pack sizes and two per-unit figures has to be parsed before it
+ * can be judged, and judging it is the whole question. Asked for 2026-09-04.
+ *
+ * ⚠️ Telegram has no table, so `note` is unchanged — these fields are additive.
+ */
+eq("the reason carries the unit, so a page need not re-derive it", dearer?.kind === "dearer-than-recorded" ? dearer.perWord : null, "kg");
+eq("…and the shop, for the heading", dearer?.kind === "dearer-than-recorded" ? dearer.vendor : null, "Guardian");
+
+const pend = (over: any) => ({
+	token: "t", ingredientId: "i", ingredientName: "Muscovado Sugar (Brown)", key: "muscovado sugar",
+	unitType: "By Gram", vendor: "NTUC", slotN: 1, priceSgd: 6.05, size: 325,
+	url: "https://e.test/p", itemName: "Tate and Lyle Dark Muscovado Sugar", perLabel: "",
+	askedAt: "2026-09-04T00:00:00.000Z", ...over,
+});
+const card = renderReviewPage([pend({ reasons: [dearer!] })] as any, { repo: "o/r" });
+check("the card heads the block with the shop", card.includes("Dearer than current Guardian price"));
+check("…states the current figure", card.includes(">" + "$8.50/kg" + "<"));
+check("…and the new one", card.includes(">" + "$12.00/kg" + "<"));
+check("…paints a dearer find red, not green", card.includes('class="fig up"') && !card.includes('class="fig down"'));
+// ⚠️ Colour is never the only signal — a red-green colourblind reader gets the words.
+check("…and labels both rows in words", card.includes(">current<") && card.includes(">new<"));
+check("…and says what accepting means", card.includes("Accept only if the price is acceptable"));
+
+// ⚠️ Colour follows the NUMBERS, not the reason's name: the same block renders a
+// near-miss whose price happens to be lower, and red there would contradict the figures.
+const cheaperCmp = renderReviewPage(
+	[pend({ reasons: [{ kind: "dearer-than-recorded", recordedPer1000: 12, foundPer1000: 8, perWord: "kg", vendor: "NTUC", note: "n" }] })] as any,
+	{ repo: "o/r" },
+);
+check("a lower figure is green even under a dearer label", cheaperCmp.includes('class="fig down"'));
 
 /**
  * ⚠️⚠️ **The case the first live run produced, and the reason the note quotes packs.**
