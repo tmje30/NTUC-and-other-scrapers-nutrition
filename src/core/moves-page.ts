@@ -42,27 +42,46 @@ function drop(m: PriceMove): number | null {
 	return Math.round((1 - m.foundPer1000 / m.recordedPer1000) * 100);
 }
 
+/**
+ * ⚠️⚠️ **The whole card is the link to the shop, and the product is named.** A row
+ * name says what was wanted; it does not say what the shop actually sold. On this project
+ * those differ constantly — `Milk (Fresh) (Normal)` held Bandung Rose Milk, Farmhouse UHT
+ * and Greenfields inside one week, and the page reported three price movements without
+ * ever saying the product had changed underneath them. Same reasoning as `review.html`:
+ * you cannot check a price without seeing the thing it is for.
+ *
+ * ⚠️ A snapshot with no URL renders as a plain card, never a dead link.
+ */
+function shell(m: PriceMove, inner: string, tag: string): string {
+	const head = `<div class="hd"><span class="ing">${esc(m.row.trim())}</span><span class="shop">${esc(m.vendor)}</span></div>
+  ${inner}
+  ${m.product ? `<div class="prod">${esc(m.product)}${m.url ? ' <span class="go">↗</span>' : ""}</div>` : ""}
+  ${tag}`;
+	return m.url
+		? `<article class="card"><a class="body" href="${esc(m.url)}" target="_blank" rel="noopener">${head}</a></article>`
+		: `<article class="card">${head}</article>`;
+}
+
 function cheaperCard(m: PriceMove): string {
 	const d = drop(m);
-	return `<article class="card">
-  <div class="hd"><span class="ing">${esc(m.row.trim())}</span><span class="shop">${esc(m.vendor)}</span></div>
-  <div class="move">
+	return shell(
+		m,
+		`<div class="move">
     <span class="was">${esc(m.recordedText)} <i>= ${esc(per(m.recordedPer1000!, m.perWord))}</i></span>
     <span class="arrow">→</span>
     <span class="now"><b>${esc(m.foundText)}</b> <i>= ${esc(per(m.foundPer1000, m.perWord))}</i></span>
-  </div>
-  ${d != null && d > 0 ? `<div class="tag down">${d}% cheaper</div>` : ""}
-</article>`;
+  </div>`,
+		d != null && d > 0 ? `<div class="tag down">${d}% cheaper</div>` : "",
+	);
 }
 
 function firstCard(m: PriceMove): string {
-	return `<article class="card">
-  <div class="hd"><span class="ing">${esc(m.row.trim())}</span><span class="shop">${esc(m.vendor)}</span></div>
-  <div class="move"><span class="now"><b>${esc(m.foundText)}</b> <i>= ${esc(per(m.foundPer1000, m.perWord))}</i></span></div>
-  <div class="tag new">first price at this shop</div>
-</article>`;
+	return shell(
+		m,
+		`<div class="move"><span class="now"><b>${esc(m.foundText)}</b> <i>= ${esc(per(m.foundPer1000, m.perWord))}</i></span></div>`,
+		`<div class="tag new">first price at this shop</div>`,
+	);
 }
-
 export function renderMovesPage(snapshot: MovesSnapshot | null, o: MovesPageOptions = {}): string {
 	const moves = snapshot?.moves ?? [];
 	const reconfirmed = snapshot?.reconfirmed ?? 0;
@@ -120,6 +139,10 @@ h2 { font-size:.82rem; text-transform:uppercase; letter-spacing:.05em; color:var
   border:1px solid currentColor; border-radius:999px; padding:2px 9px; }
 .tag.down { color:var(--ok); }
 .tag.new { color:var(--new); }
+.prod { font-size:.88rem; opacity:.85; margin-top:8px; word-break:break-word; }
+.go { opacity:.55; }
+.body { display:block; color:inherit; text-decoration:none; border-radius:8px; margin:-4px -6px; padding:4px 6px; }
+.body:hover, .body:focus-visible { background:rgba(128,128,128,.09); outline:none; }
 .empty { color:var(--mut); }
 .foot { color:var(--mut); font-size:.82rem; margin-top:20px; }
 </style></head>

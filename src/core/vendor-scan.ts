@@ -942,6 +942,21 @@ export interface PriceMove {
 	 *  first price rather than a reduction, and is reported as such. */
 	recordedPer1000: number | null;
 	foundPer1000: number;
+	/**
+	 * The listing that was written, and its page.
+	 *
+	 * ⚠️⚠️ **A price with no product name is unanswerable.** The row name says what the
+	 * user wanted; it does not say what the shop actually sold them, and on this project
+	 * those differ constantly — `Milk (Fresh) (Normal)` has held Bandung Rose Milk,
+	 * Farmhouse UHT and Greenfields inside one week. Asked for 2026-09-03: *"i want to
+	 * see it new item name. and i want to be able to click on the tab and it opens to the
+	 * product page."*
+	 *
+	 * ⚠️ Optional, so a snapshot written before this existed still renders — as a card
+	 * with no link rather than a broken one.
+	 */
+	product?: string;
+	url?: string;
 	/** What `pricePer1000` means on this row: `kg`, `L`, or `1000 pcs`. */
 	perWord: string;
 }

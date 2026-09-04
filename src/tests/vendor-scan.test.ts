@@ -713,6 +713,8 @@ check("an unlinked message still carries the detail", unlinked.includes("Cinnamo
 // Silence is the default: nothing moved is no message, not an empty one.
 eq("nothing moved is no message", renderPriceMoves([], 60, (x) => x, "https://e.test/moves.html"), null);
 
+cut.product = "FairPrice Cinnamon Powder";
+cut.url = "https://www.fairprice.com.sg/product/cinnamon-13044017";
 const page = renderMovesPage({ generatedAt: "2026-09-03T00:00:00.000Z", reconfirmed: 41, moves: [cut, firstPrice] });
 check("the page separates cuts from first prices", page.includes("Cheaper than what was recorded") && page.includes("Newly recorded"));
 check("a cut shows both sides", page.includes("$4.88 / 28g") && page.includes("$1.55 / 30g"));
@@ -723,6 +725,15 @@ check("a first price is never shown as a reduction", !page.includes("$0.00/L"));
 check("the unchanged count is stated", page.includes("41 others re-confirmed unchanged"));
 
 // The empty state is rendered, not skipped — the message links here unconditionally.
+// ⚠️ A row name says what was WANTED; only the product name says what the shop sold.
+// `Milk (Fresh) (Normal)` held three different products inside one week.
+check("the card names the product that was written", page.includes("FairPrice Cinnamon Powder"));
+check("...and the whole card opens its page", page.includes('href="https://www.fairprice.com.sg/product/cinnamon-13044017"'));
+
+// ⚠️ A snapshot from before those fields existed renders a plain card, not a dead link.
+const older = renderMovesPage({ generatedAt: "2026-09-03T00:00:00.000Z", reconfirmed: 0, moves: [firstPrice] });
+check("a movement with no url is still a card", older.includes("Oil (Bran)") && !older.includes('<a class="body"'));
+
 check("an empty snapshot still renders a page", renderMovesPage(null).includes("Nothing moved"));
 
 describe("vendor scan — a promo price must never reach the price book");

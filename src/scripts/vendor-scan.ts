@@ -614,6 +614,8 @@ async function main(): Promise<void> {
 						recordedPer1000: was,
 						foundPer1000: now,
 						perWord: perWord(row),
+						product: p.name,
+						url: p.url,
 					});
 				} else {
 					reconfirmed++;
