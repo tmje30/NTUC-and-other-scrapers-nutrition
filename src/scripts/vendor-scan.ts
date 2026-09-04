@@ -204,6 +204,26 @@ async function main(): Promise<void> {
 	 * asked, which is exactly the case that left three stale questions on the live page.
 	 */
 	let questionsDropped = 0;
+	/**
+	 * ⚠️⚠️ **Pairs this run actually scanned, and the questions it still stands behind.**
+	 *
+	 * A slot holds ONE price, so a question about it is only worth answering while it is
+	 * still the best the shop has. Nothing enforced that: `findPendingFor` matches per
+	 * PRODUCT, so a different pick the next morning minted a second card instead of
+	 * replacing the first, and `prunePending` only expires them after seven days.
+	 *
+	 * Measured 2026-09-04 on `Muscovado Sugar (Brown)` at NTUC: two open questions for the
+	 * one slot — Tate and Lyle at $6.05/325g ($18.62/kg) asked on the 2nd, and RedMan at
+	 * $4.00/250g ($16.00/kg) asked on the 3rd. The Tate and Lyle listing is not in the
+	 * shop's results at all any more. Answering the wrong card writes the worse price.
+	 *
+	 * ⚠️ Keyed on the PAIR, so a question about a shop this run did not visit — an
+	 * `--only` run, a search that threw — survives untouched. Only a pair that was
+	 * genuinely re-examined may have its stale cards retired.
+	 */
+	const visited = new Set<string>();
+	const standsBehind = new Set<string>();
+	const pairKey = (ingredientId: string, vendor: string) => `${ingredientId}|${vendor}`;
 	/** Slots whose recorded price actually moved this run — see `renderPriceMoves`. */
 	const moves: PriceMove[] = [];
 	/** Written, but at the price already recorded. Counted, never itemised. */
@@ -237,6 +257,7 @@ async function main(): Promise<void> {
 
 			// Each term is tried only when the one before it produced no candidate, so
 			// the common case is still a single request.
+			visited.add(pairKey(row.pageId, route.option));
 			let outcome = null;
 			// ⚠️⚠️ **Suggestions survive a later search term that finds nothing.** Terms are
 			// tried in order and `outcome` holds only the LAST one, so a first term that
@@ -383,7 +404,10 @@ async function main(): Promise<void> {
 				// Same gate as the write path — a pack this row cannot measure is not offerable.
 				if (!altSize) continue;
 				const outstandingAlt = findPendingFor(review, row.pageId, route.option, alt);
-				if (outstandingAlt?.messageId) continue;
+				if (outstandingAlt?.messageId) {
+					standsBehind.add(outstandingAlt.token);
+					continue;
+				}
 				const altPending: PendingReview = {
 					token: outstandingAlt?.token ?? reviewToken(review),
 					ingredientId: row.pageId,
@@ -409,6 +433,7 @@ async function main(): Promise<void> {
 					askedAt: new Date().toISOString(),
 				};
 				review = withPending(review, altPending);
+				standsBehind.add(altPending.token);
 				toAsk.push(altPending);
 				console.log(
 					`    ≋ ${money(alt.priceSgd)} / ${altSize.size}${unitWord(row)}` +
@@ -561,6 +586,7 @@ async function main(): Promise<void> {
 				// Already asked and still waiting? Say nothing — see `findPendingFor`.
 				const outstanding = findPendingFor(review, row.pageId, route.option, p);
 				if (outstanding?.messageId) {
+					standsBehind.add(outstanding.token);
 					console.log(`      ？ already asked on Telegram — still waiting on your answer.`);
 					continue;
 				}
@@ -586,6 +612,7 @@ async function main(): Promise<void> {
 				// Queued into the live file immediately so the token it holds is reserved
 				// against the next `reviewToken` call in this same loop.
 				review = withPending(review, pending);
+				standsBehind.add(pending.token);
 				toAsk.push(pending);
 				console.log(
 					`      ？ not written — asking you first:\n` +
@@ -672,6 +699,26 @@ async function main(): Promise<void> {
 				console.log(`      ✗ write failed — ${(e as Error).message}`);
 			}
 		}
+	}
+
+	// ⚠️⚠️ **Retire questions this run looked at and did NOT re-raise.** See `visited`.
+	// A slot holds one price; a card offering a listing today's scan no longer finds is a
+	// button that writes a worse price than the one beside it.
+	//
+	// ⚠️ Only for pairs actually scanned. A question about a shop this run skipped —
+	// `--only`, or a search that threw — is not evidence about that shop and survives.
+	const before = review.pending.length;
+	const kept = review.pending.filter(
+		(q) => standsBehind.has(q.token) || !visited.has(pairKey(q.ingredientId, q.vendor)),
+	);
+	if (kept.length < before) {
+		const gone = review.pending.filter((q) => !kept.includes(q));
+		review = { ...review, pending: kept };
+		questionsDropped += before - kept.length;
+		console.log(
+			`\n↩ ${before - kept.length} stale question(s) retired — the shop no longer offers what they asked about:\n` +
+				gone.map((q) => `   • ${q.ingredientName.trim()} · ${q.vendor} — ${q.itemName}`).join("\n"),
+		);
 	}
 
 	await askAboutUncertain(toAsk, review, written, gaps, questionsDropped, moves, reconfirmed);
