@@ -29,6 +29,10 @@ on:
         description: "Record the clear picks in Notion (off = report only, writes nothing)"
         type: boolean
         default: false
+      ask:
+        description: "Send the Telegram message too (off = record silently, page still published)"
+        type: boolean
+        default: false
   repository_dispatch:
     types: [vendorsweep]
 
@@ -83,6 +87,12 @@ jobs:
         # NOTHING, so the first look at what a cloud sweep would do costs nothing and
         # changes nothing. A `repository_dispatch` (the eventual cron) writes.
         #
+        # ⚠️⚠️ **`ask` exists because a silent run is unverifiable from a phone.** The
+        # cron wants `--no-ask` — a daily "N picks need your call" is the nag that gets a
+        # bot muted, and a muted bot loses the deals digest with it. But a run made to
+        # CHECK something needs to say what it did, and on 2026-09-04 a sweep that wrote 54
+        # prices sent nothing at all: `--no-ask` held the question back and nothing had
+        # moved, so there was no price news either. Off by default; on when asked for.
         # ⚠️ `--no-ask` suppresses the daily "N picks need your call" nag but STILL
         # publishes the review page and still reports a price that actually moved.
         # It used to return before the push, which on an ephemeral runner discarded
@@ -94,7 +104,11 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "repository_dispatch" ] || [ "${{ inputs.write }}" = "true" ]; then
             echo "::notice::Sweeping WITH --write — picks will be recorded in Notion."
-            npm run vendor-scan -- --only ntuc,shengsiong,guardian,myprotein --write --no-ask
+            if [ "${{ inputs.ask }}" = "true" ]; then
+              npm run vendor-scan -- --only ntuc,shengsiong,guardian,myprotein --write
+            else
+              npm run vendor-scan -- --only ntuc,shengsiong,guardian,myprotein --write --no-ask
+            fi
           else
             echo "::notice::Report-only sweep — nothing will be written."
             npm run vendor-scan -- --only ntuc,shengsiong,guardian,myprotein
