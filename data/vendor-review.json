@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-03T09:27:14.668Z",
+  "updatedAt": "2026-09-04T02:02:10.007Z",
   "pending": [
     {
       "token": "4087nh",
@@ -47,205 +47,6 @@
         }
       ],
       "askedAt": "2026-09-02T06:04:07.494Z"
-    },
-    {
-      "token": "027xa9",
-      "ingredientId": "3b269a18-4fe7-81d4-8025-e6004ddc5b24",
-      "ingredientName": "AM facial moisturizing lotion (SPF 30) [cerave]",
-      "key": "am facial moisturizing lotion",
-      "unitType": "By ml",
-      "vendor": "Watsons",
-      "slotN": 3,
-      "brand": "cerave",
-      "priceSgd": 29.9,
-      "size": 52,
-      "url": "https://www.watsons.com.sg/cerave-am-facial-moisturizing-lotion-spf30-52ml/p/BP_51157",
-      "itemName": "CERAVE AM Facial Moisturizing Lotion SPF30 52ml",
-      "perLabel": "$575.00/L",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is the closest one, offered as a suggestion. Accept only if it is the same thing."
-        }
-      ],
-      "askedAt": "2026-09-03T02:00:31.814Z"
-    },
-    {
-      "token": "wd6tb9",
-      "ingredientId": "3b269a18-4fe7-8123-a0ae-ccda5c7a3415",
-      "ingredientName": "Toothpaste  - Multi Care [Sensodyne]",
-      "key": "toothpast multi care",
-      "unitType": "By Gram",
-      "vendor": "Watsons",
-      "slotN": 3,
-      "brand": "sensodyne",
-      "priceSgd": 7.5,
-      "size": 100,
-      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-gum-care-toothpaste-dental-sensitivity-relief-100g/p/BP_45477",
-      "itemName": "SENSODYNE Sensitive Teeth Gum Care Toothpaste (Dental Sensitivity Relief) 100g",
-      "perLabel": "$75.00/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 2 of 3, offered as a suggestion. Accept only if it is the same thing."
-        }
-      ],
-      "askedAt": "2026-09-03T02:00:52.146Z"
-    },
-    {
-      "token": "m5yaj9",
-      "ingredientId": "3b269a18-4fe7-8123-a0ae-ccda5c7a3415",
-      "ingredientName": "Toothpaste  - Multi Care [Sensodyne]",
-      "key": "toothpast multi care",
-      "unitType": "By Gram",
-      "vendor": "Watsons",
-      "slotN": 3,
-      "brand": "sensodyne",
-      "priceSgd": 7.8,
-      "size": 100,
-      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-oral-care-toothpaste-gentle-whitening-dental-sensitivity-relief-100g/p/BP_47922",
-      "itemName": "SENSODYNE Sensitive Teeth Oral Care Toothpaste Gentle Whitening (Dental Sensitivity Relief) 100g",
-      "perLabel": "$78.00/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
-        }
-      ],
-      "askedAt": "2026-09-03T02:00:52.148Z"
-    },
-    {
-      "token": "44qgz7",
-      "ingredientId": "3b269a18-4fe7-8123-a0ae-ccda5c7a3415",
-      "ingredientName": "Toothpaste  - Multi Care [Sensodyne]",
-      "key": "toothpast multi care",
-      "unitType": "By Gram",
-      "vendor": "Watsons",
-      "slotN": 3,
-      "brand": "sensodyne",
-      "priceSgd": 7.5,
-      "size": 100,
-      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-multi-care-dental-sensitivity-relief-100g/p/BP_92324",
-      "itemName": "SENSODYNE Sensitive Teeth Multi Care (Dental Sensitivity Relief) 100g",
-      "perLabel": "$75.00/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is the closest of 3 offered, best first. Accept only if it is the same thing."
-        }
-      ],
-      "askedAt": "2026-09-03T02:00:52.158Z"
-    },
-    {
-      "token": "rypsw0",
-      "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
-      "ingredientName": "Sensitivity & Gum Toothpaste - Original",
-      "key": "sensitiviti gum toothpast original",
-      "unitType": "By Gram",
-      "vendor": "Watsons",
-      "slotN": 3,
-      "priceSgd": 10.2,
-      "size": 100,
-      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-oral-care-toothpaste-sensitivity-and-gum-extra-fresh-dental-sensitivity-relief-100g/p/BP_51696",
-      "itemName": "SENSODYNE Sensitive Teeth Oral Care Toothpaste Sensitivity and Gum Extra Fresh (Dental Sensitivity Relief) 100g",
-      "perLabel": "$102.00/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 2 of 2, offered as a suggestion. Accept only if it is the same thing."
-        }
-      ],
-      "askedAt": "2026-09-03T02:01:22.803Z"
-    },
-    {
-      "token": "1egnl6",
-      "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
-      "ingredientName": "Sensitivity & Gum Toothpaste - Original",
-      "key": "sensitiviti gum toothpast original",
-      "unitType": "By Gram",
-      "vendor": "Watsons",
-      "slotN": 3,
-      "priceSgd": 10.2,
-      "size": 100,
-      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-oral-care-toothpaste-sensitivity-and-gum-whitening-dental-sensitivity-relief-100g/p/BP_45103",
-      "itemName": "SENSODYNE Sensitive Teeth Oral Care Toothpaste Sensitivity and Gum Whitening (Dental Sensitivity Relief) 100g",
-      "perLabel": "$102.00/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is the closest of 2 offered, best first. Accept only if it is the same thing."
-        }
-      ],
-      "askedAt": "2026-09-03T02:01:22.804Z"
-    },
-    {
-      "token": "bklb5n",
-      "ingredientId": "37369a18-4fe7-809b-b3bb-cc640507e5a9",
-      "ingredientName": "Creatine monohydrate (Cali gold)",
-      "key": "creatin monohydrat",
-      "unitType": "By Gram",
-      "vendor": "Iherb",
-      "slotN": 1,
-      "priceSgd": 32.96,
-      "size": 150.25,
-      "url": "https://sg.iherb.com/pr/bpn-creatine-monohydrate-unflavored-5-3-oz-150-g/141831",
-      "itemName": "BPN, Creatine Monohydrate, Unflavored , 5.3 oz (150 g)",
-      "perLabel": "$219.37/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 2 of 3, offered as a suggestion. Accept only if it is the same thing."
-        }
-      ],
-      "askedAt": "2026-09-03T02:02:41.713Z"
-    },
-    {
-      "token": "uog344",
-      "ingredientId": "37369a18-4fe7-809b-b3bb-cc640507e5a9",
-      "ingredientName": "Creatine monohydrate (Cali gold)",
-      "key": "creatin monohydrat",
-      "unitType": "By Gram",
-      "vendor": "Iherb",
-      "slotN": 1,
-      "priceSgd": 54.95,
-      "size": 300.5,
-      "url": "https://sg.iherb.com/pr/bpn-creatine-monohydrate-unflavored-10-6-oz-300-g/131350",
-      "itemName": "BPN, Creatine Monohydrate, Unflavored, 10.6 oz (300 g)",
-      "perLabel": "$182.86/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
-        }
-      ],
-      "askedAt": "2026-09-03T02:02:41.714Z"
-    },
-    {
-      "token": "gb3oxa",
-      "ingredientId": "37369a18-4fe7-809b-b3bb-cc640507e5a9",
-      "ingredientName": "Creatine monohydrate (Cali gold)",
-      "key": "creatin monohydrat",
-      "unitType": "By Gram",
-      "vendor": "Iherb",
-      "slotN": 1,
-      "priceSgd": 45.19,
-      "size": 500,
-      "url": "https://sg.iherb.com/pr/paradise-herbs-creatine-monohydrate-unflavored-500-g/141315",
-      "itemName": "Paradise Herbs, Creatine Monohydrate, Unflavored, 500 g",
-      "perLabel": "$90.38/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is the closest of 3 offered, best first. Accept only if it is the same thing."
-        },
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer1000": 42.12637913741224,
-          "foundPer1000": 90.38,
-          "note": "DEARER than the Iherb price already recorded: $42.00 / 997g = $42.13/kg → $45.19 / 500g = $90.38/kg. Not written — accept only if the old price is gone."
-        }
-      ],
-      "askedAt": "2026-09-03T02:02:41.718Z"
     },
     {
       "token": "xor4mu",
@@ -1343,6 +1144,205 @@
         }
       ],
       "askedAt": "2026-09-03T09:27:14.668Z"
+    },
+    {
+      "token": "027xa9",
+      "ingredientId": "3b269a18-4fe7-81d4-8025-e6004ddc5b24",
+      "ingredientName": "AM facial moisturizing lotion (SPF 30) [cerave]",
+      "key": "am facial moisturizing lotion",
+      "unitType": "By ml",
+      "vendor": "Watsons",
+      "slotN": 3,
+      "brand": "cerave",
+      "priceSgd": 29.9,
+      "size": 52,
+      "url": "https://www.watsons.com.sg/cerave-am-facial-moisturizing-lotion-spf30-52ml/p/BP_51157",
+      "itemName": "CERAVE AM Facial Moisturizing Lotion SPF30 52ml",
+      "perLabel": "$575.00/L",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is the closest one, offered as a suggestion. Accept only if it is the same thing."
+        }
+      ],
+      "askedAt": "2026-09-04T02:00:26.394Z"
+    },
+    {
+      "token": "wd6tb9",
+      "ingredientId": "3b269a18-4fe7-8123-a0ae-ccda5c7a3415",
+      "ingredientName": "Toothpaste  - Multi Care [Sensodyne]",
+      "key": "toothpast multi care",
+      "unitType": "By Gram",
+      "vendor": "Watsons",
+      "slotN": 3,
+      "brand": "sensodyne",
+      "priceSgd": 7.5,
+      "size": 100,
+      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-gum-care-toothpaste-dental-sensitivity-relief-100g/p/BP_45477",
+      "itemName": "SENSODYNE Sensitive Teeth Gum Care Toothpaste (Dental Sensitivity Relief) 100g",
+      "perLabel": "$75.00/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 2 of 3, offered as a suggestion. Accept only if it is the same thing."
+        }
+      ],
+      "askedAt": "2026-09-04T02:00:41.447Z"
+    },
+    {
+      "token": "m5yaj9",
+      "ingredientId": "3b269a18-4fe7-8123-a0ae-ccda5c7a3415",
+      "ingredientName": "Toothpaste  - Multi Care [Sensodyne]",
+      "key": "toothpast multi care",
+      "unitType": "By Gram",
+      "vendor": "Watsons",
+      "slotN": 3,
+      "brand": "sensodyne",
+      "priceSgd": 7.8,
+      "size": 100,
+      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-oral-care-toothpaste-gentle-whitening-dental-sensitivity-relief-100g/p/BP_47922",
+      "itemName": "SENSODYNE Sensitive Teeth Oral Care Toothpaste Gentle Whitening (Dental Sensitivity Relief) 100g",
+      "perLabel": "$78.00/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
+        }
+      ],
+      "askedAt": "2026-09-04T02:00:41.448Z"
+    },
+    {
+      "token": "44qgz7",
+      "ingredientId": "3b269a18-4fe7-8123-a0ae-ccda5c7a3415",
+      "ingredientName": "Toothpaste  - Multi Care [Sensodyne]",
+      "key": "toothpast multi care",
+      "unitType": "By Gram",
+      "vendor": "Watsons",
+      "slotN": 3,
+      "brand": "sensodyne",
+      "priceSgd": 7.5,
+      "size": 100,
+      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-multi-care-dental-sensitivity-relief-100g/p/BP_92324",
+      "itemName": "SENSODYNE Sensitive Teeth Multi Care (Dental Sensitivity Relief) 100g",
+      "perLabel": "$75.00/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is the closest of 3 offered, best first. Accept only if it is the same thing."
+        }
+      ],
+      "askedAt": "2026-09-04T02:00:41.450Z"
+    },
+    {
+      "token": "rypsw0",
+      "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
+      "ingredientName": "Sensitivity & Gum Toothpaste - Original",
+      "key": "sensitiviti gum toothpast original",
+      "unitType": "By Gram",
+      "vendor": "Watsons",
+      "slotN": 3,
+      "priceSgd": 10.2,
+      "size": 100,
+      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-oral-care-toothpaste-sensitivity-and-gum-extra-fresh-dental-sensitivity-relief-100g/p/BP_51696",
+      "itemName": "SENSODYNE Sensitive Teeth Oral Care Toothpaste Sensitivity and Gum Extra Fresh (Dental Sensitivity Relief) 100g",
+      "perLabel": "$102.00/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 2 of 2, offered as a suggestion. Accept only if it is the same thing."
+        }
+      ],
+      "askedAt": "2026-09-04T02:01:04.791Z"
+    },
+    {
+      "token": "1egnl6",
+      "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
+      "ingredientName": "Sensitivity & Gum Toothpaste - Original",
+      "key": "sensitiviti gum toothpast original",
+      "unitType": "By Gram",
+      "vendor": "Watsons",
+      "slotN": 3,
+      "priceSgd": 10.2,
+      "size": 100,
+      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-oral-care-toothpaste-sensitivity-and-gum-whitening-dental-sensitivity-relief-100g/p/BP_45103",
+      "itemName": "SENSODYNE Sensitive Teeth Oral Care Toothpaste Sensitivity and Gum Whitening (Dental Sensitivity Relief) 100g",
+      "perLabel": "$102.00/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is the closest of 2 offered, best first. Accept only if it is the same thing."
+        }
+      ],
+      "askedAt": "2026-09-04T02:01:04.792Z"
+    },
+    {
+      "token": "bklb5n",
+      "ingredientId": "37369a18-4fe7-809b-b3bb-cc640507e5a9",
+      "ingredientName": "Creatine monohydrate (Cali gold)",
+      "key": "creatin monohydrat",
+      "unitType": "By Gram",
+      "vendor": "Iherb",
+      "slotN": 1,
+      "priceSgd": 32.96,
+      "size": 150.25,
+      "url": "https://sg.iherb.com/pr/bpn-creatine-monohydrate-unflavored-5-3-oz-150-g/141831",
+      "itemName": "BPN, Creatine Monohydrate, Unflavored , 5.3 oz (150 g)",
+      "perLabel": "$219.37/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 2 of 3, offered as a suggestion. Accept only if it is the same thing."
+        }
+      ],
+      "askedAt": "2026-09-04T02:02:10.006Z"
+    },
+    {
+      "token": "uog344",
+      "ingredientId": "37369a18-4fe7-809b-b3bb-cc640507e5a9",
+      "ingredientName": "Creatine monohydrate (Cali gold)",
+      "key": "creatin monohydrat",
+      "unitType": "By Gram",
+      "vendor": "Iherb",
+      "slotN": 1,
+      "priceSgd": 54.95,
+      "size": 300.5,
+      "url": "https://sg.iherb.com/pr/bpn-creatine-monohydrate-unflavored-10-6-oz-300-g/131350",
+      "itemName": "BPN, Creatine Monohydrate, Unflavored, 10.6 oz (300 g)",
+      "perLabel": "$182.86/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
+        }
+      ],
+      "askedAt": "2026-09-04T02:02:10.006Z"
+    },
+    {
+      "token": "gb3oxa",
+      "ingredientId": "37369a18-4fe7-809b-b3bb-cc640507e5a9",
+      "ingredientName": "Creatine monohydrate (Cali gold)",
+      "key": "creatin monohydrat",
+      "unitType": "By Gram",
+      "vendor": "Iherb",
+      "slotN": 1,
+      "priceSgd": 45.19,
+      "size": 500,
+      "url": "https://sg.iherb.com/pr/paradise-herbs-creatine-monohydrate-unflavored-500-g/141315",
+      "itemName": "Paradise Herbs, Creatine Monohydrate, Unflavored, 500 g",
+      "perLabel": "$90.38/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is the closest of 3 offered, best first. Accept only if it is the same thing."
+        },
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer1000": 42.12637913741224,
+          "foundPer1000": 90.38,
+          "note": "DEARER than the Iherb price already recorded: $42.00 / 997g = $42.13/kg → $45.19 / 500g = $90.38/kg. Not written — accept only if the old price is gone."
+        }
+      ],
+      "askedAt": "2026-09-04T02:02:10.007Z"
     }
   ],
   "rejected": [
@@ -1458,18 +1458,8 @@
     }
   ],
   "moves": {
-    "generatedAt": "2026-09-03T09:27:14.669Z",
-    "reconfirmed": 54,
-    "moves": [
-      {
-        "row": "Milk (Fresh) (Normal)",
-        "vendor": "NTUC",
-        "recordedText": "$6.70 / 2000ml",
-        "foundText": "$6.05 / 1890ml",
-        "recordedPer1000": 3.35,
-        "foundPer1000": 3.201058201058201,
-        "perWord": "L"
-      }
-    ]
+    "generatedAt": "2026-09-04T02:02:50.636Z",
+    "reconfirmed": 5,
+    "moves": []
   }
 }
