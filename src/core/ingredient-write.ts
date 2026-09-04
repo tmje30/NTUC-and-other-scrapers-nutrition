@@ -2,6 +2,7 @@ import { Client } from "@notionhq/client";
 import { categorize, guessSize, matchCategoryOption, type CategoryKey } from "./categorize.js";
 import { deriveGenericName } from "./generic-name.js";
 import { humanizeProductName } from "./human-name.js";
+import { findSizeCeilingProp } from "./vendor-scan.js";
 import { INGREDIENTS_DS, ING_MACRO_PROPS, ING_PROPS } from "./ingredients-schema.js";
 import type { Macros } from "./macros.js";
 import {
@@ -462,6 +463,51 @@ export async function replaceIngredientPrice(
  * re-interpret every other slot's size on the row. A candidate whose unit kind disagrees
  * with the row is refused by the caller instead.
  */
+/**
+ * **Let an ACCEPTED pack through the row's size ceiling, by raising it to fit.**
+ *
+ * `Size - Ceiling (g/ml)` is the biggest pack a row will take into its price book. It
+ * exists because the sweep once recorded a 1 kg bag of white pepper as the NTUC price —
+ * honestly the cheapest per kilo, and not a pack anyone buys pepper in.
+ *
+ * ⚠️⚠️ **But a ceiling the user has just overruled by hand is a ceiling that is wrong.**
+ * Accepting a pack means "this one, at this size"; leaving the ceiling below it means the
+ * next sweep drops the very product just chosen and the row goes quiet or falls back to a
+ * dearer pack. Asked for 2026-09-04, after `Muscovado Sugar (Brown)` capped at 500g while
+ * the shop's cheapest muscovado by a factor of two is a 900g pack.
+ *
+ * ⚠️⚠️ **RAISES only, never lowers.** Accepting a small pack is a statement about that
+ * pack, not a decision to bar every larger one — lowering would silently narrow the row
+ * every time a small pick was approved, and the user would never see it happen.
+ *
+ * ⚠️ Only ever called from an ACCEPT the user tapped. The sweep writes through
+ * `recordVendorPrice` and must not touch this: a scan that raises its own ceiling has no
+ * ceiling at all.
+ *
+ * ⚠️ Never CREATES the column — a workspace without it is one where the user has not
+ * asked for ceilings, and inventing schema is not this project's to do.
+ */
+export async function raiseSizeCeiling(
+	client: Client,
+	pageId: string,
+	size: number | null | undefined,
+): Promise<{ raised: false } | { raised: true; from: number | null; to: number }> {
+	if (!pageId || typeof size !== "number" || !Number.isFinite(size) || size <= 0) return { raised: false };
+	const ds = (await client.dataSources.retrieve({ data_source_id: INGREDIENTS_DS } as any)) as any;
+	const prop = findSizeCeilingProp(ds.properties ?? {});
+	if (!prop) return { raised: false };
+
+	const page = (await client.pages.retrieve({ page_id: pageId })) as any;
+	const current = page?.properties?.[prop]?.number ?? null;
+	// No ceiling set is no opinion, exactly as `withinSizeCeiling` reads it — nothing to
+	// raise, and writing one would invent a bound the user never asked for.
+	if (current == null) return { raised: false };
+	if (size <= current) return { raised: false };
+
+	await client.pages.update({ page_id: pageId, properties: { [prop]: { number: size } } } as any);
+	return { raised: true, from: current, to: size };
+}
+
 export async function recordVendorPrice(
 	client: Client,
 	pageId: string,

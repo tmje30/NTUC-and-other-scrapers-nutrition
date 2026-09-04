@@ -423,6 +423,22 @@ function varietyPenalty(itemName: string, title: string): number {
  * Multiplier in (0,1]. 1 = no concern. Mirrors the inventory project's
  * `matchPenalty`, adapted to grocery targets.
  */
+/**
+ * The product's title with its own brand removed — for the VARIETY check only.
+ *
+ * ⚠️ Every other guard reads the full title on purpose: a brand can legitimately carry
+ * the thing being tested (a bakery brand on a bread guard). Variety is the one axis where
+ * a brand word is always noise, because a variety is a property of the product.
+ */
+function withoutBrand(product: StoreProduct): string {
+	const brand = (product.brand ?? "").trim();
+	const full = `${product.name} ${brand}`;
+	if (!brand) return full;
+	// Split on the literal brand rather than a regex: a brand may contain regex
+	// metacharacters ("M&S", "Ben & Jerry's") and escaping them buys nothing here.
+	return full.split(brand).join(" ");
+}
+
 export function matchPenalty(target: PlanTarget, product: StoreProduct): number {
 	const title = `${product.name} ${product.brand ?? ""}`;
 	// NB: built from the parsed parts, never the raw name — so a {private note}
@@ -502,7 +518,18 @@ export function matchPenalty(target: PlanTarget, product: StoreProduct): number 
 	// cut names: "minced" and "ground" are separate members of the meat-cut group,
 	// so without this an item saying "minced" read as a DIFFERENT cut from a title
 	// saying "ground" and was penalised as the wrong variety.
-	mult *= varietyPenalty(normSynonyms(target.name), normSynonyms(title));
+	// ⚠️⚠️ **A BRAND is not a variety claim.** The colour group holds `green` and `brown`,
+	// and a brand supplying one of those words reads as the product declaring a variety it
+	// never declared. Measured 2026-09-04: `Muscovado Sugar (Brown)` rejected **Green Earth
+	// Dark Muscovado Sugar** at $7.67/kg — less than half the price per kilo of the pack it
+	// did accept — because the word "Green" in the brand conflicted with "(Brown)".
+	// Isolated by rebuilding the title a word at a time: "Dark Muscovado Sugar" accepts,
+	// "Green Dark Muscovado Sugar" misses, "Earth Dark Muscovado Sugar" accepts.
+	//
+	// ⚠️ The brand is stripped from the NAME too, not just dropped from the brand field:
+	// shops repeat it inside the title, which is exactly how this one got through.
+	// A real variety is stated in the product name, and survives this untouched.
+	mult *= varietyPenalty(normSynonyms(target.name), normSynonyms(withoutBrand(product)));
 
 	// Oil product is only valid for an oil item.
 	if (has(OIL_RE, title) && !has(OIL_RE, itemText)) mult *= 0.2;

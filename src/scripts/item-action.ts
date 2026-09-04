@@ -27,6 +27,7 @@ import {
 	rebaseIngredient,
 	recordVendorPrice,
 	replaceIngredientPrice,
+	raiseSizeCeiling,
 } from "../core/ingredient-write.js";
 import { lookupMacros, macrosConfigured, type Macros, type MacroResult } from "../core/macros.js";
 import { withNeverBuy, withOutcome } from "../core/purchases.js";
@@ -680,11 +681,19 @@ if (payload.action === "review-ok") {
 	// ⚠️ The test is the SLOT decision, never "were any properties sent" (live bug,
 	// 2026-08-09). A button reporting a write it did not make is worse than one that fails.
 	const landed = res.slot != null && res.slot.kind !== "none";
+	// ⚠️ A ceiling the user has just overruled by hand is a ceiling that is wrong: leaving
+	// it below the accepted pack means the next sweep drops the very product just chosen.
+	// Raises only, and only when a ceiling is already set. See `raiseSizeCeiling`.
+	const ceiling = landed
+		? await raiseSizeCeiling(client, payload.ingredientId, payload.size).catch(() => ({ raised: false as const }))
+		: { raised: false as const };
 	await writeVendorReview(withoutPending(await readVendorReview(), payload.token ?? ""));
 	await report(
 		landed
 			? `Recorded for **${label}** at ${payload.vendor}: $${payload.priceSgd} / ${payload.size}.\n` +
-					`${describeSlotDecision(res.slot)}\nWrote: ${res.written.join(", ")}.`
+					`${describeSlotDecision(res.slot)}\nWrote: ${res.written.join(", ")}.` +
+					(ceiling.raised ? `
+Size ceiling raised ${ceiling.from} → ${ceiling.to} so the next sweep keeps this pack.` : "")
 			: `Not written for **${label}**: ${describeSlotDecision(res.slot)}`,
 	);
 	process.exit(0);
