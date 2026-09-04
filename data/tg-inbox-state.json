@@ -1,23 +1,7 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-04T02:26:35.534Z",
+  "updatedAt": "2026-09-04T03:17:16.329Z",
   "offset": 0,
-  "asks": [
-    {
-      "token": "yebmg1",
-      "item": {
-        "raw": "https://claude.ai/code/artifact/b277513c-8f6f-4610-aacd-843e54411c6d",
-        "name": "https://claude.ai/code/artifact/b277513c-8f6f-4610-aacd-843e54411c6d",
-        "count": 1,
-        "amountG": null,
-        "volumetric": false
-      },
-      "candidates": [],
-      "messageId": 88,
-      "chatId": 7626546412,
-      "blocking": false,
-      "askedAt": "2026-09-04T02:07:15.916Z"
-    }
-  ],
+  "asks": [],
   "queue": []
 }
