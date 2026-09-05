@@ -1,0 +1,1640 @@
+[
+ {
+  "page": "1e369a18-4fe7-8341-ba45-013dcbb38b0b",
+  "name": "Bathroom Tissue Roll - 4 Ply",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 6.95,
+    "size": 10,
+    "url": "https://www.fairprice.com.sg/product/paseo-bathroom-tissue-roll-4-ply-10-x-200-per-pack-13172131",
+    "itemName": ""
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "d2d69a18-4fe7-8325-9e7a-819f1c2f1b25",
+  "name": "Razor Cartridge Refill - Hydro 5 [Schick]",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 17.1,
+    "size": 4,
+    "url": "https://www.fairprice.com.sg/product/schick-men-razor-cartridge-refill-hydro-5-4-per-pack-13084424",
+    "itemName": ""
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "09f69a18-4fe7-8385-a9d0-01452071f0dd",
+  "name": "Lions mane (denmark pure mushroom,powder) - fruiting body (1)",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "",
+    "price": 537.14,
+    "size": 150,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "1da69a18-4fe7-83a4-b97c-81c216f3e450",
+  "name": "Mag(LE) powder denmark ",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "",
+    "price": 264,
+    "size": 93.35,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "c9269a18-4fe7-8339-a878-014e22b6f6e7",
+  "name": "Lions mane mycillium ( mushroom wisdom) ",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "",
+    "price": 126.37,
+    "size": 180,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "a9869a18-4fe7-8203-8206-8197f0683b5a",
+  "name": "mag(natural factors) denmark ",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "",
+    "price": 247,
+    "size": 90,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "59c69a18-4fe7-82bf-9d82-017ce9f31db7",
+  "name": "Vitamin -C",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "Iherb",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   },
+   {
+    "n": 2,
+    "vendor": "NTUC",
+    "price": 11.95,
+    "size": 100,
+    "url": "https://www.fairprice.com.sg/product/scott-s-vitamin-c-pastilles-blackcurrent-100g-13213647",
+    "itemName": "Scott's Vitamin C Pastilles - Blackcurrant"
+   },
+   {
+    "n": 3,
+    "vendor": "Sheng Siong",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "e2669a18-4fe7-83d1-b152-0174b5f83176",
+  "name": "magnisum L-Threonate (KLA think) ",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "Iherb",
+    "price": 37.89,
+    "size": 60,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "1cb69a18-4fe7-83dc-adcc-81a2061c06b6",
+  "name": "Lions mane  (califormia gold) - Full spectrum ",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "",
+    "price": 19.6,
+    "size": 90,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "7bd69a18-4fe7-83cd-8011-01964b8db184",
+  "name": "Lions mane (pure mushroom,powder) - fruiting body ",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "Iherb",
+    "price": 88,
+    "size": 150,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "a6269a18-4fe7-83ca-8e40-816e0daf194a",
+  "name": "Multi-vitamin (Life Extension)",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "Iherb",
+    "price": 28.72,
+    "size": 120,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "23e69a18-4fe7-837f-abe5-01063b29e41c",
+  "name": "Omega 3 [california gold]",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "Iherb",
+    "price": 39.97,
+    "size": 120,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "0df69a18-4fe7-82ca-9e6d-81c612fbeddc",
+  "name": "Creatine monohydrate (Cali gold)",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "Iherb",
+    "price": 42,
+    "size": 997,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "36069a18-4fe7-8347-a478-010817555100",
+  "name": "Purple Cabbage",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 1.2,
+    "size": 700,
+    "url": "",
+    "itemName": ""
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": 1.6,
+    "size": 844,
+    "url": "https://shengsiong.com.sg/product/china-purple-cabbage-600-700-g",
+    "itemName": "China Purple Cabbage"
+   }
+  ]
+ },
+ {
+  "page": "92e69a18-4fe7-8363-812a-81cd563d1652",
+  "name": "Onion (not red)",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 1.6,
+    "size": 700,
+    "url": "https://www.fairprice.com.sg/product/chef-yellow-onion-large-700g-10736476",
+    "itemName": "Chef Yellow Onion - Large"
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": 2.38,
+    "size": 800,
+    "url": "https://shengsiong.com.sg/product/australia-holland-new-zealandyellow-onion-800-g",
+    "itemName": "Australia / Holland / New ZealandYellow Onion"
+   }
+  ]
+ },
+ {
+  "page": "93369a18-4fe7-82ce-81e9-0116fbeba87f",
+  "name": "Toothpaste - Repair & Protect [Sensodyne]",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 22.8,
+    "size": 300,
+    "url": "https://www.fairprice.com.sg/product/sensodyne-toothpaste-repair-protect-whitening-3-x-100g-13058666",
+    "itemName": "Sensodyne Toothpaste - Repair & Protect (Whitening)"
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": 10.2,
+    "size": 100,
+    "url": "https://shengsiong.com.sg/product/sensodyne-repair-protect-toothpaste-whitening-100-g",
+    "itemName": "Repair & Protect Toothpaste - Whitening"
+   },
+   {
+    "n": 3,
+    "vendor": "Watsons",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   },
+   {
+    "n": 4,
+    "vendor": "Guardian",
+    "price": 8.65,
+    "size": 100,
+    "url": "https://www.guardian.com.sg/sensodyne-sensitive-repair-and-protect-toothpaste-100-g-152098.html",
+    "itemName": "Sensodyne Sensitive Repair and Protect Toothpaste 100 g"
+   }
+  ]
+ },
+ {
+  "page": "b5569a18-4fe7-82cc-84dc-010a26f34e79",
+  "name": "Lotus Root ",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 5.8,
+    "size": 1000,
+    "url": "https://www.fairprice.com.sg/product/ken-ken-lotus-root-slices-frozen-1-kg-90160881",
+    "itemName": "Ken Ken Lotus Root Slices - Frozen"
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": 3.25,
+    "size": 500,
+    "url": "https://shengsiong.com.sg/product/china-lotus-roots-slice-500-g",
+    "itemName": "China Lotus Roots (Slice)"
+   }
+  ]
+ },
+ {
+  "page": "bb869a18-4fe7-822f-b050-81ff6294d1df",
+  "name": "Toothpaste  - Multi Care [Sensodyne]",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 6.5,
+    "size": 200,
+    "url": "https://www.fairprice.com.sg/product/sensodyne-multi-care-toothpaste-twin-pack-2-x-100g-1-pc-90100994",
+    "itemName": "Sensodyne Toothpaste Twin Pack - Multi Care"
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": 7.5,
+    "size": 100,
+    "url": "https://shengsiong.com.sg/product/sensodyne-toothpaste-multi-care-100-g",
+    "itemName": "Toothpaste - Multi Care"
+   },
+   {
+    "n": 3,
+    "vendor": "Watsons",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   },
+   {
+    "n": 4,
+    "vendor": "Guardian",
+    "price": 7.55,
+    "size": 100,
+    "url": "https://www.guardian.com.sg/sensodyne-sensitive-daily-care-multi-care-toothpaste-100-g-130486.html",
+    "itemName": "Sensodyne Sensitive Daily Care Multi Care Toothpaste, 100 g"
+   }
+  ]
+ },
+ {
+  "page": "4d869a18-4fe7-82fa-ad99-81bd2639ba6b",
+  "name": "Lacto ferment, home made ",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "",
+    "price": 5,
+    "size": 2000,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "3c369a18-4fe7-8274-90c9-8149593605cb",
+  "name": "Sensitivity & Gum Toothpaste - Original",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 10.2,
+    "size": 100,
+    "url": "https://www.fairprice.com.sg/product/13164900",
+    "itemName": "Sensodyne Sensitivity & Gum Toothpaste - Original"
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   },
+   {
+    "n": 3,
+    "vendor": "Watsons",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   },
+   {
+    "n": 4,
+    "vendor": "Guardian",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "8bc69a18-4fe7-82d7-8eee-010702ccb1c9",
+  "name": "Kimchi [CK]",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 8.95,
+    "size": 1000,
+    "url": "",
+    "itemName": ""
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "ca969a18-4fe7-832f-8d53-011d7e35b692",
+  "name": "Clinical White Toothpaste - Enamel Strengthening",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 13,
+    "size": 100,
+    "url": "https://www.fairprice.com.sg/product/sensodyne-clinical-white-toothpaste-enamel-strengthening-100g-13271047",
+    "itemName": "Sensodyne Clinical White Toothpaste - Enamel Strengthening"
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   },
+   {
+    "n": 3,
+    "vendor": "Watsons",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   },
+   {
+    "n": 4,
+    "vendor": "Guardian",
+    "price": 13,
+    "size": 100,
+    "url": "https://www.guardian.com.sg/sensodyne-tp-clinical-wht-enam-635576.html",
+    "itemName": "Sensodyne Clinical White Enamel Strengthening 100G Toothpaste"
+   }
+  ]
+ },
+ {
+  "page": "93369a18-4fe7-83ad-87cb-8177cae4749a",
+  "name": "Ginger (Bentong) ",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 16.5,
+    "size": 160,
+    "url": "https://www.fairprice.com.sg/product/green-earth-old-bentong-ginger-160-g-90030893",
+    "itemName": "Green Earth Old Bentong Ginger"
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": 2.48,
+    "size": 300,
+    "url": "https://shengsiong.com.sg/product/thailand-bentong-ginger-300-g",
+    "itemName": "Thailand Bentong Ginger"
+   }
+  ]
+ },
+ {
+  "page": "61669a18-4fe7-8223-8f43-01b4dada1771",
+  "name": "AM facial moisturizing lotion (SPF30) [cerave]",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 29.9,
+    "size": 52,
+    "url": "https://guardian.com.sg/cerave-pm-facial-moisturizing-lotion-52ml-630062.html",
+    "itemName": ""
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   },
+   {
+    "n": 3,
+    "vendor": "Watsons",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   },
+   {
+    "n": 4,
+    "vendor": "Guardian",
+    "price": 23.9,
+    "size": 52,
+    "url": "https://www.guardian.com.sg/cerave-am-facial-moisturizer-lotion-52ml-630064.html",
+    "itemName": "CeraVe AM Facial Moisturizing Lotion SPF30 52ML"
+   }
+  ]
+ },
+ {
+  "page": "19d69a18-4fe7-8375-9a7d-01543653e8a4",
+  "name": "Garlic (Old)",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 2.1,
+    "size": 200,
+    "url": "https://www.fairprice.com.sg/product/13000982",
+    "itemName": "Chef China Old Garlic"
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": 1.45,
+    "size": 250,
+    "url": "https://shengsiong.com.sg/product/china-old-garlic-250-g",
+    "itemName": "China Old Garlic"
+   }
+  ]
+ },
+ {
+  "page": "cc569a18-4fe7-83dc-b0df-01e7aa6b5462",
+  "name": "Szechuan pepper",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 15.5,
+    "size": 150,
+    "url": "https://www.fairprice.com.sg/product/aaa-sichuan-ash-peppercorn-red-150-g-90113641",
+    "itemName": "AAA Sichuan Ash Peppercorn (Red)"
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "c3069a18-4fe7-8340-8dac-013e85fef0ce",
+  "name": "Frozen Veg(Mixed)",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 4.6,
+    "size": 1000,
+    "url": "https://www.fairprice.com.sg/product/ken-ken-mixed-vegetable-frozen-1-kg-90160658",
+    "itemName": "Ken Ken Mixed Vegetable - Frozen"
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "7e869a18-4fe7-83e1-bfbc-01d3f217f9dc",
+  "name": "White Pepper ",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 24.5,
+    "size": 1000,
+    "url": "https://www.fairprice.com.sg/product/sinsia-white-pepper-berries-packed-in-bag-1-kg-90076159",
+    "itemName": "Sinsia White Pepper Berries (Packed in bag)"
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "cec69a18-4fe7-82b5-be23-81c34ce8a2fe",
+  "name": "Edamame (peeled/Frozen)",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 6.9,
+    "size": 1000,
+    "url": "",
+    "itemName": ""
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "a9269a18-4fe7-820c-9eba-81dabd368d8c",
+  "name": "Stock cubes (120g)[Knorr]",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 3.83,
+    "size": 12,
+    "url": "",
+    "itemName": ""
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "0e369a18-4fe7-8219-ad98-81b9a37f76cf",
+  "name": "carrots, Normal ",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 0.95,
+    "size": 500,
+    "url": "https://www.fairprice.com.sg/product/pasar-prepacked-carrots-500g-13000321",
+    "itemName": "Pasar Prepacked Carrots"
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": 1.68,
+    "size": 1000,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "d4e69a18-4fe7-8202-927c-8191bdce71ce",
+  "name": "Soy Sauce (light)",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 2.8,
+    "size": 640,
+    "url": "https://www.fairprice.com.sg/product/kct-standard-light-soy-sauce-640ml-10650226",
+    "itemName": "KCT Soya Sauce - Light (Standard)"
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "9df69a18-4fe7-8255-b905-016b498f406c",
+  "name": "Banana (Fruit)",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 4.55,
+    "size": 820,
+    "url": "https://www.fairprice.com.sg/product/sumifru-sweet-mountain-bananas-820g-13137896",
+    "itemName": "Sumifru Sweet Mountain Bananas"
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "7d469a18-4fe7-83ac-8468-8157b55f1567",
+  "name": "Rice Cooking Wine - 16% Alcohol",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 2.34,
+    "size": 380,
+    "url": "https://www.fairprice.com.sg/product/494815",
+    "itemName": "ALH Special Cooking Rice Wine"
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": 2.8,
+    "size": 640,
+    "url": "https://shengsiong.com.sg/product/castle-gourmet-rice-cooking-wine-16-alcohol-640-ml",
+    "itemName": "Gourmet Rice Cooking Wine - 16% Alcohol"
+   }
+  ]
+ },
+ {
+  "page": "da769a18-4fe7-8375-9b1a-81e62365cdd4",
+  "name": "Thai Red rice ",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 4,
+    "size": 1000,
+    "url": "https://www.fairprice.com.sg/product/paddyking-thai-red-cargo-rice-1-kg-90041275",
+    "itemName": "PaddyKing Thai Red Cargo Rice"
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "96469a18-4fe7-82d4-a269-01fe159801ce",
+  "name": "Fish Sauce ",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 2.29,
+    "size": 750,
+    "url": "https://www.fairprice.com.sg/product/knife-thai-fish-sauce-750ml-10366882",
+    "itemName": "Knife Brand Thai Fish Sauce"
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": 2.29,
+    "size": 750,
+    "url": "https://shengsiong.com.sg/product/knife-thai-fish-sauce-750-ml",
+    "itemName": "Thai Fish Sauce"
+   }
+  ]
+ },
+ {
+  "page": "5a269a18-4fe7-82d2-bc76-81ea8940066c",
+  "name": "Oatmeal (Steel cut, not instant)",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 4.8,
+    "size": 1000,
+    "url": "",
+    "itemName": ""
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "cf269a18-4fe7-82f5-adae-012ecfeb3793",
+  "name": "Cinnamon",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 4.88,
+    "size": 28,
+    "url": "",
+    "itemName": ""
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "08b69a18-4fe7-8304-a33a-81dad044e56f",
+  "name": "Dahl (Masoory split dahl)",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 4.5,
+    "size": 1000,
+    "url": "",
+    "itemName": ""
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": 3.2,
+    "size": 1000,
+    "url": "",
+    "itemName": "Masoor dhal [Madam Lee]"
+   }
+  ]
+ },
+ {
+  "page": "bbd69a18-4fe7-82a1-868e-012663cdcb2a",
+  "name": "blachan[Taho]",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 1.98,
+    "size": 180,
+    "url": "https://www.fairprice.com.sg/product/taho-sambal-blachan-chili-180g-147927",
+    "itemName": "Taho Sambal Blachan Chili"
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": 2.25,
+    "size": 180,
+    "url": "https://shengsiong.com.sg/product/taho-blachan-chilli-180-g",
+    "itemName": "Blachan Chilli"
+   }
+  ]
+ },
+ {
+  "page": "1ad69a18-4fe7-83e2-97b0-81f948e675e7",
+  "name": "Dahl  (Chana Dahl)",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 1.6,
+    "size": 500,
+    "url": "https://www.fairprice.com.sg/product/shahi-golden-chana-dhal-gram-dhal-1",
+    "itemName": "Shahi Golden Chana Dhal (Gram Dhal)"
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "21969a18-4fe7-821e-9741-01f720c1154e",
+  "name": "Apple Cider vinegar (Unpasteurized) ",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 12.95,
+    "size": 1000,
+    "url": "",
+    "itemName": ""
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": 4.79,
+    "size": 473,
+    "url": "https://shengsiong.com.sg/product/heinz-apple-cider-vinegar-473-ml",
+    "itemName": "Apple Cider Vinegar"
+   }
+  ]
+ },
+ {
+  "page": "72e69a18-4fe7-83f2-96e1-01ccefc1e9e6",
+  "name": "Bread, Wholemeal, [FairPrice] (600g)",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 2.4,
+    "size": 20,
+    "url": "",
+    "itemName": ""
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "5f469a18-4fe7-8240-911b-8178f23f70de",
+  "name": "Pu Erh (Tea bags) (100 x 2g)",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 6.25,
+    "size": 100,
+    "url": "",
+    "itemName": ""
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "ddc69a18-4fe7-8391-b7fc-01b9f0492a0f",
+  "name": "Bread, Whole grain (Low GI), [Gardinier] (350g)",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 4.2,
+    "size": 10,
+    "url": "",
+    "itemName": ""
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "eae69a18-4fe7-82f4-90e9-81def84aa716",
+  "name": "Instant Coffee (plain)",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 8.45,
+    "size": 420,
+    "url": "https://www.fairprice.com.sg/product/nescafe-ipoh-white-coffee-gao-siew-dai-15s-x-31g-13083149",
+    "itemName": "Nescafe Instant Ipoh White Coffee - Gao Siew Dai"
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": 7.45,
+    "size": 100,
+    "url": "https://shengsiong.com.sg/product/nescafe-classic-jar-instant-soluble-coffee-100-g",
+    "itemName": "Classic Jar Instant Soluble Coffee"
+   }
+  ]
+ },
+ {
+  "page": "45069a18-4fe7-834a-bcd3-8194e70fe8cb",
+  "name": "3 mix cargo Rice [Happy family]",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 6.82,
+    "size": 1000,
+    "url": "",
+    "itemName": ""
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "6e069a18-4fe7-8331-b2ab-81842e37ccf5",
+  "name": "Green Tea (50 x 2g)",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 6.26,
+    "size": 50,
+    "url": "https://www.fairprice.com.sg/product/fairprice-yabukita-blend-green-tea-bags-50-x-2g-13044017",
+    "itemName": "FairPrice Yabukita Blend Green Tea Bags"
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": 4.95,
+    "size": 50,
+    "url": "https://shengsiong.com.sg/product/heritage-farm-green-tea-50-x-15-g",
+    "itemName": "Green Tea"
+   }
+  ]
+ },
+ {
+  "page": "0d169a18-4fe7-82d4-bfbb-01c2f1c8516f",
+  "name": "whey, essential  [MyProtein] ",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "Shopee",
+    "price": 95,
+    "size": 2500,
+    "url": "",
+    "itemName": ""
+   },
+   {
+    "n": 2,
+    "vendor": "Carousell",
+    "price": 85,
+    "size": 2500,
+    "url": "https://www.carousell.sg/p/2-5kg-myprotein-impact-whey-protein-chocolate-smooth-1340408883/",
+    "itemName": "2.5kg myprotein impact whey protein chocolate smooth"
+   },
+   {
+    "n": 3,
+    "vendor": "My Protein",
+    "price": 190.02,
+    "size": 2500,
+    "url": "https://www.myprotein.com.sg/p/sports-nutrition/essential-whey-protein/11052699/?variation=11052705",
+    "itemName": "Essential Whey Protein 2.5kg Unflavoured"
+   },
+   {
+    "n": 4,
+    "vendor": "Google Search",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "46269a18-4fe7-8341-8c96-018e6b33dcfd",
+  "name": "Sesame Oil ",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 8.1,
+    "size": 700,
+    "url": "https://www.fairprice.com.sg/product/double-a-100-black-sesame-oil-700g-11063656",
+    "itemName": "Double A 100% Sesame Oil - Black"
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "f5669a18-4fe7-83bd-aa64-01569e9db0a6",
+  "name": "Whey [Titan]",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "Shopee",
+    "price": 50,
+    "size": 2000,
+    "url": "",
+    "itemName": ""
+   },
+   {
+    "n": 2,
+    "vendor": "Carousell",
+    "price": 60,
+    "size": 2100,
+    "url": "https://www.carousell.sg/p/titan-whey-protein-2-1kg-70-serving-1208280679/",
+    "itemName": "titan whey protein 2.1kg 70 serving"
+   },
+   {
+    "n": 3,
+    "vendor": "Google Search",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "0e969a18-4fe7-8390-8c0b-81d40aa0dc1d",
+  "name": "Peanut Butter [adams]",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 7.45,
+    "size": 450,
+    "url": "",
+    "itemName": ""
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "37769a18-4fe7-822f-b107-018368de1c05",
+  "name": "whey [Atlas]",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "Shopee",
+    "price": 55,
+    "size": 2100,
+    "url": "",
+    "itemName": ""
+   },
+   {
+    "n": 2,
+    "vendor": "Carousell",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   },
+   {
+    "n": 3,
+    "vendor": "Google Search",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "4cb69a18-4fe7-8360-bb45-8110c7aec61f",
+  "name": "Peanut butter ",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 8.7,
+    "size": 1000,
+    "url": "https://www.fairprice.com.sg/product/fairprice-peanut-butter-creamy-1kg-13271333",
+    "itemName": "FairPrice Peanut Butter - Creamy"
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": 4.99,
+    "size": 800,
+    "url": "https://shengsiong.com.sg/product/bake-for-you-peanut-butter-creamy-800-g",
+    "itemName": "Peanut Butter - Creamy"
+   }
+  ]
+ },
+ {
+  "page": "62569a18-4fe7-830a-8ce5-81f124cc5d5f",
+  "name": "Tau Kwa (Tofu)",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 1.41,
+    "size": 450,
+    "url": "https://www.fairprice.com.sg/product/13167172",
+    "itemName": "Fortune Pasar Tau Kwa"
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": 1,
+    "size": 400,
+    "url": "https://shengsiong.com.sg/product/tasty-bites-tau-kwa-400-g-3097945",
+    "itemName": "Tau Kwa"
+   }
+  ]
+ },
+ {
+  "page": "b1f69a18-4fe7-8206-9144-01ff7b78d850",
+  "name": "Oil (Bran)",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 5.2,
+    "size": 1000,
+    "url": "",
+    "itemName": ""
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "17369a18-4fe7-82b9-9824-01b2a046a4a0",
+  "name": "Squid Ring(unbreaded)",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 7.5,
+    "size": 1000,
+    "url": "",
+    "itemName": ""
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "28e69a18-4fe7-832c-839f-017914da8b23",
+  "name": "Butter",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 5.7,
+    "size": 250,
+    "url": "https://www.fairprice.com.sg/product/anchor-pure-new-zealand-block-butter-salted-250g-12511529",
+    "itemName": "Anchor Pure New Zealand Block Butter - Salted"
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": 4.6,
+    "size": 250,
+    "url": "https://shengsiong.com.sg/product/cowhead-pure-creamery-butter-250-g",
+    "itemName": "Pure Creamery Butter"
+   }
+  ]
+ },
+ {
+  "page": "81769a18-4fe7-82e4-9684-815aab42f584",
+  "name": "Milk (Skimmed)",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 2.05,
+    "size": 1000,
+    "url": "https://www.fairprice.com.sg/product/fairprice-uht-milk-skim-1l-11898629",
+    "itemName": "FairPrice UHT Milk - Skim"
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": 6.7,
+    "size": 2000,
+    "url": "https://shengsiong.com.sg/product/meiji-pasteurized-skimmed-milk-2-l",
+    "itemName": "Pasteurized Skimmed Milk"
+   }
+  ]
+ },
+ {
+  "page": "8d969a18-4fe7-8288-80da-010fff11cf69",
+  "name": "Muscovado Sugar (Brown)",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 3.13,
+    "size": 250,
+    "url": "https://www.fairprice.com.sg/product/redman-dark-muscovado-sugar",
+    "itemName": "RedMan Dark Muscovado Sugar"
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "5e069a18-4fe7-83d2-810a-0127ecb56e67",
+  "name": "Milk (Low Fat)",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 6.97,
+    "size": 2000,
+    "url": "https://www.fairprice.com.sg/product/meiji-low-fat-fresh-milk-2lt-10549750",
+    "itemName": "Meiji Low Fat Fresh Milk - Regular"
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": 3.8,
+    "size": 1200,
+    "url": "https://shengsiong.com.sg/product/dutch-lady-uht-low-fat-milk-6-x-200-ml",
+    "itemName": "UHT Low Fat Milk"
+   }
+  ]
+ },
+ {
+  "page": "4f169a18-4fe7-8242-a2bd-81acfe3db011",
+  "name": "Honey (Raw)",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 17.65,
+    "size": 1000,
+    "url": "https://www.fairprice.com.sg/product/origins-natural-raw-honey-1kg-13166796",
+    "itemName": "Origins Natural Raw Honey"
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "8bb69a18-4fe7-82f4-9d20-014caca1d1ee",
+  "name": "Milk ( Normal)",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 6.05,
+    "size": 1890,
+    "url": "https://www.fairprice.com.sg/product/greenfield-fresh-milk---regular-13062327",
+    "itemName": "Greenfields Fresh Milk - Regular"
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "fac69a18-4fe7-827d-9372-8196a353f300",
+  "name": "Red Apple ",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 5.95,
+    "size": 700,
+    "url": "https://www.fairprice.com.sg/product/italy-red-pop-apple-700g-13228441",
+    "itemName": "Italy Red Pop Apple"
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": 5.45,
+    "size": 907,
+    "url": "https://shengsiong.com.sg/product/usa-red-delicious-apple-907-g",
+    "itemName": "USA Red Delicious Apple"
+   }
+  ]
+ },
+ {
+  "page": "47d69a18-4fe7-836b-b901-011b56fde809",
+  "name": "Greek yogurt ",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 6.15,
+    "size": 500,
+    "url": "",
+    "itemName": ""
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "14f69a18-4fe7-82b8-ab20-0187ef8db282",
+  "name": "Eggs, Whole, small, {cheap}",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 4.6,
+    "size": 15,
+    "url": "https://www.fairprice.com.sg/product/13065350",
+    "itemName": "Dasoon Premium Fresh Eggs"
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "05169a18-4fe7-8274-923c-81f3a664a7fd",
+  "name": "Egg Yolk(Fresh) , cheap ",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 3.1,
+    "size": 450,
+    "url": "",
+    "itemName": ""
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "a8a69a18-4fe7-83b7-a624-01da059fc2b1",
+  "name": "Egg Yolk ( Omega 3 Enriched)",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 2,
+    "size": 150,
+    "url": "",
+    "itemName": ""
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "e9c69a18-4fe7-8360-a6cd-81b064756dbb",
+  "name": "Egg Whites, {cheap}",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 3.1,
+    "size": 900,
+    "url": "",
+    "itemName": ""
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "80169a18-4fe7-82f0-b707-014c30180d5c",
+  "name": "Egg White ( Omega 3 Enriched) ",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 2,
+    "size": 300,
+    "url": "",
+    "itemName": ""
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "aac69a18-4fe7-83bf-981e-01672f2ca31a",
+  "name": "egg  (Omega 3 Enriched) (550g)",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 4.3,
+    "size": 10,
+    "url": "https://www.fairprice.com.sg/product/495350",
+    "itemName": "Chew's Fresh Eggs - Omega 3"
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ },
+ {
+  "page": "a7c69a18-4fe7-82bb-b8d0-8170678489f3",
+  "name": "Chicken thigh, Boneless  [Seara]",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 8.93,
+    "size": 2000,
+    "url": "https://www.fairprice.com.sg/product/seara-frozen-chicken-thigh-2kg-12259968",
+    "itemName": "Seara Frozen Chicken Thigh"
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": 6.95,
+    "size": 2000,
+    "url": "https://shengsiong.com.sg/product/seara-frozen-chicken-thighs-2-kg",
+    "itemName": "Frozen Chicken Thighs"
+   }
+  ]
+ },
+ {
+  "page": "a8f69a18-4fe7-8232-b3aa-013259e116fd",
+  "name": "Chicken Breast [Betagro]",
+  "slots": [
+   {
+    "n": 1,
+    "vendor": "NTUC",
+    "price": 8.95,
+    "size": 1000,
+    "url": "",
+    "itemName": ""
+   },
+   {
+    "n": 2,
+    "vendor": "Sheng Siong",
+    "price": null,
+    "size": null,
+    "url": "",
+    "itemName": ""
+   }
+  ]
+ }
+]
