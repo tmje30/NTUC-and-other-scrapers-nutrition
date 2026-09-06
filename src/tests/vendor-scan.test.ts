@@ -524,8 +524,8 @@ const move = (over: Partial<PriceMove> = {}): PriceMove => ({
 	vendor: "Carousell",
 	recordedText: "$85.00 / 2500g",
 	foundText: "$80.00 / 2500g",
-	recordedPer1000: 34,
-	foundPer1000: 32,
+	recordedPer: 34,
+	foundPer: 32,
 	perWord: "kg",
 	...over,
 });
@@ -547,12 +547,12 @@ check("re-confirmations are counted, not itemised", /2 others re-confirmed uncha
 
 // ⚠️ An empty slot being filled is news too. The 2026-08-11 report found 49 rows tagged
 // Sheng Siong with no price between them — closing that gap is what the price book is for.
-const first = renderPriceMoves([move({ recordedPer1000: null, recordedText: "" })], 0)!;
+const first = renderPriceMoves([move({ recordedPer: null, recordedText: "" })], 0)!;
 check("a first price is reported as new, not as a cut", /1 newly recorded/.test(first));
 check("...and does not claim anything got cheaper", !/got cheaper/.test(first));
 check("...and quotes it as a first price", first.includes("first price: $80.00 / 2500g = $32.00/kg"));
 
-const both = renderPriceMoves([move(), move({ row: "Vitamin -C", recordedPer1000: null, recordedText: "" })], 3)!;
+const both = renderPriceMoves([move(), move({ row: "Vitamin -C", recordedPer: null, recordedText: "" })], 3)!;
 // Tags stripped: the headline bolds only the reduction, so the two halves are separated
 // by `</b>` in the raw string and asserting on the rendered words is the honest test.
 check("a mixed morning states both", /1 price got cheaper.*1 newly recorded/.test(both.replace(/<[^>]+>/g, "")));
@@ -693,11 +693,11 @@ describe("price moves — the detail belongs on a page");
  */
 const cut: PriceMove = {
 	row: "Cinnamon", vendor: "NTUC", recordedText: "$4.88 / 28g", foundText: "$1.55 / 30g",
-	recordedPer1000: 174.29, foundPer1000: 51.67, perWord: "kg",
+	recordedPer: 174.29, foundPer: 51.67, perWord: "kg",
 };
 const firstPrice: PriceMove = {
 	row: "Oil (Bran)", vendor: "Sheng Siong", recordedText: "", foundText: "$6.20 / 1000ml",
-	recordedPer1000: null, foundPer1000: 6.2, perWord: "L",
+	recordedPer: null, foundPer: 6.2, perWord: "L",
 };
 
 const linked = renderPriceMoves([cut, firstPrice], 41, (x) => x, "https://e.test/moves.html") ?? "";

@@ -1,6 +1,7 @@
 import type { StoreProduct } from "./stores/types.js";
 import type { PriceMove } from "./vendor-scan.js";
 import { marketplaceSize } from "./marketplace-size.js";
+import { parseWeight } from "./stores/weight.js";
 
 /**
  * The scan's third answer: **"I found something, but I'm not sure."**
@@ -58,8 +59,8 @@ export type ReviewReason =
 	 */
 	| {
 			kind: "dearer-than-recorded";
-			recordedPer1000: number;
-			foundPer1000: number;
+			recordedPer: number;
+			foundPer: number;
 			perWord?: string;
 			vendor?: string;
 			note: string;
@@ -120,21 +121,21 @@ export function dearerThanRecorded(args: {
 	/** The shop, named as the `Vendor n` option, for the message. */
 	vendor: string;
 	/** `pricePer1000` of what is already in the slot; null when there is nothing to protect. */
-	recordedPer1000: number | null;
+	recordedPer: number | null;
 	/** `pricePer1000` of the candidate about to be written. */
-	foundPer1000: number | null;
+	foundPer: number | null;
 	/** What the slot literally holds, e.g. `$2.40 / 20 pcs`. */
 	recordedText?: string;
 	/** What would replace it, same shape. */
 	foundText?: string;
-	/** What `pricePer1000` means on this row: `kg`, `L`, or `1000 pcs`. */
+	/** What the figure beside it is quoted per: `kg`, `L`, or `100 pcs` (see `quotedPer`). */
 	perWord?: string;
 }): ReviewReason | null {
-	const { recordedPer1000, foundPer1000 } = args;
-	if (recordedPer1000 == null || foundPer1000 == null) return null;
+	const { recordedPer, foundPer } = args;
+	if (recordedPer == null || foundPer == null) return null;
 	// ⚠️ Strictly dearer. An equal price is not a regression, and re-writing it
 	// refreshes the URL and item name on a slot that may have gone stale.
-	if (foundPer1000 <= recordedPer1000) return null;
+	if (foundPer <= recordedPer) return null;
 
 	/**
 	 * ⚠️⚠️ **The message quotes PRICE AND SIZE, not just the per-kilo figure, and the
@@ -151,13 +152,13 @@ export function dearerThanRecorded(args: {
 
 	return {
 		kind: "dearer-than-recorded",
-		recordedPer1000,
-		foundPer1000,
+		recordedPer,
+		foundPer,
 		perWord: per,
 		vendor: args.vendor,
 		note:
 			`DEARER than the ${args.vendor} price already recorded: ` +
-			`${side(args.recordedText, recordedPer1000)} → ${side(args.foundText, foundPer1000)}. ` +
+			`${side(args.recordedText, recordedPer)} → ${side(args.foundText, foundPer)}. ` +
 			`Not written — accept only if the old price is gone.`,
 	};
 }
@@ -200,10 +201,70 @@ const collapse = (s: string) => String(s ?? "").replace(/\s+/g, " ").trim();
  * dominate. `marketplaceSize` rejects that title as a range; this function said it was
  * fine. Two range detectors that disagree are worse than one.
  */
+const SIZE_RANGE_RE =
+	/\d+(?:\.\d+)?\s*[-–]\s*\d+(?:\.\d+)?\s*-?\s*(?:g|gm|gram|kg|ml|l|lt|litre|liter|lbs?|pounds?|ozs?)\b/i;
+
+/**
+ * The range a listing states, tidied for display — `850 - 900g` — or null.
+ *
+ * ⚠️ **The same regex as `statesSizeRange`, because it IS `statesSizeRange`.** The
+ * detector and the text shown to the user must never be able to disagree: a card reading
+ * "the pack size is a RANGE" beside no range, or a range beside no warning, is the page
+ * arguing with itself. This module already carries the scar of two range detectors that
+ * disagreed — see the `lb`/`oz` note above.
+ *
+ * Tidied, not reformatted: a slug writes `12-15-kg` and a title writes `850 - 900g`, and
+ * both should read the same way once they are in brackets after a product name.
+ */
+export function sizeRangeIn(text: string): string | null {
+	const m = SIZE_RANGE_RE.exec(String(text ?? "").replace(/-/g, "-"));
+	if (!m) return null;
+	const [lo, hi] = m[0]
+		.replace(/\s+/g, "")
+		// The slug's hyphen before the UNIT is a separator, not a minus: `12-15-kg`.
+		.replace(/-(?=[a-z])/i, "")
+		.split(/[-–]/);
+	return lo && hi ? `${lo} - ${hi}` : null;
+}
+
 export function statesSizeRange(text: string): boolean {
-	return /\d+(?:\.\d+)?\s*[-–]\s*\d+(?:\.\d+)?\s*-?\s*(?:g|gm|gram|kg|ml|l|lt|litre|liter|lbs?|pounds?|ozs?)\b/i.test(
-		String(text ?? "").replace(/-/g, "-"),
-	);
+	return sizeRangeIn(text) != null;
+}
+
+/**
+ * The stated range for one listing, with the name-over-slug precedence `reviewReasons`
+ * documents applied — the single place that decides what a product's stated size is.
+ *
+ * ⚠️ Exported so the review page can print the same phrase the reason is complaining
+ * about, rather than re-deriving it from the slug and reaching a different answer on
+ * Carousell's decimal hyphens.
+ */
+export function statedSizeRange(product: { name?: string; url?: string }): string | null {
+	const named = marketplaceSize(product.name ?? "");
+	return sizeRangeIn(named.ok ? (product.name ?? "") : `${product.name ?? ""} ${product.url ?? ""}`);
+}
+
+/**
+ * The BOTTOM of a stated range, in grams (ml as g), or null when no range is stated.
+ *
+ * ⚠️⚠️ **The low end, by the user's instruction (2026-09-06): "use the lower limit of
+ * values given to calculate the per kg price."** A range was previously read at its top,
+ * because that is the number the unit is attached to — `850-900g` parses as `900g`. The
+ * top is the *optimistic* read: more grams for the same money, so the cheapest possible
+ * per-kilo figure, on the one kind of listing that has already told you it does not know
+ * what you are getting. The bottom is what the shopper is guaranteed, and a price book
+ * that errs should err against itself.
+ *
+ * ⚠️ Only the LOW number is taken from the range; its unit comes from the high side,
+ * because that is where the shop writes it (`850 - 900g`).
+ */
+export function statedRangeLow(product: { name?: string; url?: string }): number | null {
+	const stated = statedSizeRange(product);
+	if (!stated) return null;
+	const [lo, hi] = stated.split(" - ");
+	if (!lo || !hi) return null;
+	const parsed = parseWeight(`${lo}${hi.replace(/[\d.\s]/g, "")}`);
+	return parsed && parsed.grams > 0 ? parsed.grams : null;
 }
 
 /** A multipack stated as a count times a size — "12 x 1 L", "50 x 1.5g". */
@@ -284,8 +345,7 @@ export function reviewReasons(
 	 * the slug — which is exactly where genuine ranges still get caught, because
 	 * `marketplaceSize` rejects `600-700 g` and `12-15 kg` as ranges in the first place.
 	 */
-	const namedSize = marketplaceSize(product.name ?? "");
-	if (statesSizeRange(namedSize.ok ? (product.name ?? "") : text)) {
+	if (statedSizeRange(product)) {
 		out.push({
 			kind: "size-range",
 			note: "the pack size is a RANGE and was read at its top — the real pack may be smaller (and dearer per kg)",
@@ -357,9 +417,48 @@ export interface PendingReview {
 	size: number;
 	url: string;
 	itemName: string;
+	/**
+	 * The pack **as the shop describes it** — its stated range where it gives one
+	 * (`850 - 900g`), otherwise the recorded size written the way this project writes
+	 * sizes (`1L`, `900g`, `20 pcs`).
+	 *
+	 * ⚠️ It is not a duplicate of the price line, even when it agrees with it. The two
+	 * answer different questions: `$1.60 / 900g` is *what will be written to the price
+	 * book*, and this is *what the shop says you are buying*. On the carrots row those
+	 * differed — the shop said `850 - 900g` and the card asserted `900g`, which was the
+	 * entire reason the question was being asked and appeared nowhere on it.
+	 *
+	 * Asked for 2026-09-06, with two worked examples: `Australia / China Carrots
+	 * (850 - 900g)` and `Skimmed Milk (1L) [Greenfields]`.
+	 */
+	statedSize?: string;
+	/**
+	 * The shop's own brand for the listing, shown as `[Greenfields]`.
+	 *
+	 * ⚠️ **Without it a whole class of card is unanswerable.** Sheng Siong titles a
+	 * product `Skimmed Milk` and nothing else; the question "is this the right product?"
+	 * has no answer at all until you know whose it is. Bracketed to match how the
+	 * Ingredients rows themselves carry a brand (`whey, essential [MyProtein]`).
+	 */
+	brandName?: string;
 	/** The human-readable per-unit figure quoted in the message. */
 	perLabel: string;
 	reasons: ReviewReason[];
+	/**
+	 * Where this pick came in among the suggestions offered for the same slot — 0 is the
+	 * closest match, 1 the first alternative, and so on.
+	 *
+	 * ⚠️ **Set because queue ORDER is the reverse of match quality.** `vendor-scan` queues
+	 * the alternatives before the primary (their loop runs deliberately ahead of the write
+	 * decision), so the closest match is appended LAST and the review page listed it last
+	 * too. Seen 2026-09-06 on the CeraVe row: `AM SPF50` — the wrong SPF, offered as
+	 * "alternative 2 of 2" — sat above the `AM` the row actually names.
+	 *
+	 * ⚠️ Optional, and absent on every question queued before 2026-09-06. Those sort as 0,
+	 * which preserves exactly the order they already had rather than inventing a ranking
+	 * for picks whose ranking was never recorded.
+	 */
+	rank?: number;
 	/** The prompt message, so its buttons can be replaced with the outcome. */
 	messageId?: number;
 	chatId?: number;

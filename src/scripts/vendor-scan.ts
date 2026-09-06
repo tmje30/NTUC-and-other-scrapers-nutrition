@@ -35,6 +35,7 @@ import {
 	prunePending,
 	sizeBoundsFor,
 	sizeText,
+	statedSizeRange,
 	withPending,
 	withoutPendingForSlot,
 	type PendingReview,
@@ -143,15 +144,60 @@ function perLabel(row: ScanRow, price: number | null, size: number | null, itemN
 	return "";
 }
 
+/**
+ * The pack as the SHOP describes it, for the line under the price — the stated range
+ * where there is one, else the size written the way the rest of the project writes sizes.
+ *
+ * ⚠️ Deliberately not `priceSizeText`. That renders what goes into Notion's two columns
+ * (`1000ml`, because that is the number in `Size[Vendor n]`); this renders what a person
+ * reads on a shelf (`1L`). The same quantity, and they are allowed to differ in wording.
+ */
+function packText(row: ScanRow, product: StoreProduct, size: number): string {
+	const stated = statedSizeRange(product);
+	if (stated) return stated;
+	if (row.unitType === "By Unit") return `${size} pcs`;
+	return sizeText(size, row.unitType === "By ml");
+}
+
 /** Exactly what the two Notion columns hold, e.g. `$2.40 / 20 pcs`. */
 function priceSizeText(row: ScanRow, price: number | null, size: number | null): string {
 	if (price == null || size == null) return "";
 	return `${money(price)} / ${size}${unitWord(row)}`;
 }
 
+/**
+ * How many pieces a counted row's price is QUOTED over.
+ *
+ * ⚠️ **A hundred, not a thousand** (user, 2026-09-06). Everything is computed on
+ * `pricePer1000` because that is Notion's own formula, but per *1000 pieces* is a
+ * quantity of eggs nobody buys — the figure read `$399.00/1000 pcs` for a $3.99 box of
+ * ten. Weighed rows keep `kg` and `L`, which the user asked for by name.
+ *
+ * ⚠️ **This is the THIRD pieces convention in the codebase, and they are not
+ * interchangeable.** `perLabel` quotes `/10 pc` to mirror Notion's `Cheapest Price/Kg `
+ * column, and `PIECES_PER_QUOTE` is that 10. This one is display-only and belongs to the
+ * comparison table and the moves list. Before reusing either, read the warning on
+ * `perLabel` — a factor of ten between two of these has already cost one live incident.
+ */
+const QUOTED_PIECES = 100;
+
 /** What `pricePer1000` means on this row, for a message that has to state its units. */
 function perWord(row: ScanRow): string {
-	return row.unitType === "By Unit" ? "1000 pcs" : row.unitType === "By ml" ? "L" : "kg";
+	return row.unitType === "By Unit" ? `${QUOTED_PIECES} pcs` : row.unitType === "By ml" ? "L" : "kg";
+}
+
+/**
+ * A `pricePer1000` figure rescaled to what `perWord` says it is.
+ *
+ * ⚠️ Applied at the point a figure is HANDED TO A READER, never to the arithmetic.
+ * `dearerThanRecorded` compares its two arguments against each other, so scaling both by
+ * the same constant leaves every decision it makes identical — and `drop()` on the moves
+ * page is a ratio, so it is untouched too. Nothing downstream re-derives a pack size from
+ * these numbers; if anything ever does, it must not read them as per-1000.
+ */
+function quotedPer(row: ScanRow, per1000: number | null): number | null {
+	if (per1000 == null) return null;
+	return row.unitType === "By Unit" ? per1000 / (1000 / QUOTED_PIECES) : per1000;
 }
 
 function slotLabel(row: ScanRow, n: number): string {
@@ -421,6 +467,8 @@ async function main(): Promise<void> {
 					size: altSize.size,
 					url: alt.url,
 					itemName: alt.name,
+					statedSize: packText(row, alt, altSize.size),
+					brandName: (alt.brand ?? "").trim() || undefined,
 					perLabel: perLabel(row, alt.priceSgd, altSize.size, alt.name),
 					reasons: [
 						{
@@ -430,6 +478,8 @@ async function main(): Promise<void> {
 								`${suggestions.length}, offered as a suggestion. Accept only if it is the same thing.`,
 						},
 					],
+					// Reverses what queue order would otherwise say about these — see `rank`.
+					rank: k + 1,
 					askedAt: new Date().toISOString(),
 				};
 				review = withPending(review, altPending);
@@ -547,8 +597,8 @@ async function main(): Promise<void> {
 			// deliberately excludes it.
 			const dearerNow = dearerThanRecorded({
 				vendor: route.option,
-				recordedPer1000: pricePer1000(slot.priceValue, slot.sizeValue),
-				foundPer1000: pricePer1000(p.priceSgd, size),
+				recordedPer: quotedPer(row, pricePer1000(slot.priceValue, slot.sizeValue)),
+				foundPer: quotedPer(row, pricePer1000(p.priceSgd, size)),
 				// ⚠️ Price AND size, not the per-kilo label: on a By-Unit row those two can
 				// agree while the pack changes underneath them. See `dearerThanRecorded`.
 				recordedText: priceSizeText(row, slot.priceValue, slot.sizeValue),
@@ -605,8 +655,12 @@ async function main(): Promise<void> {
 					size: size!,
 					url: p.url,
 					itemName: p.name,
+					statedSize: packText(row, p, size!),
+					brandName: (p.brand ?? "").trim() || undefined,
 					perLabel: per,
 					reasons,
+					/** The closest match, whatever order the queue happens to hold it in. */
+					rank: 0,
 					askedAt: new Date().toISOString(),
 				};
 				// Queued into the live file immediately so the token it holds is reserved
@@ -638,8 +692,8 @@ async function main(): Promise<void> {
 						vendor: route.option,
 						recordedText: priceSizeText(row, slot.priceValue, slot.sizeValue),
 						foundText: priceSizeText(row, p.priceSgd, size),
-						recordedPer1000: was,
-						foundPer1000: now,
+						recordedPer: quotedPer(row, was),
+						foundPer: quotedPer(row, now)!,
 						perWord: perWord(row),
 						product: p.name,
 						url: p.url,

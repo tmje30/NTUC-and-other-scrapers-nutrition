@@ -73,11 +73,11 @@ function unitWord(unitType: string): string {
 function comparison(r: Extract<ReviewReason, { kind: "dearer-than-recorded" }>): string {
 	const per = r.perWord ?? "1000";
 	const money = (n: number) => `$${n.toFixed(2)}/${esc(per)}`;
-	const cheaper = r.foundPer1000 < r.recordedPer1000;
+	const cheaper = r.foundPer < r.recordedPer;
 	return `<div class="cmp">
   <div class="cmp-h">Dearer than current${r.vendor ? ` ${esc(r.vendor)}` : ""} price</div>
-  <div class="cmp-r"><span class="fig cur">${money(r.recordedPer1000)}</span><span class="lab">current</span></div>
-  <div class="cmp-r"><span class="fig ${cheaper ? "down" : "up"}">${money(r.foundPer1000)}</span><span class="lab">new</span></div>
+  <div class="cmp-r"><span class="fig cur">${money(r.recordedPer)}</span><span class="lab">current</span></div>
+  <div class="cmp-r"><span class="fig ${cheaper ? "down" : "up"}">${money(r.foundPer)}</span><span class="lab">new</span></div>
   <div class="cmp-f">Accept only if the price is acceptable.</div>
 </div>`;
 }
@@ -95,7 +95,27 @@ function reasonList(reasons: ReviewReason[]): string {
 function button(
 	p: PendingReview,
 	o: ReviewPageOptions,
-	ui: { action: string; label: string; done: string; cls: string; prose: string; reason?: string },
+	ui: {
+		action: string;
+		label: string;
+		done: string;
+		cls: string;
+		prose: string;
+		reason?: string;
+		/**
+		 * `data-hide-card` scope, read by the shared one-tap script — see `hideCards`.
+		 *
+		 * ⚠️ Only ever set on **OK inside a deck**, and only because accepting settles the
+		 * whole slot: the queue drops the losing options too (`withoutPendingForSlot`), so
+		 * leaving them on screen would show questions that no longer exist. **Don't use**
+		 * never carries it — refusing one product says nothing about the next.
+		 *
+		 * ⚠️ The two-tap fallback never reaches it, deliberately: there the click opens an
+		 * issue the user may abandon, and cards that vanished on a request never sent would
+		 * be the page lying about what it did.
+		 */
+		hide?: string;
+	},
 ): string {
 	const payload = {
 		v: 1,
@@ -124,7 +144,7 @@ function button(
 		`&body=${encodeURIComponent(body)}`;
 	return `<a class="act ${ui.cls}" href="${esc(href)}" target="_blank" rel="noopener"
         data-payload="${esc(JSON.stringify(payload))}" data-event="item-action"
-        data-done="${esc(ui.done)}"
+        data-done="${esc(ui.done)}"${ui.hide ? ` data-hide-card="${esc(ui.hide)}"` : ""}
         aria-label="${esc(`${ui.label} — ${p.ingredientName} at ${p.vendor}`)}">${esc(ui.label)}</a>`;
 }
 
@@ -165,21 +185,35 @@ function rejectMenu(p: PendingReview, o: ReviewPageOptions): string {
   </details>`;
 }
 
-function card(p: PendingReview, o: ReviewPageOptions): string {
-	// ⚠️ The whole card body is the link to the shop — the question being asked is
-	// "is this the right pack?", and you cannot answer it without looking at the thing.
-	// A small link buried under a price made that a deliberate act; this makes it the
-	// obvious one. The buttons sit OUTSIDE the anchor so they stay separately tappable.
-	return `<article class="card">
-  <a class="body" href="${esc(p.url)}" target="_blank" rel="noopener">
-    <div class="hd">
+/** Which row, at which shop. Shared by every option in a deck, so it is hoisted out. */
+function head(p: PendingReview): string {
+	return `<div class="hd">
       <span class="ing">${esc(p.ingredientName)}</span>
       <span class="shop">${esc(p.vendor)}</span>
-    </div>
+    </div>`;
+}
+
+/**
+ * One pick: what it costs, what it is, why it is being asked about, and the two answers.
+ *
+ * ⚠️ The whole body is the link to the shop — the question being asked is "is this the
+ * right pack?", and you cannot answer it without looking at the thing. A small link
+ * buried under a price made that a deliberate act; this makes it the obvious one. The
+ * buttons sit OUTSIDE the anchor so they stay separately tappable.
+ */
+function face(
+	p: PendingReview,
+	o: ReviewPageOptions,
+	opt: { withHead: boolean; hide?: string },
+): string {
+	return `<a class="body" href="${esc(p.url)}" target="_blank" rel="noopener">
+    ${opt.withHead ? head(p) : ""}
     <div class="price"><b>$${p.priceSgd.toFixed(2)}</b> / ${esc(p.size)}${esc(unitWord(p.unitType))}${
 			p.perLabel ? ` <span class="per">= ${esc(p.perLabel)}</span>` : ""
 		}</div>
-    <div class="prod">${esc(p.itemName)} <span class="go">↗</span></div>
+    <div class="prod">${esc(p.itemName)}${
+			p.statedSize ? ` <span class="stated">(${esc(p.statedSize)})</span>` : ""
+		}${p.brandName ? ` <span class="maker">[${esc(p.brandName)}]</span>` : ""} <span class="go">↗</span></div>
     ${reasonList(p.reasons)}
   </a>
   <div class="acts">
@@ -188,17 +222,93 @@ function card(p: PendingReview, o: ReviewPageOptions): string {
 			label: "OK",
 			done: "✓ recorded",
 			cls: "ok",
+			hide: opt.hide,
 			prose: `Recording this price against **${p.ingredientName}** at **${p.vendor}** from the review page.`,
 		})}
     ${rejectMenu(p, o)}
-  </div>
+  </div>`;
+}
+
+function card(p: PendingReview, o: ReviewPageOptions): string {
+	return `<article class="card">
+  ${face(p, o, { withHead: true })}
 </article>`;
+}
+
+/**
+ * **Several products offered for ONE slot, as slides rather than as stacked cards.**
+ *
+ * ⚠️ Asked for 2026-09-06, looking at the CeraVe row: two NTUC cards, identical headers,
+ * one question. `nearMisses` offers up to `MAX_SUGGESTIONS` picks per row×shop and each
+ * became a full card, so the page repeated the item name and the shop for every one and
+ * gave no sign they were competing for the same slot. They are alternatives, and a deck
+ * is what alternatives look like.
+ *
+ * ⚠️ **Only built for a real contest — two or more options.** A lone question stays a
+ * plain card: a one-slide carousel with a "1 of 1" counter is a control that suggests
+ * there is something else to see.
+ *
+ * ⚠️ **No JavaScript in the sliding.** Scroll-snap does it, the dots are ordinary
+ * fragment links, and with scripting off the deck degrades to a horizontally scrollable
+ * strip that still shows every option and still has working buttons — the same standard
+ * the rest of this page holds itself to.
+ */
+function deck(options: PendingReview[], o: ReviewPageOptions): string {
+	const first = options[0]!;
+	const gid = `${first.ingredientId}|${first.vendor}`;
+	const slides = options
+		.map(
+			(p, i) => `<section class="slide" id="opt-${esc(p.token)}">
+    <p class="which">Option ${i + 1} of ${options.length}${i === 0 ? " · closest match" : ""}</p>
+    ${face(p, o, { withHead: false, hide: "group" })}
+  </section>`,
+		)
+		.join("\n  ");
+	const dots = options
+		.map(
+			(p, i) =>
+				`<a href="#opt-${esc(p.token)}" aria-label="${esc(`Option ${i + 1} of ${options.length}: ${p.itemName}`)}">${i + 1}</a>`,
+		)
+		.join("");
+	return `<article class="card deck" data-group="${esc(gid)}">
+  ${head(first)}
+  <p class="multi">${options.length} products at ${esc(first.vendor)} could be this row — swipe, or tap a number. Accepting one drops the rest.</p>
+  <div class="slides">
+  ${slides}
+  </div>
+  <nav class="dots">${dots}</nav>
+</article>`;
+}
+
+/**
+ * Group the queue by the thing a question is actually about: **one row's slot at one
+ * shop.** That is the unit the price book writes and the unit `withoutPendingForSlot`
+ * clears, so it is the unit the page should ask about.
+ *
+ * ⚠️ Groups appear in the order their FIRST question sits in the queue, so an unrelated
+ * regrouping never reshuffles the page. Within a group the order is `rank` — closest
+ * match first — because the queue's own order is the reverse of that (see `rank`).
+ */
+function decks(pending: PendingReview[]): PendingReview[][] {
+	const order: string[] = [];
+	const by = new Map<string, PendingReview[]>();
+	for (const p of pending) {
+		const k = `${p.ingredientId}|${p.vendor}`;
+		if (!by.has(k)) {
+			by.set(k, []);
+			order.push(k);
+		}
+		by.get(k)!.push(p);
+	}
+	// Stable, so questions with no rank keep exactly the order they arrived in.
+	return order.map((k) => by.get(k)!.slice().sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0)));
 }
 
 export function renderReviewPage(pending: PendingReview[], o: ReviewPageOptions): string {
 	const when = (o.generatedAt ?? new Date()).toLocaleString("en-SG", { timeZone: "Asia/Singapore" });
+	const groups = decks(pending);
 	const body = pending.length
-		? pending.map((p) => card(p, o)).join("\n")
+		? groups.map((g) => (g.length > 1 ? deck(g, o) : card(g[0]!, o))).join("\n")
 		: `<p class="empty">Nothing waiting. Every price the last scan found was clear enough to record.</p>`;
 
 	return `<!doctype html>
@@ -225,6 +335,9 @@ h1 { font-size:1.25rem; margin:0 0 4px; }
 .body:hover, .body:focus-visible { background:rgba(128,128,128,.09); outline:none; }
 .prod { font-size:.88rem; opacity:.85; margin-bottom:8px; word-break:break-word; }
 .go { opacity:.55; }
+/* The shop's own words for the pack, and whose product it is. */
+.stated { color:var(--mut); }
+.maker { color:var(--mut); font-weight:600; }
 .why { margin:8px 0 10px; padding-left:18px; font-size:.85rem; color:var(--mut); }
 .why li { margin:2px 0; }
 .why li.r-bulk, .why li.r-floor-rescue { color:var(--no); }
@@ -252,17 +365,52 @@ h1 { font-size:1.25rem; margin:0 0 4px; }
 .cmp-r .fig.down { color:var(--ok); }
 .cmp-r .lab { font-size:.8rem; color:var(--mut); }
 .cmp-f { font-size:.8rem; color:var(--mut); margin-top:7px; }
+/* A deck — one slot, several candidates, one slide each. Scroll-snap does the sliding;
+   the dots are fragment links, so none of this needs JavaScript. */
+.deck .slides { display:flex; gap:14px; overflow-x:auto; scroll-snap-type:x mandatory;
+  -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+.deck .slides::-webkit-scrollbar { display:none; }
+.deck .slide { flex:0 0 100%; min-width:0; scroll-snap-align:start; }
+.multi { color:var(--mut); font-size:.82rem; margin:6px 0 10px; }
+.which { color:var(--mut); font-size:.75rem; text-transform:uppercase; letter-spacing:.05em; margin:0 0 7px; }
+.dots { display:flex; gap:6px; justify-content:center; margin-top:12px; }
+.dots a { min-width:28px; text-align:center; padding:4px 8px; border:1px solid var(--line);
+  border-radius:999px; color:var(--mut); text-decoration:none; font-size:.8rem; font-variant-numeric:tabular-nums; }
+.dots a:hover, .dots a:focus-visible { color:var(--fg); border-color:var(--mut); outline:none; }
+/* hideCards adds this before removing the card; without it an accepted deck vanishes (no backticks here: template literal)
+   between two frames and the ✓ that confirmed it is never read. */
+.card.going { opacity:0; transform:scale(.98); transition:opacity .2s ease, transform .2s ease; }
 .empty { color:var(--mut); }
 .foot { color:var(--mut); font-size:.82rem; margin-top:22px; }
 .foot a { color:inherit; }
 </style></head>
 <body>
 <h1>Prices to check</h1>
-<p class="sub">${pending.length} waiting · ${esc(when)}</p>
+<p class="sub"><span id="waiting">${pending.length}</span> waiting · ${esc(when)}</p>
 <p class="note"><b>OK</b> records the price. <b>Don't use</b> doesn't — and that is all it does:
 the product still appears on your deals page. To drop it from there too, use <b>Ignore</b> on the deals page.</p>
 ${body}
 <p class="foot"><a href="#" id="onetap">⚡ enable one-tap</a></p>
 ${githubOneTapScript({ repo: o.repo })}
+<script>
+(function () {
+  // The shared one-tap script removes an accepted deck but knows nothing about this
+  // page's own counter, and "55 waiting" printed over a page with 40 cards left is the
+  // header describing a queue that no longer exists. Re-derived from the DOM rather
+  // than tracked, so it stays right however many questions one tap settles.
+  //
+  // Counted in QUESTIONS, not cards: a deck is one card holding several. A page with no
+  // MutationObserver just keeps the number it was built with, which is what it did before.
+  var label = document.getElementById("waiting");
+  if (!label || !window.MutationObserver) return;
+  var recount = function () {
+    label.textContent = String(
+      document.querySelectorAll(".deck .slide").length +
+      document.querySelectorAll(".card:not(.deck)").length
+    );
+  };
+  new MutationObserver(recount).observe(document.body, { childList: true, subtree: true });
+})();
+</script>
 </body></html>`;
 }

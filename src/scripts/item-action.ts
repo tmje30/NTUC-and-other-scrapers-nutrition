@@ -18,6 +18,7 @@ import {
 	isRejectReason,
 	withRejectedPick,
 	withoutPending,
+	withoutPendingForSlot,
 } from "../core/vendor-review.js";
 import { PARKED_TAG } from "../core/notion.js";
 import {
@@ -687,7 +688,20 @@ if (payload.action === "review-ok") {
 	const ceiling = landed
 		? await raiseSizeCeiling(client, payload.ingredientId, payload.size).catch(() => ({ raised: false as const }))
 		: { raised: false as const };
-	await writeVendorReview(withoutPending(await readVendorReview(), payload.token ?? ""));
+	// ⚠️ **Accepting settles the SLOT, not just the card that was tapped.** The review page
+	// offers up to `MAX_SUGGESTIONS` products for one row at one shop, and they compete for
+	// a single price-book slot — so the moment one wins the others are stale, and answering
+	// one later would overwrite the newer figure with an older one. That is the rule
+	// `withoutPendingForSlot` already documents; a deck just makes it visible.
+	//
+	// ⚠️ Only when the write LANDED. A refused slot has settled nothing, so the queue keeps
+	// every other option and drops only the question that was answered.
+	const queue = await readVendorReview();
+	await writeVendorReview(
+		landed && payload.vendor
+			? withoutPendingForSlot(queue, payload.ingredientId, payload.vendor)
+			: withoutPending(queue, payload.token ?? ""),
+	);
 	await report(
 		landed
 			? `Recorded for **${label}** at ${payload.vendor}: $${payload.priceSgd} / ${payload.size}.\n` +

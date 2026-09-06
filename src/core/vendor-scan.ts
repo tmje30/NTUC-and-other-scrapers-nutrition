@@ -18,6 +18,9 @@ import {
 import { parseName } from "./parse.js";
 import { evaluate } from "./match.js";
 import { cheapestPlausible } from "./marketplace-size.js";
+// ⚠️ A value import, where `vendor-review`'s import of this module is `import type` and
+// erases — so the cycle exists on paper only. Keep it that way.
+import { statedRangeLow } from "./vendor-review.js";
 import {
 	cheapestVendorSlot,
 	readVendorSlots,
@@ -913,7 +916,12 @@ export function unitKindAgrees(unitType: UnitType, product: StoreProduct): boole
 
 /** The size to write, in whatever the row's `Unit type ` counts. */
 export function sizeFor(unitType: UnitType, product: StoreProduct): number | null {
-	return unitType === "By Unit" ? (product.unitCount ?? null) : (product.packWeightG ?? null);
+	if (unitType === "By Unit") return product.unitCount ?? null;
+	// ⚠️ A listing that states a RANGE is measured at its bottom, not at the number the
+	// unit happens to be attached to — see `statedRangeLow`. This is the one choke point
+	// for the size a weighed row records, so the low end reaches the price book, the
+	// per-kilo figure and the dearer-than-recorded comparison together, or none of them.
+	return statedRangeLow(product) ?? product.packWeightG ?? null;
 }
 
 export function notionClient(): Client {
@@ -940,8 +948,8 @@ export interface PriceMove {
 	foundText: string;
 	/** `pricePer1000` of the old value — **null means the slot was empty**, which is a
 	 *  first price rather than a reduction, and is reported as such. */
-	recordedPer1000: number | null;
-	foundPer1000: number;
+	recordedPer: number | null;
+	foundPer: number;
 	/**
 	 * The listing that was written, and its page.
 	 *
@@ -957,7 +965,7 @@ export interface PriceMove {
 	 */
 	product?: string;
 	url?: string;
-	/** What `pricePer1000` means on this row: `kg`, `L`, or `1000 pcs`. */
+	/** What the figure beside it is quoted per: `kg`, `L`, or `100 pcs` (see `quotedPer`). */
 	perWord: string;
 }
 
@@ -994,8 +1002,8 @@ export function renderPriceMoves(
 	 */
 	pageUrl?: string,
 ): string | null {
-	const cheaper = moves.filter((m) => m.recordedPer1000 != null);
-	const first = moves.filter((m) => m.recordedPer1000 == null);
+	const cheaper = moves.filter((m) => m.recordedPer != null);
+	const first = moves.filter((m) => m.recordedPer == null);
 	if (!cheaper.length && !first.length) return null;
 
 	const money = (n: number, per: string) => `$${n.toFixed(2)}/${per}`;
@@ -1007,14 +1015,14 @@ export function renderPriceMoves(
 		.join(" · ");
 
 	const line = (m: PriceMove) =>
-		m.recordedPer1000 == null
-			? `• ${esc(m.row.trim())} — ${esc(m.vendor)}, first price: ${esc(m.foundText)} = ${money(m.foundPer1000, m.perWord)}`
+		m.recordedPer == null
+			? `• ${esc(m.row.trim())} — ${esc(m.vendor)}, first price: ${esc(m.foundText)} = ${money(m.foundPer, m.perWord)}`
 			: // ⚠️ Price AND size on both sides, not just the per-kilo figure — the same
 				// reason `dearerThanRecorded` quotes both: on a By-Unit row the per-kilo
 				// numbers can agree while the pack changes underneath them, and a line
 				// reading "$4.00/kg → $4.00/kg" is unanswerable.
-				`• ${esc(m.row.trim())} — ${esc(m.vendor)} ${esc(m.recordedText)} = ${money(m.recordedPer1000!, m.perWord)}` +
-				` → <b>${esc(m.foundText)} = ${money(m.foundPer1000, m.perWord)}</b>`;
+				`• ${esc(m.row.trim())} — ${esc(m.vendor)} ${esc(m.recordedText)} = ${money(m.recordedPer!, m.perWord)}` +
+				` → <b>${esc(m.foundText)} = ${money(m.foundPer, m.perWord)}</b>`;
 
 	if (pageUrl)
 		return (

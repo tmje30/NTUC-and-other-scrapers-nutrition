@@ -16,6 +16,8 @@ import {
 	reviewToken,
 	statesMultipack,
 	statesSizeRange,
+	sizeRangeIn,
+	statedRangeLow,
 	withPending,
 	withRejectedPick,
 	withoutPending,
@@ -476,8 +478,8 @@ describe("the cheaper-only rule — a scan may lower a recorded price, never rai
  */
 const dearer = dearerThanRecorded({
 	vendor: "Guardian",
-	recordedPer1000: 8.5,
-	foundPer1000: 12,
+	recordedPer: 8.5,
+	foundPer: 12,
 	recordedText: "$0.85 / 100g",
 	foundText: "$1.20 / 100g",
 	perWord: "kg",
@@ -517,7 +519,7 @@ check("…and says what accepting means", card.includes("Accept only if the pric
 // ⚠️ Colour follows the NUMBERS, not the reason's name: the same block renders a
 // near-miss whose price happens to be lower, and red there would contradict the figures.
 const cheaperCmp = renderReviewPage(
-	[pend({ reasons: [{ kind: "dearer-than-recorded", recordedPer1000: 12, foundPer1000: 8, perWord: "kg", vendor: "NTUC", note: "n" }] })] as any,
+	[pend({ reasons: [{ kind: "dearer-than-recorded", recordedPer: 12, foundPer: 8, perWord: "kg", vendor: "NTUC", note: "n" }] })] as any,
 	{ repo: "o/r" },
 );
 check("a lower figure is green even under a dearer label", cheaperCmp.includes('class="fig down"'));
@@ -532,8 +534,8 @@ check("a lower figure is green even under a dearer label", cheaperCmp.includes('
  */
 const loaf = dearerThanRecorded({
 	vendor: "NTUC",
-	recordedPer1000: 120,
-	foundPer1000: 141.18,
+	recordedPer: 120,
+	foundPer: 141.18,
 	recordedText: "$2.40 / 20 pcs",
 	foundText: "$2.40 / 17 pcs",
 	perWord: "1000 pcs",
@@ -544,7 +546,7 @@ check("…and names the units it is comparing in", /1000 pcs/.test(loaf?.note ??
 /** The ordinary case: cheaper is what the scan is FOR, and must not be interrupted. */
 eq(
 	"a cheaper find passes straight through",
-	dearerThanRecorded({ vendor: "Guardian", recordedPer1000: 8.5, foundPer1000: 6.2 }),
+	dearerThanRecorded({ vendor: "Guardian", recordedPer: 8.5, foundPer: 6.2 }),
 	null,
 );
 
@@ -554,7 +556,7 @@ eq(
  */
 eq(
 	"an identical price is not queried",
-	dearerThanRecorded({ vendor: "NTUC", recordedPer1000: 4, foundPer1000: 4 }),
+	dearerThanRecorded({ vendor: "NTUC", recordedPer: 4, foundPer: 4 }),
 	null,
 );
 
@@ -566,12 +568,12 @@ eq(
  */
 eq(
 	"a slot with no price recorded is never blocked",
-	dearerThanRecorded({ vendor: "NTUC", recordedPer1000: null, foundPer1000: 4 }),
+	dearerThanRecorded({ vendor: "NTUC", recordedPer: null, foundPer: 4 }),
 	null,
 );
 eq(
 	"…nor is a candidate whose own per-unit price cannot be worked out",
-	dearerThanRecorded({ vendor: "NTUC", recordedPer1000: 4, foundPer1000: null }),
+	dearerThanRecorded({ vendor: "NTUC", recordedPer: 4, foundPer: null }),
 	null,
 );
 
@@ -580,9 +582,61 @@ eq(
  * figure. The note must still carry two comparable numbers rather than reading
  * "( → )", which would put an unanswerable card in front of the user.
  */
-const unlabelled = dearerThanRecorded({ vendor: "Iherb", recordedPer1000: 10, foundPer1000: 25 });
+const unlabelled = dearerThanRecorded({ vendor: "Iherb", recordedPer: 10, foundPer: 25 });
 check("a missing label falls back to a real number", /10\.00/.test(unlabelled?.note ?? "") && /25\.00/.test(unlabelled?.note ?? ""));
 
 /** The data is kept as numbers too — the note is for a human, these are for a later report. */
-eq("the recorded figure is kept", unlabelled?.kind === "dearer-than-recorded" ? unlabelled.recordedPer1000 : -1, 10);
-eq("the found figure is kept", unlabelled?.kind === "dearer-than-recorded" ? unlabelled.foundPer1000 : -1, 25);
+eq("the recorded figure is kept", unlabelled?.kind === "dearer-than-recorded" ? unlabelled.recordedPer : -1, 10);
+eq("the found figure is kept", unlabelled?.kind === "dearer-than-recorded" ? unlabelled.foundPer : -1, 25);
+
+describe("a stated range is read at its BOTTOM, and shown as the shop wrote it");
+
+// The shop's own words, tidied — a slug writes `850-900g`, a title writes `850 - 900g`.
+eq("a range in a title is picked up", sizeRangeIn("Carrots 850 - 900g"), "850 - 900g");
+eq("a range in a slug reads the same way", sizeRangeIn("au-china-carrots-850-900g"), "850 - 900g");
+// ⚠️ The slug's hyphen before the UNIT is a separator, not a minus.
+eq("the unit's own hyphen is not a range bound", sizeRangeIn("pisang-banana-12-15-kg"), "12 - 15kg");
+check("a single size is not a range", sizeRangeIn("Carrots 900g") === null);
+check("the detector and the display agree", statesSizeRange("Carrots 850-900g") === (sizeRangeIn("Carrots 850-900g") !== null));
+
+// ⚠️ The LOW end, per the user 2026-09-06 — the top is the optimistic read, and a price
+// book that errs should err against itself.
+eq(
+	"the low end is what the pack is measured at",
+	statedRangeLow({ name: "Australia / China Carrots", url: "https://s.test/au-china-carrots-850-900g" }),
+	850,
+);
+eq("kilos convert", statedRangeLow({ name: "Banana 12-15 kg" }), 12000);
+check("no range, no opinion", statedRangeLow({ name: "Carrots 900g" }) === null);
+
+describe("the card names the pack and the maker");
+
+const shown = renderReviewPage(
+	[pend({ reasons: [], statedSize: "850 - 900g", brandName: "Greenfields", itemName: "Skimmed Milk" })] as any,
+	{ repo: "o/r" },
+);
+check("the pack is quoted as the shop describes it", shown.includes("(850 - 900g)"));
+// ⚠️ Sheng Siong titles a product `Skimmed Milk` and nothing else; without the brand the
+// question "is this the right product?" has no answer at all.
+check("the brand is bracketed after the name", shown.includes("[Greenfields]"));
+
+describe("several picks for one slot are one deck, closest first");
+
+const two = renderReviewPage(
+	[
+		pend({ token: "t2", rank: 1, itemName: "Cerave AM SPF50", reasons: [] }),
+		pend({ token: "t1", rank: 0, itemName: "Cerave AM", reasons: [] }),
+	] as any,
+	{ repo: "o/r" },
+);
+eq("one card, not two", (two.match(/<article class="card/g) ?? []).length, 1);
+eq("two slides inside it", (two.match(/class="slide"/g) ?? []).length, 2);
+// ⚠️ The queue holds the alternatives BEFORE the primary, so unsorted the wrong SPF leads.
+check("the closest match is the first slide", two.indexOf("Cerave AM<") < two.indexOf("Cerave AM SPF50"));
+check("accepting settles the whole slot", two.includes('data-hide-card="group"'));
+
+// A lone question keeps the plain card — a one-slide carousel advertises something to see.
+const one = renderReviewPage([pend({ reasons: [] })] as any, { repo: "o/r" });
+check("a single pick is not a deck", !one.includes("class=\"slide\""));
+// ⚠️ The attribute, not the bare word — the one-tap script names it in a comment.
+check("and it does not remove itself on tap", !one.includes(String.fromCharCode(100) + "ata-hide-card=" + String.fromCharCode(34)));

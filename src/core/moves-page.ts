@@ -38,8 +38,8 @@ const per = (n: number, word: string) => `$${n.toFixed(2)}/${word}`;
  * which is a 20% cut that a pack-price comparison reports as no change at all.
  */
 function drop(m: PriceMove): number | null {
-	if (m.recordedPer1000 == null || m.recordedPer1000 <= 0) return null;
-	return Math.round((1 - m.foundPer1000 / m.recordedPer1000) * 100);
+	if (m.recordedPer == null || m.recordedPer <= 0) return null;
+	return Math.round((1 - m.foundPer / m.recordedPer) * 100);
 }
 
 /**
@@ -67,9 +67,9 @@ function cheaperCard(m: PriceMove): string {
 	return shell(
 		m,
 		`<div class="move">
-    <span class="was">${esc(m.recordedText)} <i>= ${esc(per(m.recordedPer1000!, m.perWord))}</i></span>
+    <span class="was">${esc(m.recordedText)} <i>= ${esc(per(m.recordedPer!, m.perWord))}</i></span>
     <span class="arrow">→</span>
-    <span class="now"><b>${esc(m.foundText)}</b> <i>= ${esc(per(m.foundPer1000, m.perWord))}</i></span>
+    <span class="now"><b>${esc(m.foundText)}</b> <i>= ${esc(per(m.foundPer, m.perWord))}</i></span>
   </div>`,
 		d != null && d > 0 ? `<div class="tag down">${d}% cheaper</div>` : "",
 	);
@@ -78,15 +78,15 @@ function cheaperCard(m: PriceMove): string {
 function firstCard(m: PriceMove): string {
 	return shell(
 		m,
-		`<div class="move"><span class="now"><b>${esc(m.foundText)}</b> <i>= ${esc(per(m.foundPer1000, m.perWord))}</i></span></div>`,
+		`<div class="move"><span class="now"><b>${esc(m.foundText)}</b> <i>= ${esc(per(m.foundPer, m.perWord))}</i></span></div>`,
 		`<div class="tag new">first price at this shop</div>`,
 	);
 }
 export function renderMovesPage(snapshot: MovesSnapshot | null, o: MovesPageOptions = {}): string {
 	const moves = snapshot?.moves ?? [];
 	const reconfirmed = snapshot?.reconfirmed ?? 0;
-	const cheaper = moves.filter((m) => m.recordedPer1000 != null);
-	const first = moves.filter((m) => m.recordedPer1000 == null);
+	const cheaper = moves.filter((m) => m.recordedPer != null);
+	const first = moves.filter((m) => m.recordedPer == null);
 	const when = snapshot?.generatedAt
 		? new Date(snapshot.generatedAt).toLocaleString("en-SG", { timeZone: "Asia/Singapore" })
 		: (o.generatedAt ?? new Date()).toLocaleString("en-SG", { timeZone: "Asia/Singapore" });
