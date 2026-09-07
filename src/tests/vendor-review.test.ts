@@ -11,6 +11,7 @@ import {
 	reasonsFor,
 	sizeBoundsFor,
 	prunePending,
+	renderReviewCard,
 	renderReviewSummary,
 	reviewReasons,
 	reviewToken,
@@ -739,3 +740,33 @@ check("a vertical drag is left alone", deckHtml.includes("Math.abs(dx) <= Math.a
 check("a drag lands on a slide rather than between two", deckHtml.includes('behavior: "smooth"'));
 // The dots stay: they are the only way to move between options from a keyboard.
 check("the dots remain for keyboard users", deckHtml.includes('class="dots"'));
+
+describe("a slide does not state its position three times");
+
+const nearMiss = (n: string) => ({ kind: "near-miss" as const, note: n });
+const ALT2 = "no product here MATCHED this row — this is alternative 2 of 3, offered as a suggestion. Accept only if it is the same thing.";
+const LONE = "no product here MATCHED this row — this is the closest one, offered as a suggestion. Accept only if it is the same thing.";
+
+const inDeck = renderReviewPage(
+	[
+		pend({ token: "p1", rank: 0, reasons: [nearMiss("no product here MATCHED this row — this is the closest of 3 offered, best first. Accept only if it is the same thing.")] }),
+		pend({ token: "p2", rank: 1, reasons: [nearMiss(ALT2)] }),
+	] as any,
+	{ repo: "o/r" },
+);
+const bullets = (h: string) => (h.match(/<li class="r-near-miss">[^<]*<\/li>/g) ?? []).join(" ");
+// ⚠️ Measured on the visible bullets only. The raw note also travels in data-payload and
+// in the pre-filled issue body, where it SHOULD stay whole — that is the record of what
+// was shown, and it is not what the reader sees.
+check("a slide drops the position the label above already gives", !/alternative 2 of|the closest of/.test(bullets(inDeck)));
+check("but keeps the part nothing else says", bullets(inDeck).includes("no product here MATCHED this row. Accept only if it is the same thing."));
+check("the payload still records the note whole", inDeck.includes("alternative 2 of 3"));
+
+// ⚠️ A lone suggestion has no deck and no OPTION label above it, so its sentence reads
+// correctly as written and is left alone.
+const alone = renderReviewPage([pend({ reasons: [nearMiss(LONE)] })] as any, { repo: "o/r" });
+check("a lone suggestion keeps its wording", bullets(alone).includes("this is the closest one"));
+
+// ⚠️ Telegram gets the stored note untouched — no deck, no label, so the position earns
+// its place there. The page knows it is a deck; the note does not have to.
+check("the Telegram card is unchanged", renderReviewCard(pend({ reasons: [nearMiss(ALT2)] }) as any).includes("alternative 2 of 3"));

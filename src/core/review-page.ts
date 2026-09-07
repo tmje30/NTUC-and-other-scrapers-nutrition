@@ -90,13 +90,34 @@ function comparison(r: Extract<ReviewReason, { kind: "dearer-than-recorded" }>):
 </div>`;
 }
 
-function reasonList(reasons: ReviewReason[]): string {
+/**
+ * Drop the clause that states WHICH suggestion this is — "this is alternative 2 of 3,
+ * offered as a suggestion" — leaving what only the note can say.
+ *
+ * ⚠️ **On the page, inside a deck, and nowhere else** (user, 2026-09-07). A slide already
+ * carries "OPTION 2 OF 3" above it and "3 products … could be this row" above that, so
+ * the clause is the third statement of the same fact on one card. What survives is the
+ * part nothing else says: nothing MATCHED, and accept only if it is the same thing.
+ *
+ * ⚠️ The stored note is left ALONE. It is written when a question is queued, so editing
+ * it would change nothing for the questions already in the queue until a sweep re-queued
+ * them — and the same sentence goes to Telegram, where there is no deck and no label
+ * above it, and the position earns its place. The page knows it is a deck; the note does
+ * not have to.
+ */
+function withoutPosition(note: string): string {
+	return note.replace(/\s*—\s*this is [^.]*\.\s*/i, ". ");
+}
+
+function reasonList(reasons: ReviewReason[], inDeck = false): string {
 	if (!reasons.length) return "";
 	const cmp = reasons.filter((r) => r.kind === "dearer-than-recorded").map(comparison).join("");
 	const rest = reasons.filter((r) => r.kind !== "dearer-than-recorded");
+	const text = (r: ReviewReason) =>
+		inDeck && r.kind === "near-miss" ? withoutPosition(r.note) : r.note;
 	return (
 		cmp +
-		(rest.length ? `<ul class="why">${rest.map((r) => `<li class="r-${esc(r.kind)}">${esc(r.note)}</li>`).join("")}</ul>` : "")
+		(rest.length ? `<ul class="why">${rest.map((r) => `<li class="r-${esc(r.kind)}">${esc(text(r))}</li>`).join("")}</ul>` : "")
 	);
 }
 
@@ -212,7 +233,7 @@ function head(p: PendingReview): string {
 function face(
 	p: PendingReview,
 	o: ReviewPageOptions,
-	opt: { withHead: boolean; hide?: string },
+	opt: { withHead: boolean; hide?: string; inDeck?: boolean },
 ): string {
 	return `<a class="body" href="${esc(p.url)}" target="_blank" rel="noopener">
     ${opt.withHead ? head(p) : ""}
@@ -222,7 +243,7 @@ function face(
     <div class="prod">${esc(p.itemName)}${
 			p.statedSize ? ` <span class="stated">(${esc(p.statedSize)})</span>` : ""
 		}${p.brandName ? ` <span class="maker">[${esc(p.brandName)}]</span>` : ""} <span class="go">↗</span></div>
-    ${reasonList(p.reasons)}
+    ${reasonList(p.reasons, opt.inDeck)}
   </a>
   <div class="acts">
     ${button(p, o, {
@@ -268,7 +289,7 @@ function deck(options: PendingReview[], o: ReviewPageOptions): string {
 		.map(
 			(p, i) => `<section class="slide" id="opt-${esc(p.token)}">
     <p class="which">Option ${i + 1} of ${options.length}${i === 0 ? " · closest match" : ""}</p>
-    ${face(p, o, { withHead: false, hide: "group" })}
+    ${face(p, o, { withHead: false, hide: "group", inDeck: true })}
   </section>`,
 		)
 		.join("\n  ");
