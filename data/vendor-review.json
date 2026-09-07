@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-07T03:20:50.707Z",
+  "updatedAt": "2026-09-07T04:05:29.846Z",
   "pending": [
     {
       "token": "7jj9xu",
@@ -244,7 +244,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-09-07T03:12:10.862Z"
+      "askedAt": "2026-09-07T03:56:43.644Z"
     },
     {
       "token": "dyg505",
@@ -269,7 +269,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T03:12:10.863Z"
+      "askedAt": "2026-09-07T03:56:43.645Z"
     },
     {
       "token": "7mrx2m",
@@ -293,7 +293,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-09-07T03:12:28.065Z"
+      "askedAt": "2026-09-07T03:56:58.277Z"
     },
     {
       "token": "gjo3x2",
@@ -317,7 +317,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T03:12:28.066Z"
+      "askedAt": "2026-09-07T03:56:58.278Z"
     },
     {
       "token": "lo4o3w",
@@ -340,7 +340,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-09-07T03:13:32.688Z"
+      "askedAt": "2026-09-07T03:58:01.795Z"
     },
     {
       "token": "zq95y9",
@@ -363,7 +363,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-09-07T03:13:32.688Z"
+      "askedAt": "2026-09-07T03:58:01.795Z"
     },
     {
       "token": "9cowqx",
@@ -386,7 +386,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T03:13:32.688Z"
+      "askedAt": "2026-09-07T03:58:01.795Z"
     },
     {
       "token": "nlcf2f",
@@ -418,7 +418,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T03:13:49.047Z"
+      "askedAt": "2026-09-07T03:58:19.390Z"
     },
     {
       "token": "yrxust",
@@ -447,7 +447,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T03:14:03.886Z"
+      "askedAt": "2026-09-07T03:58:32.923Z"
     },
     {
       "token": "lvv3y0",
@@ -476,7 +476,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T03:14:10.853Z"
+      "askedAt": "2026-09-07T03:58:40.561Z"
     },
     {
       "token": "t5i5hm",
@@ -507,7 +507,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T03:14:20.488Z"
+      "askedAt": "2026-09-07T03:58:46.971Z"
     },
     {
       "token": "qb1z8m",
@@ -538,41 +538,41 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T03:14:28.787Z"
+      "askedAt": "2026-09-07T03:58:53.453Z"
     },
     {
-      "token": "vq0ezt",
+      "token": "9v70vq",
       "ingredientId": "37369a18-4fe7-80c0-bae0-f52639895b21",
-      "ingredientName": "whey, essential  [MyProtein]",
+      "ingredientName": "whey (Essential) [MyProtein]",
       "key": "whei",
       "unitType": "By Gram",
       "vendor": "My Protein",
       "slotN": 3,
       "brand": "myprotein",
-      "priceSgd": 5.34,
-      "size": 30,
-      "url": "https://www.myprotein.com.sg/p/sports-nutrition/impact-whey-protein-sample/10529583/?variation=12309338",
-      "itemName": "Impact Whey Protein (Sample) 30g Natural Banana - New and Improved",
-      "statedSize": "30g",
+      "priceSgd": 349,
+      "size": 2250,
+      "url": "https://www.myprotein.com.sg/p/sports-nutrition/essential-whey-protein/11052699/?variation=17784492",
+      "itemName": "Essential Whey Protein 2.25kg - 90servings Strawberry Cream",
+      "statedSize": "2.25kg",
       "brandName": "Myprotein",
-      "perLabel": "$178.00/kg",
+      "perLabel": "$155.11/kg",
       "reasons": [
         {
           "kind": "dearer-than-recorded",
           "recordedPer": 76.00800000000001,
-          "foundPer": 178,
+          "foundPer": 155.11111111111111,
           "perWord": "kg",
           "vendor": "My Protein",
-          "note": "DEARER than the My Protein price already recorded: $190.02 / 2500g = $76.01/kg → $5.34 / 30g = $178.00/kg. Not written — accept only if the old price is gone."
+          "note": "DEARER than the My Protein price already recorded: $190.02 / 2500g = $76.01/kg → $349.00 / 2250g = $155.11/kg. Not written — accept only if the old price is gone."
         },
         {
           "kind": "outlier",
-          "factor": 5.5625,
-          "note": "5.6× DEARER than this row's other shop"
+          "factor": 4.847222222222222,
+          "note": "4.8× DEARER than this row's other shop"
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T03:15:12.232Z"
+      "askedAt": "2026-09-07T03:59:32.889Z"
     },
     {
       "token": "us1oig",
@@ -596,7 +596,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-09-07T03:16:01.048Z"
+      "askedAt": "2026-09-07T04:00:19.656Z"
     },
     {
       "token": "r9mgtc",
@@ -628,7 +628,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T03:16:01.048Z"
+      "askedAt": "2026-09-07T04:00:19.656Z"
     },
     {
       "token": "84vaf7",
@@ -653,7 +653,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T03:16:07.209Z"
+      "askedAt": "2026-09-07T04:00:24.409Z"
     },
     {
       "token": "j017sn",
@@ -677,7 +677,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T03:16:10.244Z"
+      "askedAt": "2026-09-07T04:00:27.146Z"
     },
     {
       "token": "vvj2kl",
@@ -701,7 +701,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-09-07T03:16:24.189Z"
+      "askedAt": "2026-09-07T04:00:45.260Z"
     },
     {
       "token": "9oabdq",
@@ -725,7 +725,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-09-07T03:16:24.190Z"
+      "askedAt": "2026-09-07T04:00:45.260Z"
     },
     {
       "token": "mkfpys",
@@ -749,7 +749,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T03:16:24.190Z"
+      "askedAt": "2026-09-07T04:00:45.260Z"
     },
     {
       "token": "savzko",
@@ -773,7 +773,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-09-07T03:16:42.382Z"
+      "askedAt": "2026-09-07T04:01:06.069Z"
     },
     {
       "token": "qij3fi",
@@ -797,7 +797,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-09-07T03:16:42.382Z"
+      "askedAt": "2026-09-07T04:01:06.070Z"
     },
     {
       "token": "mn5lav",
@@ -829,7 +829,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T03:16:42.382Z"
+      "askedAt": "2026-09-07T04:01:06.070Z"
     },
     {
       "token": "2zosbs",
@@ -853,7 +853,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-09-07T03:16:51.566Z"
+      "askedAt": "2026-09-07T04:01:15.784Z"
     },
     {
       "token": "tbie89",
@@ -877,7 +877,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T03:16:51.566Z"
+      "askedAt": "2026-09-07T04:01:15.784Z"
     },
     {
       "token": "sqazcl",
@@ -905,7 +905,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T03:16:57.846Z"
+      "askedAt": "2026-09-07T04:01:25.674Z"
     },
     {
       "token": "qpptkl",
@@ -933,7 +933,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T03:16:59.283Z"
+      "askedAt": "2026-09-07T04:01:27.080Z"
     },
     {
       "token": "pgc4tf",
@@ -966,7 +966,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T03:17:57.234Z"
+      "askedAt": "2026-09-07T04:02:33.900Z"
     },
     {
       "token": "915b8x",
@@ -994,7 +994,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T03:18:06.729Z"
+      "askedAt": "2026-09-07T04:02:45.314Z"
     },
     {
       "token": "9evl12",
@@ -1019,7 +1019,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T03:18:43.634Z"
+      "askedAt": "2026-09-07T04:03:30.109Z"
     },
     {
       "token": "k2ioco",
@@ -1047,7 +1047,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T03:18:46.721Z"
+      "askedAt": "2026-09-07T04:03:32.086Z"
     },
     {
       "token": "qqp3jo",
@@ -1072,7 +1072,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-09-07T03:19:09.194Z"
+      "askedAt": "2026-09-07T04:03:50.013Z"
     },
     {
       "token": "hczc9b",
@@ -1097,7 +1097,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-09-07T03:19:09.194Z"
+      "askedAt": "2026-09-07T04:03:50.013Z"
     },
     {
       "token": "08ashh",
@@ -1122,7 +1122,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T03:19:09.194Z"
+      "askedAt": "2026-09-07T04:03:50.014Z"
     },
     {
       "token": "atcu4x",
@@ -1150,7 +1150,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T03:19:40.632Z"
+      "askedAt": "2026-09-07T04:04:30.016Z"
     },
     {
       "token": "va71ta",
@@ -1183,7 +1183,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T03:19:46.809Z"
+      "askedAt": "2026-09-07T04:04:36.355Z"
     },
     {
       "token": "jxyxog",
@@ -1211,7 +1211,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T03:19:59.465Z"
+      "askedAt": "2026-09-07T04:04:45.847Z"
     },
     {
       "token": "5ouerp",
@@ -1239,7 +1239,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T03:20:07.003Z"
+      "askedAt": "2026-09-07T04:04:52.003Z"
     },
     {
       "token": "zlg42m",
@@ -1267,7 +1267,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T03:20:23.546Z"
+      "askedAt": "2026-09-07T04:05:03.572Z"
     },
     {
       "token": "24u7ly",
@@ -1291,7 +1291,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-09-07T03:20:43.962Z"
+      "askedAt": "2026-09-07T04:05:23.887Z"
     },
     {
       "token": "eo4dum",
@@ -1315,7 +1315,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-09-07T03:20:43.962Z"
+      "askedAt": "2026-09-07T04:05:23.887Z"
     },
     {
       "token": "1p7ijy",
@@ -1339,7 +1339,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T03:20:43.962Z"
+      "askedAt": "2026-09-07T04:05:23.887Z"
     },
     {
       "token": "vwk3b7",
@@ -1367,7 +1367,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T03:20:46.307Z"
+      "askedAt": "2026-09-07T04:05:27.190Z"
     },
     {
       "token": "1gqw65",
@@ -1395,7 +1395,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T03:20:50.707Z"
+      "askedAt": "2026-09-07T04:05:29.846Z"
     }
   ],
   "rejected": [
@@ -1511,20 +1511,8 @@
     }
   ],
   "moves": {
-    "generatedAt": "2026-09-07T03:20:50.707Z",
-    "reconfirmed": 55,
-    "moves": [
-      {
-        "row": "Banana (Fruit)",
-        "vendor": "Sheng Siong",
-        "recordedText": "",
-        "foundText": "$3.48 / 1200g",
-        "recordedPer": null,
-        "foundPer": 2.9,
-        "perWord": "kg",
-        "product": "Ecuador / Philippines / Indonesia Cavendish Banana",
-        "url": "https://shengsiong.com.sg/product/ecuador-philippines-indonesia-cavendish-banana-1-12-kg"
-      }
-    ]
+    "generatedAt": "2026-09-07T04:05:29.847Z",
+    "reconfirmed": 56,
+    "moves": []
   }
 }
