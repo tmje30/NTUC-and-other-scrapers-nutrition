@@ -280,7 +280,7 @@ function deck(options: PendingReview[], o: ReviewPageOptions): string {
 		.join("");
 	return `<article class="card deck" data-group="${esc(gid)}">
   ${head(first)}
-  <p class="multi">${options.length} products at ${esc(first.vendor)} could be this row — swipe, or tap a number. Accepting one drops the rest.</p>
+  <p class="multi">${options.length} products at ${esc(first.vendor)} could be this row — drag or swipe between them. Accepting one drops the rest.</p>
   <div class="slides">
   ${slides}
   </div>
@@ -379,6 +379,10 @@ h1 { font-size:1.25rem; margin:0 0 4px; }
   -webkit-overflow-scrolling:touch; scrollbar-width:none; }
 .deck .slides::-webkit-scrollbar { display:none; }
 .deck .slide { flex:0 0 100%; min-width:0; scroll-snap-align:start; }
+/* Drag affordance for a MOUSE. A finger needs none — it just scrolls the strip. */
+.deck .slides { cursor:grab; }
+.deck .slides.grabbing { cursor:grabbing; user-select:none; }
+.deck .slides a { cursor:pointer; }
 .multi { color:var(--mut); font-size:.82rem; margin:6px 0 10px; }
 .which { color:var(--mut); font-size:.75rem; text-transform:uppercase; letter-spacing:.05em; margin:0 0 7px; }
 .dots { display:flex; gap:6px; justify-content:center; margin-top:12px; }
@@ -432,6 +436,65 @@ ${githubOneTapScript({ repo: o.repo })}
     label.textContent = String(n);
   };
   new MutationObserver(recount).observe(document.body, { childList: true });
+})();
+
+(function () {
+  // Drag a deck sideways with a MOUSE, the way a finger already drags it.
+  //
+  // ⚠️ Mouse only, deliberately. A touchscreen scrolls this strip natively, with
+  // momentum and rubber-banding the platform tunes and this cannot match; intercepting
+  // touch here would replace something good with something worse. Asked for 2026-09-07
+  // — the dots were the only way to move between options with a mouse.
+  //
+  // ⚠️ The whole card body is a link to the shop, so a drag that ends on it would
+  // otherwise open the product. The click after a real drag is swallowed in the capture
+  // phase, before the anchor sees it.
+  var drag = null;
+  var swallow = false;
+
+  document.addEventListener("pointerdown", function (ev) {
+    if (ev.pointerType !== "mouse" || ev.button !== 0 || !ev.target.closest) return;
+    var strip = ev.target.closest(".slides");
+    if (!strip) return;
+    drag = { strip: strip, x: ev.clientX, y: ev.clientY, from: strip.scrollLeft, moving: false };
+  });
+
+  document.addEventListener("pointermove", function (ev) {
+    if (!drag) return;
+    var dx = ev.clientX - drag.x;
+    // Sideways only, and only past a threshold: a vertical drag is the user scrolling
+    // the PAGE, and stealing it would trap them inside the deck.
+    if (!drag.moving) {
+      if (Math.abs(dx) < 6 || Math.abs(dx) <= Math.abs(ev.clientY - drag.y)) return;
+      drag.moving = true;
+      drag.strip.classList.add("grabbing");
+    }
+    drag.strip.scrollLeft = drag.from - dx;
+    if (ev.cancelable) ev.preventDefault();
+  });
+
+  function release() {
+    if (!drag) return;
+    var strip = drag.strip, moved = drag.moving;
+    drag = null;
+    if (!moved) return;
+    strip.classList.remove("grabbing");
+    // ⚠️ scroll-snap does NOT re-snap after a scrollLeft set from script, so a drag that
+    // stops between two options would leave both half shown. Snap to the nearest.
+    var gap = parseFloat(getComputedStyle(strip).columnGap) || 0;
+    var step = strip.clientWidth + gap;
+    if (step > 0) strip.scrollTo({ left: Math.round(strip.scrollLeft / step) * step, behavior: "smooth" });
+    swallow = true;
+  }
+  document.addEventListener("pointerup", release);
+  document.addEventListener("pointercancel", release);
+
+  document.addEventListener("click", function (ev) {
+    if (!swallow) return;
+    swallow = false;
+    ev.preventDefault();
+    ev.stopPropagation();
+  }, true);
 })();
 </script>
 </body></html>`;

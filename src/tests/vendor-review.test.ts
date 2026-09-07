@@ -717,3 +717,25 @@ check("the observer does not watch the subtree", !/observe\(document\.body, \{ c
 check("it still watches for children being removed", script.includes("observe(document.body, { childList: true })"));
 // The second lock on the same door: no write at all when the number has not changed.
 check("and it does not write an unchanged count", /if \(n === last\) return;/.test(script));
+
+describe("a deck is dragged sideways, not paged by its dots");
+
+const deckHtml = renderReviewPage(
+	[pend({ token: "d1", rank: 0, reasons: [] }), pend({ token: "d2", rank: 1, reasons: [] })] as any,
+	{ repo: "o/r" },
+);
+// ⚠️ Mouse ONLY. A touchscreen already scrolls this strip natively, with momentum the
+// platform tunes and this cannot match — intercepting touch would replace something
+// good with something worse.
+check("the drag handler ignores anything but a mouse", deckHtml.includes('ev.pointerType !== "mouse"'));
+// ⚠️ The whole card body is a link to the shop, so a drag ending on it would open the
+// product. The click is swallowed in the CAPTURE phase, before the anchor sees it.
+check("a click after a real drag is swallowed", /addEventListener\("click", function \(ev\) \{\s*if \(!swallow\) return;/.test(deckHtml));
+check("and swallowed before the link sees it", deckHtml.includes("ev.stopPropagation();"));
+// ⚠️ A vertical drag is the user scrolling the PAGE; stealing it traps them in the deck.
+check("a vertical drag is left alone", deckHtml.includes("Math.abs(dx) <= Math.abs(ev.clientY - drag.y)"));
+// ⚠️ scroll-snap does not re-snap after a scrollLeft set from script, so a drag that
+// stops between two options would leave both half shown.
+check("a drag lands on a slide rather than between two", deckHtml.includes('behavior: "smooth"'));
+// The dots stay: they are the only way to move between options from a keyboard.
+check("the dots remain for keyboard users", deckHtml.includes('class="dots"'));
