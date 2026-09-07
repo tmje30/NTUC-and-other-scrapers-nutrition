@@ -867,8 +867,14 @@ export function renderReviewCard(p: PendingReview): string {
  * run (measured 2026-08-11) trains a person to mute the bot, and the same bot carries the
  * daily digest. The cards live on `review.html`; this just says how many and where.
  *
- * It still states what each button does, because the two are **not** opposites and
- * guessing wrong is costly in one direction: "Don't use" is about the price book alone.
+ * ⚠️ **Two lines, and that is the whole message** (user, 2026-09-07). It used to carry a
+ * running total of what had been recorded and a sentence explaining what each button
+ * does. Both were true and neither belonged: the count of clear writes is not something
+ * to act on, and the button explanation is already the first thing on the page the link
+ * opens, where it is read at the moment it matters rather than in a notification.
+ *
+ * ⚠️ The zero-count replies keep their wording — a run that recorded prices and asked
+ * nothing has no page to link to, so the message IS the whole report.
  */
 export function renderReviewSummary(count: number, written: number, url?: string): string {
 	if (!count) {
@@ -878,8 +884,6 @@ export function renderReviewSummary(count: number, written: number, url?: string
 	}
 	return (
 		`🧾 <b>${count} price${count === 1 ? "" : "s"} need${count === 1 ? "s" : ""} your call</b>` +
-		(written ? ` · ${written} clear one${written === 1 ? "" : "s"} recorded already` : "") +
-		`\n<b>OK</b> records it. <b>Don't use</b> doesn't — the item still shows on your deals page either way.` +
 		// ⚠️ No link when the queue never reached the repo: the published page is built
 		// from the committed file, so a link would open questions that are not there yet.
 		// Saying so is better than sending someone to a page that looks empty.

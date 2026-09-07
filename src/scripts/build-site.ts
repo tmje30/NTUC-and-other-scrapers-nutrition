@@ -270,7 +270,36 @@ try {
 			`${review.rejected.length} standing refusals)`,
 	);
 } catch (e: any) {
+	/**
+	 * ⚠️⚠️ **A page that cannot be built still has to EXIST.** `public/` is rebuilt from
+	 * scratch every run and is gitignored, so a throw here does not leave yesterday's
+	 * page in place — it removes the page from the site entirely, and the Telegram
+	 * message goes on linking to it. Measured 2026-09-07: a field rename left one queued
+	 * question unreadable, this catch turned that into a one-line warning, the run went
+	 * green, Pages deployed without `review.html`, and the user tapped through to a 404.
+	 *
+	 * The empty state a few lines up exists precisely because "a 404 reads as broken".
+	 * The same reasoning has to survive the failure path, so the fallback says what
+	 * happened and where to look rather than vanishing.
+	 */
 	console.error(`Warning: failed to write public/review.html: ${e.message}`);
+	const escaped = String(e?.message ?? e).replace(/[&<>]/g, (c) => `&#${c.charCodeAt(0)};`);
+	await writeFile(
+		"public/review.html",
+		`<!doctype html><html lang="en"><head><meta charset="utf-8">` +
+			`<meta name="viewport" content="width=device-width, initial-scale=1">` +
+			`<title>Prices to check</title><style>` +
+			`:root{color-scheme:light dark}body{margin:0;padding:24px;max-width:640px;margin-inline:auto;` +
+			`font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}` +
+			`code{font-size:.85rem;opacity:.75;word-break:break-word}</style></head><body>` +
+			`<h1>The review page could not be built</h1>` +
+			`<p>Your queue is safe — it lives in <code>data/vendor-review.json</code> and nothing was ` +
+			`discarded. This page failed to render, so it is showing this instead of disappearing.</p>` +
+			`<p><code>${escaped}</code></p>` +
+			`<p><a href="https://github.com/${config.repo()}/actions">Check the latest run →</a></p>` +
+			`</body></html>`,
+		"utf8",
+	).catch(() => {});
 }
 
 /**

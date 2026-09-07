@@ -307,10 +307,14 @@ eq("a refusal file has no exclusion-shaped keys", Object.keys(rejected()).sort()
 	"version",
 ]);
 
-check(
-	"the summary tells the user the deals page is unaffected",
-	/deals page/i.test(renderReviewSummary(3, 2, "https://example.test/review.html")),
-);
+// ⚠️ Two lines, and that is the whole message (user, 2026-09-07). The button
+// explanation moved to the top of the page the link opens; the running total of clear
+// writes was a number with nothing to do about it.
+const summary = renderReviewSummary(3, 2, "https://example.test/review.html");
+eq("the summary is two lines", summary.split("\n").length, 2);
+check("it does not explain the buttons", !/deals page/i.test(summary));
+check("nor count the writes that needed no call", !summary.includes("recorded already"));
+check("it still says how many and where", /3 prices need your call/.test(summary));
 
 // ⚠️ ONE message per scan, linking to the page — never one per pick. 16 notifications
 // from a single run is what prompted this, and a muted bot loses the daily digest too.
