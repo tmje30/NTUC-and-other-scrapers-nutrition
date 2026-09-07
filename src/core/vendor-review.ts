@@ -201,8 +201,35 @@ const collapse = (s: string) => String(s ?? "").replace(/\s+/g, " ").trim();
  * dominate. `marketplaceSize` rejects that title as a range; this function said it was
  * fine. Two range detectors that disagree are worse than one.
  */
+/**
+ * ⚠️ **The leading `(?<![a-z0-9.])` is load-bearing.** Without it the low number can be
+ * the tail of a WORD: FairPrice's `…-am-spf50-52ml` matched "50-52ml" and read SPF50 as
+ * the bottom of a range, which then recorded a 52 ml bottle as 50 ml. A range bound is a
+ * number, not the end of `spf50`.
+ */
 const SIZE_RANGE_RE =
-	/\d+(?:\.\d+)?\s*[-–]\s*\d+(?:\.\d+)?\s*-?\s*(?:g|gm|gram|kg|ml|l|lt|litre|liter|lbs?|pounds?|ozs?)\b/i;
+	/(?<![a-z0-9.])(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)\s*-?\s*(g|gm|gram|kg|ml|l|lt|litre|liter|lbs?|pounds?|ozs?)\b/i;
+
+/**
+ * How far apart the two ends of a REAL pack-size range can be.
+ *
+ * ⚠️ **A heuristic fitted to evidence, not a law** — measured over the six ranges the
+ * 2026-09-06 sweep actually produced, plus the `1.6-5 LBS` Carousell case this module
+ * already treats as genuine:
+ *
+ * | slug | spread | verdict |
+ * | --- | --- | --- |
+ * | `australia-china-carrots-850-900-g` | 1.06x | real |
+ * | `china-purple-cabbage-600-700-g` | 1.17x | real |
+ * | `1.6-5 LBS` | 3.1x | real (Carousell) |
+ * | `osk-…-pu-er-50-x-1-5g` | 5x | **50 x 1.5g**, a multipack |
+ * | `…-cavendish-banana-1-12-kg` | 12x | **1.12 kg**, a decimal written as a hyphen |
+ *
+ * A tolerance on a bag of carrots is a few percent. An order of magnitude is a slug
+ * gluing two unrelated numbers together, and the shop that writes decimals as hyphens is
+ * the same one this module already warns about two paragraphs down.
+ */
+const MAX_RANGE_SPREAD = 4;
 
 /**
  * The range a listing states, tidied for display — `850 - 900g` — or null.
@@ -219,12 +246,14 @@ const SIZE_RANGE_RE =
 export function sizeRangeIn(text: string): string | null {
 	const m = SIZE_RANGE_RE.exec(String(text ?? "").replace(/-/g, "-"));
 	if (!m) return null;
-	const [lo, hi] = m[0]
-		.replace(/\s+/g, "")
-		// The slug's hyphen before the UNIT is a separator, not a minus: `12-15-kg`.
-		.replace(/-(?=[a-z])/i, "")
-		.split(/[-–]/);
-	return lo && hi ? `${lo} - ${hi}` : null;
+	const lo = Number(m[1]);
+	const hi = Number(m[2]);
+	// ⚠️ Ascending, and not by an order of magnitude — see `MAX_RANGE_SPREAD`. Equal ends
+	// are not a range either: `gardenia-white-bread-jumbo-600-600-g` is the product name
+	// "Jumbo 600" sitting next to a 600 g pack, and reading it as 600-to-600 invented a
+	// range where the slug states a plain size.
+	if (!(hi > lo) || hi / lo > MAX_RANGE_SPREAD) return null;
+	return `${m[1]} - ${m[2]}${m[3]}`;
 }
 
 export function statesSizeRange(text: string): boolean {

@@ -678,3 +678,25 @@ const broken = renderReviewPage(
 // ⚠️ The rendered element, not the class name — the stylesheet mentions .cmp-h too.
 check("a reason with no figures renders nothing rather than throwing", !broken.includes("<div class=\"cmp-h\">"));
 check("and the rest of the card still renders", broken.includes("Tate and Lyle Dark Muscovado Sugar"));
+
+describe("a slug's hyphens are not always a range — measured on the 2026-09-06 sweep");
+
+// The two REAL ranges Sheng Siong publishes, which is what the feature is for.
+eq("a genuine tolerance survives", sizeRangeIn("shengsiong.com.sg/product/australia-china-carrots-850-900-g"), "850 - 900g");
+eq("and its low end is what gets recorded", statedRangeLow({ url: "…/australia-china-carrots-850-900-g" }), 850);
+eq("so does the cabbage", sizeRangeIn("…/china-purple-cabbage-600-700-g"), "600 - 700g");
+
+// ⚠️ Four slugs that are NOT ranges, every one produced by a real sweep. Before this,
+// each added a false "pack size is a RANGE" question — and worse, the low-end rule then
+// wrote the wrong pack size from it.
+check(
+	"SPF50 is not the bottom of a range",
+	sizeRangeIn("…/cerave-facial-moisturising-lotion-am-spf50-52ml-13270899") === null,
+);
+check("a product named Jumbo 600 beside a 600g pack is not 600-to-600", sizeRangeIn("…/gardenia-white-bread-jumbo-600-600-g") === null);
+check("1.12 kg written with a hyphen is not 1 to 12 kg", sizeRangeIn("…/ecuador-philippines-indonesia-cavendish-banana-1-12-kg") === null);
+check("50 x 1.5g is a multipack, not 1 to 5 grams", sizeRangeIn("…/osk-new-family-japan-roast-tea-pu-er-50-x-1-5g") === null);
+
+// ⚠️ The canonical Carousell hazard this module already treats as genuine stays genuine —
+// 3.1x is a wide range, but it is a range someone actually typed.
+eq("a wide but real stated range is kept", sizeRangeIn("Titan Whey 1.6-5 LBS"), "1.6 - 5LBS");
