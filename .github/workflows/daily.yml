@@ -160,7 +160,22 @@ jobs:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
+      # ⚠️⚠️ **`ref` is load-bearing for every caller that COMMITS before calling.**
+      # A bare checkout takes `github.sha` — the branch tip when the run was triggered.
+      # `vendor-sweep.yml` pushes the review queue during its sweep and then calls this
+      # workflow, so a bare checkout rebuilds the page from the queue as it was BEFORE
+      # the sweep: the site ends up exactly one sweep behind.
+      #
+      # Measured 2026-09-07, immediately after the publish job was added — the deployed
+      # page matched the previous queue exactly and the current one not at all, with
+      # `Oil (Bran)` queued in the repo and absent from the page.
+      #
+      # ⚠️ `price-new-items.yml` has the same shape (tg-drain commits, then `rebuild`
+      # calls this) so it should be fixed by the same line, but that path has NOT been
+      # observed failing — it is reasoning from the structure, not a measurement.
       - uses: actions/checkout@v7
+        with:
+          ref: main
 
       # ⚠️ FIRST, so a drill costs seconds rather than a full scan and a Pages
       # deploy. Everything below it is skipped once this fails.
