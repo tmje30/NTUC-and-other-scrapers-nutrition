@@ -704,3 +704,16 @@ check("50 x 1.5g is a multipack, not 1 to 5 grams", sizeRangeIn("…/osk-new-fam
 // ⚠️ The canonical Carousell hazard this module already treats as genuine stays genuine —
 // 3.1x is a wide range, but it is a range someone actually typed.
 eq("a wide but real stated range is kept", sizeRangeIn("Titan Whey 1.6-5 LBS"), "1.6 - 5LBS");
+
+describe("the counter watches for removed cards, not for its own writes");
+
+const script = renderReviewPage([pend({ reasons: [] })] as any, { repo: "o/r" });
+// ⚠️⚠️ The page hung on 2026-09-07 because this observer watched the SUBTREE: writing
+// the count is itself a mutation, so it re-triggered on its own write and spun forever.
+// It did not even need a card removed to start — the one-tap script paints its label on
+// load and that was enough. Cards are direct children of body, so childList alone sees
+// every removal while the counter and the toggle, both one level down, stay invisible.
+check("the observer does not watch the subtree", !/observe\(document\.body, \{ childList: true, subtree/.test(script));
+check("it still watches for children being removed", script.includes("observe(document.body, { childList: true })"));
+// The second lock on the same door: no write at all when the number has not changed.
+check("and it does not write an unchanged count", /if \(n === last\) return;/.test(script));

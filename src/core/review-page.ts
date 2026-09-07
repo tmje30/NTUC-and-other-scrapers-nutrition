@@ -409,15 +409,29 @@ ${githubOneTapScript({ repo: o.repo })}
   //
   // Counted in QUESTIONS, not cards: a deck is one card holding several. A page with no
   // MutationObserver just keeps the number it was built with, which is what it did before.
+  //
+  // ⚠️⚠️ NO subtree, and the page hanging is why. Writing the count is itself a DOM
+  // mutation, so a subtree observer on body re-triggers on its own write and spins
+  // forever. It did not even need a card to be removed to start: the one-tap script
+  // paints its own label on load, this fired on that, and the tab locked up before
+  // anything could be tapped (reported 2026-09-07, "Page Unresponsive").
+  //
+  // Cards are DIRECT children of body, so plain childList sees every removal, while the
+  // two things that rewrite text — this counter inside p.sub and the one-tap toggle
+  // inside p.foot — are one level down and invisible to it. The equality guard below is
+  // the second lock on the same door. (No backticks in here: template literal.)
   var label = document.getElementById("waiting");
   if (!label || !window.MutationObserver) return;
+  var last = null;
   var recount = function () {
-    label.textContent = String(
+    var n =
       document.querySelectorAll(".deck .slide").length +
-      document.querySelectorAll(".card:not(.deck)").length
-    );
+      document.querySelectorAll(".card:not(.deck)").length;
+    if (n === last) return;
+    last = n;
+    label.textContent = String(n);
   };
-  new MutationObserver(recount).observe(document.body, { childList: true, subtree: true });
+  new MutationObserver(recount).observe(document.body, { childList: true });
 })();
 </script>
 </body></html>`;
