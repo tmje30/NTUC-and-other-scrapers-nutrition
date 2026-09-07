@@ -1,7 +1,23 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-16T05:40:11.724Z",
+  "updatedAt": "2026-09-07T03:50:44.829Z",
   "entries": [
+    {
+      "id": "stock-cube-sheng-siong-ikan-bilis-stock-cubes-202609070350",
+      "ingredientId": "39869a18-4fe7-80f0-a7d6-f64d82bb05a1",
+      "ingredientName": "Stock cubes (120g)[Knorr]",
+      "key": "stock cube",
+      "store": "Sheng Siong",
+      "product": "Ikan Bilis Stock Cubes",
+      "priceSgd": 1.5,
+      "packSizeG": 60,
+      "unitCount": 6,
+      "volumetric": false,
+      "url": "https://shengsiong.com.sg/product/maggi-ikan-bilis-stock-cubes-6-x-10-g",
+      "listTitle": "Stock cubes (120g)[Knorr] (6 pcs) [Maggi]",
+      "addedAt": "2026-09-07T03:50:44.829Z",
+      "outcome": "open"
+    },
     {
       "id": "frozen-vegetabl-sheng-siong-frozen-mixed-vegetab-202608160540",
       "ingredientId": "34b69a18-4fe7-80d2-b17d-d4167b9113c4",
