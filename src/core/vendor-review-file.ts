@@ -1,7 +1,7 @@
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { EMPTY_REVIEW, type VendorReviewFile } from "./vendor-review.js";
+import { EMPTY_REVIEW, withLegacyPerFields, type VendorReviewFile } from "./vendor-review.js";
 
 /**
  * Where price-book review state lives: `data/vendor-review.json`, committed to the repo.
@@ -26,7 +26,9 @@ export async function readVendorReview(path = VENDOR_REVIEW_PATH): Promise<Vendo
 	try {
 		const parsed = JSON.parse(await readFile(path, "utf8"));
 		if (!parsed || typeof parsed !== "object") return EMPTY_REVIEW;
-		return {
+		// ⚠️ Field names a refactor changed are repaired HERE, once — see
+		// `withLegacyPerFields`. A rename in the source is not a rename on disk.
+		return withLegacyPerFields({
 			version: 1,
 			updatedAt: parsed.updatedAt ?? "",
 			pending: Array.isArray(parsed.pending) ? parsed.pending : [],
@@ -34,7 +36,7 @@ export async function readVendorReview(path = VENDOR_REVIEW_PATH): Promise<Vendo
 			// A snapshot of the last sweep, not queue state — carried through untouched
 			// so reading and writing the file cannot silently drop the page's data.
 			moves: parsed.moves ?? undefined,
-		};
+		});
 	} catch {
 		return EMPTY_REVIEW; // never let a bad file stop a scan
 	}

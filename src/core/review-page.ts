@@ -72,6 +72,14 @@ function unitWord(unitType: string): string {
  */
 function comparison(r: Extract<ReviewReason, { kind: "dearer-than-recorded" }>): string {
 	const per = r.perWord ?? "1000";
+	// ⚠️⚠️ **A card missing its figures renders as nothing, not as an exception.** This
+	// block builds a PAGE, and the page build runs inside the sweep: on 2026-09-06 one
+	// reason carrying pre-rename field names threw `undefined.toFixed` here and killed a
+	// live `--write` run after it had already written prices to Notion. Whatever else is
+	// wrong with one queued question, it must not be able to do that. The read boundary
+	// repairs the known case (`withLegacyPerFields`); this is the backstop for the next
+	// shape nobody predicted.
+	if (typeof r.recordedPer !== "number" || typeof r.foundPer !== "number") return "";
 	const money = (n: number) => `$${n.toFixed(2)}/${esc(per)}`;
 	const cheaper = r.foundPer < r.recordedPer;
 	return `<div class="cmp">

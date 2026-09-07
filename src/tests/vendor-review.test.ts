@@ -19,6 +19,7 @@ import {
 	sizeRangeIn,
 	statedRangeLow,
 	withPending,
+	withLegacyPerFields,
 	withRejectedPick,
 	withoutPending,
 	withoutPendingForSlot,
@@ -640,3 +641,40 @@ const one = renderReviewPage([pend({ reasons: [] })] as any, { repo: "o/r" });
 check("a single pick is not a deck", !one.includes("class=\"slide\""));
 // ⚠️ The attribute, not the bare word — the one-tap script names it in a comment.
 check("and it does not remove itself on tap", !one.includes(String.fromCharCode(100) + "ata-hide-card=" + String.fromCharCode(34)));
+
+describe("a field rename in the source is not a field rename on disk");
+
+// ⚠️ The exact shape that killed run 34044851432: a question queued BEFORE the
+// per-100 rename, carrying `recordedPer1000`/`foundPer1000`.
+const preRename: any = {
+	version: 1,
+	updatedAt: "",
+	rejected: [],
+	pending: [
+		pend({
+			reasons: [
+				{ kind: "dearer-than-recorded", recordedPer1000: 76.01, foundPer1000: 178, perWord: "kg", vendor: "My Protein", note: "x" },
+			],
+		}),
+	],
+	moves: { generatedAt: "", reconfirmed: 0, moves: [{ recordedPer1000: 1.68, foundPer1000: 1.78 }] },
+};
+const repaired: any = withLegacyPerFields(preRename);
+eq("a queued reason gains the new name", repaired.pending[0].reasons[0].recordedPer, 76.01);
+eq("both sides of it", repaired.pending[0].reasons[0].foundPer, 178);
+eq("and the moves snapshot too", repaired.moves.moves[0].foundPer, 1.78);
+
+// ⚠️ null is a REAL value — an empty slot has no recorded price — so the test must be
+// `undefined`, never falsy, or a first-price move would be rewritten as a reduction.
+const emptySlot: any = { version: 1, updatedAt: "", rejected: [], pending: [], moves: { generatedAt: "", reconfirmed: 0, moves: [{ recordedPer: null, foundPer: 2 }] } };
+check("a null recorded price survives", withLegacyPerFields(emptySlot).moves!.moves[0]!.recordedPer === null);
+
+// ⚠️ The backstop: the page build runs INSIDE the sweep, so one bad card must not be
+// able to take down a run that has already written prices to Notion.
+const broken = renderReviewPage(
+	[pend({ reasons: [{ kind: "dearer-than-recorded", perWord: "kg", note: "no figures at all" } as any] })] as any,
+	{ repo: "o/r" },
+);
+// ⚠️ The rendered element, not the class name — the stylesheet mentions .cmp-h too.
+check("a reason with no figures renders nothing rather than throwing", !broken.includes("<div class=\"cmp-h\">"));
+check("and the rest of the card still renders", broken.includes("Tate and Lyle Dark Muscovado Sugar"));

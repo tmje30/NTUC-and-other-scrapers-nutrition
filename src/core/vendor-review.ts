@@ -549,6 +549,34 @@ export interface VendorReviewFile {
 	moves?: MovesSnapshot;
 }
 
+/**
+ * Rename the two fields the 2026-09-06 per-100 change renamed, on the way IN.
+ *
+ * ⚠️⚠️ **A field rename in TypeScript is not a field rename on disk.** `recordedPer1000`
+ * and `foundPer1000` became `recordedPer`/`foundPer` in the source, and every question
+ * already sitting in `data/vendor-review.json` — 17 of them — kept the old keys. The
+ * renderer read `undefined.toFixed()` and the whole page build threw, which took down a
+ * live `--write` sweep **after** it had written prices to Notion and **before** it
+ * published the queue. Found 2026-09-06, run 34044851432.
+ *
+ * ⚠️ Applied at the READ boundary so exactly one place knows the old shape: every
+ * consumer — review page, moves page, Telegram — sees only the new names.
+ *
+ * ⚠️ `null` is a real value here (an empty slot has no recorded price), so the test is
+ * `undefined`, never falsy.
+ */
+export function withLegacyPerFields(file: VendorReviewFile): VendorReviewFile {
+	const fix = (o: unknown): void => {
+		if (!o || typeof o !== "object") return;
+		const r = o as Record<string, unknown>;
+		if (r.recordedPer === undefined && r.recordedPer1000 !== undefined) r.recordedPer = r.recordedPer1000;
+		if (r.foundPer === undefined && r.foundPer1000 !== undefined) r.foundPer = r.foundPer1000;
+	};
+	for (const p of file.pending ?? []) for (const reason of p.reasons ?? []) fix(reason);
+	for (const m of file.moves?.moves ?? []) fix(m);
+	return file;
+}
+
 export const EMPTY_REVIEW: VendorReviewFile = {
 	version: 1,
 	updatedAt: "",
