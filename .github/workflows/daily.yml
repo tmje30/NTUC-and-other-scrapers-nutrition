@@ -60,6 +60,25 @@ on:
   # so SILENTLY (204, nothing runs). A dependent job is the supported way for one
   # workflow to trigger another without minting a PAT for it.
   workflow_call:
+    inputs:
+      quiet:
+        # ⚠️ **Deploy the pages, send no deals digest.** For a caller that has already
+        # sent its own message and only needs the site rebuilt — `vendor-sweep.yml`,
+        # which pushes the review queue and then links to a page that would otherwise
+        # not change until the next morning.
+        #
+        # ⚠️ Only `workflow_call` offers this. Every other trigger leaves `inputs.quiet`
+        # empty, which is falsy, so the schedule, the Worker's rescan, the Rescan button
+        # and a manual dispatch all notify exactly as before. The digest is the point of
+        # those runs.
+        #
+        # ⚠️ It does NOT silence the failure notifier below. A quiet run that breaks is
+        # still a broken run, and the whole reason that step exists is that silence and
+        # success looked identical.
+        description: "Rebuild and deploy, but send no deals digest"
+        type: boolean
+        default: false
+        required: false
 
 # Needed for the GitHub Pages deploy. `actions: read` is what deploy-pages needs
 # to resolve the uploaded artifact by id (documented from its v4); the run has
@@ -174,6 +193,9 @@ jobs:
         uses: actions/deploy-pages@v5
 
       - name: Send Telegram summary (links to the freshly deployed page)
+        # ⚠️ Skipped only for a `quiet` caller — see the input. `inputs.quiet` is empty
+        # on every other trigger, and empty is not `true`, so the digest still goes.
+        if: ${{ inputs.quiet != true }}
         run: npm run notify
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}

@@ -134,3 +134,42 @@ jobs:
             --data-urlencode "parse_mode=HTML" \
             --data-urlencode "disable_web_page_preview=true" \
             --data-urlencode "text=${TEXT}"
+
+  # ⚠️⚠️ **The sweep pushes the queue; it does NOT publish the page.** `public/` is
+  # gitignored and rebuilt from `data/vendor-review.json` by `daily.yml`, so the page
+  # the sweep writes is a local preview on a runner that is about to be destroyed. The
+  # Telegram message links to the live page immediately — which, until this job existed,
+  # showed the PREVIOUS sweep's questions until the next morning's build, up to ~21
+  # hours later, with nothing on it saying so. Reported 2026-09-07 after a sweep whose
+  # link opened a page still offering a product the run had just retired.
+  #
+  # ⚠️ `quiet: true` — the deals digest belongs to the morning run, not to this. Without
+  # it every sweep would send a second identical digest, which is the exact bug this
+  # repo already lived through for five days (see daily.yml's schedule comment).
+  #
+  # ⚠️ A dependent job, not a `repository_dispatch`: GitHub refuses to start a workflow
+  # from a dispatch sent with a workflow's own GITHUB_TOKEN, and does so SILENTLY. Same
+  # reason `price-new-items.yml` calls daily.yml this way.
+  #
+  # ⚠️ Only after a sweep that WROTE. A report-only run changes no queue and has no page
+  # to republish, so rebuilding the whole site for it would be a full deals scan bought
+  # for nothing.
+  #
+  # ⚠️ The message still goes out a few minutes before this finishes — it is sent by the
+  # scan itself, and this job cannot start until that step has ended. The link is
+  # therefore current within the length of a build rather than the following morning.
+  publish:
+    needs: sweep
+    if: github.event_name == 'repository_dispatch' || inputs.write
+    # ⚠️ Granted HERE, not only in daily.yml. A called workflow's token is capped by the
+    # calling job's permissions, so inheriting this file's `contents: write` alone would
+    # strip `pages: write` and the deploy would fail after the expensive part was done.
+    permissions:
+      contents: read
+      actions: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/daily.yml
+    with:
+      quiet: true
+    secrets: inherit
