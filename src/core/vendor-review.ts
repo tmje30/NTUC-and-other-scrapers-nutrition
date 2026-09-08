@@ -164,6 +164,52 @@ export function dearerThanRecorded(args: {
 }
 
 /**
+ * **Two sweeps write this file, and only one of them looked at any given shop.**
+ *
+ * ⚠️⚠️ The cloud sweep covers NTUC, Sheng Siong, Guardian and My Protein; the laptop
+ * task covers Watsons, iHerb and Carousell. They overlap in time, and `commitAndPushData`
+ * resolves a rejected push by resetting to the remote and re-writing THIS RUN'S whole
+ * file — so without a merge the later pusher silently reverts the other's queue.
+ *
+ * Measured 2026-09-08: the laptop pushed `03b17f0`, re-asking three iHerb questions at
+ * `02:03:42Z` and retiring a Watsons one it had just matched. The cloud sweep's push was
+ * rejected, it reset onto that commit, re-applied its own copy — read minutes earlier —
+ * and pushed `1c766ec`, putting all three iHerb timestamps back to the previous day and
+ * resurrecting the retired Watsons card. Both runs reported success.
+ *
+ * The rule is the one the stale-question sweep already uses: **a run owns exactly the
+ * row×shop pairs it visited.** Ours wins there; theirs wins everywhere else, because a
+ * pair we did not scan is a pair we know nothing about today.
+ */
+export function mergeVendorReview(
+	theirs: VendorReviewFile,
+	mine: VendorReviewFile,
+	/** True for a question about a row×shop pair THIS run scanned. */
+	visitedPair: (q: PendingReview) => boolean,
+): VendorReviewFile {
+	const seen = new Set<string>();
+	return {
+		version: 1,
+		updatedAt: mine.updatedAt,
+		pending: [
+			...(mine.pending ?? []).filter(visitedPair),
+			...(theirs.pending ?? []).filter((q) => !visitedPair(q)),
+		],
+		// ⚠️ A standing refusal is never re-derived by a scan — it is only ever added by a
+		// tap — so the union is right and dropping either side would lose a decision.
+		rejected: [...(theirs.rejected ?? []), ...(mine.rejected ?? [])].filter((r) => {
+			const k = JSON.stringify(r);
+			if (seen.has(k)) return false;
+			seen.add(k);
+			return true;
+		}),
+		// The moves snapshot describes one sweep. Ours is the newer of the two runs that
+		// raced; theirs stands only when this run computed none.
+		...(mine.moves ? { moves: mine.moves } : theirs.moves ? { moves: theirs.moves } : {}),
+	};
+}
+
+/**
  * **The listing this slot is a RECORD of, found among what the shop returned today.**
  *
  * ⚠️ **Identity is the URL first and the shop's own product name second** — the same

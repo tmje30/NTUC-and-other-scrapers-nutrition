@@ -7,6 +7,7 @@ import {
 	REJECT_REASONS,
 	findPendingFor,
 	findRecordedListing,
+	mergeVendorReview,
 	isRejectReason,
 	isRejectedPick,
 	reasonsFor,
@@ -838,3 +839,50 @@ const bothCmp = renderReviewPage(
 check("the second slide carries the comparison block", bothCmp.includes("Dearer than current Iherb price"));
 eq("…once, on the slide that holds the reason", (bothCmp.match(/Dearer than current Iherb price/g) ?? []).length, 1);
 check("…with both figures", bothCmp.includes(">$42.13/kg<") && bothCmp.includes(">$90.38/kg<"));
+
+/**
+ * ⚠️⚠️ **The morning two sweeps reverted each other.** 2026-09-08: the laptop pushed
+ * `03b17f0`, re-asking three iHerb questions and retiring a Watsons one it had just
+ * matched; the cloud sweep's push was rejected, it reset onto that commit, re-applied its
+ * own minutes-old copy and pushed `1c766ec` — the iHerb timestamps went back a day and
+ * the retired Watsons card came back. Both runs reported success.
+ */
+describe("two sweeps race, and neither reverts the other");
+
+const q = (over: Partial<PendingReview>): PendingReview => pending({ ...over });
+const cloudPairs = new Set(["row-a|NTUC", "row-b|Guardian"]);
+const visitedPair = (p: PendingReview) => cloudPairs.has(`${p.ingredientId}|${p.vendor}`);
+
+const laptopPushed = {
+	version: 1 as const,
+	updatedAt: "2026-09-08T02:03:42.975Z",
+	pending: [
+		q({ token: "iherb-new", ingredientId: "row-c", vendor: "Iherb", askedAt: "2026-09-08T02:03:42.975Z" }),
+	],
+	rejected: [{ ingredientId: "row-z", url: "https://x.test/1", reason: "wrong-item" } as any],
+};
+const cloudHas = {
+	version: 1 as const,
+	updatedAt: "2026-09-08T02:05:00.000Z",
+	pending: [
+		q({ token: "ntuc-new", ingredientId: "row-a", vendor: "NTUC" }),
+		// The copy this run read BEFORE the laptop pushed — a day stale, and about a shop
+		// this run never scanned.
+		q({ token: "iherb-old", ingredientId: "row-c", vendor: "Iherb", askedAt: "2026-09-07T03:08:26.328Z" }),
+		q({ token: "watsons-zombie", ingredientId: "row-d", vendor: "Watsons", askedAt: "2026-09-07T03:06:10.678Z" }),
+	],
+	rejected: [],
+	moves: { generatedAt: "2026-09-08T02:05:00.000Z", reconfirmed: 56, moves: [] } as any,
+};
+
+const merged = mergeVendorReview(laptopPushed as any, cloudHas as any, visitedPair);
+const tokens = merged.pending.map((p) => p.token).sort().join(",");
+eq("the other runner's fresh question survives our push", tokens, "iherb-new,ntuc-new");
+check("…and our own stale copy of it does not", !merged.pending.some((p) => p.token === "iherb-old"));
+// ⚠️ The card the laptop had just RETIRED. Our copy still listed it, and re-applying our
+// copy wholesale is what brought it back onto the page.
+check("a question the other runner retired stays retired", !merged.pending.some((p) => p.token === "watsons-zombie"));
+check("our own pair's question is kept", merged.pending.some((p) => p.token === "ntuc-new"));
+// ⚠️ Standing refusals are only ever added by a tap, so the union is the only safe rule.
+eq("a refusal recorded by the other side is not lost", merged.rejected.length, 1);
+eq("…and the moves snapshot is this run's", merged.moves?.reconfirmed, 56);

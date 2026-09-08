@@ -37,6 +37,7 @@ import {
 	sizeText,
 	statedSizeRange,
 	findRecordedListing,
+	mergeVendorReview,
 	withPending,
 	withoutPendingForSlot,
 	type PendingReview,
@@ -836,7 +837,7 @@ async function main(): Promise<void> {
 		);
 	}
 
-	await askAboutUncertain(toAsk, review, written, gaps, questionsDropped, moves, reconfirmed);
+	await askAboutUncertain(toAsk, review, written, gaps, questionsDropped, moves, reconfirmed, visited);
 
 	console.log(
 		`\n${"─".repeat(78)}\n` +
@@ -876,6 +877,8 @@ async function askAboutUncertain(
 	moves: PriceMove[],
 	/** Written at the price already recorded — reassurance, not news. */
 	reconfirmed: number,
+	/** The row×shop pairs this run actually scanned — see `mergeVendorReview`. */
+	visited: Set<string>,
 ): Promise<void> {
 	// ⚠️ **A report-only run writes NOTHING — not Notion, and not this file either.**
 	// It has already printed every reason to the console, which is what it was run for.
@@ -996,6 +999,28 @@ async function askAboutUncertain(
 				message: review.pending.length
 					? `data: ${review.pending.length} price(s) awaiting review`
 					: `data: ${moves.length} price(s) moved`,
+				// ⚠️⚠️ **Without this the loser of a push race reverts the winner's queue.**
+				// The default recovery resets to the remote and re-writes this run's whole
+				// file, which for the shops this run never scanned is a copy read minutes ago.
+				// See `mergeVendorReview` for the morning that was measured on.
+				reapply: async (theirs, mine) => {
+					if (!theirs) return mine;
+					let t, m;
+					try {
+						t = JSON.parse(theirs);
+						m = JSON.parse(mine);
+					} catch {
+						// An unreadable side cannot be merged. Ours is the half we know is whole.
+						return mine;
+					}
+					const merged = mergeVendorReview(t, m, (q) => visited.has(`${q.ingredientId}|${q.vendor}`));
+					console.log(
+						`   merged with the other runner: ${merged.pending.length} question(s) — ` +
+							`${merged.pending.filter((q) => !visited.has(`${q.ingredientId}|${q.vendor}`)).length} of them theirs.`,
+					);
+					return `${JSON.stringify(merged, null, 2)}
+`;
+				},
 			});
 			published = true;
 		} catch (e) {
