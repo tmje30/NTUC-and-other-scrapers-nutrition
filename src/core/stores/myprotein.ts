@@ -108,7 +108,38 @@ const inStock = (n: any): boolean => {
  * NAME is only a fallback, and it goes through `marketplaceSize` rather than a local
  * regex so the multi-size and range rejections apply here too.
  */
-function variantSize(v: any): { grams: number; volumetric: boolean } | null {
+/**
+ * **The size the page shows but the JSON-LD leaves out.**
+ *
+ * ⚠️ The module's rule is unchanged — a variant whose size is not PUBLISHED is still
+ * dropped. This only widens where the published size is looked for. Measured 2026-09-08
+ * on `essential-whey-protein`: of ten in-stock variants, three carry a `weight` field
+ * (the 2.25 kg ones) and the other seven are named "Essential Whey Protein Unflavoured"
+ * with no size anywhere in the JSON-LD — while the page's own variant list names them
+ * in full, "Essential Whey Protein - 375G - 15servings - Unflavoured".
+ *
+ * ⚠️⚠️ **Dropping them is not neutral, it is biased toward the big pack.** The user's
+ * rule is cheapest per kg or litre and a smaller pack is perfectly acceptable — the size
+ * ceiling exists to stop packs being too BIG, never too small. Reading only the variants
+ * that happen to publish a `weight` meant this shop could only ever offer its bulk tubs,
+ * so a 375 g pack at a better rate per kilo would never have been seen.
+ *
+ * Keyed by the image id, which is the variant sku — the only place the two are joined in
+ * this blob. A variant whose flavour the page did not ship images for is simply absent,
+ * and falls back to the JSON-LD as before.
+ */
+export function variantTitleSizes(html: string): Map<string, string> {
+	const flat = html.replace(/\s+/g, " ");
+	const out = new Map<string, string>();
+	const re = new RegExp("\"title\":\"([^\"]{4,160})\",[^\"]{0,20}\"images\":[^\"]{0,20}\"original\":\"[^\"]*?productimg.original.([0-9]{6,10})", "g");
+	for (const m of flat.matchAll(re)) if (!out.has(m[2]!)) out.set(m[2]!, m[1]!);
+	return out;
+}
+
+function variantSize(
+	v: any,
+	titles: Map<string, string> = new Map(),
+): { grams: number; volumetric: boolean } | null {
 	const value = Number(v?.weight?.value);
 	const unit = String(v?.weight?.unitText ?? "").trim();
 	if (Number.isFinite(value) && value > 0 && unit) {
@@ -116,12 +147,19 @@ function variantSize(v: any): { grams: number; volumetric: boolean } | null {
 		if (parsed.ok) return { grams: parsed.grams, volumetric: parsed.volumetric };
 	}
 	const fromName = marketplaceSize(String(v?.name ?? ""));
-	return fromName.ok ? { grams: fromName.grams, volumetric: fromName.volumetric } : null;
+	if (fromName.ok) return { grams: fromName.grams, volumetric: fromName.volumetric };
+	// Last, and only for a variant the two sources above could not size: the page's own
+	// display title for this sku.
+	const shown = titles.get(String(v?.sku ?? ""));
+	if (!shown) return null;
+	const fromShown = marketplaceSize(shown);
+	return fromShown.ok ? { grams: fromShown.grams, volumetric: fromShown.volumetric } : null;
 }
 
 /** Flatten one product page's ProductGroup into one StoreProduct per usable variant. */
 function productsFromPage(html: string, pageUrl: string): StoreProduct[] {
 	const blocks = jsonLdBlocks(html);
+	const titles = variantTitleSizes(html);
 	const out: StoreProduct[] = [];
 
 	for (const block of blocks) {
@@ -134,7 +172,7 @@ function productsFromPage(html: string, pageUrl: string): StoreProduct[] {
 				if (!inStock(v)) continue;
 				const price = offerPrice(v);
 				if (price == null) continue;
-				const size = variantSize(v);
+				const size = variantSize(v, titles);
 				if (!size) continue; // ⚠️ no stated weight → no data. See the module note.
 
 				const name = String(v.name ?? group.name ?? "").trim();
