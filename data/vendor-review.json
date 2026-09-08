@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-08T04:54:35.062Z",
+  "updatedAt": "2026-09-08T06:05:53.513Z",
   "pending": [
     {
       "token": "7jj9xu",
@@ -222,56 +222,6 @@
       "askedAt": "2026-09-07T03:08:26.331Z"
     },
     {
-      "token": "1x0vjf",
-      "ingredientId": "3b269a18-4fe7-81d4-8025-e6004ddc5b24",
-      "ingredientName": "AM facial moisturizing lotion (SPF 30) [cerave]",
-      "key": "am facial moisturizing lotion",
-      "unitType": "By ml",
-      "vendor": "NTUC",
-      "slotN": 1,
-      "brand": "cerave",
-      "priceSgd": 30.9,
-      "size": 52,
-      "url": "https://www.fairprice.com.sg/product/cerave-facial-moisturising-lotion-am-spf50-52ml-13270899",
-      "itemName": "Cerave Facial Moisturising Lotion - AM SPF50",
-      "statedSize": "52ml",
-      "brandName": "CeraVe",
-      "perLabel": "$594.23/L",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 2 of 2, offered as a suggestion. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 1,
-      "askedAt": "2026-09-08T02:18:10.390Z"
-    },
-    {
-      "token": "dyg505",
-      "ingredientId": "3b269a18-4fe7-81d4-8025-e6004ddc5b24",
-      "ingredientName": "AM facial moisturizing lotion (SPF 30) [cerave]",
-      "key": "am facial moisturizing lotion",
-      "unitType": "By ml",
-      "vendor": "NTUC",
-      "slotN": 1,
-      "brand": "cerave",
-      "priceSgd": 29.9,
-      "size": 52,
-      "url": "https://www.fairprice.com.sg/product/cerave-facial-moisturising-lotion-am-52ml-13245751",
-      "itemName": "Cerave Facial Moisturising Lotion - AM",
-      "statedSize": "52ml",
-      "brandName": "CeraVe",
-      "perLabel": "$575.00/L",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is the closest of 2 offered, best first. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-08T02:18:10.391Z"
-    },
-    {
       "token": "lo4o3w",
       "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
       "ingredientName": "Sensitivity & Gum Toothpaste - Original",
@@ -292,7 +242,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-09-08T02:19:26.869Z"
+      "askedAt": "2026-09-08T05:57:50.845Z"
     },
     {
       "token": "zq95y9",
@@ -315,7 +265,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-09-08T02:19:26.869Z"
+      "askedAt": "2026-09-08T05:57:50.845Z"
     },
     {
       "token": "9cowqx",
@@ -338,7 +288,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T02:19:26.869Z"
+      "askedAt": "2026-09-08T05:57:50.845Z"
     },
     {
       "token": "nlcf2f",
@@ -370,7 +320,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T02:19:42.944Z"
+      "askedAt": "2026-09-08T05:58:04.066Z"
     },
     {
       "token": "yrxust",
@@ -399,7 +349,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T02:19:59.284Z"
+      "askedAt": "2026-09-08T05:58:18.988Z"
     },
     {
       "token": "lvv3y0",
@@ -428,7 +378,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T02:20:08.175Z"
+      "askedAt": "2026-09-08T05:58:26.425Z"
     },
     {
       "token": "t5i5hm",
@@ -459,7 +409,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T02:20:15.670Z"
+      "askedAt": "2026-09-08T05:58:34.468Z"
     },
     {
       "token": "qb1z8m",
@@ -490,63 +440,33 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T02:20:23.640Z"
+      "askedAt": "2026-09-08T05:58:46.440Z"
     },
     {
-      "token": "us1oig",
-      "ingredientId": "36e69a18-4fe7-802b-a8b0-c58108df75df",
-      "ingredientName": "Milk  (Fresh) (Skimmed)",
-      "key": "milk",
-      "unitType": "By ml",
-      "vendor": "Sheng Siong",
-      "slotN": 2,
-      "priceSgd": 6.97,
-      "size": 2000,
-      "url": "https://shengsiong.com.sg/product/meiji-pasteurized-skimmed-milk-2-l-3128883",
-      "itemName": "Pasteurized Skimmed Milk",
-      "statedSize": "2L",
-      "brandName": "Meiji",
-      "perLabel": "$3.48/L",
+      "token": "o5vmzz",
+      "ingredientId": "37369a18-4fe7-80c0-bae0-f52639895b21",
+      "ingredientName": "whey (Essential) [MyProtein]",
+      "key": "whei",
+      "unitType": "By Gram",
+      "vendor": "My Protein",
+      "slotN": 3,
+      "brand": "myprotein",
+      "priceSgd": 349,
+      "size": 2250,
+      "url": "https://www.myprotein.com.sg/p/sports-nutrition/essential-whey-protein/11052699/?variation=17784492",
+      "itemName": "Essential Whey Protein 2.25kg - 90servings Strawberry Cream",
+      "statedSize": "2.25kg",
+      "brandName": "Myprotein",
+      "perLabel": "$155.11/kg",
       "reasons": [
         {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 2 of 2, offered as a suggestion. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 1,
-      "askedAt": "2026-09-08T02:21:55.031Z"
-    },
-    {
-      "token": "r9mgtc",
-      "ingredientId": "36e69a18-4fe7-802b-a8b0-c58108df75df",
-      "ingredientName": "Milk  (Fresh) (Skimmed)",
-      "key": "milk",
-      "unitType": "By ml",
-      "vendor": "Sheng Siong",
-      "slotN": 2,
-      "priceSgd": 3.51,
-      "size": 1000,
-      "url": "https://shengsiong.com.sg/product/greenfields-skimmed-milk-1-l",
-      "itemName": "Skimmed Milk",
-      "statedSize": "1L",
-      "brandName": "Greenfields",
-      "perLabel": "$3.51/L",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is the closest of 2 offered, best first. Accept only if it is the same thing."
-        },
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 3.485,
-          "foundPer": 3.51,
-          "perWord": "L",
-          "vendor": "Sheng Siong",
-          "note": "DEARER than the Sheng Siong price already recorded: $6.97 / 2000ml = $3.48/L → $3.51 / 1000ml = $3.51/L. Not written — accept only if the old price is gone."
+          "kind": "outlier",
+          "factor": 4.847222222222222,
+          "note": "4.8× DEARER than this row's other shop"
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T02:21:55.032Z"
+      "askedAt": "2026-09-08T05:59:34.459Z"
     },
     {
       "token": "84vaf7",
@@ -571,7 +491,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T02:22:00.577Z"
+      "askedAt": "2026-09-08T06:00:32.773Z"
     },
     {
       "token": "j017sn",
@@ -595,7 +515,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T02:22:04.180Z"
+      "askedAt": "2026-09-08T06:00:35.468Z"
     },
     {
       "token": "vvj2kl",
@@ -619,7 +539,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-09-08T02:22:23.229Z"
+      "askedAt": "2026-09-08T06:00:58.260Z"
     },
     {
       "token": "9oabdq",
@@ -643,7 +563,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-09-08T02:22:23.229Z"
+      "askedAt": "2026-09-08T06:00:58.260Z"
     },
     {
       "token": "mkfpys",
@@ -667,7 +587,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T02:22:23.229Z"
+      "askedAt": "2026-09-08T06:00:58.260Z"
     },
     {
       "token": "savzko",
@@ -688,10 +608,18 @@
         {
           "kind": "near-miss",
           "note": "no product here MATCHED this row — this is alternative 2 of 3, offered as a suggestion. Accept only if it is the same thing."
+        },
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 6.9,
+          "foundPer": 7.36,
+          "perWord": "kg",
+          "vendor": "NTUC",
+          "note": "DEARER than the NTUC price already recorded: $6.90 / 1000g = $6.90/kg → $3.68 / 500g = $7.36/kg. Not written — accept only if the old price is gone."
         }
       ],
       "rank": 1,
-      "askedAt": "2026-09-08T02:22:42.208Z"
+      "askedAt": "2026-09-08T06:01:16.782Z"
     },
     {
       "token": "qij3fi",
@@ -712,10 +640,18 @@
         {
           "kind": "near-miss",
           "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
+        },
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 6.9,
+          "foundPer": 10.4,
+          "perWord": "kg",
+          "vendor": "NTUC",
+          "note": "DEARER than the NTUC price already recorded: $6.90 / 1000g = $6.90/kg → $5.20 / 500g = $10.40/kg. Not written — accept only if the old price is gone."
         }
       ],
       "rank": 2,
-      "askedAt": "2026-09-08T02:22:42.208Z"
+      "askedAt": "2026-09-08T06:01:16.782Z"
     },
     {
       "token": "mn5lav",
@@ -747,7 +683,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T02:22:42.208Z"
+      "askedAt": "2026-09-08T06:01:16.782Z"
     },
     {
       "token": "2zosbs",
@@ -771,7 +707,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-09-08T02:22:50.262Z"
+      "askedAt": "2026-09-08T06:01:25.050Z"
     },
     {
       "token": "tbie89",
@@ -795,7 +731,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T02:22:50.263Z"
+      "askedAt": "2026-09-08T06:01:25.050Z"
     },
     {
       "token": "sqazcl",
@@ -823,7 +759,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T02:22:56.738Z"
+      "askedAt": "2026-09-08T06:01:31.633Z"
     },
     {
       "token": "qpptkl",
@@ -851,7 +787,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T02:22:58.231Z"
+      "askedAt": "2026-09-08T06:01:33.809Z"
     },
     {
       "token": "bh6y0n",
@@ -879,7 +815,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T02:24:01.090Z"
+      "askedAt": "2026-09-08T06:02:47.583Z"
     },
     {
       "token": "915b8x",
@@ -907,7 +843,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T02:24:11.935Z"
+      "askedAt": "2026-09-08T06:02:58.528Z"
     },
     {
       "token": "9evl12",
@@ -932,7 +868,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T02:24:45.366Z"
+      "askedAt": "2026-09-08T06:03:39.938Z"
     },
     {
       "token": "k2ioco",
@@ -960,7 +896,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T02:24:48.462Z"
+      "askedAt": "2026-09-08T06:03:45.427Z"
     },
     {
       "token": "qqp3jo",
@@ -985,7 +921,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-09-08T02:25:08.900Z"
+      "askedAt": "2026-09-08T06:04:04.065Z"
     },
     {
       "token": "hczc9b",
@@ -1010,7 +946,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-09-08T02:25:08.900Z"
+      "askedAt": "2026-09-08T06:04:04.065Z"
     },
     {
       "token": "08ashh",
@@ -1035,35 +971,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T02:25:08.901Z"
-    },
-    {
-      "token": "iddgb9",
-      "ingredientId": "34b69a18-4fe7-8020-b136-ebb02d41c6ef",
-      "ingredientName": "Milk (Fresh) (Normal)",
-      "key": "milk",
-      "unitType": "By ml",
-      "vendor": "NTUC",
-      "slotN": 1,
-      "priceSgd": 6.7,
-      "size": 2000,
-      "url": "https://www.fairprice.com.sg/product/farm-fresh-milk-pure-2l-13287436",
-      "itemName": "[BCRS] Farm Fresh Milk - Pure",
-      "statedSize": "2L",
-      "brandName": "Farm Fresh",
-      "perLabel": "$3.35/L",
-      "reasons": [
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 3.201058201058201,
-          "foundPer": 3.35,
-          "perWord": "L",
-          "vendor": "NTUC",
-          "note": "DEARER than the NTUC price already recorded: $6.05 / 1890ml = $3.20/L → $6.70 / 2000ml = $3.35/L. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-08T02:25:45.561Z"
+      "askedAt": "2026-09-08T06:04:04.066Z"
     },
     {
       "token": "atcu4x",
@@ -1091,7 +999,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T02:25:49.940Z"
+      "askedAt": "2026-09-08T06:04:47.185Z"
     },
     {
       "token": "va71ta",
@@ -1124,7 +1032,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T02:26:03.740Z"
+      "askedAt": "2026-09-08T06:04:54.053Z"
     },
     {
       "token": "jxyxog",
@@ -1152,7 +1060,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T02:26:14.462Z"
+      "askedAt": "2026-09-08T06:05:05.223Z"
     },
     {
       "token": "5ouerp",
@@ -1180,7 +1088,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T02:26:20.920Z"
+      "askedAt": "2026-09-08T06:05:10.427Z"
     },
     {
       "token": "zlg42m",
@@ -1208,7 +1116,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T02:26:34.668Z"
+      "askedAt": "2026-09-08T06:05:27.144Z"
     },
     {
       "token": "24u7ly",
@@ -1232,7 +1140,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-09-08T02:26:55.081Z"
+      "askedAt": "2026-09-08T06:05:47.217Z"
     },
     {
       "token": "eo4dum",
@@ -1256,7 +1164,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-09-08T02:26:55.082Z"
+      "askedAt": "2026-09-08T06:05:47.218Z"
     },
     {
       "token": "1p7ijy",
@@ -1280,35 +1188,35 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T02:26:55.082Z"
+      "askedAt": "2026-09-08T06:05:47.218Z"
     },
     {
-      "token": "vwk3b7",
+      "token": "btpm5n",
       "ingredientId": "34b69a18-4fe7-807d-8439-fea7f149877f",
       "ingredientName": "Eggs, Whole, small (1650g), {cheap}",
       "key": "egg",
       "unitType": "By Unit",
       "vendor": "NTUC",
       "slotN": 1,
-      "priceSgd": 4.7,
-      "size": 15,
-      "url": "https://www.fairprice.com.sg/product/13065350",
-      "itemName": "Dasoon Premium Fresh Eggs",
-      "statedSize": "15 pcs",
-      "brandName": "Dasoon",
-      "perLabel": "$2.85/kg",
+      "priceSgd": 3.75,
+      "size": 10,
+      "url": "https://www.fairprice.com.sg/product/283672",
+      "itemName": "Chew's Fresh Eggs with Vitamin E",
+      "statedSize": "10 pcs",
+      "brandName": "Chew'S",
+      "perLabel": "$2.27/kg",
       "reasons": [
         {
           "kind": "dearer-than-recorded",
           "recordedPer": 28.500000000000007,
-          "foundPer": 31.333333333333336,
+          "foundPer": 37.5,
           "perWord": "100 pcs",
           "vendor": "NTUC",
-          "note": "DEARER than the NTUC price already recorded: $2.85 / 10 pcs = $28.50/100 pcs → $4.70 / 15 pcs = $31.33/100 pcs. Not written — accept only if the old price is gone."
+          "note": "DEARER than the NTUC price already recorded: $2.85 / 10 pcs = $28.50/100 pcs → $3.75 / 10 pcs = $37.50/100 pcs. Not written — accept only if the old price is gone."
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T02:26:57.819Z"
+      "askedAt": "2026-09-08T06:05:50.615Z"
     },
     {
       "token": "1gqw65",
@@ -1336,7 +1244,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T02:27:01.290Z"
+      "askedAt": "2026-09-08T06:05:53.513Z"
     }
   ],
   "rejected": [
@@ -1450,5 +1358,10 @@
       "why": "6.6× cheaper than this row's other shop",
       "rejectedAt": "2026-08-12T00:52:05.250Z"
     }
-  ]
+  ],
+  "moves": {
+    "generatedAt": "2026-09-08T06:05:53.514Z",
+    "reconfirmed": 57,
+    "moves": []
+  }
 }
