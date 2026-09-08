@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-07T09:11:48.377Z",
+  "updatedAt": "2026-09-08T00:41:15.745Z",
   "pending": [
     {
       "token": "7jj9xu",
@@ -244,7 +244,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-09-07T09:02:53.030Z"
+      "askedAt": "2026-09-08T00:32:11.067Z"
     },
     {
       "token": "dyg505",
@@ -269,31 +269,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T09:02:53.031Z"
-    },
-    {
-      "token": "7mrx2m",
-      "ingredientId": "3b269a18-4fe7-81d4-8025-e6004ddc5b24",
-      "ingredientName": "AM facial moisturizing lotion (SPF 30) [cerave]",
-      "key": "am facial moisturizing lotion",
-      "unitType": "By ml",
-      "vendor": "Guardian",
-      "slotN": 4,
-      "brand": "cerave",
-      "priceSgd": 30.9,
-      "size": 52,
-      "url": "https://www.guardian.com.sg/crv-am-facial-moisturising-lot-635747.html",
-      "itemName": "CeraVe AM Facial Moisturizing Lotion SPF50 52ML",
-      "statedSize": "52ml",
-      "perLabel": "$594.23/L",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 2 of 2, offered as a suggestion. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 1,
-      "askedAt": "2026-09-07T09:03:10.923Z"
+      "askedAt": "2026-09-08T00:32:11.068Z"
     },
     {
       "token": "gjo3x2",
@@ -313,11 +289,43 @@
       "reasons": [
         {
           "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 2 of 2, offered as a suggestion. Accept only if it is the same thing."
+        }
+      ],
+      "rank": 1,
+      "askedAt": "2026-09-08T00:32:27.022Z"
+    },
+    {
+      "token": "7mrx2m",
+      "ingredientId": "3b269a18-4fe7-81d4-8025-e6004ddc5b24",
+      "ingredientName": "AM facial moisturizing lotion (SPF 30) [cerave]",
+      "key": "am facial moisturizing lotion",
+      "unitType": "By ml",
+      "vendor": "Guardian",
+      "slotN": 4,
+      "brand": "cerave",
+      "priceSgd": 30.9,
+      "size": 52,
+      "url": "https://www.guardian.com.sg/crv-am-facial-moisturising-lot-635747.html",
+      "itemName": "CeraVe AM Facial Moisturizing Lotion SPF50 52ML",
+      "statedSize": "52ml",
+      "perLabel": "$594.23/L",
+      "reasons": [
+        {
+          "kind": "near-miss",
           "note": "no product here MATCHED this row — this is the closest of 2 offered, best first. Accept only if it is the same thing."
+        },
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 575,
+          "foundPer": 594.2307692307693,
+          "perWord": "L",
+          "vendor": "Guardian",
+          "note": "DEARER than the Guardian price already recorded: $29.90 / 52ml = $575.00/L → $30.90 / 52ml = $594.23/L. Not written — accept only if the old price is gone."
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T09:03:10.924Z"
+      "askedAt": "2026-09-08T00:32:27.023Z"
     },
     {
       "token": "lo4o3w",
@@ -340,7 +348,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-09-07T09:04:12.117Z"
+      "askedAt": "2026-09-08T00:33:28.002Z"
     },
     {
       "token": "zq95y9",
@@ -363,7 +371,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-09-07T09:04:12.117Z"
+      "askedAt": "2026-09-08T00:33:28.003Z"
     },
     {
       "token": "9cowqx",
@@ -386,7 +394,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T09:04:12.117Z"
+      "askedAt": "2026-09-08T00:33:28.003Z"
     },
     {
       "token": "nlcf2f",
@@ -418,7 +426,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T09:04:31.316Z"
+      "askedAt": "2026-09-08T00:33:42.493Z"
     },
     {
       "token": "yrxust",
@@ -447,7 +455,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T09:04:47.537Z"
+      "askedAt": "2026-09-08T00:33:59.823Z"
     },
     {
       "token": "lvv3y0",
@@ -476,7 +484,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T09:04:55.626Z"
+      "askedAt": "2026-09-08T00:34:08.721Z"
     },
     {
       "token": "t5i5hm",
@@ -507,7 +515,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T09:05:04.784Z"
+      "askedAt": "2026-09-08T00:34:16.982Z"
     },
     {
       "token": "qb1z8m",
@@ -538,7 +546,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T09:05:10.759Z"
+      "askedAt": "2026-09-08T00:34:24.843Z"
     },
     {
       "token": "9v70vq",
@@ -572,7 +580,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T09:05:52.312Z"
+      "askedAt": "2026-09-08T00:35:12.026Z"
     },
     {
       "token": "us1oig",
@@ -596,7 +604,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-09-07T09:06:37.755Z"
+      "askedAt": "2026-09-08T00:36:05.716Z"
     },
     {
       "token": "r9mgtc",
@@ -628,7 +636,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T09:06:37.755Z"
+      "askedAt": "2026-09-08T00:36:05.716Z"
     },
     {
       "token": "84vaf7",
@@ -653,7 +661,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T09:06:43.513Z"
+      "askedAt": "2026-09-08T00:36:11.337Z"
     },
     {
       "token": "j017sn",
@@ -677,7 +685,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T09:06:46.382Z"
+      "askedAt": "2026-09-08T00:36:15.231Z"
     },
     {
       "token": "vvj2kl",
@@ -701,7 +709,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-09-07T09:07:05.887Z"
+      "askedAt": "2026-09-08T00:36:29.174Z"
     },
     {
       "token": "9oabdq",
@@ -725,7 +733,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-09-07T09:07:05.887Z"
+      "askedAt": "2026-09-08T00:36:29.174Z"
     },
     {
       "token": "mkfpys",
@@ -749,7 +757,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T09:07:05.887Z"
+      "askedAt": "2026-09-08T00:36:29.174Z"
     },
     {
       "token": "savzko",
@@ -773,7 +781,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-09-07T09:07:26.093Z"
+      "askedAt": "2026-09-08T00:36:48.653Z"
     },
     {
       "token": "qij3fi",
@@ -797,7 +805,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-09-07T09:07:26.093Z"
+      "askedAt": "2026-09-08T00:36:48.653Z"
     },
     {
       "token": "mn5lav",
@@ -829,7 +837,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T09:07:26.094Z"
+      "askedAt": "2026-09-08T00:36:48.653Z"
     },
     {
       "token": "2zosbs",
@@ -853,7 +861,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-09-07T09:07:33.998Z"
+      "askedAt": "2026-09-08T00:36:56.440Z"
     },
     {
       "token": "tbie89",
@@ -877,7 +885,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T09:07:33.999Z"
+      "askedAt": "2026-09-08T00:36:56.441Z"
     },
     {
       "token": "sqazcl",
@@ -905,7 +913,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T09:07:40.827Z"
+      "askedAt": "2026-09-08T00:37:03.088Z"
     },
     {
       "token": "qpptkl",
@@ -933,7 +941,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T09:07:42.118Z"
+      "askedAt": "2026-09-08T00:37:04.715Z"
     },
     {
       "token": "bh6y0n",
@@ -961,7 +969,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T09:08:48.947Z"
+      "askedAt": "2026-09-08T00:38:14.058Z"
     },
     {
       "token": "915b8x",
@@ -989,7 +997,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T09:08:59.854Z"
+      "askedAt": "2026-09-08T00:38:23.867Z"
     },
     {
       "token": "9evl12",
@@ -1014,7 +1022,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T09:09:40.490Z"
+      "askedAt": "2026-09-08T00:39:10.906Z"
     },
     {
       "token": "k2ioco",
@@ -1042,7 +1050,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T09:09:43.031Z"
+      "askedAt": "2026-09-08T00:39:13.054Z"
     },
     {
       "token": "qqp3jo",
@@ -1067,7 +1075,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-09-07T09:10:02.704Z"
+      "askedAt": "2026-09-08T00:39:30.284Z"
     },
     {
       "token": "hczc9b",
@@ -1092,7 +1100,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-09-07T09:10:02.704Z"
+      "askedAt": "2026-09-08T00:39:30.284Z"
     },
     {
       "token": "08ashh",
@@ -1117,7 +1125,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T09:10:02.704Z"
+      "askedAt": "2026-09-08T00:39:30.285Z"
     },
     {
       "token": "iddgb9",
@@ -1145,7 +1153,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T09:10:30.929Z"
+      "askedAt": "2026-09-08T00:39:56.058Z"
     },
     {
       "token": "atcu4x",
@@ -1173,7 +1181,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T09:10:34.822Z"
+      "askedAt": "2026-09-08T00:39:59.617Z"
     },
     {
       "token": "va71ta",
@@ -1206,7 +1214,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T09:10:41.884Z"
+      "askedAt": "2026-09-08T00:40:07.611Z"
     },
     {
       "token": "jxyxog",
@@ -1234,7 +1242,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T09:10:53.519Z"
+      "askedAt": "2026-09-08T00:40:21.590Z"
     },
     {
       "token": "5ouerp",
@@ -1262,7 +1270,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T09:11:00.274Z"
+      "askedAt": "2026-09-08T00:40:30.712Z"
     },
     {
       "token": "zlg42m",
@@ -1290,7 +1298,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T09:11:16.475Z"
+      "askedAt": "2026-09-08T00:40:46.490Z"
     },
     {
       "token": "24u7ly",
@@ -1314,7 +1322,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-09-07T09:11:39.053Z"
+      "askedAt": "2026-09-08T00:41:06.537Z"
     },
     {
       "token": "eo4dum",
@@ -1338,7 +1346,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-09-07T09:11:39.054Z"
+      "askedAt": "2026-09-08T00:41:06.537Z"
     },
     {
       "token": "1p7ijy",
@@ -1362,7 +1370,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T09:11:39.054Z"
+      "askedAt": "2026-09-08T00:41:06.538Z"
     },
     {
       "token": "vwk3b7",
@@ -1390,7 +1398,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T09:11:42.955Z"
+      "askedAt": "2026-09-08T00:41:12.563Z"
     },
     {
       "token": "1gqw65",
@@ -1418,7 +1426,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-07T09:11:48.377Z"
+      "askedAt": "2026-09-08T00:41:15.745Z"
     }
   ],
   "rejected": [
@@ -1534,7 +1542,7 @@
     }
   ],
   "moves": {
-    "generatedAt": "2026-09-07T09:11:48.378Z",
+    "generatedAt": "2026-09-08T00:41:15.746Z",
     "reconfirmed": 55,
     "moves": []
   }
