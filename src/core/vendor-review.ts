@@ -164,6 +164,33 @@ export function dearerThanRecorded(args: {
 }
 
 /**
+ * **This pick IS the slot, unchanged — so there is nothing to decide.**
+ *
+ * ⚠️ A standing doubt does not expire on its own. A row whose recorded pick is 4.8× its
+ * cheapest other shop carries that `outlier` reason forever, so the pick was re-queued
+ * every sweep — a question the user had already answered by letting the price into the
+ * slot. Measured 2026-09-08: 5 of the 27 questions one sweep raised were the row's own
+ * recorded price and pack.
+ *
+ * ⚠️⚠️ **Identity is required, not just the numbers.** A different product that happens
+ * to cost the same for the same weight is a substitution, and letting that through on
+ * price alone would silently repoint the slot's URL and item name at another product.
+ * Same price, same pack, same listing — all three, or it is still a question.
+ */
+export function isRecordedUnchanged(
+	slot: { priceValue: number | null; sizeValue: number | null; urlValue?: string; itemNameValue?: string },
+	product: { url?: string; name: string; priceSgd: number },
+	size: number | null,
+): boolean {
+	if (slot.priceValue == null || slot.sizeValue == null || size == null) return false;
+	// Notion stores prices to the cent and sizes as plain numbers; these are equality
+	// tests written to survive a float round-trip, not tolerances.
+	if (Math.abs(slot.priceValue - product.priceSgd) >= 0.005) return false;
+	if (Math.abs(slot.sizeValue - size) >= 0.001) return false;
+	return findRecordedListing(slot, [product]) !== undefined;
+}
+
+/**
  * **Two sweeps write this file, and only one of them looked at any given shop.**
  *
  * ⚠️⚠️ The cloud sweep covers NTUC, Sheng Siong, Guardian and My Protein; the laptop

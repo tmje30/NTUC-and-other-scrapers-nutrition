@@ -37,6 +37,7 @@ import {
 	sizeText,
 	statedSizeRange,
 	findRecordedListing,
+	isRecordedUnchanged,
 	mergeVendorReview,
 	withPending,
 	withoutPendingForSlot,
@@ -281,6 +282,8 @@ async function main(): Promise<void> {
 	let skippedOverCeiling = 0;
 	/** Dearer suggestions withheld because the recorded pick is still on the shelf. */
 	let suppressedDearer = 0;
+	/** Picks re-confirmed rather than re-asked, because the slot already held them. */
+	let unchangedNotAsked = 0;
 	/** Uncertain picks, queued for the Telegram ask at the end of the pass. */
 	const toAsk: PendingReview[] = [];
 	/** By Unit rows a shop prices by weight — fixable by typing a size into the name. */
@@ -690,7 +693,17 @@ async function main(): Promise<void> {
 			// question — a dearer pack, offered against a recorded price that still stands —
 			// and asking it about the top card while suppressing it on the others would leave
 			// the deck reading "1 of 1" every morning for a row that has not changed.
-			if (reasons.length && supersededByRecorded(pricePer1000(p.priceSgd, size))) {
+			// ⚠️ **A doubt about a pick already in the slot is a question the user answered by
+			// letting it in.** `outlier` and `bulk` are standing facts about the product, not
+			// events, so they were re-raised every sweep on rows that had settled. Falling
+			// through to the write path re-confirms the same figures and refreshes the URL and
+			// item name, which is what a re-scan of an unchanged pack should do.
+			const unchanged = isRecordedUnchanged(slot, p, size);
+			if (reasons.length && unchanged) {
+				unchangedNotAsked++;
+				console.log("      · unchanged since it was recorded — re-confirmed, not asked.");
+			}
+			if (reasons.length && !unchanged && supersededByRecorded(pricePer1000(p.priceSgd, size))) {
 				suppressedDearer++;
 				console.log(
 					"      · dearer than the pick already recorded, which this shop still lists at " +
@@ -698,7 +711,7 @@ async function main(): Promise<void> {
 				);
 				continue;
 			}
-			if (reasons.length) {
+			if (reasons.length && !unchanged) {
 				// Already asked and still waiting? Say nothing — see `findPendingFor`.
 				const outstanding = findPendingFor(review, row.pageId, route.option, p);
 				if (outstanding?.messageId) {
@@ -853,6 +866,7 @@ async function main(): Promise<void> {
 			(suppressedDearer
 				? `, ${suppressedDearer} dearer suggestion(s) withheld — the recorded pick still stands`
 				: "") +
+			(unchangedNotAsked ? `, ${unchangedNotAsked} unchanged pick(s) re-confirmed instead of re-asked` : "") +
 			(gaps.length ? `, ${gaps.length} row(s) need a size in their Notion name` : "") +
 			".\n",
 	);

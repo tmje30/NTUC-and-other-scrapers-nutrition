@@ -7,6 +7,7 @@ import {
 	REJECT_REASONS,
 	findPendingFor,
 	findRecordedListing,
+	isRecordedUnchanged,
 	mergeVendorReview,
 	isRejectReason,
 	isRejectedPick,
@@ -886,3 +887,45 @@ check("our own pair's question is kept", merged.pending.some((p) => p.token === 
 // ⚠️ Standing refusals are only ever added by a tap, so the union is the only safe rule.
 eq("a refusal recorded by the other side is not lost", merged.rejected.length, 1);
 eq("…and the moves snapshot is this run's", merged.moves?.reconfirmed, 56);
+
+/**
+ * ⚠️⚠️ **A standing doubt does not expire, so it was asked forever.** The whey row's
+ * recorded pick is 4.8× its cheapest other shop; that `outlier` reason is a fact about the
+ * product, not an event, so the same pick was re-queued every sweep — a question already
+ * answered by letting the price into the slot. Measured 2026-09-08: 5 of 27 questions one
+ * sweep raised were the row's own recorded price and pack.
+ */
+describe("a pick already in the slot is re-confirmed, not re-asked");
+
+const slotHolds = {
+	priceValue: 349,
+	sizeValue: 2250,
+	urlValue: "https://myprotein.test/p/11052699?variation=17784492",
+	itemNameValue: "Essential Whey Protein 2.25kg - 90servings Strawberry Cream",
+};
+const samePack = {
+	url: "https://myprotein.test/p/11052699?variation=17784492",
+	name: "Essential Whey Protein 2.25kg - 90servings Strawberry Cream",
+	priceSgd: 349,
+};
+
+check("the same listing at the same price and pack is unchanged", isRecordedUnchanged(slotHolds, samePack, 2250));
+check("a price move is not unchanged", !isRecordedUnchanged(slotHolds, { ...samePack, priceSgd: 359 }, 2250));
+check("a pack change is not unchanged", !isRecordedUnchanged(slotHolds, samePack, 2000));
+
+/**
+ * ⚠️⚠️ **Identity is required, not just the numbers.** A different product costing the
+ * same for the same weight is a SUBSTITUTION — passing it on price alone would silently
+ * repoint the slot's URL and item name at another product without asking.
+ */
+check(
+	"a different product at the identical price and pack still asks",
+	!isRecordedUnchanged(slotHolds, { url: "https://myprotein.test/p/other", name: "Impact Whey 2.25kg", priceSgd: 349 }, 2250),
+);
+// A shop that re-words its own title has not changed the product — the URL still says so.
+check(
+	"…but the same URL under a re-worded title does not",
+	isRecordedUnchanged(slotHolds, { ...samePack, name: "Essential Whey Protein 2.25kg Strawberry" }, 2250),
+);
+// An empty slot has nothing to be unchanged against.
+check("an empty slot is never 'unchanged'", !isRecordedUnchanged({ priceValue: null, sizeValue: null }, samePack, 2250));
