@@ -621,10 +621,38 @@ export interface MatchResult {
  * Both sides are stemmed, so genuine variants still match ("Omega 3 Enriched" vs
  * "Omega-3 Enriched", "unpasteurized" vs "Pasteurized").
  */
-function tokensPresent(needle: string, hayTokens: Set<string>): boolean {
+function tokensPresent(needle: string, hayTokens: Set<string>, hay = ""): boolean {
 	const nt = tokens(needle);
 	if (!nt.length) return true; // nothing checkable (e.g. a bare number)
-	return nt.every((t) => hayTokens.has(t));
+	if (nt.every((t) => hayTokens.has(t))) return true;
+
+	/**
+	 * ⚠️⚠️ **A shop writes `SPF30`; the row says `(SPF 30)`.** Tokenised, those are
+	 * `["spf","30"]` against a single token `spf30`, so the requirement was missing from
+	 * the one product that satisfied it perfectly. Measured 2026-09-08 on
+	 * `AM facial moisturizing lotion (SPF 30) [cerave]`:
+	 *
+	 *   review 0.540  CERAVE AM Facial Moisturizing Lotion SPF30 52ml   ← the right one
+	 *   review 0.540  Cerave Facial Moisturising Lotion - AM SPF50      ← the wrong one
+	 *   accept 0.950  …SPF 30 52ml                                      ← only with a space
+	 *
+	 * The failure was not just a missed accept: since neither title contains the literal
+	 * `spf 30`, **SPF30 and SPF50 scored identically** — the property that exists to tell
+	 * them apart matched neither, and the wrong strength was offered as an equal.
+	 *
+	 * ⚠️ **Digit-bearing requirements ONLY, and that restriction is the whole safety of
+	 * it.** Comparing compacted text is substring matching with the word boundaries
+	 * removed, which is exactly how `Oil (Bran)` was once satisfied by every "Knife
+	 * Brand" cooking oil — see this function's own header. `bran` has no digit and never
+	 * reaches this line; `spf 30`, `omega 3` and `1.5 l` do.
+	 *
+	 * ⚠️ The three-character floor matters: without it `1 l` compacts to `1l`, which
+	 * appears inside `11litre`.
+	 */
+	if (!/\d/.test(needle)) return false;
+	const compact = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+	const n = compact(needle);
+	return n.length >= 3 && compact(hay).includes(n);
 }
 
 /**
@@ -708,8 +736,8 @@ export function evaluate(target: PlanTarget, product: StoreProduct): MatchResult
 	// to bypass synonyms and stemming, so "Milk (Skimmed)" rejected "UHT Milk - Skim"
 	// even though the property check folded both to "skim".
 	const missingSet = new Set<string>();
-	for (const prop of s.properties) if (!tokensPresent(prop, hayTokens)) missingSet.add(prop);
-	for (const kw of s.mustMatch) if (!tokensPresent(kw, hayTokens)) missingSet.add(kw);
+	for (const prop of s.properties) if (!tokensPresent(prop, hayTokens, hay)) missingSet.add(prop);
+	for (const kw of s.mustMatch) if (!tokensPresent(kw, hayTokens, hay)) missingSet.add(kw);
 	const missing = [...missingSet];
 
 	// Score the bare noun AND the noun+properties, taking the best — the sibling
@@ -724,7 +752,7 @@ export function evaluate(target: PlanTarget, product: StoreProduct): MatchResult
 	let penalty = matchPenalty(target, product);
 
 	// An explicitly excluded property — "(not red)" — is a hard exclusion.
-	for (const neg of s.negatedProperties) if (tokensPresent(neg, hayTokens)) penalty *= 0.2;
+	for (const neg of s.negatedProperties) if (tokensPresent(neg, hayTokens, hay)) penalty *= 0.2;
 
 	if (missing.length) penalty *= REQUIREMENT_FAIL_MULT;
 

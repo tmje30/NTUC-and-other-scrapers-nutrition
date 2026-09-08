@@ -830,3 +830,27 @@ const ranked = pickCandidate(toothpaste, [halfOff, plainSix].map(atShelfPrice), 
 check("ranking on the promo price would pick the dearer pack", pickCandidate(toothpaste, [halfOff, plainSix], { marketplace: false }).ok);
 eq("...so the shelf price decides the pick", ranked.ok ? ranked.product.priceSgd : null, 6);
 eq("...and the cheaper OFFER is not what gets recorded", ranked.ok ? ranked.product.url : null, "https://example.test/b");
+
+describe("a shop writes SPF30; the row says (SPF 30)");
+
+{
+	const row = targetFrom("AM facial moisturizing lotion (SPF 30) [cerave]", { unitType: "By ml" as UnitType });
+	const at = (name: string) =>
+		evaluate(row, product({ store: "Watsons", name, brand: "CeraVe", packWeightG: 52, volumetric: true }) as any);
+
+	// ⚠️ Tokenised, "(SPF 30)" is ["spf","30"] and the title's token is "spf30", so the
+	// requirement was missing from the one product that satisfied it perfectly.
+	eq("the glued spelling now satisfies the requirement", at("CERAVE AM Facial Moisturizing Lotion SPF30 52ml").verdict, "accept");
+	eq("the spaced spelling still does", at("CERAVE AM Facial Moisturizing Lotion SPF 30 52ml").verdict, "accept");
+	// ⚠️⚠️ The real damage was not the missed accept: with neither title containing the
+	// literal "spf 30", SPF30 and SPF50 scored IDENTICALLY, so the wrong strength was
+	// offered as an equal alternative. This is the assertion that matters.
+	eq("but the wrong strength is still held back", at("Cerave Facial Moisturising Lotion - AM SPF50").verdict, "review");
+
+	// ⚠️ Digit-bearing requirements ONLY. Compacted comparison is substring matching with
+	// the word boundaries removed — exactly how `Oil (Bran)` was once satisfied by every
+	// "Knife Brand" cooking oil. "bran" carries no digit and must never reach that path.
+	const branRow = targetFrom("Oil (Bran)", { unitType: "By ml" as UnitType });
+	const brand = evaluate(branRow, product({ name: "Knife Brand Cooking Oil", packWeightG: 1000, volumetric: true }) as any);
+	check("a brand name still does not satisfy (Bran)", brand.missing.includes("bran"));
+}
