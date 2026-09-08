@@ -1,6 +1,6 @@
 # Grocery Deal Scraper — System Guide
 
-*Last updated: 2026-09-08 · Covers changes through commit 3f3cd6a*
+*Last updated: 2026-09-08 · Covers changes through commit b5113fb*
 
 ## What this is
 
@@ -477,6 +477,14 @@ handover note for which five do not.
 | `Quality item` | Rejects a cheaper **grade**. A candidate whose **normal (undiscounted)** price per 100 is below `QUALITY_FLOOR` (75%) of what you pay at full price is a budget line, not a bargain. The **sale** price is ignored on purpose — a quality product may be discounted as deeply as it likes. Skipped when there's no baseline or no pack weight, so missing data never rejects. |
 | `Organic/animal welfare` | The product must be **store-certified organic** (structured `Dietary Attributes`) or name a welfare rearing method (free range, cage free, grass fed, pasture raised, barn laid, RSPCA). |
 | `Weekly Buy` | Not a matching rule — it changes the **cooldown**. After a Buy the item goes quiet for a flat **5 days** regardless of how much was bought, because it's re-bought on a rhythm rather than when the pack runs out. See "Cooldowns" below. |
+| `Don't Search` | The ingredient is **skipped entirely**, same as `Not in Use ATM` — but it is set by hand and is **permanent**. Nothing in the code may write it, clear it, or offer a button that undoes it. |
+
+⚠️⚠️ **An untagged row is not an incomplete row.** These tags are opt-in, and the
+default is deliberate in every case. A `[bracketed]` brand with no `Brand Specific`
+tag means *this is what I buy*, not *only this* — any brand may match, and the
+matcher is honouring the row, not ignoring it. The same goes for an untagged row
+with no `Quality item`: a cheaper grade is allowed. Do not read a missing tag as an
+oversight to be corrected.
 
 **Organic is read from structured data, never from the name.** FairPrice publishes
 `metaData["Dietary Attributes"]` (`Organic`, `Halal`, `Vegetarian`, `Healthier
@@ -568,6 +576,16 @@ where a request comes from decides whether they answer at all. Both report the s
 - **MyProtein** — `src/core/stores/myprotein.ts`. Works from the cloud. The size
   lives in an on-page variant, so the module fetches variants per product; the old
   "28 products priced, 0 with a size" verdict was about the search page only.
+  A variant whose size is not published is still **dropped** — no size is no data,
+  not a cheap price — but the size is looked for in three places, in order: the
+  JSON-LD `weight` field, a size in the variant's own name, and finally the page's
+  variant list (`variantTitleSizes`), which names each variant in full
+  (`Essential Whey Protein - 375G - 15servings - Unflavoured`) keyed by the image
+  id, which is the variant sku. ⚠️ **Reading only the JSON-LD was biased toward the
+  big pack**: on `essential-whey-protein` three of ten in-stock variants carry a
+  `weight` (the 2.25 kg tubs) and the rest are named without a size, so the shop
+  could offer nothing but bulk and a smaller pack at a better rate per kilo was
+  invisible. Live search went from 3 products to 8.
 - **iHerb** — `src/core/stores/iherb.ts`. Plain `fetch` is 403; needs headed Chrome
   on the laptop. ⚠️ **The capsule count is the size, and the dose is not the pack.**
   "Vitamin C, 1,000 mg, 240 Veggie Capsules" priced as a 1 g purchase is the trap;
@@ -1028,6 +1046,12 @@ is appended last.
   drag is swallowed in the capture phase.
 - `scroll-snap` does not re-snap after a scripted `scrollLeft`, so the drag release
   scrolls to the nearest slide itself.
+- **Every slide states what it would replace.** The options compete for one slot, so
+  the price each would overwrite is the same fact for all of them; carrying the
+  comparison block on the closest match alone made the runners-up look like they had
+  nothing to displace. `reasonList()` renders the block for any card holding a
+  `dearer-than-recorded` reason — the alternatives simply never carried one until
+  2026-09-08.
 - Accepting inside a deck carries `data-hide-card="group"`, which removes the whole
   deck — because `review-ok` now clears **every** question for that row+shop
   (`withoutPendingForSlot`), not just the tapped one.
@@ -1410,7 +1434,7 @@ under `src/` imports from `extension/`.
 
 ### Tests — `npm test`
 
-**1,046 offline cases, free and fast** — 978 across 29 suites in `src/tests/`, plus
+**1,225 offline cases, free and fast** — 1,157 across 30 suites in `src/tests/`, plus
 33 in `relay/worker.test.mjs` and 35 in `ss-worker/scan.test.ts`, which `npm test`
 runs after them.
 
@@ -1536,6 +1560,38 @@ the per-kilo figure by 14% on a 600–700 g cabbage), `outlier` (≥ 3× from th
 other shop), and three marketplace-only ones (`floor-rescue`, `auto-handle`,
 `undercut`). First run: **12 clear picks, 9 queued** of 21 candidates.
 
+**The fourth answer: saying nothing.** A queue that asks the same thing every
+morning stops being read, and the review page is the only thing standing between a
+guess and the price book. Three rules decide when a pick is *not* worth a card
+(added 2026-09-08, after the page spent a week re-offering the same losers):
+
+1. **A dearer suggestion is withheld while the recorded pick still stands.** If the
+   listing the slot records is in today's results *and* has not gone up, any
+   suggestion at or above the recorded price per kg/L is dropped without a card.
+   Both halves must hold: a **price rise** on the recorded pack, or the pack
+   **vanishing from the shop**, lifts the rule and every suggestion is offered
+   again. Those are the two things worth interrupting for. A **cheaper** find is
+   never suppressed.
+2. **A re-offer of the recorded pack itself is not a question.** Priced exactly at
+   the recorded figure, it is usually the same tub the matcher could not prove
+   matches — nothing to decide, and no answer that changes anything.
+3. **A doubt about a pick already in the slot is not a daily question.** `outlier`
+   and `bulk` are standing facts about a product, not events: the whey row is 4.8x
+   its cheapest other shop and will be again tomorrow. A pick identical to what the
+   slot holds falls through to the **write** path instead — re-confirming the same
+   figures and refreshing the URL and item name. Measured on run 34192557021: **5 of
+   27** questions raised were the row's own recorded price and pack.
+
+⚠️ **Identity is required in rules 2 and 3, not just the numbers** — the URL first,
+the shop's own item name second (`findRecordedListing`, `isRecordedUnchanged`). A
+different product costing the same for the same weight is a *substitution*, and
+passing it on price alone would silently repoint the slot's URL and item name at
+something else.
+
+On the first sweep carrying all three (run 34194029818): 61 written, 3 dearer
+suggestions withheld, 4 unchanged picks re-confirmed instead of re-asked, queue 51
+to 44 across two runs.
+
 ⚠️⚠️ **"Don't use" is NOT "ignore forever", and this is the load-bearing rule.**
 
 | | scope | effect on the deals page |
@@ -1650,8 +1706,8 @@ typechecks the Cloudflare Worker on its own.*
   line where it would land in shell history.
 - **`npm run ext:build`** — rebuild the Chrome extension's `dist/`. Required after
   editing `synonyms.json`.
-- **`npm test`** — the 854 offline cases (`src/tests/` then the relay suite). Free,
-  fast, no network.
+- **`npm test`** — the 1,225 offline cases (`src/tests/`, then the relay and
+  Sheng Siong Worker suites). Free, fast, no network.
 - **`npm run check`** — TypeScript type-check (no emit). **`npm run build`** emits
   `dist/`.
 
@@ -1733,6 +1789,22 @@ Nine GitHub Actions workflows:
   ⚠️ The permissions must be granted at the *call site* — a called workflow's token is
   capped by the calling job's, so `contents: write` alone strips `pages: write` and
   the deploy fails after the expensive part is done.
+
+  ⚠️⚠️ **Two sweeps write `data/vendor-review.json`, and each owns only what it
+  looked at.** The cloud sweep covers NTUC, Sheng Siong, Guardian and My Protein;
+  the laptop's `Grocery Vendor Sweep` task covers Watsons, iHerb and Carousell. They
+  overlap in time, and `commitAndPushData` resolves a rejected push by resetting to
+  the remote and re-writing **this run's whole file** — which, for shops the run
+  never scanned, is a copy read minutes earlier. Measured 2026-09-08: the laptop
+  pushed `03b17f0`, re-asking three iHerb questions and retiring a Watsons one it had
+  just matched; the cloud sweep's push was rejected, it reset onto that commit,
+  re-applied its own copy and pushed `1c766ec` — the iHerb timestamps went back a
+  day and the retired card returned to the page. **Both runs reported success**,
+  which is why it went unseen: the queue looked frozen while it was in fact being
+  refreshed daily and reverted within the minute. The sweep now passes a `reapply`
+  merge (`mergeVendorReview`) using the rule the stale-question step already applies:
+  a run owns exactly the row x shop pairs it visited, theirs wins everywhere else,
+  and standing refusals are unioned rather than dropped.
 
 - **`.github/workflows/daily.yml`** — the main job: `npm ci` → `npm run build-site`
   → deploy `public/` to GitHub Pages → `npm run notify`.
@@ -2003,6 +2075,22 @@ Other requirements:
   as one card with swipeable slides instead of one card each.
 - **Rank** — where a suggestion came in among those offered for a slot (0 = closest).
   Recorded because queue *order* is the reverse of match quality.
+- **Recorded pick** — the product a slot is a record *of*, identified by its URL
+  first and the shop's own item name second. Not "the best product at that shop
+  today": knowing whether the recorded pick is still on sale, and at what price, is
+  what decides whether a dearer alternative is worth a question at all.
+- **Withheld suggestion** — a near-miss the sweep found, priced at or above the
+  recorded pick, and did **not** put on the page because that pick is still listed at
+  the price recorded for it. A price rise, or the pack disappearing, brings it back.
+- **Re-confirmed** — a slot rewritten with the figures it already held. Not news, so
+  it is counted and never itemised; since 2026-09-08 a pick identical to the slot is
+  re-confirmed rather than queued as a question.
+- **Standing fact vs event** — an `outlier` or `bulk` reason describes the product
+  and will be just as true tomorrow; a price move is an event. Only events are worth
+  asking about twice.
+- **Visited pair** — one row x shop combination a given run actually scanned. It is
+  the unit of ownership when two sweeps merge their queues, and the unit the
+  stale-question step uses to retire a card the shop no longer offers.
 - **Stated range** — a pack size a shop publishes as a span, e.g. `850 - 900g`. The
   **low end** is what gets recorded, because the top is the optimistic read on the one
   kind of listing that has already said it does not know what you are getting.
@@ -2092,6 +2180,47 @@ Other requirements:
 
 ## What changed in this update
 
+- **2026-09-08 — the review page stops asking about things that have not changed.**
+  It had been re-offering the same worse-value products every morning: a CeraVe
+  SPF50 against a recorded SPF30, a 500 g creatine against a recorded 1 kg. Three
+  rules now decide when to say nothing. A suggestion at or above the recorded price
+  per kg/L is withheld **while the recorded pick is still on the shelf at the price
+  recorded for it**; a re-offer of that pack itself is not a question; and a doubt
+  about a pick already in the slot — *this is 4.8x your cheapest other shop* — is a
+  standing fact rather than news, so the pick is re-confirmed instead of re-asked.
+  A **price rise** on the recorded pack, or the pack **no longer being findable**,
+  lifts all three. A cheaper find is never suppressed. First run with all three: 61
+  written, 3 withheld, 4 re-confirmed, queue 51 to 44 across two sweeps.
+- **2026-09-08 — every option in a swipeable card now says what it would replace.**
+  The options compete for one slot, so the price each would overwrite is the same
+  fact for all of them; only the closest match carried the comparison, which made
+  the runners-up look like they had nothing to displace.
+- **2026-09-08 — BUG: the two sweeps were reverting each other, both reporting
+  success.** The cloud sweep and the laptop task cover different shops but write the
+  same queue file. A rejected push was resolved by resetting to the remote and
+  re-writing the whole file as that run produced it — including, for shops it never
+  scanned, a copy read minutes earlier. On 2026-09-08 the laptop re-asked three iHerb
+  questions and retired a Watsons one; the cloud sweep pushed forty seconds later and
+  put all of it back a day, resurrecting a card that had just been answered. The
+  cards looked frozen while they were being refreshed daily and reverted within the
+  minute. Each run now owns only the row-and-shop pairs it actually scanned.
+- **2026-09-08 — BUG: a shop writing `SPF30` failed a row asking for `(SPF 30)`.**
+  The requirement is compared as words, and `SPF30` is one word where `SPF 30` is
+  two, so the requirement read as *missing* from the one product that satisfied it
+  perfectly. The larger cost was not the missed match: **SPF30 and SPF50 scored
+  identically**, so the wrong strength was offered as an equal alternative for a
+  week. A requirement containing a digit now retries with the punctuation and spaces
+  removed on both sides. Deliberately digits only — comparing text with the word
+  boundaries removed is how `Oil (Bran)` was once satisfied by every "Knife **Brand**"
+  cooking oil.
+- **2026-09-08 — MyProtein could only ever offer its bulk tubs.** A variant whose
+  size is not published is dropped, which is right — no size is no data, not a cheap
+  price. But the size was only looked for in the structured data, and MyProtein
+  publishes most of its sizes in the page's own variant list instead. Of ten in-stock
+  Essential Whey variants only three were visible, all of them the 2.25 kg. That bias
+  only ever pointed one way: **a smaller pack at a better rate per kilo could not be
+  seen.** Live search now returns 8 products instead of 3. Nothing here prefers a
+  large pack — the size ceiling exists to stop packs being too big, never too small.
 - **2026-09-07 — several products for the same item are now one card you swipe,
   not a stack of identical-looking ones.** When a shop offers more than one thing
   that could be your item, they became separate cards with the same heading
