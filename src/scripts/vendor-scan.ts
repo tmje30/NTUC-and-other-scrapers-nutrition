@@ -470,8 +470,12 @@ async function main(): Promise<void> {
 			/** The recorded pick is still offered here, and has not gone up. */
 			const recordedHolds =
 				recordedPer1000 != null && recordedListingPer != null && recordedListingPer <= recordedPer1000;
+			// ⚠️ **Dearer OR the same, not dearer alone.** A suggestion priced exactly at the
+			// recorded figure is usually the recorded pack itself, re-offered because the
+			// matcher could not prove it matches — there is nothing to decide and no way to
+			// answer it that changes anything. A CHEAPER find still gets through: that is news.
 			const supersededByRecorded = (per1000: number | null) =>
-				recordedHolds && per1000 != null && recordedPer1000 != null && per1000 > recordedPer1000;
+				recordedHolds && per1000 != null && recordedPer1000 != null && per1000 >= recordedPer1000;
 
 			for (const [k, alt] of suggestions.slice(1).entries()) {
 				const altSize = resolveSize(row, alt);
