@@ -1,6 +1,6 @@
 # Grocery Deal Scraper — System Guide
 
-*Last updated: 2026-08-18 · Covers changes through commit 9ee1841*
+*Last updated: 2026-09-08 · Covers changes through commit 3f3cd6a*
 
 ## What this is
 
@@ -28,6 +28,11 @@ The system also **fills in your price book** — what each shop charges for each
 ingredient, in Notion's `Vendor 1..4` columns — across up to nine shops rather
 than the two it watches daily. It asks before recording anything odd (a 10 kg sack
 of carrots is genuinely the cheapest per kilo and is not a pack anyone buys).
+Everything it is unsure about waits on a **review page** with an OK and a Don't-use
+button per pack, and whatever it *did* change appears on a **price-moves page** —
+so five pages in all: deals, history, new items, review, moves. Since 2026-08-24
+the price check runs in the cloud for the four shops reachable from it, which is
+most of the work; three shops still need a real browser or a Singapore address.
 
 ## What it does (features)
 
@@ -113,10 +118,32 @@ of carrots is genuinely the cheapest per kilo and is not a pack anyone buys).
 - **"Where do the prices for other shops come from?"** `npm run vendor-scan`
   searches the shops each ingredient row actually names and fills its
   `Price [Vendor n]` / `Size[Vendor n]` / `URL [Vendor n]` slots. Anything it isn't
-  confident about — a bulk pack, a size range, a wild outlier — is sent to Telegram
-  as a review card with **Ok** / **Don't use** instead of being written.
+  confident about — a bulk pack, a size range, a wild outlier — is queued for you
+  instead of being written.
   ⚠️ **"Don't use" is not "ignore forever"**: it declines to *record that pack as
   your price at that shop* and the product still appears on the deals page.
+- **"Where do I answer those questions?"** On the **review page**
+  (`review.html`), one page for the whole scan rather than one Telegram card per
+  pick. Each card shows the pack, the price, what the shop calls it, and why it is
+  being asked about, with **OK** and **Don't use** underneath.
+  ⚠️ **The price it quotes is a shop's SHELF price, never its promo price.** The
+  price book records what a thing normally costs; a discount belongs on the deals
+  page. Before 2026-09-02 a sale price could be written in as your recorded price
+  and then never corrected, because the rule that only lets a *cheaper* price
+  through refused the correction for being dearer.
+- **"Several products look like they could be my item — do I get one card each?"**
+  No. When a shop offers more than one plausible product for the same row, they
+  become one card you swipe (or drag, with a mouse) between, closest match first.
+  Accepting one settles that shop's slot and drops the rest, because the slot holds
+  a single price and the losers are stale the moment one wins.
+- **"What actually changed in my price book after a run?"** The **price-moves
+  page** (`moves.html`) lists only the slots whose recorded price genuinely moved,
+  each naming the product and linking to it. A run that rewrites a slot with the
+  same figure is not news and is left out.
+- **"Can the whole price check run without my laptop?"** Yes, for the four shops
+  the cloud can reach (NTUC, Sheng Siong, Guardian, MyProtein) — that is 106 of the
+  120 row×shop pairs. Watsons, iHerb and Carousell still need a real browser or a
+  Singapore address, and are swept from the laptop.
 - **"The page says a shop is missing — can I fix it now?"** Tap **Rescan** in the
   warning banner. It fetches fresh Sheng Siong prices from the cloud and rebuilds
   the page *with the data in it*, in about **four minutes**. **No laptop is
@@ -964,6 +991,67 @@ directed search, which needs a row naming the vendor — and a new item has no r
   committed scan — and a new item's term is never among them, so Sheng Siong returned
   zero results with no error on every new-item card.
 
+### Review page — `public/review.html`
+
+**Where it lives:** `src/core/review-page.ts` (`renderReviewPage`). Written by
+`build-site.ts` on every site build, and by `vendor-scan.ts` at the end of a sweep.
+**Reads:** `data/vendor-review.json` — the committed queue. **Writes:** nothing;
+every button hands the privileged half to `item-actions.yml`.
+
+The fourth page, and the reason it exists is not taste: the first live sweep queued
+**16** uncertain picks and sent 16 separate Telegram messages. Sixteen notifications
+for one scan is a reason to mute the bot, and a muted bot loses the daily digest with
+it. One message, one page.
+
+**A card** is one queued question: the row and shop, the price and pack, the shop's
+own product name with its stated size and brand (`Skimmed Milk (1L) [Greenfields]` —
+Sheng Siong titles a product `Skimmed Milk` and nothing else, so the brand is the
+only thing that makes the question answerable), the reason it is being asked, and
+**OK** / **Don't use**. The whole card body is a link to the shop, because the
+question is "is this the right pack?" and you cannot answer it without looking.
+
+**A deck** is several cards for the *same row at the same shop*, rendered as one card
+with slides. `nearMisses()` offers up to `MAX_SUGGESTIONS` (3) per row×shop and each
+used to become a full card with the header repeated. Within a deck the order is
+`rank` — 0 is the closest match — because the queue's own order is the reverse of
+that: `vendor-scan` queues the alternatives *before* the primary, so the best match
+is appended last.
+- Sliding is a CSS scroll-snap strip. A finger scrolls it natively; a mouse gets a
+  pointer-drag handler (mouse only — touch already has momentum the platform tunes).
+- A drag that ends on the card must not open the shop, so the click after a real
+  drag is swallowed in the capture phase.
+- `scroll-snap` does not re-snap after a scripted `scrollLeft`, so the drag release
+  scrolls to the nearest slide itself.
+- Accepting inside a deck carries `data-hide-card="group"`, which removes the whole
+  deck — because `review-ok` now clears **every** question for that row+shop
+  (`withoutPendingForSlot`), not just the tapped one.
+
+**Two rules that are easy to get wrong:**
+- ⚠️ **The page build runs inside the sweep.** A throw here does not just lose the
+  page — it kills a `--write` run that may already have written prices to Notion.
+  `comparison()` therefore renders nothing rather than throwing when a reason is
+  missing its figures, and `build-site.ts` catches and writes a *fallback page*
+  rather than letting `public/review.html` vanish (it is gitignored and rebuilt from
+  scratch, so a throw removes the page from the site entirely).
+- ⚠️ **The waiting counter watches `document.body` with `childList` only, never
+  `subtree`.** Writing the count is itself a mutation; a subtree observer re-triggers
+  on its own write and hangs the tab. Cards are direct children of `body`, so
+  `childList` alone sees every removal.
+
+### Price-moves page — `public/moves.html`
+
+**Where it lives:** `src/core/moves-page.ts`. **Reads:** the `moves` snapshot inside
+`data/vendor-review.json`, written by the last `--write` sweep. **Writes:** nothing.
+
+The fifth page. **A write is not news; a change is** — the sweep rewrites a slot even
+when the shop is charging exactly what it charged yesterday (which refreshes the URL
+and item name, and is worth doing silently). Reporting every write would make the
+message a wall of unchanged numbers.
+
+Each entry names the product and links to it, and the percentage is computed from the
+**per-1000 figure, never the pack price**: Tau Kwa going $1.40 → $1.40 across 400 g →
+500 g is a 20% cut that a pack-price comparison reports as no change at all.
+
 ### The Telegram inbox — texting a list in
 
 The first **inbound** path in the project: everything else here is a page being
@@ -1616,10 +1704,43 @@ typechecks the Cloudflare Worker on its own.*
 
 ### The cloud jobs
 
-Seven GitHub Actions workflows:
+Nine GitHub Actions workflows:
+
+- **`.github/workflows/vendor-sweep.yml`** — the price-book sweep in the cloud.
+  Runs `vendor-scan` against the four shops the cloud can reach (NTUC, Sheng Siong,
+  Guardian, MyProtein — 106 of the 120 row×shop pairs), then publishes the review
+  page.
+  ⚠️ **Report-only unless asked.** A manual run writes nothing by default; `write`
+  records the clear picks, `ask` sends the Telegram message as well.
+  ⚠️ **`SHENGSIONG_VIA_WORKER=1` is what makes the job real.** Without it the Sheng
+  Siong leg reads the ~60-term deals file and silently finds nothing for most rows —
+  and finding nothing is indistinguishable from "not stocked". Sheng Siong is 50 of
+  the 120 pairs.
+  ⚠️ **The `publish` job is what makes the link honest.** `public/` is gitignored and
+  rendered by `daily.yml`, so the page the sweep writes is a preview on a runner about
+  to be destroyed. Until 2026-09-07 the sweep pushed the queue, linked to the page,
+  and nothing rebuilt it — so the link opened the *previous* sweep's questions until
+  the next morning, up to ~21 hours later, with nothing saying so. It now calls
+  `daily.yml` as a dependent job with `quiet: true` (deploy, send no deals digest).
+  ⚠️ A `repository_dispatch` cannot do this: GitHub refuses to start a workflow from a
+  dispatch sent with a workflow's own `GITHUB_TOKEN`, and does so **silently**.
+  ⚠️ The permissions must be granted at the *call site* — a called workflow's token is
+  capped by the calling job's, so `contents: write` alone strips `pages: write` and
+  the deploy fails after the expensive part is done.
 
 - **`.github/workflows/daily.yml`** — the main job: `npm ci` → `npm run build-site`
   → deploy `public/` to GitHub Pages → `npm run notify`.
+  ⚠️ **It checks out `main`, not the triggering commit** (2026-09-07). A bare
+  `actions/checkout` takes `github.sha` — the branch tip when the run was *triggered*
+  — and both `vendor-sweep.yml` and `price-new-items.yml` **commit during their run
+  and call this workflow afterwards**. With a bare checkout the site was rebuilt from
+  the data as it stood *before* that commit, leaving it exactly one run behind. That
+  is worse than being a day stale, because a page one run behind looks correct.
+  ⚠️ **`workflow_call` accepts one input, `quiet`**, which skips the deals digest and
+  nothing else — for a caller that has already sent its own message. Every other
+  trigger leaves `inputs.quiet` empty (falsy), so the schedule, the Worker's rescan,
+  the Rescan button and manual dispatches all notify exactly as before. It does **not**
+  silence the failure notifier: a quiet run that breaks is still a broken run.
   ⚠️⚠️ **What actually starts it every morning is the Worker, not this cron.**
   `ss-worker` scans Sheng Siong from 09:00 SGT and fires a `rescan`
   `repository_dispatch` the moment it commits, which runs this whole workflow at
@@ -1856,6 +1977,32 @@ Other requirements:
 
 - **Baseline (price per 100 g)** — what you currently pay for an item, computed in
   Notion; the number a store must beat to count as a deal.
+- **Price book** — the `Vendor 1..4` slot columns on an Ingredients row: for each
+  shop, the price, pack size, URL and item name you have on record there. Since the
+  old baseline columns were deleted this is the **only** price record.
+- **Slot** — one shop's four columns on one row. It is the unit the price book
+  writes and the unit a question is about: once a price is recorded for a row at a
+  shop, a question about a *different* product for that same row and shop is stale,
+  because answering it would overwrite the newer figure with an older one.
+- **Shelf price vs promo price** — the shelf (normal, pre-discount) price is what
+  the price book records; the promo price belongs on the deals page. ⚠️ Writing a
+  promo price into a slot is a trap, not just an inaccuracy: the cheaper-only rule
+  lets the discount in *because* it is cheaper, then refuses the correction for
+  being dearer — a one-way ratchet.
+- **Near-miss suggestion** — a product no rule actually matched, but which scored in
+  the review band. Offered so a pair that matches nothing says what it nearly found,
+  rather than going quiet — and quiet is indistinguishable from "this shop does not
+  stock it". Never written by the scan; only a tap records it.
+- **Deck** — several near-miss suggestions for the same row at the same shop, shown
+  as one card with swipeable slides instead of one card each.
+- **Rank** — where a suggestion came in among those offered for a slot (0 = closest).
+  Recorded because queue *order* is the reverse of match quality.
+- **Stated range** — a pack size a shop publishes as a span, e.g. `850 - 900g`. The
+  **low end** is what gets recorded, because the top is the optimistic read on the one
+  kind of listing that has already said it does not know what you are getting.
+  ⚠️ Most hyphenated numbers in a URL slug are *not* ranges — see the guard rules.
+- **Price move** — a slot whose recorded price actually changed in a run, as opposed
+  to a slot merely rewritten with the same figure. Only moves are reported.
 - **By-Gram / By-Unit** — whether an ingredient is measured by weight or by count
   (eggs). Both are compared: By-Unit rows per piece, or per kilo when a weight is
   stated in the row's `Name` or the cheapest slot's item name.
@@ -1938,6 +2085,90 @@ Other requirements:
   token saved in the browser, instead of the default two-tap GitHub-issue flow.
 
 ## What changed in this update
+
+- **2026-09-07 — several products for the same item are now one card you swipe,
+  not a stack of identical-looking ones.** When a shop offers more than one thing
+  that could be your item, they became separate cards with the same heading
+  repeated, and nothing said they were competing for one slot. They are now slides
+  in a single card, closest match first — swipe on a phone, drag with a mouse — and
+  **accepting one drops the rest**, because the slot holds a single price. On the
+  queue the day this landed, 31 of 53 questions collapsed into 12 cards.
+  ⚠️ The closest match used to be listed **last**: alternatives are queued before
+  the primary, so the wrong CeraVe (SPF50, where the row says SPF30) sat above the
+  right one.
+- **2026-09-07 — a card now says what the shop calls the product**, e.g.
+  `Skimmed Milk (1L) [Greenfields]`. Sheng Siong titles a product `Skimmed Milk`
+  and nothing else; without the brand, "is this the right product?" has no answer.
+- **2026-09-07 — counted items are priced per 100 pieces, not per 1000.**
+  `$399.00/1000 pcs` is a quantity of eggs nobody buys. Weighed rows keep `/kg`
+  and `/L`.
+- **2026-09-07 — the sweep now publishes the page it just sent you a link to.**
+  It pushed the queue and linked to the review page, but nothing rebuilt that page
+  until the next morning — so the link opened the **previous** sweep's questions
+  for up to ~21 hours, with nothing on the page saying it was stale.
+  ⚠️ **The first version of this fix was itself wrong and looked right.** All the
+  jobs went green and the page was still one sweep behind, because the rebuild
+  checked out the commit that *started* the run rather than the branch tip — and the
+  sweep commits its queue partway through. Caught only by comparing the deployed
+  page against the queue file rather than trusting the green ticks.
+  ⚠️ The same flaw applies to **new-item pricing**, which commits and rebuilds the
+  same way. The one-line fix is shared, but that path has not been observed failing.
+- **2026-09-07 — the review page froze on opening ("Page Unresponsive"), and the
+  cause was the little "53 waiting" counter.** It watched the page for changes so it
+  could recount when a card was removed — but writing the count is itself a change,
+  so it re-triggered on its own write, forever. It did not need a tap to start: the
+  one-tap script writes its own label on load, and that was enough.
+- **2026-09-06 — a rename inside the code took down a live price sweep and then
+  quietly deleted the review page for a day.** Two fields were renamed in the source;
+  the questions already saved on disk still used the old names, so the page builder
+  read a value that was not there and crashed.
+  ⚠️ **It failed at the worst possible moment** — after the run had written prices to
+  Notion and before it published the queue.
+  ⚠️ **Then it hid.** The same crash happens inside the daily site build, where it is
+  caught and logged as a one-line warning. The run went green, the other four pages
+  deployed, and `review.html` simply stopped existing — the link in Telegram led to a
+  404 while everything reported success.
+  Both halves are fixed: old field names are repaired when the file is read, a card
+  missing its figures now renders as nothing rather than throwing, and a page that
+  cannot be built writes a page **saying so** instead of vanishing.
+- **2026-09-06 — a pack sold as a range is now recorded at its lower weight.**
+  `850 - 900g` of carrots is recorded as 850 g: the top is the optimistic read on the
+  one kind of listing that has already admitted it does not know what you are getting.
+  ⚠️ **This immediately exposed a second problem, and it was the more dangerous one.**
+  Of the six "ranges" the next sweep found, **four were not ranges at all** — a web
+  address gluing two unrelated numbers together (`spf50-52ml` read as "50 to 52 ml",
+  and it recorded a 52 ml bottle as 50 ml), a product named "Jumbo 600" sitting beside
+  a 600 g pack, `1.12 kg` written with a hyphen, and a `50 x 1.5g` multipack. The
+  detector had always produced these false alarms; making the number *count* turned a
+  harmless warning into a wrong pack size. Three rules now separate a real tolerance
+  from two numbers that happen to be next to each other.
+- **2026-09-04 — the review card's price comparison is a table, not a sentence**, and
+  the new figure is coloured by direction — green when cheaper, red when dearer, with
+  both rows labelled in words so colour is never the only signal.
+- **2026-09-02 — your price book records the SHELF price, never the promo price.**
+  A discount belongs on the deals page; the price book is what a thing normally costs.
+  ⚠️ **This was a trap, not just an inaccuracy.** The rule that only lets a cheaper
+  price through accepted the discount *because* it was cheaper, and then refused the
+  correction for being dearer — so a sale price could stick permanently. 17 slots were
+  repaired, including a Guardian Sensodyne stuck at $8.65 that should have been $10.20.
+  ⚠️ A related fault was found the same day: FairPrice reports unavailable products as
+  costing **$0.00** with a normal price beside it, which read as a 100% discount. A
+  price of zero is now treated as a missing price.
+- **2026-09-02 — a plain "milk" row no longer matches flavoured, plant or powdered
+  milk.** A rose-syrup drink had been recorded as the price of plain milk. Related
+  matcher corrections: "full cream" is the *normal* form of milk rather than a variant;
+  a brand name is not a claim about the product (the word "Green" in *Green Earth* was
+  reading as the colour green and rejecting the cheapest muscovado sugar); and a word
+  like "cake" now catches closed compounds, so a **green tea mooncake** is no longer
+  offered for a green tea row.
+- **2026-09-01 — a question the scan has since answered by writing leaves the queue**,
+  instead of sitting on the review page asking about a price that is already recorded.
+- **2026-08-31 — a shop that matched nothing now says what it nearly found.** Up to
+  three near-miss suggestions per row and shop, marked clearly as suggestions — a pair
+  that goes silent is indistinguishable from "this shop does not stock it".
+- **2026-08-24 — the price check runs in the cloud** for the four shops reachable from
+  it: 106 of the 120 row×shop pairs, with no laptop involved. Watsons, iHerb and
+  Carousell still need a real browser or a Singapore address.
 
 - **2026-08-22 — a price check can no longer quietly make one of your prices worse.**
   When the scanner looked up a shop you had already recorded a price for, it wrote
