@@ -875,14 +875,32 @@ check("…nor a row that already states its grams per unit", !needsSizeInName({ 
 check("…nor a product with no weight at all", !needsSizeInName(capsuleRow, { packWeightG: null }));
 
 /**
- * ⚠️ The tokeniser splits a hyphen, so a row saying `Multi-vitamin` and a shop saying
- * `Multivitamin` do not share the word. Recorded as a measurement, not a fix: the right
- * product lands in `review` at 0.619 rather than `accept`.
+ * ⚠️⚠️ **A hyphen is a word boundary one side may not keep.** Measured 2026-09-08
+ * before the fix: the right product scored 0.619 — a review — while the same title
+ * spelled `Multi-vitamin` scored 0.871. The prefix rule rescues `multi` and can do
+ * nothing for `vitamin`, which is a suffix. Two ADJACENT tokens whose concatenation is
+ * a whole token on the other side now count as both present — adjacency is the safety.
  */
 describe("a hyphen in the row splits a word the shop closed up");
 
 const mv = targetFrom("Multi-vitamin (Life Extension)", { unitType: "By Unit" as UnitType });
 const twoPerDay = product({ name: "Life Extension, Two Per Day Multivitamin, 120 Capsules", unitCount: 120, packWeightG: null });
 const hyphened = product({ name: "Life Extension, Two Per Day Multi-vitamin, 120 Capsules", unitCount: 120, packWeightG: null });
-eq("the closed-up spelling is only a review", evaluate(mv, twoPerDay).verdict, "review");
-eq("the hyphenated spelling accepts", evaluate(mv, hyphened).verdict, "accept");
+eq("the closed-up spelling now accepts", evaluate(mv, twoPerDay).verdict, "accept");
+eq("…as does the hyphenated spelling, unchanged", evaluate(mv, hyphened).verdict, "accept");
+// ⚠️ The guard this rule is shaped around: `bran` is not half of a compound whose other
+// half sits beside it, so nothing here brings the Knife Brand bug back.
+eq(
+	"a brand name is still not a variety claim",
+	evaluate(targetFrom("Oil (Bran)"), product({ name: "Knife Brand Cooking Oil 2L", packWeightG: 2000 })).verdict,
+	"review",
+);
+// The reverse direction: the row closed the word up and the shop split it.
+eq(
+	"…and the reverse direction holds too",
+	evaluate(
+		targetFrom("Multivitamin (Life Extension)", { unitType: "By Unit" as UnitType }),
+		product({ name: "Life Extension, Two Per Day Multi Vitamin, 120 Capsules", unitCount: 120, packWeightG: null }),
+	).verdict,
+	"accept",
+);

@@ -148,20 +148,55 @@ export function score(query: string, candidate: string): number {
 	const c = tokens(candidate);
 	if (q.length === 0 || c.length === 0) return 0;
 	const cset = new Set(c);
-	let inter = 0;
+	const credit = new Map<string, number>();
 	for (const qt of new Set(q)) {
 		if (cset.has(qt)) {
-			inter += 1;
+			credit.set(qt, 1);
 			continue;
 		}
+		let best = 0;
 		for (const ct of cset) {
 			const p = sharedPrefix(qt, ct);
 			if (p >= 4 && (p === qt.length || p === ct.length)) {
-				inter += 0.75; // one token is a full prefix of the other (compound)
+				best = 0.75; // one token is a full prefix of the other (compound)
 				break;
 			}
 		}
+		credit.set(qt, best);
 	}
+
+	/**
+	 * ⚠️⚠️ **A hyphen is a word boundary one side may not keep.** The row says
+	 * `Multi-vitamin`, which tokenises to `multi` + `vitamin`; iHerb writes
+	 * `Multivitamin`, which is one word. Measured 2026-09-08: `Life Extension, Two Per
+	 * Day Multivitamin, 120 Capsules` scored **0.619** against that row — a review, not
+	 * an accept — while the same title spelled `Multi-vitamin` scored 0.871. The prefix
+	 * rule above rescues `multi` (a prefix of `multivitamin`) and can do nothing for
+	 * `vitamin`, which is a suffix.
+	 *
+	 * So two **adjacent** tokens whose concatenation is a whole token on the other side
+	 * count as both present. Adjacency is the safety: it is what a hyphen or a space
+	 * inside one compound means, and it is why this cannot become the substring match
+	 * that once let `Oil (Bran)` be satisfied by every "Knife **Brand**" cooking oil —
+	 * `bran` is not half of a compound whose other half sits beside it.
+	 *
+	 * ⚠️ Both directions, because either side may be the one that closed the word up.
+	 */
+	// the row split a word the candidate kept whole: multi + vitamin -> multivitamin
+	for (let i = 0; i + 1 < q.length; i++) {
+		if (!cset.has(q[i]! + q[i + 1]!)) continue;
+		credit.set(q[i]!, 1);
+		credit.set(q[i + 1]!, 1);
+	}
+	// …and the reverse, because either side may be the one that closed the word up
+	const qset = new Set(q);
+	for (let i = 0; i + 1 < c.length; i++) {
+		const whole = c[i]! + c[i + 1]!;
+		if (qset.has(whole)) credit.set(whole, 1);
+	}
+
+	let inter = 0;
+	for (const v of credit.values()) inter += v;
 	const coverage = inter / new Set(q).size; // how much of the item name is present
 	const precision = inter / cset.size; // how FOCUSED the candidate is
 	return COVERAGE_WEIGHT * coverage + PRECISION_WEIGHT * precision;
