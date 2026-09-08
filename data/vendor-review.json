@@ -1,7 +1,226 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-08T02:04:32.024Z",
+  "updatedAt": "2026-09-08T02:05:43.261Z",
   "pending": [
+    {
+      "token": "7jj9xu",
+      "ingredientId": "3b269a18-4fe7-81d4-8025-e6004ddc5b24",
+      "ingredientName": "AM facial moisturizing lotion (SPF 30) [cerave]",
+      "key": "am facial moisturizing lotion",
+      "unitType": "By ml",
+      "vendor": "Watsons",
+      "slotN": 3,
+      "brand": "cerave",
+      "priceSgd": 29.9,
+      "size": 52,
+      "url": "https://www.watsons.com.sg/cerave-am-facial-moisturizing-lotion-spf30-52ml/p/BP_51157",
+      "itemName": "CERAVE AM Facial Moisturizing Lotion SPF30 52ml",
+      "statedSize": "52ml",
+      "perLabel": "$575.00/L",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is the closest one, offered as a suggestion. Accept only if it is the same thing."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-09-07T03:06:10.678Z"
+    },
+    {
+      "token": "wd6tb9",
+      "ingredientId": "3b269a18-4fe7-8123-a0ae-ccda5c7a3415",
+      "ingredientName": "Toothpaste  - Multi Care [Sensodyne]",
+      "key": "toothpast multi care",
+      "unitType": "By Gram",
+      "vendor": "Watsons",
+      "slotN": 3,
+      "brand": "sensodyne",
+      "priceSgd": 7.5,
+      "size": 100,
+      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-gum-care-toothpaste-dental-sensitivity-relief-100g/p/BP_45477",
+      "itemName": "SENSODYNE Sensitive Teeth Gum Care Toothpaste (Dental Sensitivity Relief) 100g",
+      "statedSize": "100g",
+      "perLabel": "$75.00/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 2 of 3, offered as a suggestion. Accept only if it is the same thing."
+        }
+      ],
+      "rank": 1,
+      "askedAt": "2026-09-07T03:06:33.397Z"
+    },
+    {
+      "token": "m5yaj9",
+      "ingredientId": "3b269a18-4fe7-8123-a0ae-ccda5c7a3415",
+      "ingredientName": "Toothpaste  - Multi Care [Sensodyne]",
+      "key": "toothpast multi care",
+      "unitType": "By Gram",
+      "vendor": "Watsons",
+      "slotN": 3,
+      "brand": "sensodyne",
+      "priceSgd": 7.8,
+      "size": 100,
+      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-oral-care-toothpaste-gentle-whitening-dental-sensitivity-relief-100g/p/BP_47922",
+      "itemName": "SENSODYNE Sensitive Teeth Oral Care Toothpaste Gentle Whitening (Dental Sensitivity Relief) 100g",
+      "statedSize": "100g",
+      "perLabel": "$78.00/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
+        }
+      ],
+      "rank": 2,
+      "askedAt": "2026-09-07T03:06:33.398Z"
+    },
+    {
+      "token": "44qgz7",
+      "ingredientId": "3b269a18-4fe7-8123-a0ae-ccda5c7a3415",
+      "ingredientName": "Toothpaste  - Multi Care [Sensodyne]",
+      "key": "toothpast multi care",
+      "unitType": "By Gram",
+      "vendor": "Watsons",
+      "slotN": 3,
+      "brand": "sensodyne",
+      "priceSgd": 7.5,
+      "size": 100,
+      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-multi-care-dental-sensitivity-relief-100g/p/BP_92324",
+      "itemName": "SENSODYNE Sensitive Teeth Multi Care (Dental Sensitivity Relief) 100g",
+      "statedSize": "100g",
+      "perLabel": "$75.00/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is the closest of 3 offered, best first. Accept only if it is the same thing."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-09-07T03:06:33.407Z"
+    },
+    {
+      "token": "rypsw0",
+      "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
+      "ingredientName": "Sensitivity & Gum Toothpaste - Original",
+      "key": "sensitiviti gum toothpast original",
+      "unitType": "By Gram",
+      "vendor": "Watsons",
+      "slotN": 3,
+      "priceSgd": 10.2,
+      "size": 100,
+      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-oral-care-toothpaste-sensitivity-and-gum-extra-fresh-dental-sensitivity-relief-100g/p/BP_51696",
+      "itemName": "SENSODYNE Sensitive Teeth Oral Care Toothpaste Sensitivity and Gum Extra Fresh (Dental Sensitivity Relief) 100g",
+      "statedSize": "100g",
+      "perLabel": "$102.00/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 2 of 2, offered as a suggestion. Accept only if it is the same thing."
+        }
+      ],
+      "rank": 1,
+      "askedAt": "2026-09-07T03:07:08.247Z"
+    },
+    {
+      "token": "1egnl6",
+      "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
+      "ingredientName": "Sensitivity & Gum Toothpaste - Original",
+      "key": "sensitiviti gum toothpast original",
+      "unitType": "By Gram",
+      "vendor": "Watsons",
+      "slotN": 3,
+      "priceSgd": 10.2,
+      "size": 100,
+      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-oral-care-toothpaste-sensitivity-and-gum-whitening-dental-sensitivity-relief-100g/p/BP_45103",
+      "itemName": "SENSODYNE Sensitive Teeth Oral Care Toothpaste Sensitivity and Gum Whitening (Dental Sensitivity Relief) 100g",
+      "statedSize": "100g",
+      "perLabel": "$102.00/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is the closest of 2 offered, best first. Accept only if it is the same thing."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-09-07T03:07:08.251Z"
+    },
+    {
+      "token": "bklb5n",
+      "ingredientId": "37369a18-4fe7-809b-b3bb-cc640507e5a9",
+      "ingredientName": "Creatine monohydrate (Cali gold)",
+      "key": "creatin monohydrat",
+      "unitType": "By Gram",
+      "vendor": "Iherb",
+      "slotN": 1,
+      "priceSgd": 32.96,
+      "size": 150.25,
+      "url": "https://sg.iherb.com/pr/bpn-creatine-monohydrate-unflavored-5-3-oz-150-g/141831",
+      "itemName": "BPN, Creatine Monohydrate, Unflavored , 5.3 oz (150 g)",
+      "statedSize": "150g",
+      "perLabel": "$219.37/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 2 of 3, offered as a suggestion. Accept only if it is the same thing."
+        }
+      ],
+      "rank": 1,
+      "askedAt": "2026-09-07T03:08:26.328Z"
+    },
+    {
+      "token": "uog344",
+      "ingredientId": "37369a18-4fe7-809b-b3bb-cc640507e5a9",
+      "ingredientName": "Creatine monohydrate (Cali gold)",
+      "key": "creatin monohydrat",
+      "unitType": "By Gram",
+      "vendor": "Iherb",
+      "slotN": 1,
+      "priceSgd": 54.95,
+      "size": 300.5,
+      "url": "https://sg.iherb.com/pr/bpn-creatine-monohydrate-unflavored-10-6-oz-300-g/131350",
+      "itemName": "BPN, Creatine Monohydrate, Unflavored, 10.6 oz (300 g)",
+      "statedSize": "301g",
+      "perLabel": "$182.86/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
+        }
+      ],
+      "rank": 2,
+      "askedAt": "2026-09-07T03:08:26.329Z"
+    },
+    {
+      "token": "gb3oxa",
+      "ingredientId": "37369a18-4fe7-809b-b3bb-cc640507e5a9",
+      "ingredientName": "Creatine monohydrate (Cali gold)",
+      "key": "creatin monohydrat",
+      "unitType": "By Gram",
+      "vendor": "Iherb",
+      "slotN": 1,
+      "priceSgd": 45.19,
+      "size": 500,
+      "url": "https://sg.iherb.com/pr/paradise-herbs-creatine-monohydrate-unflavored-500-g/141315",
+      "itemName": "Paradise Herbs, Creatine Monohydrate, Unflavored, 500 g",
+      "statedSize": "500g",
+      "perLabel": "$90.38/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is the closest of 3 offered, best first. Accept only if it is the same thing."
+        },
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 42.12637913741224,
+          "foundPer": 90.38,
+          "perWord": "kg",
+          "vendor": "Iherb",
+          "note": "DEARER than the Iherb price already recorded: $42.00 / 997g = $42.13/kg → $45.19 / 500g = $90.38/kg. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-09-07T03:08:26.331Z"
+    },
     {
       "token": "1x0vjf",
       "ingredientId": "3b269a18-4fe7-81d4-8025-e6004ddc5b24",
@@ -25,7 +244,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-09-08T00:32:11.067Z"
+      "askedAt": "2026-09-08T01:56:46.353Z"
     },
     {
       "token": "dyg505",
@@ -50,63 +269,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T00:32:11.068Z"
-    },
-    {
-      "token": "gjo3x2",
-      "ingredientId": "3b269a18-4fe7-81d4-8025-e6004ddc5b24",
-      "ingredientName": "AM facial moisturizing lotion (SPF 30) [cerave]",
-      "key": "am facial moisturizing lotion",
-      "unitType": "By ml",
-      "vendor": "Guardian",
-      "slotN": 4,
-      "brand": "cerave",
-      "priceSgd": 29.9,
-      "size": 52,
-      "url": "https://www.guardian.com.sg/cerave-am-facial-moisturizer-lotion-52ml-630064.html",
-      "itemName": "CeraVe AM Facial Moisturizing Lotion SPF30 52ML",
-      "statedSize": "52ml",
-      "perLabel": "$575.00/L",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 2 of 2, offered as a suggestion. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 1,
-      "askedAt": "2026-09-08T00:32:27.022Z"
-    },
-    {
-      "token": "7mrx2m",
-      "ingredientId": "3b269a18-4fe7-81d4-8025-e6004ddc5b24",
-      "ingredientName": "AM facial moisturizing lotion (SPF 30) [cerave]",
-      "key": "am facial moisturizing lotion",
-      "unitType": "By ml",
-      "vendor": "Guardian",
-      "slotN": 4,
-      "brand": "cerave",
-      "priceSgd": 30.9,
-      "size": 52,
-      "url": "https://www.guardian.com.sg/crv-am-facial-moisturising-lot-635747.html",
-      "itemName": "CeraVe AM Facial Moisturizing Lotion SPF50 52ML",
-      "statedSize": "52ml",
-      "perLabel": "$594.23/L",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is the closest of 2 offered, best first. Accept only if it is the same thing."
-        },
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 575,
-          "foundPer": 594.2307692307693,
-          "perWord": "L",
-          "vendor": "Guardian",
-          "note": "DEARER than the Guardian price already recorded: $29.90 / 52ml = $575.00/L → $30.90 / 52ml = $594.23/L. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-08T00:32:27.023Z"
+      "askedAt": "2026-09-08T01:56:46.354Z"
     },
     {
       "token": "lo4o3w",
@@ -129,7 +292,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-09-08T00:33:28.002Z"
+      "askedAt": "2026-09-08T01:57:59.066Z"
     },
     {
       "token": "zq95y9",
@@ -152,7 +315,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-09-08T00:33:28.003Z"
+      "askedAt": "2026-09-08T01:57:59.066Z"
     },
     {
       "token": "9cowqx",
@@ -175,7 +338,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T00:33:28.003Z"
+      "askedAt": "2026-09-08T01:57:59.067Z"
     },
     {
       "token": "nlcf2f",
@@ -207,7 +370,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T00:33:42.493Z"
+      "askedAt": "2026-09-08T01:58:15.656Z"
     },
     {
       "token": "yrxust",
@@ -236,7 +399,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T00:33:59.823Z"
+      "askedAt": "2026-09-08T01:58:31.877Z"
     },
     {
       "token": "lvv3y0",
@@ -265,7 +428,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T00:34:08.721Z"
+      "askedAt": "2026-09-08T01:58:39.107Z"
     },
     {
       "token": "t5i5hm",
@@ -296,7 +459,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T00:34:16.982Z"
+      "askedAt": "2026-09-08T01:58:47.102Z"
     },
     {
       "token": "qb1z8m",
@@ -327,7 +490,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T00:34:24.843Z"
+      "askedAt": "2026-09-08T01:58:54.865Z"
     },
     {
       "token": "9v70vq",
@@ -361,7 +524,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T00:35:12.026Z"
+      "askedAt": "2026-09-08T01:59:48.979Z"
     },
     {
       "token": "us1oig",
@@ -385,7 +548,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-09-08T00:36:05.716Z"
+      "askedAt": "2026-09-08T02:00:38.884Z"
     },
     {
       "token": "r9mgtc",
@@ -417,7 +580,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T00:36:05.716Z"
+      "askedAt": "2026-09-08T02:00:38.884Z"
     },
     {
       "token": "84vaf7",
@@ -442,7 +605,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T00:36:11.337Z"
+      "askedAt": "2026-09-08T02:00:44.904Z"
     },
     {
       "token": "j017sn",
@@ -466,7 +629,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T00:36:15.231Z"
+      "askedAt": "2026-09-08T02:00:47.705Z"
     },
     {
       "token": "vvj2kl",
@@ -490,7 +653,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-09-08T00:36:29.174Z"
+      "askedAt": "2026-09-08T02:01:02.976Z"
     },
     {
       "token": "9oabdq",
@@ -514,7 +677,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-09-08T00:36:29.174Z"
+      "askedAt": "2026-09-08T02:01:02.976Z"
     },
     {
       "token": "mkfpys",
@@ -538,7 +701,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T00:36:29.174Z"
+      "askedAt": "2026-09-08T02:01:02.977Z"
     },
     {
       "token": "savzko",
@@ -562,7 +725,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-09-08T00:36:48.653Z"
+      "askedAt": "2026-09-08T02:01:27.434Z"
     },
     {
       "token": "qij3fi",
@@ -586,7 +749,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-09-08T00:36:48.653Z"
+      "askedAt": "2026-09-08T02:01:27.434Z"
     },
     {
       "token": "mn5lav",
@@ -618,7 +781,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T00:36:48.653Z"
+      "askedAt": "2026-09-08T02:01:27.434Z"
     },
     {
       "token": "2zosbs",
@@ -642,7 +805,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-09-08T00:36:56.440Z"
+      "askedAt": "2026-09-08T02:01:36.218Z"
     },
     {
       "token": "tbie89",
@@ -666,7 +829,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T00:36:56.441Z"
+      "askedAt": "2026-09-08T02:01:36.218Z"
     },
     {
       "token": "sqazcl",
@@ -694,7 +857,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T00:37:03.088Z"
+      "askedAt": "2026-09-08T02:01:46.076Z"
     },
     {
       "token": "qpptkl",
@@ -722,7 +885,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T00:37:04.715Z"
+      "askedAt": "2026-09-08T02:01:48.805Z"
     },
     {
       "token": "bh6y0n",
@@ -750,7 +913,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T00:38:14.058Z"
+      "askedAt": "2026-09-08T02:02:52.953Z"
     },
     {
       "token": "915b8x",
@@ -778,7 +941,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T00:38:23.867Z"
+      "askedAt": "2026-09-08T02:03:02.219Z"
     },
     {
       "token": "9evl12",
@@ -803,7 +966,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T00:39:10.906Z"
+      "askedAt": "2026-09-08T02:03:47.060Z"
     },
     {
       "token": "k2ioco",
@@ -831,7 +994,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T00:39:13.054Z"
+      "askedAt": "2026-09-08T02:03:49.408Z"
     },
     {
       "token": "qqp3jo",
@@ -856,7 +1019,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-09-08T00:39:30.284Z"
+      "askedAt": "2026-09-08T02:04:07.376Z"
     },
     {
       "token": "hczc9b",
@@ -881,7 +1044,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-09-08T00:39:30.284Z"
+      "askedAt": "2026-09-08T02:04:07.376Z"
     },
     {
       "token": "08ashh",
@@ -906,7 +1069,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T00:39:30.285Z"
+      "askedAt": "2026-09-08T02:04:07.376Z"
     },
     {
       "token": "iddgb9",
@@ -934,7 +1097,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T00:39:56.058Z"
+      "askedAt": "2026-09-08T02:04:39.182Z"
     },
     {
       "token": "atcu4x",
@@ -962,7 +1125,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T00:39:59.617Z"
+      "askedAt": "2026-09-08T02:04:42.098Z"
     },
     {
       "token": "va71ta",
@@ -995,7 +1158,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T00:40:07.611Z"
+      "askedAt": "2026-09-08T02:04:47.867Z"
     },
     {
       "token": "jxyxog",
@@ -1023,7 +1186,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T00:40:21.590Z"
+      "askedAt": "2026-09-08T02:04:57.039Z"
     },
     {
       "token": "5ouerp",
@@ -1051,7 +1214,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T00:40:30.712Z"
+      "askedAt": "2026-09-08T02:05:02.519Z"
     },
     {
       "token": "zlg42m",
@@ -1079,7 +1242,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T00:40:46.490Z"
+      "askedAt": "2026-09-08T02:05:18.089Z"
     },
     {
       "token": "24u7ly",
@@ -1103,7 +1266,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-09-08T00:41:06.537Z"
+      "askedAt": "2026-09-08T02:05:37.844Z"
     },
     {
       "token": "eo4dum",
@@ -1127,7 +1290,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-09-08T00:41:06.537Z"
+      "askedAt": "2026-09-08T02:05:37.844Z"
     },
     {
       "token": "1p7ijy",
@@ -1151,7 +1314,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T00:41:06.538Z"
+      "askedAt": "2026-09-08T02:05:37.844Z"
     },
     {
       "token": "vwk3b7",
@@ -1179,7 +1342,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T00:41:12.563Z"
+      "askedAt": "2026-09-08T02:05:40.301Z"
     },
     {
       "token": "1gqw65",
@@ -1207,240 +1370,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T00:41:15.745Z"
-    },
-    {
-      "token": "wd6tb9",
-      "ingredientId": "3b269a18-4fe7-8123-a0ae-ccda5c7a3415",
-      "ingredientName": "Toothpaste  - Multi Care [Sensodyne]",
-      "key": "toothpast multi care",
-      "unitType": "By Gram",
-      "vendor": "Watsons",
-      "slotN": 3,
-      "brand": "sensodyne",
-      "priceSgd": 7.5,
-      "size": 100,
-      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-gum-care-toothpaste-dental-sensitivity-relief-100g/p/BP_45477",
-      "itemName": "SENSODYNE Sensitive Teeth Gum Care Toothpaste (Dental Sensitivity Relief) 100g",
-      "statedSize": "100g",
-      "perLabel": "$75.00/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 2 of 3, offered as a suggestion. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 1,
-      "askedAt": "2026-09-08T02:01:14.285Z"
-    },
-    {
-      "token": "m5yaj9",
-      "ingredientId": "3b269a18-4fe7-8123-a0ae-ccda5c7a3415",
-      "ingredientName": "Toothpaste  - Multi Care [Sensodyne]",
-      "key": "toothpast multi care",
-      "unitType": "By Gram",
-      "vendor": "Watsons",
-      "slotN": 3,
-      "brand": "sensodyne",
-      "priceSgd": 7.8,
-      "size": 100,
-      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-oral-care-toothpaste-gentle-whitening-dental-sensitivity-relief-100g/p/BP_47922",
-      "itemName": "SENSODYNE Sensitive Teeth Oral Care Toothpaste Gentle Whitening (Dental Sensitivity Relief) 100g",
-      "statedSize": "100g",
-      "perLabel": "$78.00/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 2,
-      "askedAt": "2026-09-08T02:01:14.287Z"
-    },
-    {
-      "token": "44qgz7",
-      "ingredientId": "3b269a18-4fe7-8123-a0ae-ccda5c7a3415",
-      "ingredientName": "Toothpaste  - Multi Care [Sensodyne]",
-      "key": "toothpast multi care",
-      "unitType": "By Gram",
-      "vendor": "Watsons",
-      "slotN": 3,
-      "brand": "sensodyne",
-      "priceSgd": 7.5,
-      "size": 100,
-      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-multi-care-dental-sensitivity-relief-100g/p/BP_92324",
-      "itemName": "SENSODYNE Sensitive Teeth Multi Care (Dental Sensitivity Relief) 100g",
-      "statedSize": "100g",
-      "perLabel": "$75.00/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is the closest of 3 offered, best first. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-08T02:01:14.290Z"
-    },
-    {
-      "token": "rypsw0",
-      "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
-      "ingredientName": "Sensitivity & Gum Toothpaste - Original",
-      "key": "sensitiviti gum toothpast original",
-      "unitType": "By Gram",
-      "vendor": "Watsons",
-      "slotN": 3,
-      "priceSgd": 10.2,
-      "size": 100,
-      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-oral-care-toothpaste-sensitivity-and-gum-extra-fresh-dental-sensitivity-relief-100g/p/BP_51696",
-      "itemName": "SENSODYNE Sensitive Teeth Oral Care Toothpaste Sensitivity and Gum Extra Fresh (Dental Sensitivity Relief) 100g",
-      "statedSize": "100g",
-      "perLabel": "$102.00/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 2 of 2, offered as a suggestion. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 1,
-      "askedAt": "2026-09-08T02:02:06.922Z"
-    },
-    {
-      "token": "1egnl6",
-      "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
-      "ingredientName": "Sensitivity & Gum Toothpaste - Original",
-      "key": "sensitiviti gum toothpast original",
-      "unitType": "By Gram",
-      "vendor": "Watsons",
-      "slotN": 3,
-      "priceSgd": 10.2,
-      "size": 100,
-      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-oral-care-toothpaste-sensitivity-and-gum-whitening-dental-sensitivity-relief-100g/p/BP_45103",
-      "itemName": "SENSODYNE Sensitive Teeth Oral Care Toothpaste Sensitivity and Gum Whitening (Dental Sensitivity Relief) 100g",
-      "statedSize": "100g",
-      "perLabel": "$102.00/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is the closest of 2 offered, best first. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-08T02:02:06.933Z"
-    },
-    {
-      "token": "bklb5n",
-      "ingredientId": "37369a18-4fe7-809b-b3bb-cc640507e5a9",
-      "ingredientName": "Creatine monohydrate (Cali gold)",
-      "key": "creatin monohydrat",
-      "unitType": "By Gram",
-      "vendor": "Iherb",
-      "slotN": 1,
-      "priceSgd": 32.96,
-      "size": 150.25,
-      "url": "https://sg.iherb.com/pr/bpn-creatine-monohydrate-unflavored-5-3-oz-150-g/141831",
-      "itemName": "BPN, Creatine Monohydrate, Unflavored , 5.3 oz (150 g)",
-      "statedSize": "150g",
-      "perLabel": "$219.37/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 2 of 3, offered as a suggestion. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 1,
-      "askedAt": "2026-09-08T02:03:42.975Z"
-    },
-    {
-      "token": "uog344",
-      "ingredientId": "37369a18-4fe7-809b-b3bb-cc640507e5a9",
-      "ingredientName": "Creatine monohydrate (Cali gold)",
-      "key": "creatin monohydrat",
-      "unitType": "By Gram",
-      "vendor": "Iherb",
-      "slotN": 1,
-      "priceSgd": 54.95,
-      "size": 300.5,
-      "url": "https://sg.iherb.com/pr/bpn-creatine-monohydrate-unflavored-10-6-oz-300-g/131350",
-      "itemName": "BPN, Creatine Monohydrate, Unflavored, 10.6 oz (300 g)",
-      "statedSize": "301g",
-      "perLabel": "$182.86/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 2,
-      "askedAt": "2026-09-08T02:03:42.976Z"
-    },
-    {
-      "token": "gb3oxa",
-      "ingredientId": "37369a18-4fe7-809b-b3bb-cc640507e5a9",
-      "ingredientName": "Creatine monohydrate (Cali gold)",
-      "key": "creatin monohydrat",
-      "unitType": "By Gram",
-      "vendor": "Iherb",
-      "slotN": 1,
-      "priceSgd": 45.19,
-      "size": 500,
-      "url": "https://sg.iherb.com/pr/paradise-herbs-creatine-monohydrate-unflavored-500-g/141315",
-      "itemName": "Paradise Herbs, Creatine Monohydrate, Unflavored, 500 g",
-      "statedSize": "500g",
-      "perLabel": "$90.38/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is the closest of 3 offered, best first. Accept only if it is the same thing."
-        },
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 42.12637913741224,
-          "foundPer": 90.38,
-          "perWord": "kg",
-          "vendor": "Iherb",
-          "note": "DEARER than the Iherb price already recorded: $42.00 / 997g = $42.13/kg → $45.19 / 500g = $90.38/kg. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-08T02:03:42.978Z"
-    },
-    {
-      "token": "dqgmxs",
-      "ingredientId": "37369a18-4fe7-80c0-bae0-f52639895b21",
-      "ingredientName": "whey (Essential) [MyProtein]",
-      "key": "whei",
-      "unitType": "By Gram",
-      "vendor": "Carousell",
-      "slotN": 2,
-      "brand": "myprotein",
-      "priceSgd": 125.1,
-      "size": 20,
-      "url": "https://www.carousell.sg/p/momentous-essential-grass-fed-whey-protein-powder-20g-whey-isolate-protein-nsf-certified-gluten-free-25-servings-for-essential-everyday-use-unflavored-unflavoured-25-servings-pack-of-1-1438086257/",
-      "itemName": "momentous essential grass fed whey protein powder 20g whey isolate protein nsf certified gluten free 25 servings for essential everyday use unflavored unflavoured 25 servings pack of 1",
-      "statedSize": "20g",
-      "perLabel": "$6255.00/kg",
-      "reasons": [
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 32,
-          "foundPer": 6255,
-          "perWord": "kg",
-          "vendor": "Carousell",
-          "note": "DEARER than the Carousell price already recorded: $80.00 / 2500g = $32.00/kg → $125.10 / 20g = $6255.00/kg. Not written — accept only if the old price is gone."
-        },
-        {
-          "kind": "undercut",
-          "rejected": 1,
-          "note": "1 cheaper listing was rejected as implausible"
-        },
-        {
-          "kind": "outlier",
-          "factor": 164.60526315789474,
-          "note": "164.6× DEARER than this row's other shop"
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-08T02:04:32.024Z"
+      "askedAt": "2026-09-08T02:05:43.261Z"
     }
   ],
   "rejected": [
@@ -1556,8 +1486,8 @@
     }
   ],
   "moves": {
-    "generatedAt": "2026-09-08T02:04:32.028Z",
-    "reconfirmed": 5,
+    "generatedAt": "2026-09-08T02:05:43.261Z",
+    "reconfirmed": 56,
     "moves": []
   }
 }
