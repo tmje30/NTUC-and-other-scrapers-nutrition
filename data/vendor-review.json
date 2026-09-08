@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-08T02:27:01.290Z",
+  "updatedAt": "2026-09-08T04:54:35.062Z",
   "pending": [
     {
       "token": "7jj9xu",
@@ -491,32 +491,6 @@
       ],
       "rank": 0,
       "askedAt": "2026-09-08T02:20:23.640Z"
-    },
-    {
-      "token": "9v70vq",
-      "ingredientId": "37369a18-4fe7-80c0-bae0-f52639895b21",
-      "ingredientName": "whey (Essential) [MyProtein]",
-      "key": "whei",
-      "unitType": "By Gram",
-      "vendor": "My Protein",
-      "slotN": 3,
-      "brand": "myprotein",
-      "priceSgd": 349,
-      "size": 2250,
-      "url": "https://www.myprotein.com.sg/p/sports-nutrition/essential-whey-protein/11052699/?variation=17784492",
-      "itemName": "Essential Whey Protein 2.25kg - 90servings Strawberry Cream",
-      "statedSize": "2.25kg",
-      "brandName": "Myprotein",
-      "perLabel": "$155.11/kg",
-      "reasons": [
-        {
-          "kind": "outlier",
-          "factor": 4.847222222222222,
-          "note": "4.8× DEARER than this row's other shop"
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-08T02:21:03.416Z"
     },
     {
       "token": "us1oig",
@@ -1476,10 +1450,5 @@
       "why": "6.6× cheaper than this row's other shop",
       "rejectedAt": "2026-08-12T00:52:05.250Z"
     }
-  ],
-  "moves": {
-    "generatedAt": "2026-09-08T02:27:01.290Z",
-    "reconfirmed": 56,
-    "moves": []
-  }
+  ]
 }
