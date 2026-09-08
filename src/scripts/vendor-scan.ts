@@ -569,7 +569,17 @@ async function main(): Promise<void> {
 				// when it will actually work. Razor cartridges and tissue rolls are genuinely
 				// countable-only — no shop states a weight, so no candidate ever gets here and
 				// no row is nagged about a weight that does not exist.
-				const fixable = needsSizeInName(row, p);
+				//
+				// ⚠️⚠️ **`matched` is the half that was missing, and the line above claimed a
+				// guarantee the code did not keep.** On the near-miss path `p` is a SUGGESTION
+				// — a product the matcher explicitly did NOT accept — so the note fired on
+				// products that were never this row's item. Measured 2026-09-08:
+				// `Multi-vitamin (Life Extension)` is counted in capsules, iHerb returned
+				// `Life Extension, Mix™ Powder, 0.79 lbs (360 g)` as a 0.470 near-miss, and the
+				// user was told to write `(358.34g)` into the row. Doing so would not have
+				// helped — it would have taught a tablet row to accept a powder.
+				const matched = !!rescued || outcome?.ok === true;
+				const fixable = matched && needsSizeInName(row, p);
 				if (fixable) {
 					gaps.push({
 						name: row.name,
@@ -585,7 +595,9 @@ async function main(): Promise<void> {
 						`but this row is ${row.unitType}` +
 						(fixable
 							? `.\n      📏 Add a size to the Notion name — e.g. "${row.name.trim()} (${p.packWeightG}${p.volumetric ? "ml" : "g"})" — and this becomes recordable.`
-							: `. A scan may not change \`Unit type \`.`),
+							: matched
+								? `. A scan may not change \`Unit type \`.`
+								: ", and it did not match this row anyway — no size in the name would fix that."),
 				);
 				refused++;
 				continue;

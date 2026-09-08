@@ -854,3 +854,35 @@ describe("a shop writes SPF30; the row says (SPF 30)");
 	const brand = evaluate(branRow, product({ name: "Knife Brand Cooking Oil", packWeightG: 1000, volumetric: true }) as any);
 	check("a brand name still does not satisfy (Bran)", brand.missing.includes("bran"));
 }
+
+/**
+ * ⚠️⚠️ **Advice to go and retype a Notion row must come from a product that MATCHED.**
+ * The weight-gap note fired on the near-miss path too, where the pick is a suggestion the
+ * matcher explicitly rejected. Measured 2026-09-08: `Multi-vitamin (Life Extension)` is
+ * counted in capsules, iHerb's search returned `Life Extension, Mix™ Powder, 0.79 lbs
+ * (360 g)` — a 0.470 near-miss — and the user was told to write `(358.34g)` into the row.
+ * Following that advice would have taught a tablet row to accept a powder.
+ */
+describe("a weight gap is only worth reporting on a product that matched");
+
+const capsuleRow = { unitType: "By Unit" as UnitType, gramsPerUnit: null };
+// `needsSizeInName` answers only "could a size in the name make this recordable?" — it
+// knows nothing about matching, which is why the caller has to supply that half.
+check("a weighed pack on a countable row is fixable in principle", needsSizeInName(capsuleRow, { packWeightG: 360 }));
+check("…but a By Gram row never is", !needsSizeInName({ unitType: "By Gram" as UnitType, gramsPerUnit: null }, { packWeightG: 360 }));
+check("…nor a row that already states its grams per unit", !needsSizeInName({ unitType: "By Unit" as UnitType, gramsPerUnit: 30 }, { packWeightG: 360 }));
+// Razor cartridges and tissue rolls: no shop states a weight, so nothing to suggest.
+check("…nor a product with no weight at all", !needsSizeInName(capsuleRow, { packWeightG: null }));
+
+/**
+ * ⚠️ The tokeniser splits a hyphen, so a row saying `Multi-vitamin` and a shop saying
+ * `Multivitamin` do not share the word. Recorded as a measurement, not a fix: the right
+ * product lands in `review` at 0.619 rather than `accept`.
+ */
+describe("a hyphen in the row splits a word the shop closed up");
+
+const mv = targetFrom("Multi-vitamin (Life Extension)", { unitType: "By Unit" as UnitType });
+const twoPerDay = product({ name: "Life Extension, Two Per Day Multivitamin, 120 Capsules", unitCount: 120, packWeightG: null });
+const hyphened = product({ name: "Life Extension, Two Per Day Multi-vitamin, 120 Capsules", unitCount: 120, packWeightG: null });
+eq("the closed-up spelling is only a review", evaluate(mv, twoPerDay).verdict, "review");
+eq("the hyphenated spelling accepts", evaluate(mv, hyphened).verdict, "accept");
