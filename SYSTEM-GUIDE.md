@@ -4,13 +4,19 @@
 
 ## What this is
 
-This system watches two Singapore supermarkets — **FairPrice** and **Sheng
-Siong** — and tells you when a grocery you actually use is cheaper than what you
-normally pay. Every day it looks at your personal ingredient list in Notion,
-searches both stores for each item, works out the price per 100 g (or per litre
-for liquids), and publishes a simple web page of the best deals. It also sends a
+This system does two jobs for your groceries: it **finds today's discounts**, and
+it **keeps a record of what everything normally costs**.
+
+The discount half runs every day against two Singapore supermarkets —
+**FairPrice** and **Sheng Siong**. It looks at your personal ingredient list in
+Notion, searches both stores for each item, works out the price per 100 g (or per
+litre for liquids), and publishes a simple web page of the best deals, plus a
 one-line summary to your Telegram. It runs by itself with no daily effort from
 you — you only ever maintain your ingredient list in Notion.
+
+The record half — the **price book** — covers **up to nine shops**, not just those
+two, and answers a different question: not "what is cheap today?" but "what does
+this normally cost at each place I buy it?" More detail three paragraphs down.
 
 It also **writes back to Notion**, always on a button press and never on its own:
 a deal can be added to your shopping list, a discovered product can be filed as a
@@ -24,10 +30,10 @@ shopping list to a Telegram bot** (`@Grocery69_bot`) and it files the lines onto
 your Notion grocery list, asking about anything it isn't sure of. Since 2026-08-12
 that runs entirely in the cloud and answers in **under a minute**, awake or not.
 
-The system also **fills in your price book** — what each shop charges for each
-ingredient, in Notion's `Vendor 1..4` columns — across up to nine shops rather
-than the two it watches daily. It asks before recording anything odd (a 10 kg sack
-of carrots is genuinely the cheapest per kilo and is not a pack anyone buys).
+**The price book, in more detail.** It records what each shop charges for each
+ingredient in Notion's `Vendor 1..4` columns, and asks before recording anything
+odd (a 10 kg sack of carrots is genuinely the cheapest per kilo and is not a pack
+anyone buys).
 Everything it is unsure about waits on a **review page** with an OK and a Don't-use
 button per pack, and whatever it *did* change appears on a **price-moves page** —
 so five pages in all: deals, history, new items, review, moves. Since 2026-08-24
