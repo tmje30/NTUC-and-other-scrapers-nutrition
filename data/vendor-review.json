@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-08T06:05:53.513Z",
+  "updatedAt": "2026-09-08T06:27:17.100Z",
   "pending": [
     {
       "token": "7jj9xu",
@@ -242,7 +242,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-09-08T05:57:50.845Z"
+      "askedAt": "2026-09-08T06:19:16.269Z"
     },
     {
       "token": "zq95y9",
@@ -265,7 +265,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-09-08T05:57:50.845Z"
+      "askedAt": "2026-09-08T06:19:16.269Z"
     },
     {
       "token": "9cowqx",
@@ -288,7 +288,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T05:57:50.845Z"
+      "askedAt": "2026-09-08T06:19:16.269Z"
     },
     {
       "token": "nlcf2f",
@@ -320,7 +320,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T05:58:04.066Z"
+      "askedAt": "2026-09-08T06:19:32.661Z"
     },
     {
       "token": "yrxust",
@@ -349,7 +349,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T05:58:18.988Z"
+      "askedAt": "2026-09-08T06:19:48.889Z"
     },
     {
       "token": "lvv3y0",
@@ -378,7 +378,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T05:58:26.425Z"
+      "askedAt": "2026-09-08T06:19:57.051Z"
     },
     {
       "token": "t5i5hm",
@@ -409,7 +409,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T05:58:34.468Z"
+      "askedAt": "2026-09-08T06:20:05.456Z"
     },
     {
       "token": "qb1z8m",
@@ -440,82 +440,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T05:58:46.440Z"
-    },
-    {
-      "token": "o5vmzz",
-      "ingredientId": "37369a18-4fe7-80c0-bae0-f52639895b21",
-      "ingredientName": "whey (Essential) [MyProtein]",
-      "key": "whei",
-      "unitType": "By Gram",
-      "vendor": "My Protein",
-      "slotN": 3,
-      "brand": "myprotein",
-      "priceSgd": 349,
-      "size": 2250,
-      "url": "https://www.myprotein.com.sg/p/sports-nutrition/essential-whey-protein/11052699/?variation=17784492",
-      "itemName": "Essential Whey Protein 2.25kg - 90servings Strawberry Cream",
-      "statedSize": "2.25kg",
-      "brandName": "Myprotein",
-      "perLabel": "$155.11/kg",
-      "reasons": [
-        {
-          "kind": "outlier",
-          "factor": 4.847222222222222,
-          "note": "4.8× DEARER than this row's other shop"
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-08T05:59:34.459Z"
-    },
-    {
-      "token": "84vaf7",
-      "ingredientId": "34e69a18-4fe7-80ba-a84f-c9e6a8eb9d1c",
-      "ingredientName": "Ginger (Bentong)",
-      "key": "ginger",
-      "unitType": "By Gram",
-      "vendor": "NTUC",
-      "slotN": 1,
-      "priceSgd": 16.5,
-      "size": 160,
-      "url": "https://www.fairprice.com.sg/product/green-earth-old-bentong-ginger-160-g-90030893",
-      "itemName": "Green Earth Old Bentong Ginger",
-      "statedSize": "160g",
-      "brandName": "Green Earth",
-      "perLabel": "$103.13/kg",
-      "reasons": [
-        {
-          "kind": "outlier",
-          "factor": 11.128597122302159,
-          "note": "11.1× DEARER than this row's other shop"
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-08T06:00:32.773Z"
-    },
-    {
-      "token": "j017sn",
-      "ingredientId": "34e69a18-4fe7-80ba-a84f-c9e6a8eb9d1c",
-      "ingredientName": "Ginger (Bentong)",
-      "key": "ginger",
-      "unitType": "By Gram",
-      "vendor": "Sheng Siong",
-      "slotN": 2,
-      "priceSgd": 2.78,
-      "size": 300,
-      "url": "https://shengsiong.com.sg/product/thailand-bentong-ginger-300-g",
-      "itemName": "Thailand Bentong Ginger",
-      "statedSize": "300g",
-      "perLabel": "$9.27/kg",
-      "reasons": [
-        {
-          "kind": "outlier",
-          "factor": 0.08985858585858586,
-          "note": "11.1× cheaper than this row's other shop"
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-08T06:00:35.468Z"
+      "askedAt": "2026-09-08T06:20:12.641Z"
     },
     {
       "token": "vvj2kl",
@@ -539,7 +464,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-09-08T06:00:58.260Z"
+      "askedAt": "2026-09-08T06:22:23.411Z"
     },
     {
       "token": "9oabdq",
@@ -563,7 +488,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-09-08T06:00:58.260Z"
+      "askedAt": "2026-09-08T06:22:23.411Z"
     },
     {
       "token": "mkfpys",
@@ -587,7 +512,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T06:00:58.260Z"
+      "askedAt": "2026-09-08T06:22:23.411Z"
     },
     {
       "token": "savzko",
@@ -619,7 +544,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-09-08T06:01:16.782Z"
+      "askedAt": "2026-09-08T06:22:43.180Z"
     },
     {
       "token": "qij3fi",
@@ -651,7 +576,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-09-08T06:01:16.782Z"
+      "askedAt": "2026-09-08T06:22:43.180Z"
     },
     {
       "token": "mn5lav",
@@ -683,7 +608,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T06:01:16.782Z"
+      "askedAt": "2026-09-08T06:22:43.180Z"
     },
     {
       "token": "2zosbs",
@@ -707,7 +632,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-09-08T06:01:25.050Z"
+      "askedAt": "2026-09-08T06:22:51.483Z"
     },
     {
       "token": "tbie89",
@@ -731,7 +656,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T06:01:25.050Z"
+      "askedAt": "2026-09-08T06:22:51.484Z"
     },
     {
       "token": "sqazcl",
@@ -759,7 +684,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T06:01:31.633Z"
+      "askedAt": "2026-09-08T06:23:01.285Z"
     },
     {
       "token": "qpptkl",
@@ -787,7 +712,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T06:01:33.809Z"
+      "askedAt": "2026-09-08T06:23:02.491Z"
     },
     {
       "token": "bh6y0n",
@@ -815,7 +740,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T06:02:47.583Z"
+      "askedAt": "2026-09-08T06:24:03.828Z"
     },
     {
       "token": "915b8x",
@@ -843,7 +768,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T06:02:58.528Z"
+      "askedAt": "2026-09-08T06:24:13.700Z"
     },
     {
       "token": "9evl12",
@@ -868,7 +793,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T06:03:39.938Z"
+      "askedAt": "2026-09-08T06:24:59.125Z"
     },
     {
       "token": "k2ioco",
@@ -896,7 +821,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T06:03:45.427Z"
+      "askedAt": "2026-09-08T06:25:01.124Z"
     },
     {
       "token": "qqp3jo",
@@ -921,7 +846,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-09-08T06:04:04.065Z"
+      "askedAt": "2026-09-08T06:25:21.170Z"
     },
     {
       "token": "hczc9b",
@@ -946,7 +871,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-09-08T06:04:04.065Z"
+      "askedAt": "2026-09-08T06:25:21.170Z"
     },
     {
       "token": "08ashh",
@@ -971,7 +896,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T06:04:04.066Z"
+      "askedAt": "2026-09-08T06:25:21.171Z"
     },
     {
       "token": "atcu4x",
@@ -999,7 +924,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T06:04:47.185Z"
+      "askedAt": "2026-09-08T06:26:03.461Z"
     },
     {
       "token": "va71ta",
@@ -1032,7 +957,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T06:04:54.053Z"
+      "askedAt": "2026-09-08T06:26:13.591Z"
     },
     {
       "token": "jxyxog",
@@ -1060,7 +985,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T06:05:05.223Z"
+      "askedAt": "2026-09-08T06:26:29.273Z"
     },
     {
       "token": "5ouerp",
@@ -1088,7 +1013,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T06:05:10.427Z"
+      "askedAt": "2026-09-08T06:26:38.070Z"
     },
     {
       "token": "zlg42m",
@@ -1116,7 +1041,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T06:05:27.144Z"
+      "askedAt": "2026-09-08T06:26:51.815Z"
     },
     {
       "token": "24u7ly",
@@ -1140,7 +1065,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-09-08T06:05:47.217Z"
+      "askedAt": "2026-09-08T06:27:11.661Z"
     },
     {
       "token": "eo4dum",
@@ -1164,7 +1089,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-09-08T06:05:47.218Z"
+      "askedAt": "2026-09-08T06:27:11.661Z"
     },
     {
       "token": "1p7ijy",
@@ -1188,7 +1113,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T06:05:47.218Z"
+      "askedAt": "2026-09-08T06:27:11.661Z"
     },
     {
       "token": "btpm5n",
@@ -1216,7 +1141,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T06:05:50.615Z"
+      "askedAt": "2026-09-08T06:27:14.331Z"
     },
     {
       "token": "1gqw65",
@@ -1244,7 +1169,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-08T06:05:53.513Z"
+      "askedAt": "2026-09-08T06:27:17.100Z"
     }
   ],
   "rejected": [
@@ -1360,8 +1285,8 @@
     }
   ],
   "moves": {
-    "generatedAt": "2026-09-08T06:05:53.514Z",
-    "reconfirmed": 57,
+    "generatedAt": "2026-09-08T06:27:17.101Z",
+    "reconfirmed": 61,
     "moves": []
   }
 }
