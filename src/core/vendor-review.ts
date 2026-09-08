@@ -164,6 +164,27 @@ export function dearerThanRecorded(args: {
 }
 
 /**
+ * **The listing this slot is a RECORD of, found among what the shop returned today.**
+ *
+ * ⚠️ **Identity is the URL first and the shop's own product name second** — the same
+ * order `vendor-repair-promo` uses, and for the same reason: `itemName` was WRITTEN by
+ * this project from the shop's own payload, so it is not a human's wording and an exact
+ * compare is the right one. A fuzzy match would only loosen a comparison that is already
+ * exact, and the answer here decides whether a question is asked at all.
+ *
+ * Returns undefined when the slot names nothing yet, or when nothing the shop returned
+ * is the recorded pack — the "not findable any more" case, and the one where dearer
+ * alternatives ARE worth offering.
+ */
+export function findRecordedListing<T extends { url?: string; name: string }>(
+	slot: { urlValue?: string; itemNameValue?: string },
+	offered: readonly T[],
+): T | undefined {
+	const same = (a?: string, b?: string) => !!a && !!b && a.trim().toLowerCase() === b.trim().toLowerCase();
+	return offered.find((p) => same(slot.urlValue, p.url)) ?? offered.find((p) => same(slot.itemNameValue, p.name));
+}
+
+/**
  * A pack big enough that "cheapest per kilo" stops describing a shopping decision.
  *
  * Deliberately low. Over-asking costs one tap; under-asking writes a 10 kg sack into a

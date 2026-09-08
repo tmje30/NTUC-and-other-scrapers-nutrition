@@ -36,6 +36,7 @@ import {
 	sizeBoundsFor,
 	sizeText,
 	statedSizeRange,
+	findRecordedListing,
 	withPending,
 	withoutPendingForSlot,
 	type PendingReview,
@@ -277,6 +278,8 @@ async function main(): Promise<void> {
 	let skippedByUser = 0;
 	/** Candidates dropped by the row's own `Size - Ceiling (g/ml)`. */
 	let skippedOverCeiling = 0;
+	/** Dearer suggestions withheld because the recorded pick is still on the shelf. */
+	let suppressedDearer = 0;
 	/** Uncertain picks, queued for the Telegram ask at the end of the pass. */
 	const toAsk: PendingReview[] = [];
 	/** By Unit rows a shop prices by weight — fixable by typing a size into the name. */
@@ -445,15 +448,60 @@ async function main(): Promise<void> {
 			//
 			// ⚠️ Deliberately BEFORE the main path and deliberately not sharing it: everything
 			// below decides whether to WRITE, and an alternative may never be written.
+						// ⚠️⚠️ **A dearer alternative is not news while the recorded pick is still on the
+			// shelf at the price it was recorded at** (user, 2026-09-08). The page was offering
+			// the same worse-value siblings every morning: the row is settled, the shop still
+			// sells the pack the slot names, and the only thing the card can do is make the price
+			// book worse. Silence is the correct report for "nothing changed".
+			//
+			// ⚠️ It suppresses ONLY the dearer ones, and ONLY while both halves hold: the
+			// recorded listing is in today's results, AND it has not gone up. A price rise on the
+			// recorded pack, or the pack vanishing from the shop, drops this gate and every
+			// suggestion is offered again — those are the two cases the user named as worth asking
+			// about, and they are exactly when the alternatives stop being noise.
+			const recordedPer1000 = pricePer1000(slot.priceValue, slot.sizeValue);
+			const recordedListing = findRecordedListing(slot, suggestions);
+			const recordedListingSize = recordedListing ? resolveSize(row, recordedListing) : null;
+			const recordedListingPer =
+				recordedListing && recordedListingSize
+					? pricePer1000(recordedListing.priceSgd, recordedListingSize.size)
+					: null;
+			/** The recorded pick is still offered here, and has not gone up. */
+			const recordedHolds =
+				recordedPer1000 != null && recordedListingPer != null && recordedListingPer <= recordedPer1000;
+			const supersededByRecorded = (per1000: number | null) =>
+				recordedHolds && per1000 != null && recordedPer1000 != null && per1000 > recordedPer1000;
+
 			for (const [k, alt] of suggestions.slice(1).entries()) {
 				const altSize = resolveSize(row, alt);
 				// Same gate as the write path — a pack this row cannot measure is not offerable.
 				if (!altSize) continue;
+				const altPer1000 = pricePer1000(alt.priceSgd, altSize.size);
+				if (supersededByRecorded(altPer1000)) {
+					suppressedDearer++;
+					console.log(
+						"    · " + alt.name + " — dearer than the pick already recorded, which this shop still " +
+							"lists at the same price. Not offered.",
+					);
+					continue;
+				}
 				const outstandingAlt = findPendingFor(review, row.pageId, route.option, alt);
 				if (outstandingAlt?.messageId) {
 					standsBehind.add(outstandingAlt.token);
 					continue;
 				}
+				// ⚠️ **Every slide states what it would replace, not just the closest match**
+				// (user, 2026-09-08). The slides compete for ONE slot, so the price each would
+				// overwrite is the same fact for all of them; showing it on the first card only
+				// made the runners-up look like they had nothing to displace.
+				const altDearer = dearerThanRecorded({
+					vendor: route.option,
+					recordedPer: quotedPer(row, recordedPer1000),
+					foundPer: quotedPer(row, altPer1000),
+					recordedText: priceSizeText(row, slot.priceValue, slot.sizeValue),
+					foundText: priceSizeText(row, alt.priceSgd, altSize.size),
+					perWord: perWord(row),
+				});
 				const altPending: PendingReview = {
 					token: outstandingAlt?.token ?? reviewToken(review),
 					ingredientId: row.pageId,
@@ -477,6 +525,7 @@ async function main(): Promise<void> {
 								`no product here MATCHED this row — this is alternative ${k + 2} of ` +
 								`${suggestions.length}, offered as a suggestion. Accept only if it is the same thing.`,
 						},
+						...(altDearer ? [altDearer] : []),
 					],
 					// Reverses what queue order would otherwise say about these — see `rank`.
 					rank: k + 1,
@@ -632,6 +681,18 @@ async function main(): Promise<void> {
 								"Accept only if it is the same thing.",
 				});
 
+			// ⚠️ **The closest match obeys the same gate as the runners-up.** It is the same
+			// question — a dearer pack, offered against a recorded price that still stands —
+			// and asking it about the top card while suppressing it on the others would leave
+			// the deck reading "1 of 1" every morning for a row that has not changed.
+			if (reasons.length && supersededByRecorded(pricePer1000(p.priceSgd, size))) {
+				suppressedDearer++;
+				console.log(
+					"      · dearer than the pick already recorded, which this shop still lists at " +
+						"the same price. Not asked.",
+				);
+				continue;
+			}
 			if (reasons.length) {
 				// Already asked and still waiting? Say nothing — see `findPendingFor`.
 				const outstanding = findPendingFor(review, row.pageId, route.option, p);
@@ -784,6 +845,9 @@ async function main(): Promise<void> {
 			(toAsk.length ? `, ${toAsk.length} awaiting your call` : "") +
 			(skippedByUser ? `, ${skippedByUser} listing(s) skipped as previously refused` : "") +
 			(skippedOverCeiling ? `, ${skippedOverCeiling} over a row's size ceiling` : "") +
+			(suppressedDearer
+				? `, ${suppressedDearer} dearer suggestion(s) withheld — the recorded pick still stands`
+				: "") +
 			(gaps.length ? `, ${gaps.length} row(s) need a size in their Notion name` : "") +
 			".\n",
 	);

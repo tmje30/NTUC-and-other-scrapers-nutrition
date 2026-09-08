@@ -6,6 +6,7 @@ import {
 	EMPTY_REVIEW,
 	REJECT_REASONS,
 	findPendingFor,
+	findRecordedListing,
 	isRejectReason,
 	isRejectedPick,
 	reasonsFor,
@@ -770,3 +771,70 @@ check("a lone suggestion keeps its wording", bullets(alone).includes("this is th
 // ⚠️ Telegram gets the stored note untouched — no deck, no label, so the position earns
 // its place there. The page knows it is a deck; the note does not have to.
 check("the Telegram card is unchanged", renderReviewCard(pend({ reasons: [nearMiss(ALT2)] }) as any).includes("alternative 2 of 3"));
+
+/**
+ * ⚠️⚠️ **The row is settled; the shop still sells the pack; the page asked anyway.**
+ * (user, 2026-09-08) The CeraVe and creatine rows offered the same worse-value siblings
+ * every morning against a recorded price that had not moved. A dearer suggestion is only
+ * worth a card when the recorded pick has gone UP or gone AWAY — so the sweep has to be
+ * able to find the recorded pick among today's results first.
+ */
+describe("the recorded pick is found among today's results");
+
+const slotAt = { urlValue: "https://shop.test/p/42", itemNameValue: "CeraVe AM Lotion SPF30 52ML" };
+const offered = [
+	{ url: "https://shop.test/p/9", name: "Something else" },
+	{ url: "https://shop.test/p/42", name: "renamed since it was recorded" },
+	{ url: "https://shop.test/p/7", name: "CeraVe AM Lotion SPF30 52ML" },
+];
+
+// ⚠️ The URL wins. A shop that re-words its own title has not changed the product;
+// a shop that reuses a title across two packs has.
+eq(
+	"the URL identifies it, even after the shop re-words the title",
+	findRecordedListing(slotAt, offered)?.url,
+	"https://shop.test/p/42",
+);
+eq(
+	"the recorded name is the fallback when no URL matches",
+	findRecordedListing({ itemNameValue: "CeraVe AM Lotion SPF30 52ML" }, offered)?.url,
+	"https://shop.test/p/7",
+);
+// Case and stray spacing are the shop's, not a difference in the product.
+eq(
+	"…matched without regard to case or padding",
+	findRecordedListing({ itemNameValue: "  cerave am lotion spf30 52ml " }, offered)?.url,
+	"https://shop.test/p/7",
+);
+// ⚠️ The whole point of the gate: nothing found means the pack is GONE, and that is
+// exactly when the dearer alternatives stop being noise and start being the answer.
+check("an empty slot matches nothing", findRecordedListing({}, offered) === undefined);
+check(
+	"a pack the shop no longer lists matches nothing",
+	findRecordedListing({ urlValue: "https://shop.test/p/gone" }, offered) === undefined,
+);
+
+/**
+ * ⚠️ **Every slide states what it would replace.** The slides compete for one slot, so
+ * the price each would overwrite is the same fact for all of them — showing it only on
+ * the closest match made the runners-up look like they had nothing to displace.
+ */
+describe("a runner-up states what it would replace");
+
+const bothCmp = renderReviewPage(
+	[
+		pend({ token: "a1", rank: 0, reasons: [{ kind: "near-miss", note: "closest of 2" }] }),
+		pend({
+			token: "a2",
+			rank: 1,
+			reasons: [
+				{ kind: "near-miss", note: "alternative 2 of 2" },
+				{ kind: "dearer-than-recorded", recordedPer: 42.13, foundPer: 90.38, perWord: "kg", vendor: "Iherb", note: "n" },
+			],
+		}),
+	] as any,
+	{ repo: "o/r" },
+);
+check("the second slide carries the comparison block", bothCmp.includes("Dearer than current Iherb price"));
+eq("…once, on the slide that holds the reason", (bothCmp.match(/Dearer than current Iherb price/g) ?? []).length, 1);
+check("…with both figures", bothCmp.includes(">$42.13/kg<") && bothCmp.includes(">$90.38/kg<"));
