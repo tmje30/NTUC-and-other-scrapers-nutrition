@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-09T00:27:03.963Z",
+  "updatedAt": "2026-09-09T00:35:37.268Z",
   "pending": [
     {
       "token": "7jj9xu",
@@ -1120,7 +1120,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-09T00:27:03.962Z"
+      "askedAt": "2026-09-09T00:35:37.267Z"
     }
   ],
   "rejected": [
@@ -1236,8 +1236,31 @@
     }
   ],
   "moves": {
-    "generatedAt": "2026-09-09T00:27:24.065Z",
+    "generatedAt": "2026-09-09T00:35:50.059Z",
     "reconfirmed": 0,
-    "moves": []
+    "moves": [
+      {
+        "row": "Multi-vitamin [Life Extension]",
+        "vendor": "Iherb",
+        "recordedText": "$28.72 / 120 pcs",
+        "foundText": "$27.31 / 120 pcs",
+        "recordedPer": 23.93333333333333,
+        "foundPer": 22.758333333333333,
+        "perWord": "100 pcs",
+        "product": "Life Extension, Two-Per-Day Multivitamin, 120 Tablets",
+        "url": "https://sg.iherb.com/pr/life-extension-two-per-day-multivitamin-120-tablets/86454"
+      },
+      {
+        "row": "Omega 3 [california gold]",
+        "vendor": "Iherb",
+        "recordedText": "$39.97 / 120 pcs",
+        "foundText": "$52.61 / 300 pcs",
+        "recordedPer": 33.30833333333333,
+        "foundPer": 17.53666666666667,
+        "perWord": "100 pcs",
+        "product": "Country Life, Natural Omega-3, 1,000 mg, 300 Softgels",
+        "url": "https://sg.iherb.com/pr/country-life-natural-omega-3-1-000-mg-300-softgels/9707"
+      }
+    ]
   }
 }
