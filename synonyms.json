@@ -693,5 +693,20 @@
     "from": "banan",
     "to": "banana",
     "note": "Danish."
+  },
+  {
+    "from": "strong",
+    "to": "strength",
+    "note": "Supplement labels say Triple Strength and Extra Strong for the same idea, and neither stems onto the other (strength/strong share only 3 letters, under the 4 the prefix rule needs). Added 2026-09-09 for the Omega 3 row, whose Notes say Strength."
+  },
+  {
+    "from": "strongest",
+    "to": "strength",
+    "note": "The \\b...\\b wrapper means `strong` does not match inside `strongest`, so the superlative needs its own entry."
+  },
+  {
+    "from": "high potency",
+    "to": "high strength",
+    "note": "A judgement, not a spelling: `high potency` and `high strength` are the same claim on a supplement label. Kept as the two-word phrase so a bare `potency` elsewhere is untouched. Remove this one if it ever matches something it should not."
   }
 ]
