@@ -71,6 +71,31 @@ const PLAN_DAYS_PER_MONTH = 20;
  * button) can never drift apart on the exact spelling Notion stores.
  */
 export const TAGS_PROPERTY = "Select";
+
+/** The `Notes` column — keywords, one of which a candidate must satisfy. */
+export const NOTES_PROPERTY = "Notes";
+
+/**
+ * Split a `Notes` cell into keywords.
+ *
+ * Commas, semicolons, full stops and newlines all separate — the user writes
+ * `High DHA, EPA. Strenght, Concentrated` with both, and neither is more correct than
+ * the other. Whitespace inside one keyword is kept, because `High DHA` is one idea.
+ */
+export function noteKeywordsFrom(notes: string): string[] {
+	return String(notes || "")
+		// ⚠️ Commas, semicolons, full stops and newlines separate; a SPACE does not.
+		// `High DHA` is one keyword, and splitting it would leave `High` matching any
+		// product that says high.
+		.split(/[,;.\n\r]+/)
+		.map((t) => t.trim())
+		.filter(Boolean);
+}
+
+/** The `Notes` keywords for one page, straight from its properties. */
+export function noteKeywordsOf(props: any): string[] {
+	return noteKeywordsFrom(richText(props?.[NOTES_PROPERTY]));
+}
 export const PARKED_TAG = "Not in Use ATM";
 
 /**
@@ -184,6 +209,24 @@ export interface PlanTarget {
 	 * this again; the answer has already flipped once.
 	 */
 	vendors: string[];
+	/**
+	 * **The `Notes` column, read as keywords a candidate must satisfy AT LEAST ONE of.**
+	 *
+	 * The user's rule (2026-09-09): "key words to use. don't need to use all of them, but
+	 * at least 1". So this is an OR, unlike the `( )` properties in the Name, which are
+	 * an AND — `Omega 3` with `High DHA, EPA. Strenght, Concentrated` accepts a product
+	 * naming any one of those, and refuses one naming none.
+	 *
+	 * ⚠️ **Empty is not a filter.** A row with no Notes is unconstrained, which is every
+	 * row today bar two — a blank cell must never start rejecting things.
+	 *
+	 * ⚠️ The column is keywords ONLY (user, 2026-09-09, asked directly). Prose kept there
+	 * would become requirements: `Banana (Fruit)` briefly held "it is 1153g to 3.5sgd,
+	 * other weight is without skins", which as keywords would have demanded a shop say
+	 * `weight` or `skins`. Notes to self belong in `{curly braces}` in the Name, which
+	 * `parseName` already discards.
+	 */
+	noteKeywords: string[];
 	/** True when tagged `Brand Specific`: only the [bracketed] brand may match. */
 	brandSpecific: boolean;
 	/**
@@ -642,6 +685,7 @@ export async function readGroceryTargets(): Promise<PlanTarget[]> {
 			unitType,
 			tags,
 			vendors: baseline.vendors,
+			noteKeywords: noteKeywordsOf(p),
 			brandSpecific: hasTag("brand specific"),
 			qualityItem: hasTag("quality item"),
 			organicWelfare: hasTag("organic/animal welfare"),

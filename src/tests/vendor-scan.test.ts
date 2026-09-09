@@ -948,3 +948,60 @@ eq(
 // ⚠️ The shape of the bug: with only the powder present the row used to be answered by it.
 const onlyPowder = pickCandidate(vitaminRow, [shelf[3]!], { marketplace: false });
 check("a powder alone still does not satisfy a multivitamin row", !onlyPowder.ok);
+
+/**
+ * ⚠️⚠️ **The `Notes` column is an OR where the Name's `( )` properties are an AND.**
+ * The user's rule (2026-09-09): "key words to use. don't need to use all of them, but at
+ * least 1". `Omega 3 [california gold]` carries `High DHA, EPA. Strenght, Concentrated`.
+ */
+describe("Notes keywords — any one of them is enough, none is not");
+
+const omega = (over: Partial<PlanTarget> = {}) =>
+	targetFrom("Omega 3 [california gold]", {
+		unitType: "By Unit" as UnitType,
+		noteKeywords: ["High DHA", "EPA", "Strenght", "Concentrated"],
+		...over,
+	});
+const softgels = (name: string) => product({ name, unitCount: 90, packWeightG: null, pricePer100g: null });
+
+eq("a product naming one keyword is accepted", evaluate(omega(), softgels("Now Foods, Omega-3, High DHA, 90 Softgels")).verdict, "accept");
+check(
+	"a product naming none is refused, as one requirement not four",
+	evaluate(omega(), softgels("Country Life, Natural Omega-3, 1,000 mg, 300 Softgels")).missing.join("|") ===
+		"one of: High DHA, EPA, Strenght, Concentrated",
+);
+// ⚠️ Variations count: the tokeniser's own stemming folds Concentrated and Concentrate
+// onto one stem, so the user does not have to write both.
+eq(
+	"a variation of a keyword counts",
+	evaluate(omega(), softgels("Sports Research, Triple Strength Omega-3, Concentrate, 90 Softgels")).missing.length,
+	0,
+);
+// ⚠️ A multi-word keyword is one idea: "High DHA" is not satisfied by "high" alone.
+check(
+	"a multi-word keyword needs all of its words",
+	evaluate(omega({ noteKeywords: ["High DHA"] }), softgels("Now Foods, Omega-3, High Potency, 90 Softgels")).missing.length === 1,
+);
+// ⚠️ Nearly every row has an empty cell. A blank must never start rejecting things.
+eq("an empty Notes cell constrains nothing", evaluate(omega({ noteKeywords: [] }), softgels("Country Life, Natural Omega-3, 300 Softgels")).missing.length, 0);
+
+/**
+ * ⚠️ **A word in BOTH the Notes and the Name's `( )` is not required twice.** The user's
+ * ruling on that collision: *if there is doubling, use terms in notes* — so the doubled
+ * property drops out of the AND set and the OR rule governs it.
+ */
+describe("a keyword doubled in the row name is governed by Notes, not required twice");
+
+const doubled = targetFrom("Omega 3 (Concentrate) [california gold]", {
+	unitType: "By Unit" as UnitType,
+	noteKeywords: ["Concentrate", "EPA"],
+});
+eq(
+	"the doubled word is satisfied by the OTHER keyword",
+	evaluate(doubled, softgels("Nordic Naturals, Omega-3, EPA rich, 90 Softgels")).missing.length,
+	0,
+);
+check(
+	"…and a product with neither is still refused",
+	evaluate(doubled, softgels("Country Life, Natural Omega-3, 90 Softgels")).missing.length === 1,
+);

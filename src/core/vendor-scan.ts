@@ -14,6 +14,7 @@ import {
 	titleText,
 	type PlanTarget,
 	type UnitType,
+	noteKeywordsOf,
 } from "./notion.js";
 import { parseName } from "./parse.js";
 import { evaluate } from "./match.js";
@@ -430,6 +431,8 @@ export function targetFor(row: {
 	name: string;
 	unitType: UnitType;
 	tags: string[];
+	/** The `Notes` column, already split — see `noteKeywordsFrom`. */
+	noteKeywords?: string[];
 	baseline: { priceSgd: number | null; size: number | null };
 }): PlanTarget {
 	const search = parseName(row.name);
@@ -444,6 +447,7 @@ export function targetFor(row: {
 		name: row.name,
 		search,
 		category: "",
+		noteKeywords: row.noteKeywords ?? [],
 		// Not the routing list here: vendor-scan is ALREADY directed — it asks a shop
 		// only because a slot names it — so this synthetic target carries no vendors
 		// and nothing reads them on this path.
@@ -517,6 +521,7 @@ export async function readScanRows(
 			name,
 			unitType,
 			tags,
+			noteKeywords: noteKeywordsOf(p),
 			baseline: {
 				priceSgd: cheapest?.slot.priceValue ?? null,
 				size: cheapest?.slot.sizeValue ?? null,

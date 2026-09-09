@@ -771,8 +771,32 @@ export function evaluate(target: PlanTarget, product: StoreProduct): MatchResult
 	// to bypass synonyms and stemming, so "Milk (Skimmed)" rejected "UHT Milk - Skim"
 	// even though the property check folded both to "skim".
 	const missingSet = new Set<string>();
-	for (const prop of s.properties) if (!tokensPresent(prop, hayTokens, hay)) missingSet.add(prop);
+	/**
+	 * ⚠️⚠️ **The `Notes` column is an OR where the properties are an AND.**
+	 *
+	 * The user's rule (2026-09-09): "key words to use. don't need to use all of them,
+	 * but at least 1". So `Omega 3` with `High DHA, EPA. Strenght, Concentrated` accepts
+	 * a product naming any ONE of those and refuses one naming none. Reported as a single
+	 * requirement, because failing it is one fact — no keyword matched — and listing four
+	 * separately would read as four independent misses on the card.
+	 *
+	 * ⚠️ **A word in BOTH the Notes and the Name's `( )` is not required twice.** The
+	 * user's ruling on that collision: *if there is doubling, use terms in notes*. So the
+	 * duplicated property drops out of the AND set and the Notes rule governs it — a row
+	 * named `Omega 3 (Concentrate)` with `Concentrated` in Notes needs concentrate OR any
+	 * other listed keyword, not concentrate AND one of them.
+	 *
+	 * ⚠️ An empty Notes cell constrains nothing. Nearly every row is empty.
+	 */
+	const notes = target.noteKeywords ?? [];
+	const noteHit = (k: string) => tokensPresent(k, hayTokens, hay);
+	const doubled = new Set(notes.map((k) => k.toLowerCase().trim()));
+	for (const prop of s.properties) {
+		if (doubled.has(prop.toLowerCase().trim())) continue; // governed by the Notes rule
+		if (!tokensPresent(prop, hayTokens, hay)) missingSet.add(prop);
+	}
 	for (const kw of s.mustMatch) if (!tokensPresent(kw, hayTokens, hay)) missingSet.add(kw);
+	if (notes.length && !notes.some(noteHit)) missingSet.add(`one of: ${notes.join(", ")}`);
 	const missing = [...missingSet];
 
 	// Score the bare noun AND the noun+properties, taking the best — the sibling
