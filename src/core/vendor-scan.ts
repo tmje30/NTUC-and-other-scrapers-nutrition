@@ -788,6 +788,33 @@ export function referencePer100g(
 export const MAX_SUGGESTIONS = 3;
 
 /**
+ * **The figure this row can actually compare two packs on.**
+ *
+ * ⚠️⚠️ **A By Unit row prices by the piece, and `pricePer100g` is null for a pack that
+ * states only a count.** `pickCandidate` used to keep a product only if it had a
+ * per-100g figure, which on a counted row discards exactly the products that are
+ * right. Measured 2026-09-09 on `Multi-vitamin [Life Extension]`: iHerb returned **44
+ * products, 43 of them with a capsule count and no weight**. One had a weight — `Life
+ * Extension, Mix™ Powder` — so the powder was the ONLY candidate the matcher ever saw,
+ * on a row the user counts in tablets. Every wrong answer that row has given traces to
+ * this line, not to the search or the matcher.
+ *
+ * Quoted per 100 pieces to keep it on the same scale as the per-100g figure beside it,
+ * matching `QUOTED_PIECES` in the sweep's own reporting.
+ *
+ * ⚠️ A weighed pack on a By Unit row still rates, via `pricePer100g` — `Bread,
+ * Wholemeal, [FairPrice] (600g)` is counted in slices and priced by weight, and
+ * `resolveSize` converts it downstream through the row's grams-per-unit. Dropping those
+ * would trade one bug for another.
+ */
+export function comparableRate(unitType: UnitType, p: StoreProduct): number | null {
+	if (p.pricePer100g != null && p.pricePer100g > 0) return p.pricePer100g;
+	if (isByWeight(unitType)) return null;
+	const n = p.unitCount ?? 0;
+	return n > 0 && p.priceSgd > 0 ? (p.priceSgd / n) * 100 : null;
+}
+
+/**
  * **The ones that didn't quite match, best first.**
  *
  * ⚠️ Review band only — `accept` is a match and belongs in the price book. Ranked by
@@ -816,7 +843,12 @@ export function pickCandidate(
 	products: StoreProduct[],
 	{ marketplace, reference = null }: { marketplace: boolean; reference?: number | null },
 ): CandidateOutcome {
-	const priced = products.filter((p) => p.pricePer100g != null && p.pricePer100g > 0);
+	const rate = new Map<StoreProduct, number>();
+	for (const p of products) {
+		const r = comparableRate(target.unitType, p);
+		if (r != null && r > 0) rate.set(p, r);
+	}
+	const priced = products.filter((p) => rate.has(p));
 	if (!priced.length) {
 		return {
 			ok: false,
@@ -840,11 +872,13 @@ export function pickCandidate(
 	}
 
 	if (!marketplace) {
-		const best = [...matching].sort((a, b) => a.pricePer100g! - b.pricePer100g!)[0];
+		// ⚠️ Sorted on the rate this row compares by, so a counted row ranks by price per
+		// piece. Sorting on `pricePer100g` here would have put every capsule pack at NaN.
+		const best = [...matching].sort((a, b) => rate.get(a)! - rate.get(b)!)[0]!;
 		return {
 			ok: true,
 			product: best,
-			per100: best.pricePer100g!,
+			per100: best.pricePer100g ?? rate.get(best)!,
 			considered: matching.length,
 			rejected: [],
 			belowFloor: [],
@@ -860,9 +894,14 @@ export function pickCandidate(
 	// `belowFloor`, cheapest first, so the caller can offer each one the reputation
 	// rescue (`reputationPasses`). Deciding that needs a browser and a network round
 	// trip, which is exactly what does not belong in a pure function.
+	// ⚠️ **The marketplace guards below are calibrated on price per 100 g and stay that
+	// way.** A median and a fraction-of-known-price only mean anything within one scale,
+	// so a piece-priced listing is not mixed in — it simply is not ranked by them. This
+	// keeps the counted-row fix above out of the counterfeit arithmetic entirely.
+	const weighed = matching.filter((p) => p.pricePer100g != null && p.pricePer100g > 0);
 	const floor = reference != null ? reference * MIN_FRACTION_OF_KNOWN_PRICE : null;
-	const counterfeit = floor != null ? matching.filter((p) => p.pricePer100g! < floor) : [];
-	const credible = floor != null ? matching.filter((p) => p.pricePer100g! >= floor) : matching;
+	const counterfeit = floor != null ? weighed.filter((p) => p.pricePer100g! < floor) : [];
+	const credible = floor != null ? weighed.filter((p) => p.pricePer100g! >= floor) : weighed;
 	const belowFloor = [...counterfeit].sort((a, b) => a.pricePer100g! - b.pricePer100g!);
 	if (!credible.length) {
 		return {

@@ -10,6 +10,7 @@ import {
 	pickCandidate,
 	resolveSize,
 	unitCountFromWeight,
+	comparableRate,
 	needsSizeInName,
 	reputationPasses,
 	searchTermsFor,
@@ -904,3 +905,46 @@ eq(
 	).verdict,
 	"accept",
 );
+
+/**
+ * ⚠️⚠️ **A counted row was judging capsules on a figure capsules do not have.**
+ * `pickCandidate` kept only products with a `pricePer100g`, which a pack stating a count
+ * and no weight never has. Measured 2026-09-09 on `Multi-vitamin [Life Extension]`: iHerb
+ * returned **44 products, 43 with a capsule count and no weight**. The single weighed one
+ * was `Life Extension, Mix™ Powder` — so a powder was the only candidate the matcher ever
+ * saw, on a row counted in tablets, and it then produced advice to put a gram figure into
+ * the row's name.
+ */
+describe("a counted row rates its candidates by the piece");
+
+const capsules = (name: string, priceSgd: number, unitCount: number): StoreProduct =>
+	product({ name, priceSgd, unitCount, packWeightG: null, pricePer100g: null });
+
+eq("a capsule pack rates on a By Unit row", comparableRate("By Unit", capsules("x", 24, 120)), 20);
+check("…and not on a By Gram row, where it means nothing", comparableRate("By Gram", capsules("x", 24, 120)) === null);
+// ⚠️ A weighed pack on a counted row still rates: FairPrice bread is counted in slices and
+// priced by weight, and `resolveSize` converts it through the row's grams-per-unit.
+eq(
+	"a weighed pack still rates on a By Unit row",
+	comparableRate("By Unit", product({ pricePer100g: 8.65 })),
+	8.65,
+);
+
+const vitaminRow = targetFrom("Multi-vitamin [Life Extension]", { unitType: "By Unit" as UnitType });
+const shelf = [
+	capsules("Life Extension, Two-Per-Day Multivitamin, 120 Capsules", 29.03, 120),
+	capsules("Life Extension, Two-Per-Day Multivitamin, 120 Tablets", 27.31, 120),
+	capsules("Life Extension, Two-Per-Day Multivitamin, 60 Tablets", 15.64, 60),
+	product({ name: "Life Extension, Mix™ Powder, 0.79 lbs (360 g)", priceSgd: 89.11, packWeightG: 358, pricePer100g: 24.87, unitCount: null }),
+];
+const vitaminPick = pickCandidate(vitaminRow, shelf, { marketplace: false });
+check("the capsules are candidates at all", vitaminPick.ok);
+eq(
+	"…and the cheapest per capsule wins",
+	vitaminPick.ok ? vitaminPick.product.name : "",
+	"Life Extension, Two-Per-Day Multivitamin, 120 Tablets",
+);
+
+// ⚠️ The shape of the bug: with only the powder present the row used to be answered by it.
+const onlyPowder = pickCandidate(vitaminRow, [shelf[3]!], { marketplace: false });
+check("a powder alone still does not satisfy a multivitamin row", !onlyPowder.ok);
