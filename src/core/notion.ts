@@ -83,7 +83,13 @@ export const NOTES_PROPERTY = "Notes";
  * the other. Whitespace inside one keyword is kept, because `High DHA` is one idea.
  */
 export function noteKeywordsFrom(notes: string): string[] {
+	// ⚠️ `{ }` is a private note here for the same reason it is in the Name (user,
+	// 2026-09-09): "anything inside { } is just a note that should not be searched for
+	// or used as a criteria". One convention, both columns. An unclosed `{` takes the
+	// rest of the cell with it — a note trailing off the end is still a note.
 	return String(notes || "")
+		.replace(/\{[^}]*}/g, " ")
+		.replace(/\{[^]*$/, " ")
 		// ⚠️ Commas, semicolons, full stops and newlines separate; a SPACE does not.
 		// `High DHA` is one keyword, and splitting it would leave `High` matching any
 		// product that says high.

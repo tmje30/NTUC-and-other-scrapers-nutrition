@@ -22,6 +22,7 @@ import { reviewReasons } from "../core/vendor-review.js";
 import { renderMovesPage } from "../core/moves-page.js";
 import { evaluate } from "../core/match.js";
 import { parseName } from "../core/parse.js";
+import { noteKeywordsFrom } from "../core/notion.js";
 import type { PlanTarget, UnitType } from "../core/notion.js";
 import type { StoreProduct } from "../core/stores/types.js";
 import { atShelfPrice } from "../core/stores/shelf-price.js";
@@ -1005,3 +1006,24 @@ check(
 	"…and a product with neither is still refused",
 	evaluate(doubled, softgels("Country Life, Natural Omega-3, 90 Softgels")).missing.length === 1,
 );
+
+/**
+ * ⚠️ **`{ }` is a private note in the Notes column too** (user, 2026-09-09): "anything
+ * inside { } is just a note that should not be searched for or used as a criteria". Same
+ * convention as the Name, so there is one rule to remember rather than two.
+ */
+describe("a curly-brace note in Notes is not a keyword");
+
+eq(
+	"the braced part is dropped and the rest survives",
+	JSON.stringify(noteKeywordsFrom("{High(DHA, EPA)}. Strength, Concentrated, Super")),
+	JSON.stringify(["Strength", "Concentrated", "Super"]),
+);
+// ⚠️ A note trailing off the end without its closing brace is still a note.
+eq(
+	"an unclosed brace takes the rest of the cell",
+	JSON.stringify(noteKeywordsFrom("EPA, DHA {these are the two that matter, per the label")),
+	JSON.stringify(["EPA", "DHA"]),
+);
+eq("a cell that is only a note yields nothing", noteKeywordsFrom("{it is 1153g to 3.5sgd}").length, 0);
+eq("a cell with no braces is untouched", JSON.stringify(noteKeywordsFrom("EPA, DHA")), JSON.stringify(["EPA", "DHA"]));
