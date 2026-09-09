@@ -657,48 +657,63 @@ export interface MatchResult {
  * "Omega-3 Enriched", "unpasteurized" vs "Pasteurized").
  */
 function tokensPresent(needle: string, hayTokens: Set<string>, hay = ""): boolean {
-	const nt = tokens(needle);
-	if (!nt.length) return true; // nothing checkable (e.g. a bare number)
-	/**
-	 * ⚠️⚠️ **A requirement carrying a number is judged on the number too.** `tokens()`
-	 * drops anything starting with a digit, so `1000 mg` reduces to `mg` and `SPF 30` to
-	 * `spf` — and the word test then passes on ANY product mentioning mg, or on any SPF
-	 * at all. Measured 2026-09-09 on `Omega 3 [california gold]` with `1000 mg` in its
-	 * Notes: all five California Gold results satisfied it, two of them 1,100 mg packs.
-	 *
-	 * So a digit-bearing needle skips the word test and is answered by the compacted
-	 * comparison below, which keeps the digits: `1000 mg` accepts `(1,000 mg per
-	 * Softgel)` and refuses `(1,100 mg per Softgel)`.
-	 */
-	if (!/\d/.test(needle) && nt.every((t) => hayTokens.has(t))) return true;
+	const compact = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+	// ⚠️ **A requirement with no digit is judged on words, exactly as before.** `bran`
+	// never reaches the numeric path below — see this function’s header for why that
+	// matters.
+	if (!/\d/.test(needle)) {
+		const nt = tokens(needle);
+		if (!nt.length) return true; // nothing checkable
+		return nt.every((t) => hayTokens.has(t));
+	}
 
 	/**
-	 * ⚠️⚠️ **A shop writes `SPF30`; the row says `(SPF 30)`.** Tokenised, those are
-	 * `["spf","30"]` against a single token `spf30`, so the requirement was missing from
-	 * the one product that satisfied it perfectly. Measured 2026-09-08 on
-	 * `AM facial moisturizing lotion (SPF 30) [cerave]`:
-	 *
-	 *   review 0.540  CERAVE AM Facial Moisturizing Lotion SPF30 52ml   ← the right one
-	 *   review 0.540  Cerave Facial Moisturising Lotion - AM SPF50      ← the wrong one
-	 *   accept 0.950  …SPF 30 52ml                                      ← only with a space
-	 *
-	 * The failure was not just a missed accept: since neither title contains the literal
-	 * `spf 30`, **SPF30 and SPF50 scored identically** — the property that exists to tell
-	 * them apart matched neither, and the wrong strength was offered as an equal.
-	 *
-	 * ⚠️ **Digit-bearing requirements ONLY, and that restriction is the whole safety of
-	 * it.** Comparing compacted text is substring matching with the word boundaries
-	 * removed, which is exactly how `Oil (Bran)` was once satisfied by every "Knife
-	 * Brand" cooking oil — see this function's own header. `bran` has no digit and never
-	 * reaches this line; `spf 30`, `omega 3` and `1.5 l` do.
-	 *
-	 * ⚠️ The three-character floor matters: without it `1 l` compacts to `1l`, which
-	 * appears inside `11litre`.
+	 * ⚠️⚠️ **`1000-1100mg` used to pass EVERYTHING, silently.** `tokens()` drops any
+	 * token starting with a digit, so that keyword produced no tokens at all and hit the
+	 * "nothing checkable" escape — measured 2026-09-09, it accepted a 2,000 mg fish oil
+	 * on a row asking for 1,000–1,100 mg. Written with a space, `1000-1100 mg`, it did
+	 * the opposite and matched nothing. A range now means what it reads as.
 	 */
-	if (!/\d/.test(needle)) return false;
-	const compact = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+	const r = rangeNeedle(needle);
+	const flat = compact(hay);
+	if (r) {
+		for (const m of flat.matchAll(new RegExp("([0-9]+)" + r.unit, "g"))) {
+			const v = Number(m[1]);
+			if (Number.isFinite(v) && v >= r.lo && v <= r.hi) return true;
+		}
+		return false;
+	}
+
+	/**
+	 * ⚠️ Compacted comparison, digits kept: `1000 mg` accepts `(1,000 mg per Softgel)`
+	 * and refuses `(1,100 mg per Softgel)`; `spf 30` accepts `SPF30`.
+	 *
+	 * ⚠️ Under three characters there is nothing to check — `1 l` compacts to `1l`, which
+	 * appears inside `11litre` — so a tiny numeric requirement stays permissive rather
+	 * than becoming a filter nobody intended.
+	 */
 	const n = compact(needle);
-	return n.length >= 3 && compact(hay).includes(n);
+	return n.length < 3 ? true : flat.includes(n);
+}
+
+/**
+ * **`1000-1100 mg` — a span the user typed, not one a shop published.**
+ *
+ * ⚠️ The hyphen is unambiguous HERE in a way it is not in a product title: a slug
+ * writing `2.1kg` as `2-1kg` is why `statedSizeRange` distrusts hyphens. This reads a
+ * cell the user typed on purpose, so a hyphen between two numbers is a range.
+ *
+ * ⚠️ A unit is required. Without one, `90-120` would silently match a softgel count as
+ * readily as a dose, so it is left to the plain comparison instead.
+ */
+function rangeNeedle(needle: string): { lo: number; hi: number; unit: string } | null {
+	const m = /^\s*([0-9][0-9,.]*)\s*[-–]\s*([0-9][0-9,.]*)\s*([a-z%]+)\s*$/i.exec(needle);
+	if (!m) return null;
+	const lo = Number(String(m[1]).replace(/,/g, ""));
+	const hi = Number(String(m[2]).replace(/,/g, ""));
+	if (!Number.isFinite(lo) || !Number.isFinite(hi) || lo > hi) return null;
+	return { lo, hi, unit: String(m[3]).toLowerCase() };
 }
 
 /**

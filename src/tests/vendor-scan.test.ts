@@ -1060,3 +1060,34 @@ check(
 	"…and still refuses a different strength written with a space",
 	evaluate(spfRow, product({ name: "Cerave Facial Moisturising Lotion - AM SPF 50 52ml", packWeightG: 52 })).missing.length === 1,
 );
+
+/**
+ * ⚠️⚠️ **`1000-1100mg` used to pass EVERYTHING, silently.** `tokens()` drops any token
+ * starting with a digit, so that keyword produced no tokens at all and hit the "nothing
+ * checkable" escape. Measured 2026-09-09: it accepted a 2,000 mg fish oil on a row asking
+ * for 1,000–1,100 mg. Written with a space it did the opposite and matched nothing.
+ */
+describe("a typed strength range means what it reads as");
+
+const rangeRow = (kw: string[]) =>
+	targetFrom("Omega 3 [california gold]", { unitType: "By Unit" as UnitType, noteKeywords: kw });
+const cap = (name: string) => product({ name, unitCount: 90, packWeightG: null, pricePer100g: null });
+const passes = (kw: string[], title: string) => evaluate(rangeRow(kw), cap(title)).missing.length === 0;
+
+for (const spelling of [["1000-1100mg"], ["1000-1100 mg"]]) {
+	check(`${spelling[0]} takes the bottom of the span`, passes(spelling, "Omega 800, 90 Softgels (1,000 mg per Softgel)"));
+	check(`${spelling[0]} takes the top`, passes(spelling, "Omega-3 Premium, 100 Softgels (1,100 mg per Softgel)"));
+	check(`${spelling[0]} takes the middle`, passes(spelling, "Nordic, Fish Oil, 1,050 mg, 60 Softgels"));
+	check(`${spelling[0]} refuses above it`, !passes(spelling, "Some Brand, Fish Oil, 2,000 mg, 60 Softgels"));
+	check(`${spelling[0]} refuses below it`, !passes(spelling, "Tiny Brand, Fish Oil, 500 mg, 60 Softgels"));
+}
+// ⚠️ Two separate keywords stay exact — the difference between a span and a list.
+check("listing both strengths does NOT admit one between them", !passes(["1000 mg", "1100 mg"], "Nordic, Fish Oil, 1,050 mg, 60 Softgels"));
+// ⚠️ A unit is required: `90-120` alone would match a softgel count as readily as a dose.
+check("a range with no unit is not read as a range", !passes(["1000-1100"], "Omega 800, 90 Softgels (1,000 mg per Softgel)"));
+// ⚠️ The guard the whole numeric path is shaped around still holds.
+eq(
+	"a brand name is still not a variety claim",
+	evaluate(targetFrom("Oil (Bran)"), product({ name: "Knife Brand Cooking Oil 2L", packWeightG: 2000 })).verdict,
+	"review",
+);
