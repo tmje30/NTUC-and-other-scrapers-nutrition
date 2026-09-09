@@ -1,149 +1,7 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-09T00:35:37.268Z",
+  "updatedAt": "2026-09-09T02:04:35.113Z",
   "pending": [
-    {
-      "token": "7jj9xu",
-      "ingredientId": "3b269a18-4fe7-81d4-8025-e6004ddc5b24",
-      "ingredientName": "AM facial moisturizing lotion (SPF 30) [cerave]",
-      "key": "am facial moisturizing lotion",
-      "unitType": "By ml",
-      "vendor": "Watsons",
-      "slotN": 3,
-      "brand": "cerave",
-      "priceSgd": 29.9,
-      "size": 52,
-      "url": "https://www.watsons.com.sg/cerave-am-facial-moisturizing-lotion-spf30-52ml/p/BP_51157",
-      "itemName": "CERAVE AM Facial Moisturizing Lotion SPF30 52ml",
-      "statedSize": "52ml",
-      "perLabel": "$575.00/L",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is the closest one, offered as a suggestion. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-07T03:06:10.678Z"
-    },
-    {
-      "token": "wd6tb9",
-      "ingredientId": "3b269a18-4fe7-8123-a0ae-ccda5c7a3415",
-      "ingredientName": "Toothpaste  - Multi Care [Sensodyne]",
-      "key": "toothpast multi care",
-      "unitType": "By Gram",
-      "vendor": "Watsons",
-      "slotN": 3,
-      "brand": "sensodyne",
-      "priceSgd": 7.5,
-      "size": 100,
-      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-gum-care-toothpaste-dental-sensitivity-relief-100g/p/BP_45477",
-      "itemName": "SENSODYNE Sensitive Teeth Gum Care Toothpaste (Dental Sensitivity Relief) 100g",
-      "statedSize": "100g",
-      "perLabel": "$75.00/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 2 of 3, offered as a suggestion. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 1,
-      "askedAt": "2026-09-07T03:06:33.397Z"
-    },
-    {
-      "token": "m5yaj9",
-      "ingredientId": "3b269a18-4fe7-8123-a0ae-ccda5c7a3415",
-      "ingredientName": "Toothpaste  - Multi Care [Sensodyne]",
-      "key": "toothpast multi care",
-      "unitType": "By Gram",
-      "vendor": "Watsons",
-      "slotN": 3,
-      "brand": "sensodyne",
-      "priceSgd": 7.8,
-      "size": 100,
-      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-oral-care-toothpaste-gentle-whitening-dental-sensitivity-relief-100g/p/BP_47922",
-      "itemName": "SENSODYNE Sensitive Teeth Oral Care Toothpaste Gentle Whitening (Dental Sensitivity Relief) 100g",
-      "statedSize": "100g",
-      "perLabel": "$78.00/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 2,
-      "askedAt": "2026-09-07T03:06:33.398Z"
-    },
-    {
-      "token": "44qgz7",
-      "ingredientId": "3b269a18-4fe7-8123-a0ae-ccda5c7a3415",
-      "ingredientName": "Toothpaste  - Multi Care [Sensodyne]",
-      "key": "toothpast multi care",
-      "unitType": "By Gram",
-      "vendor": "Watsons",
-      "slotN": 3,
-      "brand": "sensodyne",
-      "priceSgd": 7.5,
-      "size": 100,
-      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-multi-care-dental-sensitivity-relief-100g/p/BP_92324",
-      "itemName": "SENSODYNE Sensitive Teeth Multi Care (Dental Sensitivity Relief) 100g",
-      "statedSize": "100g",
-      "perLabel": "$75.00/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is the closest of 3 offered, best first. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-07T03:06:33.407Z"
-    },
-    {
-      "token": "rypsw0",
-      "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
-      "ingredientName": "Sensitivity & Gum Toothpaste - Original",
-      "key": "sensitiviti gum toothpast original",
-      "unitType": "By Gram",
-      "vendor": "Watsons",
-      "slotN": 3,
-      "priceSgd": 10.2,
-      "size": 100,
-      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-oral-care-toothpaste-sensitivity-and-gum-extra-fresh-dental-sensitivity-relief-100g/p/BP_51696",
-      "itemName": "SENSODYNE Sensitive Teeth Oral Care Toothpaste Sensitivity and Gum Extra Fresh (Dental Sensitivity Relief) 100g",
-      "statedSize": "100g",
-      "perLabel": "$102.00/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 2 of 2, offered as a suggestion. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 1,
-      "askedAt": "2026-09-07T03:07:08.247Z"
-    },
-    {
-      "token": "1egnl6",
-      "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
-      "ingredientName": "Sensitivity & Gum Toothpaste - Original",
-      "key": "sensitiviti gum toothpast original",
-      "unitType": "By Gram",
-      "vendor": "Watsons",
-      "slotN": 3,
-      "priceSgd": 10.2,
-      "size": 100,
-      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-oral-care-toothpaste-sensitivity-and-gum-whitening-dental-sensitivity-relief-100g/p/BP_45103",
-      "itemName": "SENSODYNE Sensitive Teeth Oral Care Toothpaste Sensitivity and Gum Whitening (Dental Sensitivity Relief) 100g",
-      "statedSize": "100g",
-      "perLabel": "$102.00/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is the closest of 2 offered, best first. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-07T03:07:08.251Z"
-    },
     {
       "token": "lo4o3w",
       "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
@@ -1095,6 +953,124 @@
       "askedAt": "2026-09-08T06:27:17.100Z"
     },
     {
+      "token": "wd6tb9",
+      "ingredientId": "3b269a18-4fe7-8123-a0ae-ccda5c7a3415",
+      "ingredientName": "Toothpaste  - Multi Care [Sensodyne]",
+      "key": "toothpast multi care",
+      "unitType": "By Gram",
+      "vendor": "Watsons",
+      "slotN": 3,
+      "brand": "sensodyne",
+      "priceSgd": 7.5,
+      "size": 100,
+      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-gum-care-toothpaste-dental-sensitivity-relief-100g/p/BP_45477",
+      "itemName": "SENSODYNE Sensitive Teeth Gum Care Toothpaste (Dental Sensitivity Relief) 100g",
+      "statedSize": "100g",
+      "perLabel": "$75.00/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 2 of 3, offered as a suggestion. Accept only if it is the same thing."
+        }
+      ],
+      "rank": 1,
+      "askedAt": "2026-09-09T02:02:06.072Z"
+    },
+    {
+      "token": "s8y62l",
+      "ingredientId": "3b269a18-4fe7-8123-a0ae-ccda5c7a3415",
+      "ingredientName": "Toothpaste  - Multi Care [Sensodyne]",
+      "key": "toothpast multi care",
+      "unitType": "By Gram",
+      "vendor": "Watsons",
+      "slotN": 3,
+      "brand": "sensodyne",
+      "priceSgd": 7.5,
+      "size": 100,
+      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-oral-care-toothpaste-fresh-mint-dental-sensitivity-relief-100g/p/BP_21758",
+      "itemName": "SENSODYNE Sensitive Teeth Oral Care Toothpaste Fresh Mint (Dental Sensitivity Relief) 100g",
+      "statedSize": "100g",
+      "perLabel": "$75.00/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
+        }
+      ],
+      "rank": 2,
+      "askedAt": "2026-09-09T02:02:06.073Z"
+    },
+    {
+      "token": "44qgz7",
+      "ingredientId": "3b269a18-4fe7-8123-a0ae-ccda5c7a3415",
+      "ingredientName": "Toothpaste  - Multi Care [Sensodyne]",
+      "key": "toothpast multi care",
+      "unitType": "By Gram",
+      "vendor": "Watsons",
+      "slotN": 3,
+      "brand": "sensodyne",
+      "priceSgd": 7.5,
+      "size": 100,
+      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-multi-care-dental-sensitivity-relief-100g/p/BP_92324",
+      "itemName": "SENSODYNE Sensitive Teeth Multi Care (Dental Sensitivity Relief) 100g",
+      "statedSize": "100g",
+      "perLabel": "$75.00/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is the closest of 3 offered, best first. Accept only if it is the same thing."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-09-09T02:02:06.075Z"
+    },
+    {
+      "token": "rypsw0",
+      "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
+      "ingredientName": "Sensitivity & Gum Toothpaste - Original",
+      "key": "sensitiviti gum toothpast original",
+      "unitType": "By Gram",
+      "vendor": "Watsons",
+      "slotN": 3,
+      "priceSgd": 10.2,
+      "size": 100,
+      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-oral-care-toothpaste-sensitivity-and-gum-extra-fresh-dental-sensitivity-relief-100g/p/BP_51696",
+      "itemName": "SENSODYNE Sensitive Teeth Oral Care Toothpaste Sensitivity and Gum Extra Fresh (Dental Sensitivity Relief) 100g",
+      "statedSize": "100g",
+      "perLabel": "$102.00/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 2 of 2, offered as a suggestion. Accept only if it is the same thing."
+        }
+      ],
+      "rank": 1,
+      "askedAt": "2026-09-09T02:03:05.352Z"
+    },
+    {
+      "token": "1egnl6",
+      "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
+      "ingredientName": "Sensitivity & Gum Toothpaste - Original",
+      "key": "sensitiviti gum toothpast original",
+      "unitType": "By Gram",
+      "vendor": "Watsons",
+      "slotN": 3,
+      "priceSgd": 10.2,
+      "size": 100,
+      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-oral-care-toothpaste-sensitivity-and-gum-whitening-dental-sensitivity-relief-100g/p/BP_45103",
+      "itemName": "SENSODYNE Sensitive Teeth Oral Care Toothpaste Sensitivity and Gum Whitening (Dental Sensitivity Relief) 100g",
+      "statedSize": "100g",
+      "perLabel": "$102.00/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is the closest of 2 offered, best first. Accept only if it is the same thing."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-09-09T02:03:05.355Z"
+    },
+    {
       "token": "hvz2e9",
       "ingredientId": "37369a18-4fe7-809b-b3bb-cc640507e5a9",
       "ingredientName": "Creatine monohydrate [California gold]",
@@ -1120,7 +1096,103 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-09T00:35:37.267Z"
+      "askedAt": "2026-09-09T02:04:15.900Z"
+    },
+    {
+      "token": "m0otp5",
+      "ingredientId": "37369a18-4fe7-80d1-91ef-eb21cedf53ae",
+      "ingredientName": "Omega 3 [california gold]",
+      "key": "omega3",
+      "unitType": "By Unit",
+      "vendor": "Iherb",
+      "slotN": 1,
+      "brand": "california gold",
+      "priceSgd": 42.23,
+      "size": 240,
+      "url": "https://sg.iherb.com/pr/life-extension-super-omega-3-240-softgels/67021",
+      "itemName": "Life Extension, Super Omega-3, 240 Softgels",
+      "statedSize": "240 pcs",
+      "perLabel": "$1.76/10 pc",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 2 of 3, offered as a suggestion. Accept only if it is the same thing."
+        },
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 17.53666666666667,
+          "foundPer": 17.59583333333333,
+          "perWord": "100 pcs",
+          "vendor": "Iherb",
+          "note": "DEARER than the Iherb price already recorded: $52.61 / 300 pcs = $17.54/100 pcs → $42.23 / 240 pcs = $17.60/100 pcs. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 1,
+      "askedAt": "2026-09-09T02:04:35.111Z"
+    },
+    {
+      "token": "qyl94g",
+      "ingredientId": "37369a18-4fe7-80d1-91ef-eb21cedf53ae",
+      "ingredientName": "Omega 3 [california gold]",
+      "key": "omega3",
+      "unitType": "By Unit",
+      "vendor": "Iherb",
+      "slotN": 1,
+      "brand": "california gold",
+      "priceSgd": 25.79,
+      "size": 100,
+      "url": "https://sg.iherb.com/pr/country-life-natural-omega-3-100-softgels/121743",
+      "itemName": "Country Life, Natural Omega-3, 100 softgels",
+      "statedSize": "100 pcs",
+      "perLabel": "$2.58/10 pc",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
+        },
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 17.53666666666667,
+          "foundPer": 25.790000000000003,
+          "perWord": "100 pcs",
+          "vendor": "Iherb",
+          "note": "DEARER than the Iherb price already recorded: $52.61 / 300 pcs = $17.54/100 pcs → $25.79 / 100 pcs = $25.79/100 pcs. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 2,
+      "askedAt": "2026-09-09T02:04:35.112Z"
+    },
+    {
+      "token": "yj3hi8",
+      "ingredientId": "37369a18-4fe7-80d1-91ef-eb21cedf53ae",
+      "ingredientName": "Omega 3 [california gold]",
+      "key": "omega3",
+      "unitType": "By Unit",
+      "vendor": "Iherb",
+      "slotN": 1,
+      "brand": "california gold",
+      "priceSgd": 42.85,
+      "size": 120,
+      "url": "https://sg.iherb.com/pr/life-extension-super-omega-3-120-softgels/67018",
+      "itemName": "Life Extension, Super Omega-3, 120 Softgels",
+      "statedSize": "120 pcs",
+      "perLabel": "$3.57/10 pc",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is the closest of 3 offered, best first. Accept only if it is the same thing."
+        },
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 17.53666666666667,
+          "foundPer": 35.708333333333336,
+          "perWord": "100 pcs",
+          "vendor": "Iherb",
+          "note": "DEARER than the Iherb price already recorded: $52.61 / 300 pcs = $17.54/100 pcs → $42.85 / 120 pcs = $35.71/100 pcs. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-09-09T02:04:35.113Z"
     }
   ],
   "rejected": [
@@ -1236,31 +1308,8 @@
     }
   ],
   "moves": {
-    "generatedAt": "2026-09-09T00:35:50.059Z",
-    "reconfirmed": 0,
-    "moves": [
-      {
-        "row": "Multi-vitamin [Life Extension]",
-        "vendor": "Iherb",
-        "recordedText": "$28.72 / 120 pcs",
-        "foundText": "$27.31 / 120 pcs",
-        "recordedPer": 23.93333333333333,
-        "foundPer": 22.758333333333333,
-        "perWord": "100 pcs",
-        "product": "Life Extension, Two-Per-Day Multivitamin, 120 Tablets",
-        "url": "https://sg.iherb.com/pr/life-extension-two-per-day-multivitamin-120-tablets/86454"
-      },
-      {
-        "row": "Omega 3 [california gold]",
-        "vendor": "Iherb",
-        "recordedText": "$39.97 / 120 pcs",
-        "foundText": "$52.61 / 300 pcs",
-        "recordedPer": 33.30833333333333,
-        "foundPer": 17.53666666666667,
-        "perWord": "100 pcs",
-        "product": "Country Life, Natural Omega-3, 1,000 mg, 300 Softgels",
-        "url": "https://sg.iherb.com/pr/country-life-natural-omega-3-1-000-mg-300-softgels/9707"
-      }
-    ]
+    "generatedAt": "2026-09-09T02:04:36.265Z",
+    "reconfirmed": 4,
+    "moves": []
   }
 }
