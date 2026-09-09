@@ -7,6 +7,7 @@ import type { PlanTarget } from "./notion.js";
 import { categorize } from "./categorize.js";
 import { packShotsFor } from "./macro-prompt.js";
 import { parseNutritionPanel, type PanelMacros } from "./nutrition-panel.js";
+import { REVIEW_GROUPS, groupOf } from "./vendor-review.js";
 import type { StoreProduct } from "./stores/types.js";
 import { atShelfPrice } from "./stores/shelf-price.js";
 import { parseUnitCount, parseWeight } from "./stores/weight.js";
@@ -988,45 +989,114 @@ export function renderDealsPage(
 		timeZone: "Asia/Singapore",
 	});
 	const total = planDeals.length + otherDeals.length;
+	/**
+	 * The deal sections for ONE tab, in the order they have always been in.
+	 *
+	 * Pulled out of the page body on 2026-09-09 so the same four sections can be
+	 * built four times, once per tab, from that tab's slice of the deals. Nothing
+	 * about a section's own rules changed here — a section that would be empty is
+	 * still omitted rather than rendered as an empty heading.
+	 */
+	const sectionsFor = (plan: Deal[], other: Deal[], near: ReviewMiss[], label: string): string => {
+		// Store-discounted items float to the top as their own section, and are pulled
+		// out of the plan/other lists below so each deal appears exactly once.
+		const isSale = (d: Deal) => d.product.onSale;
+		const saleDeals = [...plan, ...other].filter(isSale).sort((a, b) => b.savingPct - a.savingPct);
+		const planRest = plan.filter((d) => !isSale(d));
+		const otherRest = other.filter((d) => !isSale(d));
 
-	// Store-discounted items float to the top as their own section, and are pulled
-	// out of the plan/other lists below so each deal appears exactly once.
-	const isSale = (d: Deal) => d.product.onSale;
-	const saleDeals = [...planDeals, ...otherDeals]
-		.filter(isSale)
-		.sort((a, b) => b.savingPct - a.savingPct);
-	const planRest = planDeals.filter((d) => !isSale(d));
-	const otherRest = otherDeals.filter((d) => !isSale(d));
+		// ⚠️ A tab with nothing in it says so in its own words. It must never fall
+		// through to the sections below, or an empty Household tab would render the
+		// "Nothing in your plan is cheaper today" line and read as a plan report.
+		if (!plan.length && !other.length && !near.length) {
+			return `<p class="empty-sm">Nothing under ${esc(label)} is cheaper today. 🎉</p>`;
+		}
 
-	const saleSection = saleDeals.length
-		? `<h2 class="section">🔻 On sale now</h2>` + saleDeals.map(card).join("")
-		: "";
+		const saleSection = saleDeals.length
+			? `<h2 class="section">🔻 On sale now</h2>` + saleDeals.map(card).join("")
+			: "";
 
-	// Plan section: the non-sale plan deals. If there were no plan deals at all,
-	// show the celebratory note; if every plan deal is on sale (already shown
-	// above), omit the section rather than render an empty/misleading heading.
-	let planSection = "";
-	if (planRest.length) {
-		planSection = `<h2 class="section">In your plan</h2>` + planRest.map(card).join("");
-	} else if (planDeals.length === 0) {
-		planSection =
-			`<h2 class="section">In your plan</h2>` +
-			`<p class="empty-sm">Nothing in your plan is cheaper today. 🎉</p>`;
-	}
+		// Plan section: the non-sale plan deals. If there were no plan deals at all,
+		// show the celebratory note; if every plan deal is on sale (already shown
+		// above), omit the section rather than render an empty/misleading heading.
+		let planSection = "";
+		if (planRest.length) {
+			planSection = `<h2 class="section">In your plan</h2>` + planRest.map(card).join("");
+		} else if (plan.length === 0) {
+			planSection =
+				`<h2 class="section">In your plan</h2>` +
+				`<p class="empty-sm">Nothing in your plan is cheaper today. 🎉</p>`;
+		}
 
-	const otherSection = otherRest.length
-		? `<h2 class="section">Other items on offer</h2>` + otherRest.map(card).join("")
-		: "";
-	// Recommendations last: not what you asked for, so they must never sit above a
+		const otherSection = otherRest.length
+			? `<h2 class="section">Other items on offer</h2>` + otherRest.map(card).join("")
+			: "";
+		const recSection = near.length
+			? `<h2 class="section">Close matches · not exactly what you asked for</h2>` +
+				near.map((r) => recCard(r, o)).join("")
+			: "";
+		return saleSection + planSection + otherSection + recSection;
+	};
+
+	// Recommendations: not what you asked for, so they must never sit above a
 	// real deal or be mistaken for one. A near-miss that isn't cheaper is worth
 	// nothing here — it's neither the right product NOR a saving — so it's dropped
 	// rather than shown with a badge pointing the wrong way. (`runOnce` already
 	// filters on this; enforced here too so any caller gets the same page.)
 	const recs = recommendations.filter(recIsCheaper);
-	const recSection = recs.length
-		? `<h2 class="section">Close matches · not exactly what you asked for</h2>` +
-			recs.map((r) => recCard(r, o)).join("")
-		: "";
+
+	/**
+	 * ⚠️⚠️ **The same four tabs as the review page, from the same `groupOf`** (user,
+	 * 2026-09-09: "can the discount page have the same tags"). One function decides
+	 * what Food, Supplements, Household and Cosmetics mean, so a row can never sit
+	 * under Household on one page and Food on the other.
+	 *
+	 * ⚠️ **A number only when the tab holds something**, per the same message — an
+	 * empty tab is a bare label, not a "0". The tab itself is still rendered, so the
+	 * page has the same shape every morning.
+	 * ⚠️ **The class is `tabpanel`, not `panel`.** This page already has a `.panel` —
+	 * the ⋯ dropdown, `position:absolute; display:flex`. Reusing the review page’s class
+	 * name here pulled the tab sections out of the flow and every card vanished off the
+	 * right of the page while the tabs above them looked perfect. Caught in the browser,
+	 * 2026-09-09, not by a test — the markup was correct and only the CSS was wrong.
+	 *
+	 *
+	 * ⚠️ **The Supplements tab is thin by construction, and that is not a bug here.**
+	 * `readPlanTargets` drops the `Suppliments` category before this page is built
+	 * (NON_GROCERY_CATEGORIES), so the only rows that can reach this tab are the
+	 * three `Protein Powder` ones. Measured 2026-09-09: 30 of the 33 supplement rows
+	 * never enter the daily scan. Widening that is a decision about what gets
+	 * scraped, not about how this page is laid out.
+	 */
+	const tabbed = REVIEW_GROUPS.map((g) => {
+		const plan = planDeals.filter((d) => groupOf(d.target.category) === g.key);
+		const other = otherDeals.filter((d) => groupOf(d.target.category) === g.key);
+		const near = recs.filter((r) => groupOf(r.target.category) === g.key);
+		return { ...g, n: plan.length + other.length + near.length, html: sectionsFor(plan, other, near, g.label) };
+	});
+	// The first tab holding anything opens, so the page never lands on an empty one.
+	const opening = tabbed.find((t) => t.n > 0)?.key ?? tabbed[0]!.key;
+	const radios = tabbed
+		.map(
+			(t) =>
+				`<input type="radio" name="tab" id="tab-${t.key}" class="tabin"${t.key === opening ? " checked" : ""}>`,
+		)
+		.join("");
+	const tabBar = tabbed
+		.map(
+			(t) =>
+				`<label class="tab" for="tab-${t.key}">${esc(t.label)}` +
+				(t.n ? ` <span class="n">${t.n}</span>` : "") +
+				`</label>`,
+		)
+		.join("");
+	const panels = tabbed.map((t) => `<section class="tabpanel tp-${t.key}">${t.html}</section>`).join("");
+	// Nothing anywhere: one plain answer, with no tabs to click through to find
+	// three more copies of it.
+	const dealBody = total + recs.length
+		? radios + `<nav class="tabs">${tabBar}</nav>` + panels
+		: `<h2 class="section">In your plan</h2>` +
+			`<p class="empty-sm">Nothing in your plan is cheaper today. 🎉</p>`;
 	// Items you've just bought aren't searched at all, so they'd otherwise vanish
 	// with no explanation. Say so, and say when each one comes back. Items you
 	// merely dismissed for the week are listed apart: calling those "recently
@@ -1059,7 +1129,7 @@ export function renderDealsPage(
 			gaps.map(weightGapRow).join("")
 		: "";
 
-	const cards = saleSection + planSection + otherSection + recSection + snoozeSection + gapSection;
+	const cards = dealBody + snoozeSection + gapSection;
 
 	return `<!doctype html>
 <html lang="en">

@@ -265,6 +265,37 @@ export const PAGE_CSS = `
     .hdone { color: #6ee7b7; }
     .hnever { color: #fda29b; }
   }
+  /* ⚠️ Tabs with no JavaScript, the same shape as the review page: radio inputs
+     carry the state and a sibling selector shows the panel. The radios are emitted
+     before .tabs so ~ reaches both the labels and the panels — all three have to be
+     children of .wrap or the selectors below stop matching.
+     The count is omitted when a tab is empty (user, 2026-09-09: "show a number in
+     the tags if there are items in it"), so a bare label reads as "nothing here". */
+  .tabin { position: absolute; opacity: 0; pointer-events: none; }
+  .tabs { display: flex; gap: 6px; margin: 12px 2px 4px; flex-wrap: wrap; }
+  .tab { cursor: pointer; padding: 7px 12px; border: 1px solid #e5e7eb; border-radius: 999px;
+    background: #fff; font-size: .86rem; font-weight: 600; color: #6b7280; user-select: none; }
+  .tab .n { opacity: .75; font-weight: 400; }
+  /* ⚠️ Every panel is shown when nothing is checked — the scripting-off, CSS-failed
+     floor. Hiding only begins once a radio IS checked, so that floor survives. */
+  .tabpanel { display: block; }
+  #tab-food:checked ~ .tabs [for=tab-food],
+  #tab-supplements:checked ~ .tabs [for=tab-supplements],
+  #tab-household:checked ~ .tabs [for=tab-household],
+  #tab-cosmetics:checked ~ .tabs [for=tab-cosmetics] { color: #1a1d21; border-color: #1a1d21; }
+  .tabin:checked ~ .tabpanel { display: none; }
+  #tab-food:checked ~ .tp-food,
+  #tab-supplements:checked ~ .tp-supplements,
+  #tab-household:checked ~ .tp-household,
+  #tab-cosmetics:checked ~ .tp-cosmetics { display: block; }
+  .tab:focus-within, .tabin:focus-visible + .tabs .tab { outline: 2px solid #1a1d21; }
+  @media (prefers-color-scheme: dark) {
+    .tab { background: #171a1f; border-color: #262b32; color: #9aa1ab; }
+    #tab-food:checked ~ .tabs [for=tab-food],
+    #tab-supplements:checked ~ .tabs [for=tab-supplements],
+    #tab-household:checked ~ .tabs [for=tab-household],
+    #tab-cosmetics:checked ~ .tabs [for=tab-cosmetics] { color: #e6e8eb; border-color: #6b7280; }
+  }
 `;
 
 /** What the shared script needs to know. `PageOptions` in `site.ts` extends it. */
@@ -462,7 +493,11 @@ export function githubOneTapScript(o: ChromeOptions): string {
       // rows are not matched here counts as having nothing under it and gets
       // display:none on the first tap — omitting a new row class silently deletes
       // that whole section from view. (No backticks: template literal.)
-      .querySelectorAll(".wrap > h2.section, .wrap > .card, .wrap > .snooze, .wrap > .empty-sm, .wrap > .gap")
+      // ⚠️ Descendant, not child: since 2026-09-09 the deals page wraps its cards in
+      // per-tab .panel sections, so ".wrap > .card" matched NOTHING and every heading
+      // read as empty. The order this walks in is still document order, and a panel
+      // boundary always coincides with a heading, so the grouping is unchanged.
+      .querySelectorAll(".wrap h2.section, .wrap .card, .wrap .snooze, .wrap .empty-sm, .wrap .gap")
       .forEach(function (el) {
         if (el.tagName === "H2") { settle(); head = el; live = false; }
         else live = true;
@@ -472,6 +507,17 @@ export function githubOneTapScript(o: ChromeOptions): string {
     var n = document.querySelectorAll(".card:not(.rec)").length;
     var label = document.getElementById("dealcount");
     if (label) label.textContent = n + " deal" + (n === 1 ? "" : "s");
+    // A tab still claiming 6 when 5 cards are left is the same contradiction the
+    // count above exists to avoid — and the number goes away entirely at zero,
+    // which is how the page renders an empty tab in the first place.
+    document.querySelectorAll("section.tabpanel").forEach(function (panel) {
+      var key = (panel.className.match(/tp-([a-z]+)/) || [])[1];
+      if (!key) return;
+      var badge = document.querySelector('label[for="tab-' + key + '"] .n');
+      var count = panel.querySelectorAll(".card").length;
+      if (!count && badge) badge.remove();
+      else if (badge) badge.textContent = String(count);
+    });
   }
 
   function dispatch(btn) {

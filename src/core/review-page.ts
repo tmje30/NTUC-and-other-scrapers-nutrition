@@ -349,9 +349,10 @@ export function renderReviewPage(pending: PendingReview[], o: ReviewPageOptions)
 	 * same standard the deck holds itself to. A tabbed page that goes blank without JS
 	 * would hide the queue rather than degrade it.
 	 *
-	 * ⚠️ An empty tab is still rendered, with its count — a tab that disappears when it
-	 * empties makes the page look different every morning for no reason the reader can
-	 * see.
+	 * ⚠️ An empty tab is still rendered — a tab that disappears when it empties makes
+	 * the page look different every morning for no reason the reader can see. Its count
+	 * is dropped rather than shown as a 0 (user, 2026-09-09), so a bare label reads as
+	 * "nothing here" on both this page and the deals page.
 	 */
 	const tabbed = REVIEW_GROUPS.map((g) => ({
 		...g,
@@ -368,7 +369,7 @@ export function renderReviewPage(pending: PendingReview[], o: ReviewPageOptions)
 		)
 		.join("");
 	const tabBar = counted
-		.map((t) => `<label class="tab" for="tab-${t.key}">${esc(t.label)} <span class="n">${t.n}</span></label>`)
+		.map((t) => `<label class="tab" for="tab-${t.key}">${esc(t.label)}` + (t.n ? ` <span class="n">${t.n}</span>` : "") + `</label>`)
 		.join("");
 	const panels = counted
 		.map(

@@ -391,3 +391,83 @@ check("and runs before anything else can", /\}, true\);/.test(dismiss));
  */
 check("the Buy button carries the price you will pay", html.includes("&quot;priceSgd&quot;:5.65"));
 check("...and Add to Ingredients carries the PRE-PROMO price", html.includes("&quot;priceSgd&quot;:6.65"));
+
+/**
+ * **The four tabs, the same four the review page has** (user, 2026-09-09: "can the
+ * discount page have the same tags. and show a number in the tags if there are items
+ * in it").
+ *
+ * ⚠️ Both pages call the SAME `groupOf`, so a row cannot sit under Household on one
+ * page and Food on the other. What is tested here is the deals page's own half: that
+ * a card lands in its category's panel, that the number appears only where there is
+ * something to count, and that the page still degrades to "everything visible" with
+ * no CSS and no JavaScript.
+ */
+describe("deals page — tabs");
+
+const soap = deal(
+	target({
+		name: "Dish Soap",
+		ingredientId: "ing-h1",
+		category: "Household Supplies",
+		search: { searchTerm: "dish soap", mustMatch: [], properties: [], keywords: [] },
+	}),
+	product({ name: "Sunlight Lime", nutritionHtml: null, onSale: false, listPriceSgd: null }),
+	9,
+);
+const oats = deal(
+	target({
+		name: "Rolled Oats",
+		ingredientId: "ing-f1",
+		category: "[2] Wheat/Rice/Carbs",
+		search: { searchTerm: "oats", mustMatch: [], properties: [], keywords: [] },
+	}),
+	product({ name: "Quaker Oats", nutritionHtml: null, onSale: false, listPriceSgd: null }),
+	11,
+);
+const tabs = renderDealsPage([oats, soap], [], new Date(), [], { repo: "r" });
+
+check("all four tabs are rendered", ["food", "supplements", "household", "cosmetics"].every((k) => tabs.includes(`for="tab-${k}"`)));
+check("a food row is counted under Food", /for="tab-food">Food <span class="n">1<\/span>/.test(tabs));
+check("a household row is counted under Household", /for="tab-household">Household <span class="n">1<\/span>/.test(tabs));
+// ⚠️ The number is omitted, not zeroed — the user asked for a number only where
+// there are items, so a bare label is how an empty tab reads.
+check("an empty tab carries no number", /for="tab-cosmetics">Cosmetics<\/label>/.test(tabs));
+check("…and is still rendered rather than dropped", tabs.includes('for="tab-cosmetics"'));
+check("an empty tab says so in its own words", tabs.includes("Nothing under Cosmetics is cheaper today."));
+
+// The panel a card sits in decides which tab shows it, so the wrong panel is the
+// same bug as the wrong tab.
+const householdPanel = tabs.slice(tabs.indexOf('class="tabpanel tp-household"'), tabs.indexOf('class="tabpanel tp-cosmetics"'));
+check("the household card sits in the household panel", householdPanel.includes("Sunlight Lime"));
+check("…and the food card does not", !householdPanel.includes("Quaker Oats"));
+
+// ⚠️ The first tab holding anything opens, so the page never lands on an empty one.
+check("the first non-empty tab is checked", tabs.includes('id="tab-food" class="tabin" checked'));
+
+// ⚠️ Radios, .tabs and the panels must be siblings or the ~ selectors match nothing.
+check("the radios come before the tab bar", tabs.indexOf('id="tab-food"') < tabs.indexOf('<nav class="tabs">'));
+check("…and the tab bar before the panels", tabs.indexOf('<nav class="tabs">') < tabs.indexOf('class="tabpanel tp-food"'));
+
+// ⚠️⚠️ The floor: no JavaScript anywhere in the tabs, and every panel visible when
+// the CSS never arrives. A tabbed page that goes blank hides the deals instead of
+// degrading.
+check("the panels are shown by default", /\.tabpanel \{ display: block; \}/.test(tabs));
+check("hiding only begins once a radio is checked", tabs.includes(".tabin:checked ~ .tabpanel { display: none; }"));
+
+// Nothing at all is one plain answer, not four empty tabs to click through.
+const nothing = renderDealsPage([], [], new Date(), [], { repo: "r" });
+check("an empty page renders no tabs at all", !nothing.includes('class="tabs"'));
+check("…and says the plan is clear", nothing.includes("Nothing in your plan is cheaper today."));
+
+/**
+ * ⚠️⚠️ **The tab sections must not be called `.panel`.** This page already had one:
+ * the ⋯ dropdown, which is `position: absolute; display: flex`. Naming the tab
+ * sections `.panel` too (as the review page does, where nothing else claims the name)
+ * took every tab section out of the flow — the tabs and their counts rendered
+ * perfectly and all five cards sat off the right-hand edge of the page, invisible.
+ * Every markup assertion above passed while that was true, which is why this one
+ * checks the collision itself.
+ */
+check("the tab sections are not .panel", !tabs.includes('<section class="panel'));
+check("…and the ⋯ menu still is", tabs.includes('<div class="panel">'));

@@ -216,7 +216,8 @@ check(
 	"the row class is registered with prune()",
 	// ⚠️ A heading whose rows aren't in prune()'s selector counts as empty and gets
 	// display:none on the first tap — the whole section would vanish from view.
-	/querySelectorAll\([^)]*\.wrap > \.gap/.test(page),
+	// Descendant, not child: the cards now sit inside per-tab .panel sections.
+	/querySelectorAll\([^)]*\.wrap \.gap/.test(page),
 );
 
 check(
