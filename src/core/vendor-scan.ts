@@ -1,6 +1,6 @@
 import { Client } from "@notionhq/client";
 import { config } from "./config.js";
-import { INGREDIENTS_DS, ING_PROPS } from "./ingredients-schema.js";
+import { INGREDIENTS_DS, ING_PROPS, categoryOf } from "./ingredients-schema.js";
 import {
 	DONT_SEARCH_TAGS,
 	PARKED_TAG,
@@ -433,6 +433,8 @@ export function targetFor(row: {
 	tags: string[];
 	/** The `Notes` column, already split — see `noteKeywordsFrom`. */
 	noteKeywords?: string[];
+	/** The Notion `Category`, for the review page tabs and the supplement rule. */
+	category?: string;
 	baseline: { priceSgd: number | null; size: number | null };
 }): PlanTarget {
 	const search = parseName(row.name);
@@ -446,7 +448,7 @@ export function targetFor(row: {
 		ingredientId: row.pageId,
 		name: row.name,
 		search,
-		category: "",
+		category: row.category ?? "",
 		noteKeywords: row.noteKeywords ?? [],
 		// Not the routing list here: vendor-scan is ALREADY directed — it asks a shop
 		// only because a slot names it — so this synthetic target carries no vendors
@@ -522,6 +524,7 @@ export async function readScanRows(
 			unitType,
 			tags,
 			noteKeywords: noteKeywordsOf(p),
+			category: categoryOf(page.properties as any),
 			baseline: {
 				priceSgd: cheapest?.slot.priceValue ?? null,
 				size: cheapest?.slot.sizeValue ?? null,

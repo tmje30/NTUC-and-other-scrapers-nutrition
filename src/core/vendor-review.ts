@@ -74,7 +74,22 @@ export type ReviewReason =
 	 * ⚠️ It can never be written by the scan: carrying a reason at all is what routes a
 	 * pick to the queue instead of the write path, and this one is always present.
 	 */
-	| { kind: "near-miss"; note: string };
+	| { kind: "near-miss"; note: string }
+	/**
+	 * ⚠️⚠️ **A supplement whose row names a brand, matched by a product that does not
+	 * carry it.** The user’s rule (2026-09-09): on a Suppliments row, only a brand match
+	 * is worth writing without asking.
+	 *
+	 * It exists because the scan was RIGHT to be confident and still wrong: measured
+	 * 2026-09-09, `Omega 3 [california gold]` was filled silently with `Country Life,
+	 * Natural Omega-3, 1,000 mg, 300 Softgels` at 0.750 — every word of the row name is
+	 * in that title, and the brand was the only thing wrong with it.
+	 *
+	 * ⚠️ NOT the same as the `Brand Specific` tag. That tag makes a wrong brand a hard
+	 * miss the scan never offers; this makes it a QUESTION. A row can want one, the
+	 * other, or neither.
+	 */
+	| { kind: "brand-unconfirmed"; brand: string; note: string };
 
 /**
  * **The cheaper-only rule: a scan may lower a recorded price, never raise one.**
@@ -235,6 +250,70 @@ export function mergeVendorReview(
 		...(mine.moves ? { moves: mine.moves } : theirs.moves ? { moves: theirs.moves } : {}),
 	};
 }
+
+/** The tabs the review page groups its cards into. */
+export type ReviewGroup = "food" | "supplements" | "household" | "cosmetics";
+
+export const REVIEW_GROUPS: { key: ReviewGroup; label: string }[] = [
+	{ key: "food", label: "Food" },
+	{ key: "supplements", label: "Supplements" },
+	{ key: "household", label: "Household" },
+	{ key: "cosmetics", label: "Cosmetics" },
+];
+
+/**
+ * Which tab a row belongs to, from its Notion `Category`.
+ *
+ * ⚠️ **Matched on a normalised SUBSTRING, never on the exact option text.** This
+ * database spells it `Suppliments`, and has shipped `[5[ Sugar/Sweetners` and
+ * `Don’r Search` too — it has already renamed a property out from under this code once
+ * (`Catagory` → `Category`) with nothing erroring. An exact list would silently drop
+ * every supplement into Food the day a letter changes, and the symptom would be a tab
+ * quietly emptying rather than an error.
+ *
+ * ⚠️ Food is the fallback, not a category of its own: a blank or unrecognised value
+ * lands there rather than vanishing from the page.
+ */
+export function groupOf(category: string): ReviewGroup {
+	const c = String(category || "").toLowerCase();
+	// ⚠️ `suppl[ei]ment`, not `suppl` — "Household **Suppl**ies" contains the shorter one,
+	// and matched supplements before this was measured. The bracket also covers the
+	// database’s own spelling, `Suppliments`.
+	if (/suppl[ei]ment/.test(c) || c.includes("protein powder")) return "supplements";
+	if (c.includes("household")) return "household";
+	if (c.includes("cosmetic") || c.includes("tooth")) return "cosmetics";
+	return "food";
+}
+
+/**
+ * **A supplement matched by a product that does not carry the brand the row names.**
+ *
+ * The user’s rule (2026-09-09): on a Suppliments row, only a brand match is worth
+ * writing without asking. Returns a reason — which is what routes a pick to the queue
+ * instead of the write path — or null when there is nothing to ask about.
+ *
+ * ⚠️ Silent on every other category, and on a supplement row that names no brand. The
+ * point is not to ask more; it is to ask where a substitution is both likely and hard
+ * to notice afterwards.
+ */
+export function brandUnconfirmed(
+	target: { category?: string; search: { brand: string | null } },
+	product: { name: string; brand?: string | null },
+): ReviewReason | null {
+	if (groupOf(target.category ?? "") !== "supplements") return null;
+	const brand = (target.search.brand ?? "").trim().toLowerCase();
+	if (!brand) return null;
+	const hay = `${product.name} ${product.brand ?? ""}`.toLowerCase();
+	if (hay.includes(brand)) return null;
+	return {
+		kind: "brand-unconfirmed",
+		brand,
+		note:
+			`this row names ${brand} and the product does not say so — a supplement is only ` +
+			`recorded without asking when the brand matches. Accept if it is the right thing.`,
+	};
+}
+
 
 /**
  * **The listing this slot is a RECORD of, found among what the shop returned today.**
@@ -528,6 +607,8 @@ export interface PendingReview {
 	/** `cooldownKey` of the row's base noun — what `exclusions.ts` keys a block by. */
 	key: string;
 	unitType: string;
+	/** Notion `Category`, so the page can group cards into tabs — see `groupOf`. */
+	category?: string;
 	vendor: string;
 	slotN: number;
 	/**

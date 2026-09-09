@@ -7,6 +7,7 @@ import {
 	REJECT_REASONS,
 	findPendingFor,
 	findRecordedListing,
+	groupOf,
 	isRecordedUnchanged,
 	mergeVendorReview,
 	isRejectReason,
@@ -929,3 +930,52 @@ check(
 );
 // An empty slot has nothing to be unchanged against.
 check("an empty slot is never 'unchanged'", !isRecordedUnchanged({ priceValue: null, sizeValue: null }, samePack, 2250));
+
+/**
+ * ⚠️ **Four tabs, and no JavaScript in them** (user, 2026-09-09). Radio inputs plus a
+ * sibling selector, so with scripting off every section is simply shown — the same
+ * standard the deck holds itself to. A tabbed page that goes blank without JS would hide
+ * the queue rather than degrade it.
+ */
+describe("the review page groups its cards into tabs");
+
+// ⚠️ A distinct ingredientId per card on purpose: a DECK is one row at one shop, so
+// cards sharing an id are one deck and take their tab from the row, not the card.
+const catCard = (token: string, category: string) =>
+	pend({ token, ingredientId: `row-${token}`, rank: 0, reasons: [], category });
+const tabbedPage = renderReviewPage(
+	[
+		catCard("f1", "[3] Fruits/Vegetables"),
+		catCard("s1", "Suppliments"),
+		catCard("s2", "Protein Powder"),
+		catCard("h1", "Household Supplies"),
+		catCard("c1", "Cosmetics/ Tooth paste etc"),
+	] as any,
+	{ repo: "o/r" },
+);
+for (const k of ["food", "supplements", "household", "cosmetics"]) {
+	check(`${k} has a radio, a label and a panel`, tabbedPage.includes(`id="tab-${k}"`) && tabbedPage.includes(`for="tab-${k}"`) && tabbedPage.includes(`class="panel p-${k}"`));
+}
+// ⚠️ Counts are per CARD, not per deck — a deck of three is three prices to decide.
+check("supplements counts both of its rows", /Supplements <span class="n">2<\/span>/.test(tabbedPage));
+check("cosmetics counts its one", /Cosmetics <span class="n">1<\/span>/.test(tabbedPage));
+// ⚠️ The floor when CSS or scripting fails: panels are display:block until a radio is
+// checked, so the queue is never hidden by a stylesheet that did not load.
+check("panels are shown before any radio is checked", tabbedPage.includes(".panel { display:block; }"));
+check("hiding only begins once a radio IS checked", tabbedPage.includes(".tabin:checked ~ .panel { display:none; }"));
+
+/**
+ * ⚠️ `groupOf` matches a normalised SUBSTRING, never the exact option text: this database
+ * spells it `Suppliments`, and has shipped `[5[ Sugar/Sweetners` and `Don'r Search` too.
+ */
+describe("a category lands in the right tab despite the spelling");
+
+eq("the database's own spelling", groupOf("Suppliments"), "supplements");
+eq("…and the correct one", groupOf("Supplements"), "supplements");
+eq("protein powder is a supplement", groupOf("Protein Powder"), "supplements");
+eq("household supplies", groupOf("Household Supplies"), "household");
+eq("cosmetics and toothpaste", groupOf("Cosmetics/ Tooth paste etc"), "cosmetics");
+eq("a food category", groupOf("[1] Meats/Dairy/Proteins"), "food");
+// ⚠️ Food is the fallback, so a blank or renamed value lands there rather than vanishing.
+eq("a blank category is food, not nowhere", groupOf(""), "food");
+eq("an unrecognised one is food too", groupOf("Something New"), "food");

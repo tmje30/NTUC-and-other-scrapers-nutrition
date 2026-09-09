@@ -1,4 +1,10 @@
-import { reasonsFor, type PendingReview, type ReviewReason } from "./vendor-review.js";
+import {
+	REVIEW_GROUPS,
+	groupOf,
+	reasonsFor,
+	type PendingReview,
+	type ReviewReason,
+} from "./vendor-review.js";
 import { cooldownKey } from "./cooldown.js";
 import { parseName } from "./parse.js";
 import { githubOneTapScript } from "./page-chrome.js";
@@ -336,8 +342,47 @@ function decks(pending: PendingReview[]): PendingReview[][] {
 export function renderReviewPage(pending: PendingReview[], o: ReviewPageOptions): string {
 	const when = (o.generatedAt ?? new Date()).toLocaleString("en-SG", { timeZone: "Asia/Singapore" });
 	const groups = decks(pending);
+
+	/**
+	 * ⚠️⚠️ **Tabs, and no JavaScript in them** (user, 2026-09-09). Radio inputs plus a
+	 * sibling selector: with scripting off every section is simply shown, which is the
+	 * same standard the deck holds itself to. A tabbed page that goes blank without JS
+	 * would hide the queue rather than degrade it.
+	 *
+	 * ⚠️ An empty tab is still rendered, with its count — a tab that disappears when it
+	 * empties makes the page look different every morning for no reason the reader can
+	 * see.
+	 */
+	const tabbed = REVIEW_GROUPS.map((g) => ({
+		...g,
+		decks: groups.filter((d) => groupOf(d[0]!.category ?? "") === g.key),
+	}));
+	const counted = tabbed.map((t) => ({ ...t, n: t.decks.reduce((a, d) => a + d.length, 0) }));
+	// The first tab holding anything opens, so the page never lands on an empty one.
+	const opening = counted.find((t) => t.n > 0)?.key ?? counted[0]!.key;
+
+	const tabs = counted
+		.map(
+			(t) =>
+				`<input type="radio" name="tab" id="tab-${t.key}" class="tabin"${t.key === opening ? " checked" : ""}>`,
+		)
+		.join("");
+	const tabBar = counted
+		.map((t) => `<label class="tab" for="tab-${t.key}">${esc(t.label)} <span class="n">${t.n}</span></label>`)
+		.join("");
+	const panels = counted
+		.map(
+			(t) =>
+				`<section class="panel p-${t.key}">` +
+				(t.decks.length
+					? t.decks.map((g) => (g.length > 1 ? deck(g, o) : card(g[0]!, o))).join("\n")
+					: `<p class="empty">Nothing waiting under ${esc(t.label)}.</p>`) +
+				`</section>`,
+		)
+		.join("");
+
 	const body = pending.length
-		? groups.map((g) => (g.length > 1 ? deck(g, o) : card(g[0]!, o))).join("\n")
+		? `${tabs}<nav class="tabs">${tabBar}</nav>${panels}`
 		: `<p class="empty">Nothing waiting. Every price the last scan found was clear enough to record.</p>`;
 
 	return `<!doctype html>
@@ -354,6 +399,26 @@ body { margin:0; padding:16px; background:var(--bg); color:var(--fg);
 h1 { font-size:1.25rem; margin:0 0 4px; }
 .sub { color:var(--mut); font-size:.85rem; margin:0 0 6px; }
 .note { color:var(--mut); font-size:.82rem; border-left:3px solid var(--line); padding:6px 10px; margin:0 0 18px; }
+/* ⚠️ Tabs with no JavaScript: radios carry the state, a sibling selector shows the panel.
+   The radios sit before .tabs in the markup so ~ can reach both the labels and the panels. */
+.tabin { position:absolute; opacity:0; pointer-events:none; }
+.tabs { display:flex; gap:6px; margin:0 0 14px; flex-wrap:wrap; }
+.tab { cursor:pointer; padding:7px 12px; border:1px solid var(--line); border-radius:999px;
+  font-size:.86rem; font-weight:600; color:var(--mut); user-select:none; }
+.tab .n { opacity:.7; font-weight:400; }
+/* ⚠️ Every panel is shown when nothing is checked — the scripting-off, CSS-failed floor. */
+.panel { display:block; }
+#tab-food:checked ~ .tabs [for=tab-food],
+#tab-supplements:checked ~ .tabs [for=tab-supplements],
+#tab-household:checked ~ .tabs [for=tab-household],
+#tab-cosmetics:checked ~ .tabs [for=tab-cosmetics] { color:var(--fg); border-color:var(--fg); }
+/* Only once a radio IS checked does hiding begin, so the floor above still holds. */
+.tabin:checked ~ .panel { display:none; }
+#tab-food:checked ~ .p-food,
+#tab-supplements:checked ~ .p-supplements,
+#tab-household:checked ~ .p-household,
+#tab-cosmetics:checked ~ .p-cosmetics { display:block; }
+.tab:focus-within, .tabin:focus-visible + .tabs .tab { outline:2px solid var(--fg); }
 .card { border:1px solid var(--line); border-radius:10px; background:var(--card); padding:12px 14px; margin-bottom:12px; }
 .hd { display:flex; justify-content:space-between; gap:10px; align-items:baseline; flex-wrap:wrap; }
 .ing { font-weight:600; }
