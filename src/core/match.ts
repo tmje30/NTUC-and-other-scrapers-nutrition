@@ -659,7 +659,18 @@ export interface MatchResult {
 function tokensPresent(needle: string, hayTokens: Set<string>, hay = ""): boolean {
 	const nt = tokens(needle);
 	if (!nt.length) return true; // nothing checkable (e.g. a bare number)
-	if (nt.every((t) => hayTokens.has(t))) return true;
+	/**
+	 * ⚠️⚠️ **A requirement carrying a number is judged on the number too.** `tokens()`
+	 * drops anything starting with a digit, so `1000 mg` reduces to `mg` and `SPF 30` to
+	 * `spf` — and the word test then passes on ANY product mentioning mg, or on any SPF
+	 * at all. Measured 2026-09-09 on `Omega 3 [california gold]` with `1000 mg` in its
+	 * Notes: all five California Gold results satisfied it, two of them 1,100 mg packs.
+	 *
+	 * So a digit-bearing needle skips the word test and is answered by the compacted
+	 * comparison below, which keeps the digits: `1000 mg` accepts `(1,000 mg per
+	 * Softgel)` and refuses `(1,100 mg per Softgel)`.
+	 */
+	if (!/\d/.test(needle) && nt.every((t) => hayTokens.has(t))) return true;
 
 	/**
 	 * ⚠️⚠️ **A shop writes `SPF30`; the row says `(SPF 30)`.** Tokenised, those are

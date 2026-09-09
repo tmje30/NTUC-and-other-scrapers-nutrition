@@ -1027,3 +1027,36 @@ eq(
 );
 eq("a cell that is only a note yields nothing", noteKeywordsFrom("{it is 1153g to 3.5sgd}").length, 0);
 eq("a cell with no braces is untouched", JSON.stringify(noteKeywordsFrom("EPA, DHA")), JSON.stringify(["EPA", "DHA"]));
+
+/**
+ * ⚠️⚠️ **A requirement carrying a number is judged on the number.** `tokens()` drops
+ * anything starting with a digit, so `1000 mg` reduced to `mg` and the word test then
+ * passed on any product mentioning mg at all. Measured 2026-09-09 on
+ * `Omega 3 [california gold]` with `1000 mg` in Notes: all five California Gold results
+ * satisfied it, two of them 1,100 mg packs.
+ */
+describe("a numeric requirement is not satisfied by its unit alone");
+
+const mgRow = targetFrom("Omega 3 [california gold]", {
+	unitType: "By Unit" as UnitType,
+	noteKeywords: ["1000 mg"],
+});
+const softgel = (name: string) => product({ name, unitCount: 90, packWeightG: null, pricePer100g: null });
+
+eq(
+	"the stated strength is accepted",
+	evaluate(mgRow, softgel("California Gold Nutrition, Omega 800, 90 Fish Gelatin Softgels (1,000 mg per Softgel)")).missing.length,
+	0,
+);
+eq(
+	"a different strength is refused",
+	evaluate(mgRow, softgel("California Gold Nutrition, Omega-3 Premium Fish Oil, 100 Softgels (1,100 mg per Softgel)")).missing.length,
+	1,
+);
+// ⚠️ The same bug in its first shape: (SPF 30) reduced to `spf`, which any SPF satisfies.
+const spfRow = targetFrom("AM facial moisturizing lotion (SPF 30) [cerave]", { unitType: "By ml" as UnitType });
+eq("SPF 30 accepts the closed-up spelling", evaluate(spfRow, product({ name: "CERAVE AM Facial Moisturizing Lotion SPF30 52ml", packWeightG: 52 })).verdict, "accept");
+check(
+	"…and still refuses a different strength written with a space",
+	evaluate(spfRow, product({ name: "Cerave Facial Moisturising Lotion - AM SPF 50 52ml", packWeightG: 52 })).missing.length === 1,
+);
