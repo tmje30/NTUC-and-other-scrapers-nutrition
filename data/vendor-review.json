@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-09T12:26:48.337Z",
+  "updatedAt": "2026-09-09T12:44:13.839Z",
   "pending": [
     {
       "token": "wd6tb9",
@@ -119,70 +119,6 @@
       ],
       "rank": 0,
       "askedAt": "2026-09-09T02:03:05.355Z"
-    },
-    {
-      "token": "0qrczd",
-      "ingredientId": "37369a18-4fe7-80d1-91ef-eb21cedf53ae",
-      "ingredientName": "Omega 3 [california gold]",
-      "key": "omega3",
-      "unitType": "By Unit",
-      "vendor": "Iherb",
-      "slotN": 1,
-      "brand": "california gold",
-      "priceSgd": 14.93,
-      "size": 30,
-      "url": "https://sg.iherb.com/pr/california-gold-nutrition-omega-800-30-fish-gelatin-softgels-1-000-mg-per-softgel/82845",
-      "itemName": "California Gold Nutrition, Omega 800, 30 Fish Gelatin Softgels (1,000 mg per Softgel)",
-      "statedSize": "30 pcs",
-      "perLabel": "$4.98/10 pc",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 2 of 2, offered as a suggestion. Accept only if it is the same thing."
-        },
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 17.53666666666667,
-          "foundPer": 49.766666666666666,
-          "perWord": "100 pcs",
-          "vendor": "Iherb",
-          "note": "DEARER than the Iherb price already recorded: $52.61 / 300 pcs = $17.54/100 pcs → $14.93 / 30 pcs = $49.77/100 pcs. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 1,
-      "askedAt": "2026-09-09T08:42:38.546Z"
-    },
-    {
-      "token": "javvgy",
-      "ingredientId": "37369a18-4fe7-80d1-91ef-eb21cedf53ae",
-      "ingredientName": "Omega 3 [california gold]",
-      "key": "omega3",
-      "unitType": "By Unit",
-      "vendor": "Iherb",
-      "slotN": 1,
-      "brand": "california gold",
-      "priceSgd": 38.67,
-      "size": 90,
-      "url": "https://sg.iherb.com/pr/california-gold-nutrition-omega-800-90-fish-gelatin-softgels-1-000-mg-per-softgel/85180",
-      "itemName": "California Gold Nutrition, Omega 800, 90 Fish Gelatin Softgels (1,000 mg per Softgel)",
-      "statedSize": "90 pcs",
-      "perLabel": "$4.30/10 pc",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is the closest of 2 offered, best first. Accept only if it is the same thing."
-        },
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 17.53666666666667,
-          "foundPer": 42.96666666666667,
-          "perWord": "100 pcs",
-          "vendor": "Iherb",
-          "note": "DEARER than the Iherb price already recorded: $52.61 / 300 pcs = $17.54/100 pcs → $38.67 / 90 pcs = $42.97/100 pcs. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-09T08:42:38.552Z"
     },
     {
       "token": "oh1mpk",
@@ -1100,30 +1036,19 @@
     }
   ],
   "moves": {
-    "generatedAt": "2026-09-09T12:26:48.338Z",
-    "reconfirmed": 63,
+    "generatedAt": "2026-09-09T12:44:13.840Z",
+    "reconfirmed": 2,
     "moves": [
       {
-        "row": "Bathroom Tissue Roll - 4 Ply",
-        "vendor": "NTUC",
-        "recordedText": "$8.65 / 10 pcs",
-        "foundText": "$7.57 / 10 pcs",
-        "recordedPer": 86.5,
-        "foundPer": 75.7,
-        "perWord": "100 pcs",
-        "product": "PurSoft Bathroom Tissue Roll - Unscented (4-Ply)",
-        "url": "https://www.fairprice.com.sg/product/pursoft-bathroom-tissue-roll-unscented-4-ply-10-x-200-per-pack-13082270"
-      },
-      {
-        "row": "Bathroom Tissue Roll - 4 Ply",
-        "vendor": "Sheng Siong",
+        "row": "Omega 3 800 [california gold]",
+        "vendor": "Iherb",
         "recordedText": "",
-        "foundText": "$7.57 / 10 pcs",
+        "foundText": "$47.76 / 60 pcs",
         "recordedPer": null,
-        "foundPer": 75.7,
+        "foundPer": 79.6,
         "perWord": "100 pcs",
-        "product": "Unscented Bathroom Tissue Roll - 4 Ply",
-        "url": "https://shengsiong.com.sg/product/pursoft-unscented-bathroom-tissue-roll-4-ply-10-x-200-per-pack"
+        "product": "California Gold Nutrition, Prenatal DHA, Omega-3 Fatty Acids DHA and EPA plus Choline for Pregnant and Nursing Mothers, 60 Fish Gelatin Softgels (620 mg per Softgel)",
+        "url": "https://sg.iherb.com/pr/california-gold-nutrition-prenatal-dha-omega-3-fatty-acids-dha-and-epa-plus-choline-for-pregnant-and-nursing-mothers-60-fish-gelatin-softgels-620-mg-per-softgel/88811"
       }
     ]
   }
