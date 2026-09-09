@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-09T02:04:35.113Z",
+  "updatedAt": "2026-09-09T08:33:54.001Z",
   "pending": [
     {
       "token": "lo4o3w",
@@ -1069,130 +1069,6 @@
       ],
       "rank": 0,
       "askedAt": "2026-09-09T02:03:05.355Z"
-    },
-    {
-      "token": "hvz2e9",
-      "ingredientId": "37369a18-4fe7-809b-b3bb-cc640507e5a9",
-      "ingredientName": "Creatine monohydrate [California gold]",
-      "key": "creatin monohydrat",
-      "unitType": "By Gram",
-      "vendor": "Iherb",
-      "slotN": 1,
-      "brand": "california gold",
-      "priceSgd": 42.08,
-      "size": 997.9,
-      "url": "https://sg.iherb.com/pr/california-gold-nutrition-sport-pure-creatine-monohydrate-unflavored-2-2-lbs-1-kg/143718",
-      "itemName": "California Gold Nutrition, Sport, Pure Creatine Monohydrate, Unflavored, 2.2 lbs (1 kg)",
-      "statedSize": "998g",
-      "perLabel": "$42.17/kg",
-      "reasons": [
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 42.12637913741224,
-          "foundPer": 42.16855396332298,
-          "perWord": "kg",
-          "vendor": "Iherb",
-          "note": "DEARER than the Iherb price already recorded: $42.00 / 997g = $42.13/kg → $42.08 / 997.9g = $42.17/kg. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-09T02:04:15.900Z"
-    },
-    {
-      "token": "m0otp5",
-      "ingredientId": "37369a18-4fe7-80d1-91ef-eb21cedf53ae",
-      "ingredientName": "Omega 3 [california gold]",
-      "key": "omega3",
-      "unitType": "By Unit",
-      "vendor": "Iherb",
-      "slotN": 1,
-      "brand": "california gold",
-      "priceSgd": 42.23,
-      "size": 240,
-      "url": "https://sg.iherb.com/pr/life-extension-super-omega-3-240-softgels/67021",
-      "itemName": "Life Extension, Super Omega-3, 240 Softgels",
-      "statedSize": "240 pcs",
-      "perLabel": "$1.76/10 pc",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 2 of 3, offered as a suggestion. Accept only if it is the same thing."
-        },
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 17.53666666666667,
-          "foundPer": 17.59583333333333,
-          "perWord": "100 pcs",
-          "vendor": "Iherb",
-          "note": "DEARER than the Iherb price already recorded: $52.61 / 300 pcs = $17.54/100 pcs → $42.23 / 240 pcs = $17.60/100 pcs. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 1,
-      "askedAt": "2026-09-09T02:04:35.111Z"
-    },
-    {
-      "token": "qyl94g",
-      "ingredientId": "37369a18-4fe7-80d1-91ef-eb21cedf53ae",
-      "ingredientName": "Omega 3 [california gold]",
-      "key": "omega3",
-      "unitType": "By Unit",
-      "vendor": "Iherb",
-      "slotN": 1,
-      "brand": "california gold",
-      "priceSgd": 25.79,
-      "size": 100,
-      "url": "https://sg.iherb.com/pr/country-life-natural-omega-3-100-softgels/121743",
-      "itemName": "Country Life, Natural Omega-3, 100 softgels",
-      "statedSize": "100 pcs",
-      "perLabel": "$2.58/10 pc",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
-        },
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 17.53666666666667,
-          "foundPer": 25.790000000000003,
-          "perWord": "100 pcs",
-          "vendor": "Iherb",
-          "note": "DEARER than the Iherb price already recorded: $52.61 / 300 pcs = $17.54/100 pcs → $25.79 / 100 pcs = $25.79/100 pcs. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 2,
-      "askedAt": "2026-09-09T02:04:35.112Z"
-    },
-    {
-      "token": "yj3hi8",
-      "ingredientId": "37369a18-4fe7-80d1-91ef-eb21cedf53ae",
-      "ingredientName": "Omega 3 [california gold]",
-      "key": "omega3",
-      "unitType": "By Unit",
-      "vendor": "Iherb",
-      "slotN": 1,
-      "brand": "california gold",
-      "priceSgd": 42.85,
-      "size": 120,
-      "url": "https://sg.iherb.com/pr/life-extension-super-omega-3-120-softgels/67018",
-      "itemName": "Life Extension, Super Omega-3, 120 Softgels",
-      "statedSize": "120 pcs",
-      "perLabel": "$3.57/10 pc",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is the closest of 3 offered, best first. Accept only if it is the same thing."
-        },
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 17.53666666666667,
-          "foundPer": 35.708333333333336,
-          "perWord": "100 pcs",
-          "vendor": "Iherb",
-          "note": "DEARER than the Iherb price already recorded: $52.61 / 300 pcs = $17.54/100 pcs → $42.85 / 120 pcs = $35.71/100 pcs. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-09T02:04:35.113Z"
     }
   ],
   "rejected": [
@@ -1308,8 +1184,8 @@
     }
   ],
   "moves": {
-    "generatedAt": "2026-09-09T02:04:36.265Z",
-    "reconfirmed": 4,
+    "generatedAt": "2026-09-09T08:33:54.003Z",
+    "reconfirmed": 3,
     "moves": []
   }
 }
