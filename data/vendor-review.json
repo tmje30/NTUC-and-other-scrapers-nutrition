@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-08T06:27:17.100Z",
+  "updatedAt": "2026-09-09T00:27:03.963Z",
   "pending": [
     {
       "token": "7jj9xu",
@@ -143,83 +143,6 @@
       ],
       "rank": 0,
       "askedAt": "2026-09-07T03:07:08.251Z"
-    },
-    {
-      "token": "bklb5n",
-      "ingredientId": "37369a18-4fe7-809b-b3bb-cc640507e5a9",
-      "ingredientName": "Creatine monohydrate (Cali gold)",
-      "key": "creatin monohydrat",
-      "unitType": "By Gram",
-      "vendor": "Iherb",
-      "slotN": 1,
-      "priceSgd": 32.96,
-      "size": 150.25,
-      "url": "https://sg.iherb.com/pr/bpn-creatine-monohydrate-unflavored-5-3-oz-150-g/141831",
-      "itemName": "BPN, Creatine Monohydrate, Unflavored , 5.3 oz (150 g)",
-      "statedSize": "150g",
-      "perLabel": "$219.37/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 2 of 3, offered as a suggestion. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 1,
-      "askedAt": "2026-09-07T03:08:26.328Z"
-    },
-    {
-      "token": "uog344",
-      "ingredientId": "37369a18-4fe7-809b-b3bb-cc640507e5a9",
-      "ingredientName": "Creatine monohydrate (Cali gold)",
-      "key": "creatin monohydrat",
-      "unitType": "By Gram",
-      "vendor": "Iherb",
-      "slotN": 1,
-      "priceSgd": 54.95,
-      "size": 300.5,
-      "url": "https://sg.iherb.com/pr/bpn-creatine-monohydrate-unflavored-10-6-oz-300-g/131350",
-      "itemName": "BPN, Creatine Monohydrate, Unflavored, 10.6 oz (300 g)",
-      "statedSize": "301g",
-      "perLabel": "$182.86/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 2,
-      "askedAt": "2026-09-07T03:08:26.329Z"
-    },
-    {
-      "token": "gb3oxa",
-      "ingredientId": "37369a18-4fe7-809b-b3bb-cc640507e5a9",
-      "ingredientName": "Creatine monohydrate (Cali gold)",
-      "key": "creatin monohydrat",
-      "unitType": "By Gram",
-      "vendor": "Iherb",
-      "slotN": 1,
-      "priceSgd": 45.19,
-      "size": 500,
-      "url": "https://sg.iherb.com/pr/paradise-herbs-creatine-monohydrate-unflavored-500-g/141315",
-      "itemName": "Paradise Herbs, Creatine Monohydrate, Unflavored, 500 g",
-      "statedSize": "500g",
-      "perLabel": "$90.38/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is the closest of 3 offered, best first. Accept only if it is the same thing."
-        },
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 42.12637913741224,
-          "foundPer": 90.38,
-          "perWord": "kg",
-          "vendor": "Iherb",
-          "note": "DEARER than the Iherb price already recorded: $42.00 / 997g = $42.13/kg → $45.19 / 500g = $90.38/kg. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-07T03:08:26.331Z"
     },
     {
       "token": "lo4o3w",
@@ -1170,6 +1093,34 @@
       ],
       "rank": 0,
       "askedAt": "2026-09-08T06:27:17.100Z"
+    },
+    {
+      "token": "hvz2e9",
+      "ingredientId": "37369a18-4fe7-809b-b3bb-cc640507e5a9",
+      "ingredientName": "Creatine monohydrate [California gold]",
+      "key": "creatin monohydrat",
+      "unitType": "By Gram",
+      "vendor": "Iherb",
+      "slotN": 1,
+      "brand": "california gold",
+      "priceSgd": 42.08,
+      "size": 997.9,
+      "url": "https://sg.iherb.com/pr/california-gold-nutrition-sport-pure-creatine-monohydrate-unflavored-2-2-lbs-1-kg/143718",
+      "itemName": "California Gold Nutrition, Sport, Pure Creatine Monohydrate, Unflavored, 2.2 lbs (1 kg)",
+      "statedSize": "998g",
+      "perLabel": "$42.17/kg",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 42.12637913741224,
+          "foundPer": 42.16855396332298,
+          "perWord": "kg",
+          "vendor": "Iherb",
+          "note": "DEARER than the Iherb price already recorded: $42.00 / 997g = $42.13/kg → $42.08 / 997.9g = $42.17/kg. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-09-09T00:27:03.962Z"
     }
   ],
   "rejected": [
@@ -1285,8 +1236,8 @@
     }
   ],
   "moves": {
-    "generatedAt": "2026-09-08T06:27:17.101Z",
-    "reconfirmed": 61,
+    "generatedAt": "2026-09-09T00:27:24.065Z",
+    "reconfirmed": 0,
     "moves": []
   }
 }
