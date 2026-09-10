@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-09T12:44:13.839Z",
+  "updatedAt": "2026-09-10T00:52:41.518Z",
   "pending": [
     {
       "token": "wd6tb9",
@@ -921,6 +921,32 @@
       ],
       "rank": 0,
       "askedAt": "2026-09-09T12:26:48.337Z"
+    },
+    {
+      "token": "ixwcvl",
+      "ingredientId": "37369a18-4fe7-80d1-91ef-eb21cedf53ae",
+      "ingredientName": "Omega 3 800 [california gold] (1000-1100 mg)",
+      "key": "omega3 800",
+      "unitType": "By Unit",
+      "category": "Suppliments",
+      "vendor": "Iherb",
+      "slotN": 1,
+      "brand": "california gold",
+      "priceSgd": 45.2,
+      "size": 120,
+      "url": "https://sg.iherb.com/pr/revive-omega-3-120-softgels-1-000-mg-per-softgel/137232",
+      "itemName": "Revive, Omega 3, 120 Softgels (1,000 mg per Softgel)",
+      "statedSize": "120 pcs",
+      "perLabel": "$3.77/10 pc",
+      "reasons": [
+        {
+          "kind": "brand-unconfirmed",
+          "brand": "california gold",
+          "note": "this row names california gold and the product does not say so — a supplement is only recorded without asking when the brand matches. Accept if it is the right thing."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-09-10T00:52:41.518Z"
     }
   ],
   "rejected": [
@@ -1036,20 +1062,8 @@
     }
   ],
   "moves": {
-    "generatedAt": "2026-09-10T00:45:42.723Z",
+    "generatedAt": "2026-09-10T00:52:41.521Z",
     "reconfirmed": 2,
-    "moves": [
-      {
-        "row": "Omega 3 800 [california gold]",
-        "vendor": "Iherb",
-        "recordedText": "",
-        "foundText": "$47.76 / 60 pcs",
-        "recordedPer": null,
-        "foundPer": 79.6,
-        "perWord": "100 pcs",
-        "product": "California Gold Nutrition, Prenatal DHA, Omega-3 Fatty Acids DHA and EPA plus Choline for Pregnant and Nursing Mothers, 60 Fish Gelatin Softgels (620 mg per Softgel)",
-        "url": "https://sg.iherb.com/pr/california-gold-nutrition-prenatal-dha-omega-3-fatty-acids-dha-and-epa-plus-choline-for-pregnant-and-nursing-mothers-60-fish-gelatin-softgels-620-mg-per-softgel/88811"
-      }
-    ]
+    "moves": []
   }
 }
