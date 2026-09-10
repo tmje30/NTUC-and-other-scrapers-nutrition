@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-10T00:52:41.518Z",
+  "updatedAt": "2026-09-10T00:57:11.104Z",
   "pending": [
     {
       "token": "wd6tb9",
@@ -921,32 +921,6 @@
       ],
       "rank": 0,
       "askedAt": "2026-09-09T12:26:48.337Z"
-    },
-    {
-      "token": "ixwcvl",
-      "ingredientId": "37369a18-4fe7-80d1-91ef-eb21cedf53ae",
-      "ingredientName": "Omega 3 800 [california gold] (1000-1100 mg)",
-      "key": "omega3 800",
-      "unitType": "By Unit",
-      "category": "Suppliments",
-      "vendor": "Iherb",
-      "slotN": 1,
-      "brand": "california gold",
-      "priceSgd": 45.2,
-      "size": 120,
-      "url": "https://sg.iherb.com/pr/revive-omega-3-120-softgels-1-000-mg-per-softgel/137232",
-      "itemName": "Revive, Omega 3, 120 Softgels (1,000 mg per Softgel)",
-      "statedSize": "120 pcs",
-      "perLabel": "$3.77/10 pc",
-      "reasons": [
-        {
-          "kind": "brand-unconfirmed",
-          "brand": "california gold",
-          "note": "this row names california gold and the product does not say so — a supplement is only recorded without asking when the brand matches. Accept if it is the right thing."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-10T00:52:41.518Z"
     }
   ],
   "rejected": [
@@ -1060,10 +1034,5 @@
       "why": "6.6× cheaper than this row's other shop",
       "rejectedAt": "2026-08-12T00:52:05.250Z"
     }
-  ],
-  "moves": {
-    "generatedAt": "2026-09-10T00:52:41.521Z",
-    "reconfirmed": 2,
-    "moves": []
-  }
+  ]
 }
