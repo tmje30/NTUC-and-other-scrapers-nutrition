@@ -14,6 +14,7 @@ import {
 	isRejectedPick,
 	reasonsFor,
 	sizeBoundsFor,
+	rateCeilingFor,
 	prunePending,
 	renderReviewCard,
 	renderReviewSummary,
@@ -475,6 +476,78 @@ check(
 		"v",
 	).maxGrams === null,
 );
+
+// ── the price ceiling: the same argument as the size one, one dimension over ──────
+
+/**
+ * **"Too expensive" (user, 2026-09-10).** Refusing the dearest listing alone just
+ * promotes the next-dearest, and the row asks the same question next week a few cents
+ * lower — the ladder `sizeBoundsFor` already exists to stop, in the other dimension.
+ *
+ * ⚠️ It is stored as a RATE, never as the pack price. $45 is dear for 60 softgels and
+ * cheap for 300, and a ceiling that could not tell those apart would refuse the good
+ * pack and admit the bad one.
+ */
+const refusedDear = withRejectedPick(EMPTY_REVIEW, {
+	ingredientId: "row-omega",
+	vendor: "Iherb",
+	url: "u1",
+	store: "Iherb",
+	product: "Prenatal DHA, 60 Softgels",
+	name: "Omega 3 800",
+	why: "brand",
+	reason: "too-expensive",
+	rate: 796, // $47.76 / 60 pcs * 1000
+}).file;
+
+check("'too expensive' becomes a rate ceiling", rateCeilingFor(refusedDear, "row-omega", "Iherb") === 796);
+check("scoped to that row at that shop", rateCeilingFor(refusedDear, "row-omega", "Watsons") === null);
+check("no ceiling where nothing was refused on price", rateCeilingFor(EMPTY_REVIEW, "row-omega", "Iherb") === null);
+
+// The tightest refusal is the user's latest word on the row, so it wins.
+const refusedDearTwice = withRejectedPick(refusedDear, {
+	ingredientId: "row-omega",
+	vendor: "Iherb",
+	url: "u2",
+	store: "Iherb",
+	product: "Something dear, 90 Softgels",
+	name: "Omega 3 800",
+	why: "",
+	reason: "too-expensive",
+	rate: 500,
+}).file;
+check("a second refusal tightens the ceiling", rateCeilingFor(refusedDearTwice, "row-omega", "Iherb") === 500);
+
+// ⚠️ A size complaint says nothing about price, and vice versa — the two ceilings must
+// not leak into each other.
+check("a size refusal sets no price ceiling", rateCeilingFor(refusedBig, "row-carrots", "Sheng Siong") === null);
+check("a price refusal sets no size ceiling", sizeBoundsFor(refusedDear, "row-omega", "Iherb").maxGrams === null);
+
+// A refusal carrying no rate is no opinion, never "nothing is acceptable".
+check(
+	"a price refusal with no rate sets no ceiling",
+	rateCeilingFor(
+		withRejectedPick(EMPTY_REVIEW, {
+			ingredientId: "r",
+			vendor: "v",
+			url: "u",
+			store: "v",
+			product: "p",
+			name: "n",
+			why: "",
+			reason: "too-expensive",
+			rate: null,
+		}).file,
+		"r",
+		"v",
+	) === null,
+);
+
+// ⚠️ The button has to be OFFERED, and on every card — unlike "Wrong brand", which is
+// only shown where the row names a brand to enforce.
+check("Too expensive is offered", reasonsFor({}).some((r) => r.key === "too-expensive"));
+check("…on a card with no brand too", reasonsFor({}).some((r) => r.label === "Too expensive"));
+check("…and it is a real reason key", isRejectReason("too-expensive"));
 
 
 describe("the cheaper-only rule — a scan may lower a recorded price, never raise one");

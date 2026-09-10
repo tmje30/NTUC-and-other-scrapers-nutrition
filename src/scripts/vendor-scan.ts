@@ -34,6 +34,7 @@ import {
 	reviewToken,
 	prunePending,
 	sizeBoundsFor,
+	rateCeilingFor,
 	sizeText,
 	statedSizeRange,
 	brandUnconfirmed,
@@ -281,6 +282,8 @@ async function main(): Promise<void> {
 	let skippedByUser = 0;
 	/** Candidates dropped by the row's own `Size - Ceiling (g/ml)`. */
 	let skippedOverCeiling = 0;
+	/** Dropped by a standing "Too expensive" answer — see `rateCeilingFor`. */
+	let skippedOverRate = 0;
 	/** Dearer suggestions withheld because the recorded pick is still on the shelf. */
 	let suppressedDearer = 0;
 	/** Picks re-confirmed rather than re-asked, because the slot already held them. */
@@ -346,8 +349,14 @@ async function main(): Promise<void> {
 				// only the 10 kg sack promotes the 5 kg sack, and the user gets asked again
 				// next week in a smaller size; a ceiling ends it. See `sizeBoundsFor`.
 				const bounds = sizeBoundsFor(review, row.pageId, route.option);
+				// ⚠️ The "Too expensive" button's standing answer. Without it, refusing the
+				// dearest listing simply promotes the next-dearest and the row asks again
+				// next week a few cents lower — the same ladder `sizeBoundsFor` exists to
+				// stop. See `rateCeilingFor`.
+				const maxRate = rateCeilingFor(review, row.pageId, route.option);
 				const before = products.length;
 				let overCeiling = 0;
+				let overRate = 0;
 				products = products.filter((p) => {
 					if (isRejectedPick(review, row.pageId, route.option, p)) return false;
 					// ⚠️ The row's own declared ceiling, checked FIRST and in the row's own
@@ -359,14 +368,24 @@ async function main(): Promise<void> {
 						overCeiling++;
 						return false;
 					}
+					// ⚠️ Rate, not price, and in the row's own units — so it compares like
+					// with like across pack sizes. No size is no opinion, as everywhere else.
+					if (maxRate != null) {
+						const rate = pricePer1000(p.priceSgd, sizeFor(row.unitType, p));
+						if (rate != null && rate >= maxRate) {
+							overRate++;
+							return false;
+						}
+					}
 					const g = packWeightOf(row.unitType, sizeFor(row.unitType, p), row.name, p.name);
 					if (g == null) return true; // no weight is no opinion, as everywhere else
 					if (bounds.maxGrams != null && g >= bounds.maxGrams) return false;
 					if (bounds.minGrams != null && g <= bounds.minGrams) return false;
 					return true;
 				});
-				if (products.length < before) skippedByUser += before - products.length - overCeiling;
+				if (products.length < before) skippedByUser += before - products.length - overCeiling - overRate;
 				skippedOverCeiling += overCeiling;
+				skippedOverRate += overRate;
 				outcome = pickCandidate(row.target, products, {
 					marketplace: route.marketplace,
 					// A price already recorded at ANOTHER shop for this row — the one check
@@ -382,7 +401,8 @@ async function main(): Promise<void> {
 						// Not re-quoting the ceiling in units here: on a By Unit row some of these
 					// were dropped on the derived WEIGHT, and naming one dimension for both
 					// would misreport half the count. The row header states both figures.
-					(overCeiling ? ` — ${overCeiling} over this row's size ceiling` : ""),
+					(overCeiling ? ` — ${overCeiling} over this row's size ceiling` : "") +
+						(overRate ? ` — ${overRate} over this row's price ceiling` : ""),
 				);
 				if (outcome.ok) break;
 				// The first term to offer any is kept: terms run broadest-first, so its result
@@ -886,6 +906,7 @@ async function main(): Promise<void> {
 			(toAsk.length ? `, ${toAsk.length} awaiting your call` : "") +
 			(skippedByUser ? `, ${skippedByUser} listing(s) skipped as previously refused` : "") +
 			(skippedOverCeiling ? `, ${skippedOverCeiling} over a row's size ceiling` : "") +
+			(skippedOverRate ? `, ${skippedOverRate} dearer than you have already refused here` : "") +
 			(suppressedDearer
 				? `, ${suppressedDearer} dearer suggestion(s) withheld — the recorded pick still stands`
 				: "") +

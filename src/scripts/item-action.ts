@@ -20,6 +20,7 @@ import {
 	withoutPending,
 	withoutPendingForSlot,
 } from "../core/vendor-review.js";
+import { pricePer1000 } from "../core/vendor-slots.js";
 import { PARKED_TAG } from "../core/notion.js";
 import {
 	createIngredient,
@@ -741,6 +742,9 @@ if (payload.action === "review-skip") {
 		reason,
 		// Bounds the NEXT pick when the complaint was about size — see `sizeBoundsFor`.
 		packGrams: reason === "too-big" || reason === "too-small" ? (payload.size ?? null) : null,
+		// Bounds the next pick on PRICE the same way — see `rateCeilingFor`. The rate, not
+		// the pack price: the same $45 is dear for 60 softgels and cheap for 300.
+		rate: reason === "too-expensive" ? pricePer1000(payload.priceSgd ?? null, payload.size ?? null) : null,
 	});
 	await writeVendorReview(reviewFile);
 

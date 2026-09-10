@@ -695,6 +695,16 @@ export interface RejectedPick {
 	 * Null for a piece-priced pack, where there is no weight to bound.
 	 */
 	packGrams?: number | null;
+	/**
+	 * The refused pack's rate — `price / size * 1000`, in the ROW's own units, exactly
+	 * what `pricePer1000` computes and what `Cheapest Price/Kg ` reads. Set only by
+	 * "Too expensive"; null everywhere else, the same way `packGrams` is set only by the
+	 * two size complaints.
+	 *
+	 * ⚠️ Stored as a rate, never as the pack price: $45 is dear for 60 softgels and cheap
+	 * for 300, and a ceiling that could not tell those apart would be worse than none.
+	 */
+	rate?: number | null;
 	rejectedAt: string;
 }
 
@@ -724,6 +734,34 @@ export function sizeBoundsFor(
 		if (r.reason === "too-small" && (minGrams == null || r.packGrams > minGrams)) minGrams = r.packGrams;
 	}
 	return { maxGrams, minGrams };
+}
+
+/**
+ * The dearest rate this row will accept at this shop, from past "Too expensive" answers.
+ *
+ * ⚠️ **EXCLUSIVE of the refused rate**, like `sizeBoundsFor`: "$7.96 per 10 softgels is
+ * too much" says nothing about $7.90, but it does say $7.96 is not acceptable. Being
+ * wrong in the direction of asking again is the safe one.
+ *
+ * ⚠️ The LOWEST refused rate wins when there are several, because each refusal is the
+ * user saying "not at that price" and the tightest one is their latest word on the row.
+ *
+ * Null when nothing has been refused on price here — and null is "no opinion", never
+ * "nothing is acceptable".
+ */
+export function rateCeilingFor(
+	file: VendorReviewFile,
+	ingredientId: string,
+	vendor: string,
+): number | null {
+	let max: number | null = null;
+	for (const r of file.rejected ?? []) {
+		if (!same(r.ingredientId, ingredientId) || !same(r.vendor, vendor)) continue;
+		if (r.reason !== "too-expensive") continue;
+		if (typeof r.rate !== "number" || !Number.isFinite(r.rate) || r.rate <= 0) continue;
+		if (max == null || r.rate < max) max = r.rate;
+	}
+	return max;
 }
 
 /**
@@ -987,6 +1025,22 @@ export const REJECT_REASONS = [
 		key: "missing-property",
 		label: "Item is slightly off criteria",
 		hint: "unpasteurized, organic, steel-cut, unflavoured…",
+		research: true,
+	},
+	{
+		/**
+		 * ⚠️ **A rate ceiling, for the same reason "Pack too large" is a size ceiling**
+		 * (user, 2026-09-10). Refusing one listing as dear just promotes the next-dearest
+		 * one, and the row asks the same question next week a few cents lower, forever.
+		 * The refused rate is recorded and `rateCeilingFor` holds the line.
+		 *
+		 * ⚠️ It matters most where the ratchet cannot help: a slot with NO price recorded
+		 * has nothing for a candidate to be dearer than, so every pack is a fresh question.
+		 * That is exactly the case this button is being pressed in.
+		 */
+		key: "too-expensive",
+		label: "Too expensive",
+		hint: "right product, not at this price — nothing dearer is offered for this row here",
 		research: true,
 	},
 	{
