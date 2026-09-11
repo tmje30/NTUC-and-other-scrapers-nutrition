@@ -345,7 +345,13 @@ try {
 	const t = listTotals(open);
 	await writeFile(
 		"public/list.html",
-		renderListPage(rows, { repo: config.repo(), siteUrl: config.siteUrl(), generatedAt: new Date() }),
+		renderListPage(rows, {
+			repo: config.repo(),
+			listEndpoint: config.listEndpoint(),
+			listSecret: config.listSecret(),
+			siteUrl: config.siteUrl(),
+			generatedAt: new Date(),
+		}),
 		"utf8",
 	);
 	await writeFile(

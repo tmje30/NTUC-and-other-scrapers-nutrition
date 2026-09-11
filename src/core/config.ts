@@ -76,6 +76,28 @@ export const config = {
 	 */
 	addEndpoint: () => optional("ADD_ENDPOINT"),
 	/**
+	 * The relay's `/list` endpoint — where `list.html` sends a tick or an amount.
+	 *
+	 * Derived from the relay's own host rather than configured twice, so the page and the
+	 * Worker cannot drift apart. Overridable for a fork or a local `wrangler dev`.
+	 */
+	listEndpoint: () =>
+		optional("LIST_ENDPOINT", "https://grocery-telegram-relay.tmje30.workers.dev/list"),
+	/**
+	 * The secret `list.html` sends as `X-List-Secret`, matching the Worker's `LIST_SECRET`.
+	 *
+	 * ⚠️⚠️ **This one is BAKED INTO A PUBLIC PAGE, unlike every other secret here.** That is
+	 * the deliberate trade behind "works on any device with nothing to enable" (user,
+	 * 2026-09-11): a static page on GitHub Pages cannot hold a credential and hide it. What
+	 * it grants is narrow — tick, untick and amount, on one grocery list — and notably NOT
+	 * the repo write that the per-browser PAT it replaced carried.
+	 *
+	 * ⚠️ **`optional`, and unset must stay harmless.** A build with no value renders the page
+	 * read-only rather than shipping `X-List-Secret: undefined` at the relay; see
+	 * `renderListPage`. Local previews are built this way all the time.
+	 */
+	listSecret: () => optional("LIST_SECRET"),
+	/**
 	 * Claude API key, for the macro lookup behind "Add to Ingredients".
 	 * `optional` on purpose: unset simply means the new row is written without
 	 * nutrition figures, which is a worse row but still a correct one. Only the

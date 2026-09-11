@@ -1,0 +1,59 @@
+name: Grocery list actions (tick / amount)
+
+# The checkbox and the amount box on `list.html`. The page is static and holds no
+# credentials, so a tap fires `repository_dispatch` straight at this workflow using the
+# fine-grained PAT the browser is holding. This is the privileged half that writes.
+#
+# ⚠️ **There is no `issues:` trigger here, unlike add-to-list.yml and item-actions.yml.**
+# Those have a two-tap floor — tap a button, submit a pre-filled GitHub issue — because
+# they fire a handful of times a day. A shopping list is ticked twenty times in one trip,
+# and twenty GitHub issues is not a fallback, it is a worse product. Without a token the
+# page disables its controls and says so.
+#
+# ⚠️ **Nothing here deletes a Notion row.** A tick only sets the checkbox and queues the
+# row in `data/list-pending.json`. `list-sweep` does the deleting, an hour later, and
+# re-checks before it does. See `src/core/list-pending.ts`.
+on:
+  repository_dispatch:
+    types: [list-action]
+  workflow_dispatch:
+    inputs:
+      payload:
+        description: 'JSON, e.g. {"v":1,"op":"tick","pageId":"…"}'
+        required: true
+
+# ⚠️ **No concurrency group, deliberately — the same call add-to-list.yml makes.** The
+# rule GitHub applies (keep one pending run per group, cancel the rest) is data loss here:
+# every tap is a different row, and a cancelled tap is a checkbox that ticked on screen
+# and did nothing. The race on `list-pending.json` is handled where it belongs, by the
+# `reapply` merge in `list-action.ts`.
+
+jobs:
+  act:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # commit data/list-pending.json
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - run: npm ci
+
+      # `list-action.ts` commits and pushes for itself (via `commitAndPushData`, with a
+      # re-apply that keeps whatever another tap wrote meanwhile), so it needs an
+      # identity. Same shape as tg-sweep.yml — no separate commit step.
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Apply the tap
+        run: npm run list-action
+        env:
+          ACTION_PAYLOAD: ${{ github.event_name == 'workflow_dispatch' && inputs.payload || toJSON(github.event.client_payload) }}
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}

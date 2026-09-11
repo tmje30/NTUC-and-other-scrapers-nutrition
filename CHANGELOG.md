@@ -7,6 +7,75 @@ All notable changes to this project are documented here. Format based on
 ## [Unreleased]
 
 ### Added
+- **`list.html` — the shopping page, and a daily Telegram message carrying it (2026-09-11).**
+  The sixth page: your Notion grocery List as something you can hold in one hand in a shop.
+  Each line is a checkbox, an editable amount, the item, and **two price lines, one per
+  price rather than one per unit**:
+  ```
+  ☐ [2] ×  carrots, Normal (1kg)
+           $1.60 / 1.88 /Kg — NTUC              ← what you normally pay, and where
+           $0.95 / $1.90/kg  −41% — Sheng Siong ← the offer, and where
+  ```
+  ⚠️ **The figures are the user's own; only the arrangement is the page's.** `Price D%/C`
+  groups by UNIT — pack prices on one line, per-kg figures on the other — so "what do I
+  normally pay for this, and where" meant taking one figure off each of two lines with the
+  discount's numbers in between. Grouping by price puts each answer on one line. Both
+  per-unit strings are lifted out of that formula unchanged (`parsePerUnitLine`), because
+  the regular price's per-kg figure exists nowhere else — `Price per kg/L` holds the
+  discount's only. A row with no genuine reduction gets **one** line, not two: `Price , To
+  Buy ` is frequently equal to the regular price (Fish Sauce, $2.29/$2.29) and a second
+  line repeating it under a heading meaning "offer" is how a page teaches you to stop
+  reading it.
+  At the foot, **Total cost** and **Total cost with %** — the same shopping at your normal
+  prices and at today's. Ticking a box takes the row off the page, recomputes the totals in
+  the browser, and clears it from Notion **at midnight**.
+  ⚠️ **"Delete" means Notion's TRASH and cannot mean anything else.** The API has no
+  permanent-delete endpoint: `PATCH /v1/pages/{id}` takes `in_trash`, and
+  `DELETE /v1/blocks/{id}` returns the block rather than destroying it. Both land the page
+  in the workspace trash — recoverable for ~30 days, then purged by Notion. Verified
+  against `@notionhq/client` v5's endpoint table. Emptying the trash is a manual step.
+  ⚠️⚠️ **Only ticks made ON THE PAGE are ever swept, and that is the safety property the
+  whole design turns on.** When this shipped the list held 22 rows, **16 already ticked** by
+  hand in Notion months earlier. A sweep that went looking for ticked rows would have
+  deleted all sixteen on its first run. It does not look: it reads `data/list-pending.json`,
+  which starts empty and only grows when someone taps a checkbox. A row ticked in Notion is
+  invisible to it for ever — and is not listed on the page either, because it is shopping
+  that is done.
+  ⚠️ **The sweep re-reads the Tickbox and spares anything un-ticked since.** The queue was
+  written up to an hour ago and the user owns that row meanwhile; un-ticking it in Notion is
+  the plainest possible "not that one" and outranks a queue entry. Verified live against the
+  real database before release.
+  ⚠️ **Midnight, not a per-tick timer — changed before release, at the user's request, and
+  it is the better rule rather than a longer one.** An hour after each tick meant rows
+  evaporating mid-trip on their own private clocks: tick the carrots at 10:00 and they are
+  gone by 11:00 while you are still in the shop. One boundary means the list is stable for
+  the whole trip and is cleared once, overnight, so the page you open in the morning is the
+  shopping you have left. The undo tray therefore lasts all day instead of sixty minutes.
+  ⚠️ **A sweep that runs LATE still takes only the previous day's ticks.** `due()` compares
+  against the last Singapore midnight rather than clearing whatever is queued, so a delayed
+  or retried dispatch cannot eat a tick made after midnight on a trip already under way.
+  ⚠️ **The clock is Cloudflare's, not GitHub's** — a new `0 16 * * *` trigger on the relay
+  (16:00 UTC IS midnight SGT; UTC+8, no DST) dispatches `listsweep`. A free public repo
+  queues its own `schedule:` by ~3–3¾ h, which would put "by midnight" in the small hours.
+  Remove that trigger and clearing silently stops, exactly as it would for the Telegram
+  inbox sweep. Both cron patterns match at 16:00 and Cloudflare invokes the handler once
+  per pattern, so `scheduled()` tells them apart by `event.cron`.
+  ⚠️⚠️ **Nothing to enable, on any device — and the credential is no longer a GitHub PAT.**
+  The first cut asked the user to paste a fine-grained token into each browser, which is one
+  device at a time and, because workflows run code *from* the repo, made a repo-write
+  credential a path to executing arbitrary code with `NOTION_TOKEN`. It now POSTs to a new
+  `POST /list` on the relay, and **`LIST_SECRET` is embedded in the public page on purpose**
+  (user's call: "I want this to work on any device"). A static page cannot both hold a
+  credential and hide it, so the trade is stated rather than hidden: anyone with the page
+  URL can tick rows on this one list. The blast radius is three ops on one database, a
+  deleted row is recoverable from Notion's trash for ~30 days, and rotating is one
+  `wrangler secret put` plus the Actions secret. Crucially it is **not** repo write.
+  ⚠️ **An unset `LIST_SECRET` refuses everything rather than accepting everything**, the
+  same direction `WEBHOOK_SECRET` fails in, and the page then renders read-only with its
+  controls `disabled` in the markup — never ticking and silently forgetting.
+  ⚠️ **An unpriced row is in neither total, and the page says how many.** Texting "bananas"
+  files a row with no price, so this is normal rather than broken — but a total that quietly
+  counted it as $0 is a number you would shop against and be wrong.
 - **`Size - Ceiling (g/ml)` caps the pack the price book will record (2026-08-13).** Added
   by the user after the scan filed a **1 kg** bag of white pepper as the NTUC price:
   honestly the cheapest per kilo, and not a pack anyone buys pepper in. The column states

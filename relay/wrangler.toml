@@ -19,11 +19,18 @@ REPO = "tmje30/NTUC-and-other-scrapers-nutrition"
 # that read it) once there is an answer; a day of cron ticks is 96 samples.
 LOG_COLO = "1"
 
-# The other four are SECRETS, set with `wrangler secret put` (see README):
+# The other five are SECRETS, set with `wrangler secret put` (see README):
 #   WEBHOOK_SECRET      — shared with Telegram's setWebhook secret_token
 #   TELEGRAM_BOT_TOKEN  — @Grocery69_bot, for the ack / typing / error message
 #   GITHUB_TOKEN        — fine-grained PAT, Contents: read+write on this repo only
 #   ALLOWED_CHAT_ID     — the one chat that is answered
+#   LIST_SECRET         — what `list.html` sends to POST /list
+#
+# ⚠️ **`LIST_SECRET` is a secret here and PUBLIC in the page**, which is the trade the
+# user chose so the shopping list needs nothing enabled per device. It is still set with
+# `wrangler secret put` rather than being a `[vars]` entry, because it must be rotatable
+# without a code change. What it buys an attacker is three operations on one grocery list
+# — not the repo write the browser-held PAT it replaced would have handed over.
 
 # The clock for the one-hour auto-file: every 15 minutes, dispatch `tgsweep` and let
 # `tg-sweep.yml` decide whether anything has actually expired.
@@ -35,8 +42,14 @@ LOG_COLO = "1"
 #
 # Free plan: cron triggers are included, and 96 ticks a day sits far inside the
 # 100k requests/day allowance. Most exit in seconds having found nothing to do.
+# ⚠️ **The second entry is the grocery list's midnight clear-out**, and 16:00 UTC IS
+# midnight in Singapore — SGT is UTC+8 with no DST, so this never needs a correction.
+# Both patterns match at 16:00 and Cloudflare invokes the handler once per pattern;
+# `scheduled()` tells them apart by `event.cron`. Remove this line and rows ticked off on
+# the shopping page are never cleared, with nothing else failing — the same silent
+# dependency the Telegram sweep has on the line above.
 [triggers]
-crons = ["*/15 * * * *"]
+crons = ["*/15 * * * *", "0 16 * * *"]
 
 # Nothing is logged persistently and no data is stored: the Worker holds no state
 # between requests. Observability is on so `wrangler tail` can show a live

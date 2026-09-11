@@ -302,3 +302,39 @@ export async function sendSummary(
 	const warn = warning ? `\n⚠️ ${esc(warning)}` : "";
 	await sendMessage(`${headline}${warn}\n<a href="${url}">Tap to view →</a>${formatWeightGaps(gaps)}`);
 }
+
+/** What the daily grocery-list message needs. Written by `build-site` into `list.json`. */
+export interface ListSummary {
+	count: number;
+	full: number;
+	discounted: number;
+	unpriced: number;
+}
+
+/**
+ * The daily shopping-list nudge — a second message beside the deals summary.
+ *
+ * ⚠️ **Its own message rather than a line in the deals summary, because the two are sent
+ * on different conditions.** `sendSummary` stays silent on an ordinary day with no deals;
+ * the shopping list is what you are going to the shop with and is news whether or not
+ * anything is discounted. Folding them together would mean either losing the list on a
+ * quiet day or sending a deals headline with no deals in it.
+ *
+ * ⚠️ **An EMPTY list sends nothing.** A daily "you have 0 items" is the message that
+ * teaches you to stop reading the ones that matter — the same reasoning `formatWeightGaps`
+ * is built on. Nothing on the list means nothing to say.
+ */
+export async function sendListSummary(s: ListSummary, url: string): Promise<void> {
+	if (s.count <= 0) return;
+	const saving = s.full - s.discounted;
+	const lines = [
+		`🧾 <b>Grocery list — ${s.count} item${s.count === 1 ? "" : "s"}</b>`,
+		`Total cost: <b>$${s.full.toFixed(2)}</b>`,
+		`Total cost with %: <b>$${s.discounted.toFixed(2)}</b>` + (saving > 0.004 ? ` — saving $${saving.toFixed(2)}` : ""),
+	];
+	if (s.unpriced) {
+		lines.push(`<i>${s.unpriced} item${s.unpriced === 1 ? "" : "s"} with no price yet, not counted.</i>`);
+	}
+	lines.push(`<a href="${esc(url)}">Open the list →</a>`);
+	await sendMessage(lines.join("\n"));
+}

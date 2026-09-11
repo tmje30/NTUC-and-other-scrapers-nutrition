@@ -36,7 +36,8 @@ odd (a 10 kg sack of carrots is genuinely the cheapest per kilo and is not a pac
 anyone buys).
 Everything it is unsure about waits on a **review page** with an OK and a Don't-use
 button per pack, and whatever it *did* change appears on a **price-moves page** —
-so five pages in all: deals, history, new items, review, moves. Since 2026-08-24
+so six pages in all: deals, history, new items, review, moves, and — since
+2026-09-11 — the **shopping list** you actually take to the shop. Since 2026-08-24
 the price check runs in the cloud for the four shops reachable from it, which is
 most of the work; three shops still need a real browser or a Singapore address.
 
@@ -97,6 +98,42 @@ most of the work; three shops still need a real browser or a Singapore address.
   to the bot, one per line or comma-separated: `2kg chicken breast, bananas x6,
   2 x 500g peanut butter`. Each line is matched against your Ingredients list and
   filed onto the Notion grocery List. You get a reply in **20–60 seconds**.
+- **"Where do I actually SHOP from the list?"** The **shopping page**
+  (`list.html`), linked from a Telegram message each morning. One line per item: a
+  checkbox, the amount (editable — tap the number), the item, and **two price lines,
+  one per price**:
+  ```
+  ☐ [2] ×  carrots, Normal (1kg)
+           $1.60 / 1.88 /Kg — NTUC                ← what you normally pay, and where
+           $0.95 / $1.90/kg  −41% — Sheng Siong   ← the offer, and where
+  ```
+  Each line carries its own price, its own per-kg figure and its own shop, so "what
+  do I normally pay, and where" is one line rather than one figure off each of two.
+  An item with no genuine reduction gets **one** line. At the foot: **Total cost**
+  and **Total cost with %** — the same trolley at your normal prices and at today's.
+- **"What does ticking a box do?"** It takes the row off the page, recomputes both
+  totals immediately, and clears it from your Notion list **at midnight**. All day it
+  sits under "Ticked off" at the bottom with an **undo**.
+  ⚠️ **"Clears" means Notion's TRASH — recoverable for about 30 days.** Notion's
+  API has no permanent-delete endpoint, so nothing in this project can destroy a row
+  outright. Emptying the trash in Notion is a manual step, and the only one.
+  ⚠️⚠️ **Rows you ticked in Notion by hand are never touched, and never listed.**
+  Only a tick made *on this page* is ever cleared. Sixteen of your rows were already
+  ticked when the page was built; none of them are candidates for deletion, and none
+  of them appear on the page — they are shopping that is done.
+  ⚠️ **Un-ticking a row in Notion cancels its deletion**, right up to the sweep. It
+  re-reads the checkbox and spares anything no longer ticked.
+- **"Why midnight rather than an hour after I tick it?"** Because an hour after each
+  tick meant rows vanishing while you were still in the shop, each on its own clock.
+  One boundary keeps the list stable for the whole trip and clears it once, overnight,
+  so the page you open in the morning is the shopping you have left.
+- **"Do I have to set anything up on a new phone?"** No. The page works on any device
+  with nothing to enable — the credential lives in the Cloudflare relay, and the page
+  carries only a list-scoped key. ⚠️ **That key is public, and deliberately so:** a
+  static page cannot both hold a credential and hide it. Anyone who finds the page URL
+  could tick rows on this one list. It grants nothing else — not your repo, not your
+  Notion token — and a cleared row is recoverable from the trash. Rotate it with
+  `wrangler secret put LIST_SECRET` (see `relay/README.md`).
 - **"What happens when it isn't sure what I meant?"** It asks, in the chat, with
   buttons: the ingredient rows that came close, **🆕 New item — create in
   Ingredients**, and **✖️ Cancel — typo**. A parked (`Not in Use ATM`) row is

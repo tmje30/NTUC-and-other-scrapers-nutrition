@@ -32,6 +32,9 @@ const ENV = {
 	GITHUB_TOKEN: "gh-token",
 	ALLOWED_CHAT_ID: "7626546412",
 	REPO: "tmje30/NTUC-and-other-scrapers-nutrition",
+	// What `list.html` sends as `X-List-Secret`. Public in the page by design — see
+	// `handleList` in the Worker for why, and for what it does not buy an attacker.
+	LIST_SECRET: "list-s3cret",
 };
 
 /** A recording fetch. `fail` names a URL substring that should answer non-2xx. */
@@ -210,6 +213,137 @@ const tapUpdate = (chatId = 7626546412) => ({
 		threw = true;
 	}
 	check("a thrown fetch is swallowed", !threw);
+}
+
+// ── POST /list — the shopping page ───────────────────────────────────────────
+//
+// ⚠️ This endpoint is reachable by anyone who opens the (public) page, so the tests
+// that matter most are the refusals. What it CAN do is narrow by design; what it
+// must never do is widen.
+
+const listReq = (body, { secret = "list-s3cret", method = "POST" } = {}) =>
+	new Request("https://relay.example/list", {
+		method,
+		headers: secret == null ? {} : { "X-List-Secret": secret, "Content-Type": "application/json" },
+		body: method === "POST" ? JSON.stringify(body) : undefined,
+	});
+
+const TICK = { op: "tick", pageId: "3d469a18-4fe7-802f-8620-000b6053908d" };
+
+{
+	const f = recorder();
+	const res = await handle(listReq(TICK), ENV, { fetch: f });
+	eq("a tick is accepted", res.status, 200);
+	eq("…and dispatched once", f.calls.length, 1);
+	eq("…at the repo's dispatches endpoint", f.calls[0].url.endsWith("/dispatches"), true);
+	eq("…as a list-action", f.calls[0].body.event_type, "list-action");
+	// Nested under `payload`, matching what `list-action.ts` unwraps.
+	eq("…with the payload nested", f.calls[0].body.client_payload.payload.op, "tick");
+}
+
+{
+	// ⚠️ A WRONG secret must not dispatch. This is the whole gate.
+	const f = recorder();
+	const res = await handle(listReq(TICK, { secret: "wrong" }), ENV, { fetch: f });
+	eq("a wrong secret is refused", res.status, 401);
+	eq("…and dispatches nothing", f.calls.length, 0);
+}
+
+{
+	const f = recorder();
+	const res = await handle(listReq(TICK, { secret: null }), ENV, { fetch: f });
+	eq("no secret at all is refused", res.status, 401);
+	eq("…and dispatches nothing", f.calls.length, 0);
+}
+
+{
+	// ⚠️⚠️ An UNSET LIST_SECRET must refuse everything, not accept everything — the same
+	// direction WEBHOOK_SECRET fails in. A relay deployed before the secret was set would
+	// otherwise be an open door.
+	const f = recorder();
+	const res = await handle(listReq(TICK), { ...ENV, LIST_SECRET: undefined }, { fetch: f });
+	eq("an unset LIST_SECRET refuses everything", res.status, 401);
+	eq("…and dispatches nothing", f.calls.length, 0);
+}
+
+{
+	// ⚠️ A malformed tap is refused at the edge rather than spending an Actions run to
+	// discover the same thing in the repo.
+	const f = recorder();
+	const res = await handle(listReq({ op: "rm -rf", pageId: TICK.pageId }), ENV, { fetch: f });
+	eq("an unknown op is refused", res.status, 400);
+	eq("…and dispatches nothing", f.calls.length, 0);
+}
+
+{
+	const f = recorder();
+	const res = await handle(listReq({ op: "tick", pageId: "not-an-id" }), ENV, { fetch: f });
+	eq("a bad page id is refused", res.status, 400);
+	eq("…and dispatches nothing", f.calls.length, 0);
+}
+
+{
+	// The browser preflights every call, because X-List-Secret is a custom header.
+	const f = recorder();
+	const res = await handle(listReq(null, { method: "OPTIONS" }), ENV, { fetch: f });
+	eq("the CORS preflight is answered", res.status, 204);
+	eq("…allowing the secret header", res.headers.get("Access-Control-Allow-Headers").includes("X-List-Secret"), true);
+	eq("…and dispatching nothing", f.calls.length, 0);
+}
+
+{
+	// ⚠️ A real status, unlike the Telegram path's unconditional 200: nothing retries a
+	// checkbox, so the page has to be able to put the tick back.
+	const f = recorder({ fail: "dispatches" });
+	const res = await handle(listReq(TICK), ENV, { fetch: f });
+	eq("a refused dispatch is reported, not swallowed", res.status, 502);
+	const body = await res.json();
+	eq("…with ok:false", body.ok, false);
+}
+
+{
+	// CORS headers must be on the real answers too, or the page cannot read the status.
+	const f = recorder();
+	const res = await handle(listReq(TICK), ENV, { fetch: f });
+	eq("the success answer is readable cross-origin", res.headers.get("Access-Control-Allow-Origin"), "*");
+}
+
+{
+	// ⚠️ The Telegram path must be untouched by any of this — its allow-list, its secret
+	// header and its unconditional 200 all intact.
+	const f = recorder();
+	const res = await handle(
+		new Request("https://relay.example/", {
+			method: "POST",
+			headers: { "x-telegram-bot-api-secret-token": "s3cret" },
+			body: JSON.stringify({ message: { chat: { id: 7626546412 }, text: "milk" } }),
+		}),
+		ENV,
+		{ fetch: f },
+	);
+	eq("a Telegram update still answers 200", res.status, 200);
+	check("…and still dispatches tgupdate", f.calls.some((c) => c.body?.event_type === "tgupdate"));
+}
+
+// ── the midnight cron ────────────────────────────────────────────────────────
+
+{
+	// ⚠️⚠️ Both cron patterns match at 16:00 UTC and Cloudflare invokes the handler once
+	// per pattern. The midnight one must send listsweep and NOT also send tgsweep, or a
+	// grocery clear-out would double as a Telegram sweep.
+	const f = recorder();
+	await scheduled({ cron: "0 16 * * *" }, ENV, { fetch: f });
+	eq("midnight sends exactly one dispatch", f.calls.length, 1);
+	eq("…and it is listsweep", f.calls[0].body.event_type, "listsweep");
+}
+
+{
+	// …while the quarter-hourly tick goes on doing the Telegram half, including the one
+	// that lands in the very same minute as midnight.
+	const f = recorder();
+	await scheduled({ cron: "*/15 * * * *" }, ENV, { fetch: f });
+	eq("a 15-minute tick sends tgsweep", f.calls[0].body.event_type, "tgsweep");
+	check("…and never listsweep", !f.calls.some((c) => c.body?.event_type === "listsweep"));
 }
 
 // ── report ───────────────────────────────────────────────────────────────────

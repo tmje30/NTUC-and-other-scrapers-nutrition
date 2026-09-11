@@ -1,0 +1,66 @@
+name: Grocery list — midnight clear-out
+
+# Remove the rows ticked off on `list.html` during the day.
+#
+# ⚠️ **`schedule:` is NOT used, even though this is the most scheduled job in the repo.**
+# A free public repo queues its own cron by ~3–3¾ h (measured; HANDOVER "Infrastructure
+# truths"), which would put "by midnight" somewhere in the small hours. The clock is
+# Cloudflare's: the relay has a `0 16 * * *` trigger — 16:00 UTC IS midnight in Singapore,
+# which is UTC+8 with no DST — and it sends this `repository_dispatch`, which starts
+# promptly. Remove that trigger and ticked rows are never cleared, with nothing else
+# failing.
+#
+# ⚠️ **Its own workflow rather than a job inside `tg-sweep.yml`, unlike `price`.** That one
+# genuinely depends on the Telegram sweep running first. This shares nothing with it but a
+# provider of clocks, and on a different schedule — 96 ticks a day there, one here. Hanging
+# it off the 15-minute workflow would mean a Telegram outage silently stops grocery rows
+# being cleared, which is a failure nobody would think to look for.
+#
+# ⚠️⚠️ **This is the only workflow in the repo that DELETES a user's Notion row.** The rules
+# that make that safe live in `src/core/list-pending.ts` — only page-ticks are ever queued,
+# the Tickbox is re-read before each delete, and "delete" means Notion's trash. Read that
+# file before changing anything here.
+on:
+  repository_dispatch:
+    types: [listsweep]
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: "Say what would go, without deleting anything"
+        type: boolean
+        default: false
+
+# Every sweep does the same idempotent job, so a cancelled duplicate costs nothing — and
+# two running at once would each try to trash the same row. The opposite call from
+# `list-action.yml`, where every tap is unique and cancelling one loses it.
+concurrency:
+  group: list-sweep
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # commit data/list-pending.json
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - run: npm ci
+
+      # `list-sweep.ts` commits and pushes for itself (via `commitAndPushData`, with a
+      # re-apply that keeps any tick that landed mid-run), so it needs an identity.
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Clear yesterday's ticks
+        run: npm run list-sweep ${{ inputs.dry-run && '-- --dry-run' || '' }}
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}

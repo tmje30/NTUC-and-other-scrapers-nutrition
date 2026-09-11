@@ -51,15 +51,47 @@ below is likewise its own line. `wrangler login` opens a browser — it cannot b
 
 Note the URL it prints — `https://grocery-telegram-relay.<subdomain>.workers.dev`.
 
-## 2. Give it its four secrets
+## 2. Give it its five secrets
 
 ```bash
 npx wrangler secret put WEBHOOK_SECRET
 ```
 
 Then the same for `TELEGRAM_BOT_TOKEN` (the value from `.env`), `GITHUB_TOKEN` (the
-PAT from above) and `ALLOWED_CHAT_ID` (`7626546412`). Each prompts for the value, so
-none of them lands in shell history. `REPO` is already in `wrangler.toml`.
+PAT from above), `ALLOWED_CHAT_ID` (`7626546412`) and `LIST_SECRET` (see below). Each
+prompts for the value, so none of them lands in shell history. `REPO` is already in
+`wrangler.toml`.
+
+### `LIST_SECRET` — the shopping page's key
+
+`list.html` sends this as `X-List-Secret` on every tick and amount change. Generate it
+the same way as `WEBHOOK_SECRET`, straight into `.env` so the page build and the Worker
+read the same value:
+
+```bash
+node -e "console.log('LIST_SECRET='+require('crypto').randomBytes(24).toString('hex'))" >> .env
+```
+
+Then `npx wrangler secret put LIST_SECRET` with that value, and add it to the repo's
+**Actions secrets** too — `build-site` bakes it into the page it publishes.
+
+⚠️⚠️ **This one is PUBLIC in the published page, unlike every other secret here.** That is
+deliberate, not a leak: the user asked for a list that works on any device with nothing to
+enable, and a static page on GitHub Pages cannot both hold a credential and hide it. So
+anyone who finds the page URL can tick rows on that one grocery list.
+
+What bounds the damage:
+
+- It grants **three operations on one database** — tick, untick, amount. Not the repo
+  write the per-browser PAT it replaced carried, and so **not** a path to editing `src/`
+  and having the next scheduled run execute it with `NOTION_TOKEN`.
+- A deleted row goes to Notion's **trash**, recoverable for ~30 days.
+- Rotating it is `wrangler secret put LIST_SECRET` plus the Actions secret, and the next
+  page build. The old value stops working immediately.
+
+⚠️ **Unset refuses everything rather than accepting everything** — the same direction
+`WEBHOOK_SECRET` fails in. A relay deployed before the secret is set is not an open door;
+it simply answers 401, and the page renders read-only.
 
 ## 3. Stop the poller — **before** registering the webhook
 

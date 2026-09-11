@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { sendSummary, type WeightGapNote } from "../core/telegram.js";
+import { sendListSummary, sendSummary, type ListSummary, type WeightGapNote } from "../core/telegram.js";
 import { config } from "../core/config.js";
 
 /** Reads public/summary.json (from build-site) and sends the single Telegram message. */
@@ -28,4 +28,27 @@ if (count > 0 || warning) {
 	);
 } else {
 	console.error("No deals today — no message sent.");
+}
+
+/**
+ * The shopping list, as a second message. See `sendListSummary` for why it is separate
+ * from the deals summary rather than a line inside it.
+ *
+ * ⚠️ **Its own try, and deliberately AFTER the deals message.** The deals summary is the
+ * message this workflow exists to send; a missing or malformed `list.json` must not cost
+ * it. A missing file is the normal state on any run whose `build-site` list block failed,
+ * and it is not worth a red run on its own — the page itself already says what went wrong.
+ */
+try {
+	const summary = JSON.parse(await readFile("public/list.json", "utf8")) as ListSummary;
+	const listUrl = `${config.siteUrl().replace(/\/+$/, "")}/list.html`;
+	await sendListSummary(summary, listUrl);
+	console.error(
+		summary.count > 0
+			? `Sent list: ${summary.count} item(s), $${summary.full.toFixed(2)} → $${summary.discounted.toFixed(2)} → ${listUrl}`
+			: "Grocery list is empty — no list message sent.",
+	);
+} catch (e: any) {
+	if (e?.code === "ENOENT") console.error("No public/list.json — list message skipped.");
+	else console.error(`Warning: grocery list message failed: ${e.message}`);
 }

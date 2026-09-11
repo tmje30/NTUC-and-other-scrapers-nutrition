@@ -52,7 +52,113 @@ const EVENT_TYPE = "tgupdate";
  */
 const SWEEP_EVENT = "tgsweep";
 
+/**
+ * The event `list-action.yml` listens for — one tap on the shopping page.
+ *
+ * ⚠️ **This is why `list.html` needs nothing enabled on the device.** The page is static
+ * and public, so it cannot hold a GitHub token; before this existed it asked the user to
+ * paste a fine-grained PAT into each browser, which is one device at a time and puts a
+ * repo-write credential in a place a shopping list has no business needing. Here the
+ * privileged half stays server-side — the page carries only `LIST_SECRET`, which buys
+ * exactly one thing: ticking and re-counting rows on that one grocery list.
+ */
+const LIST_EVENT = "list-action";
+
+/**
+ * The event `list-sweep.yml` listens for — the midnight clear-out.
+ *
+ * ⚠️ **This Worker is the CLOCK, exactly as it is for `tgsweep`.** GitHub's own
+ * `schedule:` is queued by ~3–3¾ h on a free public repo, so "by midnight" would land
+ * somewhere in the small hours. Remove the `0 16 * * *` trigger from `wrangler.toml` and
+ * ticked rows quietly stop being cleared, with nothing else failing.
+ */
+const LIST_SWEEP_EVENT = "listsweep";
+
+/** Midnight in Singapore, in UTC. SGT is UTC+8 with no DST, so this never drifts. */
+const MIDNIGHT_SGT_CRON = "0 16 * * *";
+
 const ok = () => new Response("ok", { status: 200 });
+
+/**
+ * The page lives on GitHub Pages and this Worker does not, so every call from it is
+ * cross-origin and the custom auth header makes each one preflighted.
+ *
+ * ⚠️ **`*` rather than the Pages origin, and that is not the hole it looks like.** What
+ * guards this endpoint is `LIST_SECRET`, not the origin: `Origin` is set by the browser
+ * for browsers, and anything that is not a browser simply sends whatever it likes. Naming
+ * one origin would break `file://` previews and a local build for no security gained.
+ */
+const CORS = {
+	"Access-Control-Allow-Origin": "*",
+	"Access-Control-Allow-Methods": "POST, OPTIONS",
+	"Access-Control-Allow-Headers": "Content-Type, X-List-Secret",
+	"Access-Control-Max-Age": "86400",
+};
+
+const json = (body, status = 200) =>
+	new Response(JSON.stringify(body), {
+		status,
+		headers: { "Content-Type": "application/json", ...CORS },
+	});
+
+/**
+ * Is this a tap we are willing to forward? Shape only — the truth about the row lives in
+ * Notion and is checked by `list-action.ts`.
+ *
+ * ⚠️ **`pageId` is pattern-checked HERE as well as in the repo.** This endpoint turns an
+ * anonymous POST into a GitHub Actions run; refusing a malformed one at the edge costs
+ * nothing, while forwarding it spends a run to discover the same thing.
+ */
+export function validListAction(p) {
+	if (!p || typeof p !== "object") return "payload is not an object";
+	if (p.op !== "tick" && p.op !== "untick" && p.op !== "amount") return "unknown op";
+	if (typeof p.pageId !== "string" || !/^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i.test(p.pageId)) {
+		return "pageId is not a Notion page id";
+	}
+	if (p.op === "amount" && (!Number.isFinite(Number(p.amount)) || Number(p.amount) < 1)) {
+		return "amount must be a number >= 1";
+	}
+	return null;
+}
+
+/**
+ * `POST /list` — one tap on the shopping page.
+ *
+ * ⚠️ **The secret is embedded in a PUBLIC page, and that is a deliberate trade the user
+ * made (2026-09-11), not an oversight.** They asked for a list that works on any device
+ * with nothing to enable, and a static public page cannot both hold a credential and hide
+ * it. So: anyone who finds the page URL can tick rows on this one grocery list. The damage
+ * is bounded — Notion's trash keeps a deleted row for ~30 days, the morning message says
+ * what went, and the secret is rotated by editing `LIST_SECRET` and redeploying. Note what
+ * is NOT reachable: this endpoint forwards three ops on one database and nothing else, so
+ * unlike the PAT it replaced it cannot push code to the repo.
+ */
+async function handleList(request, env, doFetch) {
+	if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
+	if (request.method !== "POST") return json({ ok: false, error: "method not allowed" }, 405);
+
+	// An unset secret refuses everything rather than accepting everything — the same
+	// direction `WEBHOOK_SECRET` fails in, and for the same reason.
+	if (!env.LIST_SECRET || request.headers.get("x-list-secret") !== env.LIST_SECRET) {
+		return json({ ok: false, error: "unauthorized" }, 401);
+	}
+
+	let payload;
+	try {
+		payload = await request.json();
+	} catch {
+		return json({ ok: false, error: "unparseable body" }, 400);
+	}
+
+	const bad = validListAction(payload);
+	if (bad) return json({ ok: false, error: bad }, 400);
+
+	// ⚠️ **A real status, unlike the Telegram path's unconditional 200.** Nothing retries
+	// this — a person is watching a checkbox — so the page must be able to tell a saved
+	// tick from a lost one and put the tick back if GitHub refused it.
+	const dispatched = await dispatch(doFetch, env, LIST_EVENT, { payload });
+	return dispatched ? json({ ok: true }) : json({ ok: false, error: "dispatch failed" }, 502);
+}
 
 /**
  * Ask GitHub to run a workflow. Returns whether it was accepted.
@@ -118,6 +224,11 @@ export function chatOf(update) {
  */
 export async function handle(request, env, deps = {}) {
 	const doFetch = deps.fetch ?? fetch;
+
+	// ⚠️ Routed BEFORE the Telegram checks below, which are the wrong ones for it: the
+	// shopping page has no `x-telegram-bot-api-secret-token` and no chat to allow-list,
+	// and it needs a real status code rather than the unconditional 200 a webhook wants.
+	if (new URL(request.url).pathname === "/list") return handleList(request, env, doFetch);
 
 	if (request.method !== "POST") return new Response("method not allowed", { status: 405 });
 
@@ -210,6 +321,20 @@ export async function handle(request, env, deps = {}) {
  */
 export async function scheduled(_event, env, deps = {}) {
 	const doFetch = deps.fetch ?? fetch;
+
+	/**
+	 * Midnight in Singapore: clear the rows ticked off during the day.
+	 *
+	 * ⚠️ **Two triggers fire at 16:00 UTC and both are wanted.** The every-15-minutes pattern
+	 * matches that minute too, so Cloudflare invokes `scheduled` once per matching pattern
+	 * and `event.cron` says which. This returns early on the midnight one so a tick sweep is
+	 * not ALSO sent as a Telegram sweep; the 15-minute invocation landing in the same minute
+	 * goes on to do the Telegram half below, exactly as it does every other quarter hour.
+	 */
+	if (_event?.cron === MIDNIGHT_SGT_CRON) {
+		await dispatch(doFetch, env, LIST_SWEEP_EVENT, {});
+		return;
+	}
 
 	/**
 	 * ⚠️ Measurement, not behaviour — remove it once the question is answered.

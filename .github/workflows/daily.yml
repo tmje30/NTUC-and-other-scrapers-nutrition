@@ -196,6 +196,12 @@ jobs:
         run: npm run build-site
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          # ⚠️ **Baked into `list.html`, which is then published PUBLICLY.** That is the
+          # deliberate trade behind a shopping list that needs nothing enabled per device
+          # — see `relay/README.md`. It grants tick/untick/amount on the one grocery list
+          # and nothing else. Unset simply renders the page read-only; it never ships an
+          # `X-List-Secret: undefined`.
+          LIST_SECRET: ${{ secrets.LIST_SECRET }}
 
       - uses: actions/configure-pages@v6
 
