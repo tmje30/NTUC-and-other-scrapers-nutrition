@@ -31,8 +31,15 @@
  *     are theirs.
  */
 
-/** How many `Vendor n` groups the schema has. Four as of 2026-08-09. */
-export const VENDOR_SLOT_COUNT = 4;
+/**
+ * How many `Vendor n` groups the schema MAY have. Six as of 2026-08-18, when the
+ * user added `Vendor 5` and `Vendor 6` (plus their price/size/URL/item-name
+ * columns) to `Ingredients (Denmark)`.
+ *
+ * It is a ceiling, not a count: `resolveVendorSlotProps` returns only the slots a
+ * given schema actually has, so the Singapore DB still resolves four.
+ */
+export const VENDOR_SLOT_COUNT = 6;
 
 /** The exact Notion property names for one slot, as resolved from the live schema. */
 export interface VendorSlotProps {
