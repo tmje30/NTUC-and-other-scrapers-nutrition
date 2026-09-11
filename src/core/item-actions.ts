@@ -65,7 +65,10 @@ export type ItemAction =
 	// `reason` from `REJECT_REASONS`, and only its `wrong-item` reason reaches the
 	// deals page; the rest are price-book decisions.
 	| "review-ok"
-	| "review-skip";
+	| "review-skip"
+	// The OK button on an ignored row at the foot of the review page: the tag comes off
+	// and that row’s questions come back. See `IgnoredRow`.
+	| "review-unignore";
 
 export interface ActionPayload {
 	v: 1;
@@ -191,6 +194,7 @@ const ACTIONS = new Set<ItemAction>([
 	"never-buy",
 	"review-ok",
 	"review-skip",
+	"review-unignore",
 ]);
 
 /**
@@ -347,7 +351,8 @@ export function parseActionPayload(raw: unknown): ActionPayload {
 			action === "rebase-ingredient" ||
 			// Both review actions write to (or decide about) one specific row.
 			action === "review-ok" ||
-			action === "review-skip") &&
+			action === "review-skip" ||
+			action === "review-unignore") &&
 		!payload.ingredientId
 	) {
 		throw new Error(`payload.ingredientId is required for "${action}"`);

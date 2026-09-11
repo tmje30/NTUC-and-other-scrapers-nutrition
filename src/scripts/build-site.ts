@@ -262,7 +262,7 @@ try {
 	const review = prunePending(await readVendorReview());
 	await writeFile(
 		"public/review.html",
-		renderReviewPage(review.pending, { repo: config.repo() }),
+		renderReviewPage(review.pending, { repo: config.repo(), ignored: review.ignored ?? [] }),
 		"utf8",
 	);
 	console.error(
@@ -319,6 +319,67 @@ try {
 	);
 } catch (e: any) {
 	console.error(`Warning: failed to write public/moves.html: ${e.message}`);
+}
+
+/**
+ * `list.html` — the shopping page: your Notion grocery List with a checkbox, an editable
+ * amount and the two totals.
+ *
+ * ⚠️ **Read live from Notion, not from the scan above.** The list is not built out of
+ * today's deals — it is whatever is on the list, however it got there (texted to the bot,
+ * tapped Buy on a deal, typed into Notion), and most of it has nothing to do with what is
+ * on offer this morning.
+ *
+ * ⚠️ **Its own try, like every page below.** The daily Telegram message links here, and a
+ * Notion hiccup at 06:00 must not cost the deals page. A failed read still writes the
+ * page — saying so — because `public/` is rebuilt from scratch and gitignored, so a throw
+ * removes the page from the site entirely and the message goes on linking to a 404. That
+ * is the fault `review.html` was measured hitting on 2026-09-07.
+ */
+try {
+	const { readGroceryList, totals: listTotals } = await import("../core/grocery-page.js");
+	const { renderListPage } = await import("../core/grocery-page-render.js");
+	const client = new Client({ auth: config.notionToken() });
+	const rows = await readGroceryList(client);
+	const open = rows.filter((r) => !r.ticked);
+	const t = listTotals(open);
+	await writeFile(
+		"public/list.html",
+		renderListPage(rows, { repo: config.repo(), siteUrl: config.siteUrl(), generatedAt: new Date() }),
+		"utf8",
+	);
+	await writeFile(
+		"public/list.json",
+		JSON.stringify({
+			generatedAt: new Date().toISOString(),
+			count: open.length,
+			full: Math.round(t.full * 100) / 100,
+			discounted: Math.round(t.discounted * 100) / 100,
+			unpriced: t.unpriced,
+		}),
+		"utf8",
+	);
+	console.error(
+		`Wrote public/list.html (${open.length} to buy, $${t.full.toFixed(2)} → $${t.discounted.toFixed(2)})`,
+	);
+} catch (e: any) {
+	console.error(`Warning: failed to write public/list.html: ${e.message}`);
+	const escaped = String(e?.message ?? e).replace(/[&<>]/g, (c) => `&#${c.charCodeAt(0)};`);
+	await writeFile(
+		"public/list.html",
+		`<!doctype html><html lang="en"><head><meta charset="utf-8">` +
+			`<meta name="viewport" content="width=device-width, initial-scale=1">` +
+			`<title>Grocery list</title><style>` +
+			`:root{color-scheme:light dark}body{margin:0;padding:24px;max-width:640px;margin-inline:auto;` +
+			`font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}` +
+			`code{font-size:.85rem;opacity:.75;word-break:break-word}</style></head><body>` +
+			`<h1>The grocery list could not be read</h1>` +
+			`<p>Your list is safe in Notion — nothing was changed. This page failed to build, so it ` +
+			`is showing this instead of disappearing.</p><p><code>${escaped}</code></p>` +
+			`<p><a href="https://github.com/${config.repo()}/actions">Check the latest run →</a></p>` +
+			`</body></html>`,
+		"utf8",
+	).catch(() => {});
 }
 
 // Publish the search terms so residential runners (phone/laptop) can fetch them

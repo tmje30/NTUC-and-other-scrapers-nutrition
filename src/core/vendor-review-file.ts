@@ -33,6 +33,9 @@ export async function readVendorReview(path = VENDOR_REVIEW_PATH): Promise<Vendo
 			updatedAt: parsed.updatedAt ?? "",
 			pending: Array.isArray(parsed.pending) ? parsed.pending : [],
 			rejected: Array.isArray(parsed.rejected) ? parsed.rejected : [],
+			// Standing "not sold on this site" decisions — see `IgnoredRow`. Absent in every
+			// file written before 2026-09-11, which reads as nothing ignored.
+			ignored: Array.isArray(parsed.ignored) ? parsed.ignored : [],
 			// A snapshot of the last sweep, not queue state — carried through untouched
 			// so reading and writing the file cannot silently drop the page's data.
 			moves: parsed.moves ?? undefined,

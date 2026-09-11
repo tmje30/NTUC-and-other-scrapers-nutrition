@@ -15,6 +15,9 @@ import {
 	reasonsFor,
 	sizeBoundsFor,
 	rateCeilingFor,
+	isIgnoredRow,
+	withIgnoredRow,
+	withoutIgnoredRow,
 	prunePending,
 	renderReviewCard,
 	renderReviewSummary,
@@ -1052,3 +1055,94 @@ eq("a food category", groupOf("[1] Meats/Dairy/Proteins"), "food");
 // ⚠️ Food is the fallback, so a blank or renamed value lands there rather than vanishing.
 eq("a blank category is food, not nowhere", groupOf(""), "food");
 eq("an unrecognised one is food too", groupOf("Something New"), "food");
+
+
+// ── Ignore: a row this shop's site does not sell at all ──────────────────────────
+
+/**
+ * **"Ignore" (user, 2026-09-11).** Their case: the item is in-house only, so every
+ * candidate the site returns is a substitute and the question has no right answer.
+ *
+ * ⚠️ Their instruction, in their words: *"do not stop sweeping for that item, even if
+ * it is ignored."* So this suppresses QUESTIONS, never the scan — the write path is
+ * untouched, and that is how they find out the day the site starts listing it.
+ */
+const ignored = withIgnoredRow(EMPTY_REVIEW, {
+	ingredientId: "row-omega",
+	vendor: "Iherb",
+	name: "Omega 3 800 [california gold]",
+	product: "Prenatal DHA, 60 Softgels",
+}).file;
+
+check("the row is ignored at that shop", isIgnoredRow(ignored, "row-omega", "Iherb"));
+check("…and not at any other", !isIgnoredRow(ignored, "row-omega", "Watsons"));
+check("…and not for any other row", !isIgnoredRow(ignored, "row-carrots", "Iherb"));
+
+// Idempotent: tapping twice is not two entries, and the first decision keeps its date.
+const twice = withIgnoredRow(ignored, {
+	ingredientId: "row-omega",
+	vendor: "Iherb",
+	name: "Omega 3 800 [california gold]",
+});
+check("a second tap adds nothing", !twice.added && (twice.file.ignored ?? []).length === 1);
+
+// The OK button on the ignored row.
+const lifted = withoutIgnoredRow(ignored, "row-omega", "Iherb");
+check("OK lifts the tag", lifted.removed && !isIgnoredRow(lifted.file, "row-omega", "Iherb"));
+check(
+	"lifting one shop leaves the others alone",
+	isIgnoredRow(
+		withoutIgnoredRow(
+			withIgnoredRow(ignored, { ingredientId: "row-omega", vendor: "Watsons", name: "Omega 3 800" }).file,
+			"row-omega",
+			"Iherb",
+		).file,
+		"row-omega",
+		"Watsons",
+	),
+);
+check("lifting what was never set changes nothing", !withoutIgnoredRow(EMPTY_REVIEW, "r", "v").removed);
+
+/**
+ * ⚠️⚠️ **The merge takes THEIRS outright, unlike `rejected`'s union.** This list is the
+ * one piece of the file a tap can REMOVE from, and a sweep never adds to it — so a union
+ * would look safe and would resurrect an ignore the user lifted while the sweep ran.
+ */
+const mergedIgnore = mergeVendorReview(
+	{ ...EMPTY_REVIEW, ignored: [] }, // disk: the user has just tapped OK
+	ignored, // the sweep's stale copy, read before that tap
+	() => true,
+);
+check("a lifted ignore is not resurrected by a sweep", !isIgnoredRow(mergedIgnore, "row-omega", "Iherb"));
+
+// ⚠️ The option has to be offered on every card, and be a real reason key.
+check("Ignore is offered", reasonsFor({}).some((r) => r.key === "ignore"));
+check("…and is a real reason key", isRejectReason("ignore"));
+check(
+	"…and does not send the scan looking for a closer match",
+	REJECT_REASONS.find((r) => r.key === "ignore")?.research === false,
+);
+
+// ── the page's red footer ────────────────────────────────────────────────────────
+
+const withIgnoredFoot = renderReviewPage([], {
+	repo: "o/r",
+	ignored: [
+		{
+			ingredientId: "row-omega",
+			vendor: "Iherb",
+			name: "Omega 3 800 [california gold]",
+			ignoredAt: "2026-09-11T00:00:00.000Z",
+		},
+	],
+});
+check("the ignored row is listed", withIgnoredFoot.includes("Omega 3 800 [california gold]"));
+check("…with its shop", /class="ig-shop">Iherb</.test(withIgnoredFoot));
+check("…in the red section", withIgnoredFoot.includes('<section class="ignored">'));
+check("…below the queue", withIgnoredFoot.indexOf('class="ignored"') > withIgnoredFoot.indexOf('class="note"'));
+// ⚠️ The button is OK and it must carry the UNIGNORE action — an ordinary review-ok
+// here would try to record a price this row has not got.
+check("its button lifts the tag", withIgnoredFoot.includes("review-unignore"));
+check("…and not record a price", !withIgnoredFoot.includes("review-ok"));
+// Nothing ignored is no section at all, not an empty red box.
+check("no section when nothing is ignored", !renderReviewPage([], { repo: "o/r" }).includes('<section class="ignored">'));

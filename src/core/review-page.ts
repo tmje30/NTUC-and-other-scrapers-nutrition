@@ -1,6 +1,7 @@
 import {
 	REVIEW_GROUPS,
 	groupOf,
+	type IgnoredRow,
 	reasonsFor,
 	type PendingReview,
 	type ReviewReason,
@@ -48,6 +49,11 @@ const esc = (s: unknown): string =>
 export interface ReviewPageOptions {
 	/** `owner/repo`, for the issue links. */
 	repo: string;
+	/**
+	 * Rows the user has ignored at a shop — listed in red at the foot of the page.
+	 * Absent is "none", so an older caller renders exactly the page it rendered before.
+	 */
+	ignored?: IgnoredRow[];
 	generatedAt?: Date;
 }
 
@@ -339,6 +345,57 @@ function decks(pending: PendingReview[]): PendingReview[][] {
 	return order.map((k) => by.get(k)!.slice().sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0)));
 }
 
+/**
+ * **The ignored rows, at the foot of the page and in red** (user, 2026-09-11).
+ *
+ * ⚠️ Below every tab rather than inside one. An ignore is a standing fact about a row
+ * and its shop, not a question waiting in a category, and the user asked for one place
+ * to see them all — "at the bottom of the page".
+ *
+ * ⚠️ **Red is the point, not decoration.** These are rows the review queue is
+ * deliberately silent about; a quiet grey list of them would be indistinguishable from
+ * a list of things that are fine.
+ *
+ * ⚠️ The button is **OK**, and it takes the tag off. It looks like the OK on a card and
+ * does something quite different, so the section says what it does in words directly
+ * above it rather than relying on the colour to carry it.
+ */
+function ignoredSection(rows: IgnoredRow[], o: ReviewPageOptions): string {
+	if (!rows.length) return "";
+	const item = (i: IgnoredRow) => {
+		const payload = {
+			v: 1,
+			action: "review-unignore",
+			ingredientId: i.ingredientId,
+			name: i.name,
+			vendor: i.vendor,
+		};
+		const prose =
+			`Stop ignoring **${i.name}** at **${i.vendor}** — the site is worth watching again.\n\n` +
+			`The next sweep that finds something uncertain there will ask about it again.`;
+		const body = `${prose}\n\n` + "```json\n" + `${JSON.stringify(payload, null, 2)}\n` + "```\n";
+		const href =
+			`https://github.com/${o.repo}/issues/new` +
+			`?title=${encodeURIComponent(`Item: OK — stop ignoring ${i.name} @ ${i.vendor}`)}` +
+			`&labels=grocery-add&body=${encodeURIComponent(body)}`;
+		return `<div class="ig">
+    <span class="ig-name">${esc(i.name)}</span>
+    <span class="ig-shop">${esc(i.vendor)}</span>
+    <a class="act ok" href="${esc(href)}" target="_blank" rel="noopener"
+       data-payload="${esc(JSON.stringify(payload))}" data-event="item-action"
+       data-done="✓ watching again"
+       aria-label="${esc(`OK — stop ignoring ${i.name} at ${i.vendor}`)}">OK</a>
+  </div>`;
+	};
+	return `<section class="ignored">
+  <h2 class="ig-head">Ignored · ${rows.length}</h2>
+  <p class="ig-note">These shops' sites do not sell these at all, so nothing is asked about them —
+  but they are still being scanned, and a clear match would still be recorded.
+  <b>OK</b> lifts the tag and lets the questions come back.</p>
+  ${rows.map(item).join("\n  ")}
+</section>`;
+}
+
 export function renderReviewPage(pending: PendingReview[], o: ReviewPageOptions): string {
 	const when = (o.generatedAt ?? new Date()).toLocaleString("en-SG", { timeZone: "Asia/Singapore" });
 	const groups = decks(pending);
@@ -385,6 +442,7 @@ export function renderReviewPage(pending: PendingReview[], o: ReviewPageOptions)
 	const body = pending.length
 		? `${tabs}<nav class="tabs">${tabBar}</nav>${panels}`
 		: `<p class="empty">Nothing waiting. Every price the last scan found was clear enough to record.</p>`;
+	const ignoredHtml = ignoredSection(o.ignored ?? [], o);
 
 	return `<!doctype html>
 <html lang="en"><head>
@@ -480,6 +538,16 @@ h1 { font-size:1.25rem; margin:0 0 4px; }
    between two frames and the ✓ that confirmed it is never read. */
 .card.going { opacity:0; transform:scale(.98); transition:opacity .2s ease, transform .2s ease; }
 .empty { color:var(--mut); }
+/* Ignored rows — red on purpose: these are rows the queue is deliberately silent
+   about, and a grey list of them would read as "all fine here". */
+.ignored { margin-top:26px; border-top:2px solid var(--no); padding-top:12px; }
+.ig-head { font-size:.95rem; color:var(--no); margin:0 0 4px; }
+.ig-note { color:var(--mut); font-size:.82rem; margin:0 0 10px; }
+.ig { display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  border:1px solid var(--no); border-radius:10px; padding:9px 12px; margin-bottom:8px; }
+.ig-name { color:var(--no); font-weight:600; }
+.ig-shop { color:var(--mut); font-size:.8rem; white-space:nowrap; }
+.ig .act { margin-left:auto; }
 .foot { color:var(--mut); font-size:.82rem; margin-top:22px; }
 .foot a { color:inherit; }
 </style></head>
@@ -487,8 +555,10 @@ h1 { font-size:1.25rem; margin:0 0 4px; }
 <h1>Prices to check</h1>
 <p class="sub"><span id="waiting">${pending.length}</span> waiting · ${esc(when)}</p>
 <p class="note"><b>OK</b> records the price. <b>Don't use</b> doesn't — and that is all it does:
-the product still appears on your deals page. To drop it from there too, use <b>Ignore</b> on the deals page.</p>
+the product still appears on your deals page. To drop it from there too, use the deals page’s own red <b>Ignore</b>.
+<b>Ignore</b> here is a different thing: it says this shop’s site does not sell the item at all.</p>
 ${body}
+${ignoredHtml}
 <p class="foot"><a href="#" id="onetap">⚡ enable one-tap</a></p>
 ${githubOneTapScript({ repo: o.repo })}
 <script>

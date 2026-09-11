@@ -17,6 +17,8 @@ import {
 	REJECT_REASONS,
 	isRejectReason,
 	withRejectedPick,
+	withIgnoredRow,
+	withoutIgnoredRow,
 	withoutPending,
 	withoutPendingForSlot,
 } from "../core/vendor-review.js";
@@ -788,6 +790,35 @@ if (payload.action === "review-skip") {
 		}
 	}
 
+	/**
+	 * ⚠️ **This one is about the ROW, not the listing** — see `IgnoredRow`. It still
+	 * refuses the pick that prompted it (above), because that substitute is refused
+	 * either way; what it adds is the standing "this site does not sell it" that stops
+	 * the next sweep offering the next substitute.
+	 *
+	 * ⚠️ Written into the SAME file the refusal above just wrote, re-read so the two
+	 * cannot race each other and lose one of them.
+	 */
+	if (reason === "ignore") {
+		const { file, added } = withIgnoredRow(
+			await readVendorReview(),
+			{
+				ingredientId: payload.ingredientId,
+				vendor: payload.vendor ?? "",
+				name: label,
+				product: payload.itemName ?? "",
+			},
+			now,
+		);
+		if (added) await writeVendorReview(file);
+		extra.push(
+			(added ? `Ignored **${label}** at ${payload.vendor}.` : `**${label}** was already ignored at ${payload.vendor}.`) +
+				` It sits at the foot of the review page in red until you tap OK on it.\n` +
+				`⚠️ The sweep still runs there — a pick clear enough to record still lands. What stops ` +
+				`is the questions, since every one of them would be a substitute.`,
+		);
+	}
+
 	if (reason === "bad-price") {
 		// Not a shopping decision — a parser fault. Said plainly so it is triaged as one.
 		extra.push(
@@ -805,6 +836,35 @@ if (payload.action === "review-skip") {
 			`Reason: ${meta?.label ?? "not given"}.\n` +
 			(reason === "wrong-item" ? "" : `It still appears on your deals page.\n`) +
 			extra.join("\n"),
+	);
+	process.exit(0);
+}
+
+/**
+ * **The OK button on an ignored row**, at the foot of the review page.
+ *
+ * The user's case for it: the shop has stopped carrying the item in store, so the site
+ * is worth watching again. Lifting the tag queues nothing by itself — the row is asked
+ * about again from the next sweep that finds something uncertain there, which is the
+ * same path every other row takes.
+ */
+if (payload.action === "review-unignore") {
+	if (dryRun) {
+		await report(`DRY RUN — would stop ignoring **${label}** at ${payload.vendor}.`);
+		process.exit(0);
+	}
+	const { file, removed } = withoutIgnoredRow(
+		await readVendorReview(),
+		payload.ingredientId ?? "",
+		payload.vendor ?? "",
+		now,
+	);
+	if (removed) await writeVendorReview(file);
+	await report(
+		removed
+			? `**${label}** is no longer ignored at ${payload.vendor}. The next sweep that finds ` +
+					`something uncertain there will ask you about it again.`
+			: `**${label}** was not being ignored at ${payload.vendor} — nothing to undo.`,
 	);
 	process.exit(0);
 }

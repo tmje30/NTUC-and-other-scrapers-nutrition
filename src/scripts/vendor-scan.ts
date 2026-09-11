@@ -29,6 +29,7 @@ import {
 	dearerThanRecorded,
 	findPendingFor,
 	isRejectedPick,
+	isIgnoredRow,
 	renderReviewSummary,
 	reviewReasons,
 	reviewToken,
@@ -284,6 +285,8 @@ async function main(): Promise<void> {
 	let skippedOverCeiling = 0;
 	/** Dropped by a standing "Too expensive" answer — see `rateCeilingFor`. */
 	let skippedOverRate = 0;
+	/** Questions withheld because the row is ignored at that shop. */
+	let ignoredNotAsked = 0;
 	/** Dearer suggestions withheld because the recorded pick is still on the shelf. */
 	let suppressedDearer = 0;
 	/** Picks re-confirmed rather than re-asked, because the slot already held them. */
@@ -754,6 +757,16 @@ async function main(): Promise<void> {
 				continue;
 			}
 			if (reasons.length && !unchanged) {
+				// ⚠️ **Ignored here: scanned, never asked about** (user, 2026-09-11). The site
+				// does not sell this row at all, so every uncertain pick is a substitute and the
+				// question has no right answer. The write path below is untouched — a pick clear
+				// enough to record still lands, which is how the user finds out the day the site
+				// does start listing it. See `IgnoredRow`.
+				if (isIgnoredRow(review, row.pageId, route.option)) {
+					ignoredNotAsked++;
+					console.log("      · ignored at this shop — not asked. Still scanning.");
+					continue;
+				}
 				// Already asked and still waiting? Say nothing — see `findPendingFor`.
 				const outstanding = findPendingFor(review, row.pageId, route.option, p);
 				if (outstanding?.messageId) {
@@ -911,6 +924,7 @@ async function main(): Promise<void> {
 				? `, ${suppressedDearer} dearer suggestion(s) withheld — the recorded pick still stands`
 				: "") +
 			(unchangedNotAsked ? `, ${unchangedNotAsked} unchanged pick(s) re-confirmed instead of re-asked` : "") +
+			(ignoredNotAsked ? `, ${ignoredNotAsked} question(s) withheld on rows you ignore at that shop` : "") +
 			(gaps.length ? `, ${gaps.length} row(s) need a size in their Notion name` : "") +
 			".\n",
 	);
@@ -1040,7 +1054,7 @@ async function askAboutUncertain(
 	// reason to mute the bot; and a muted bot loses the daily digest with it. The rest of
 	// this project has always been "one Telegram message → one page", and so is this.
 	await mkdir("public", { recursive: true });
-	const page = renderReviewPage(review.pending, { repo: config.repo() });
+	const page = renderReviewPage(review.pending, { repo: config.repo(), ignored: review.ignored ?? [] });
 	await writeFile(REVIEW_PAGE_PATH, page, "utf8");
 	console.log(`\nWrote ${REVIEW_PAGE_PATH} (${review.pending.length} waiting).`);
 

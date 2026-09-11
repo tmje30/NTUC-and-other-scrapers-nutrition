@@ -245,6 +245,11 @@ export function mergeVendorReview(
 			seen.add(k);
 			return true;
 		}),
+		// ⚠️ **Theirs wins outright, unlike `rejected`’s union.** This list is only ever
+		// changed by a tap, which writes straight to disk — a sweep never adds to it, so
+		// `mine` is just a stale copy read when the run began. A union would look safe and
+		// would resurrect an ignore the user lifted while the sweep was running.
+		ignored: theirs.ignored ?? mine.ignored ?? [],
 		// The moves snapshot describes one sweep. Ours is the newer of the two runs that
 		// raced; theirs stands only when this run computed none.
 		...(mine.moves ? { moves: mine.moves } : theirs.moves ? { moves: theirs.moves } : {}),
@@ -765,6 +770,89 @@ export function rateCeilingFor(
 }
 
 /**
+ * **A row this shop's website does not sell at all** (user, 2026-09-11).
+ *
+ * Their case: the item is in-house only — it exists in the shop, never on the site — so
+ * every candidate a search returns is a substitute, and there is no right answer to the
+ * question the review page keeps asking. "Don't use" on one listing refuses one listing;
+ * the next sweep offers the next substitute, forever.
+ *
+ * ⚠️ **It does NOT stop the sweep** (their instruction, in those words). The scan keeps
+ * running and a pick clear enough to record still lands in the price book — because the
+ * day the site does start listing it, that is exactly how the user finds out. What the
+ * ignore suppresses is the QUESTIONS: uncertain picks raise no card while it stands, and
+ * every one of those would be a substitute.
+ *
+ * ⚠️ Scoped to one row at one shop, like every other "Don't use" answer. Not being on
+ * iHerb's site says nothing about Watsons.
+ *
+ * ⚠️ It is a standing decision with **no expiry** — `prunePending`'s 7 days are for
+ * questions, which quote a price that goes stale. This quotes nothing. It ends when the
+ * user taps OK on it, and only then.
+ */
+export interface IgnoredRow {
+	ingredientId: string;
+	vendor: string;
+	/** The row's display name, so the file and the page explain themselves. */
+	name: string;
+	/** The listing that prompted it, kept as the record of what was being refused. */
+	product?: string;
+	ignoredAt: string;
+}
+
+/** Is this row×shop pair being ignored? */
+export function isIgnoredRow(file: VendorReviewFile, ingredientId: string, vendor: string): boolean {
+	return (file.ignored ?? []).some((i) => same(i.ingredientId, ingredientId) && same(i.vendor, vendor));
+}
+
+/** Every ignored row, newest first — the order the page lists them in. */
+export function ignoredRows(file: VendorReviewFile): IgnoredRow[] {
+	return [...(file.ignored ?? [])].sort((a, b) => String(b.ignoredAt).localeCompare(String(a.ignoredAt)));
+}
+
+/**
+ * Ignore this row at this shop. Idempotent: a second tap is not a second entry, and the
+ * original timestamp stands, because the decision is when it was first made.
+ */
+export function withIgnoredRow(
+	file: VendorReviewFile,
+	entry: Omit<IgnoredRow, "ignoredAt">,
+	now: Date = new Date(),
+): { file: VendorReviewFile; added: boolean } {
+	if (isIgnoredRow(file, entry.ingredientId, entry.vendor)) return { file, added: false };
+	return {
+		file: {
+			...file,
+			version: 1,
+			updatedAt: now.toISOString(),
+			ignored: [...(file.ignored ?? []), { ...entry, ignoredAt: now.toISOString() }],
+		},
+		added: true,
+	};
+}
+
+/**
+ * The OK button on an ignored row: the tag comes off and the questions come back.
+ *
+ * ⚠️ Removing it queues nothing by itself. The row is asked about again from the next
+ * sweep that finds something uncertain there, which is the same path every other row
+ * takes — there is no stored question to restore, and inventing one would quote a price
+ * from whenever the ignore was set.
+ */
+export function withoutIgnoredRow(
+	file: VendorReviewFile,
+	ingredientId: string,
+	vendor: string,
+	now: Date = new Date(),
+): { file: VendorReviewFile; removed: boolean } {
+	const ignored = (file.ignored ?? []).filter(
+		(i) => !(same(i.ingredientId, ingredientId) && same(i.vendor, vendor)),
+	);
+	if (ignored.length === (file.ignored ?? []).length) return { file, removed: false };
+	return { file: { ...file, version: 1, updatedAt: now.toISOString(), ignored }, removed: true };
+}
+
+/**
  * **What the last sweep CHANGED**, kept so a page can render it.
  *
  * ⚠️⚠️ Stored beside the queue rather than in a file of its own, because it has to
@@ -787,6 +875,11 @@ export interface VendorReviewFile {
 	updatedAt: string;
 	pending: PendingReview[];
 	rejected: RejectedPick[];
+	/**
+	 * Rows whose website simply does not sell the item — see `IgnoredRow`. Optional, so
+	 * every file written before 2026-09-11 reads as "nothing ignored" rather than failing.
+	 */
+	ignored?: IgnoredRow[];
 	/** The last write sweep's price movements — see `MovesSnapshot`. */
 	moves?: MovesSnapshot;
 }
@@ -824,6 +917,7 @@ export const EMPTY_REVIEW: VendorReviewFile = {
 	updatedAt: "",
 	pending: [],
 	rejected: [],
+	ignored: [],
 };
 
 const same = (a: string | null | undefined, b: string | null | undefined) =>
@@ -1050,6 +1144,20 @@ export const REJECT_REASONS = [
 		key: "bad-price",
 		label: "Price or size looks misread",
 		hint: "the number is wrong, not the product",
+		research: false,
+	},
+	{
+		/**
+		 * ⚠️ **Not about this listing — about the ROW at this shop.** Every other reason
+		 * here refuses one product; this one says the site does not sell the item at all,
+		 * so there is nothing to refuse and nothing to offer instead. See `IgnoredRow`.
+		 *
+		 * ⚠️ `research: false` deliberately: "look again for a closer match" is the exact
+		 * thing the user is saying there is no point in doing.
+		 */
+		key: "ignore",
+		label: "Ignore",
+		hint: "this shop's site does not sell it at all — stop asking, keep scanning",
 		research: false,
 	},
 ] as const;
