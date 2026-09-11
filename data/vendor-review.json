@@ -803,98 +803,6 @@
       ],
       "rank": 0,
       "askedAt": "2026-09-09T12:26:48.337Z"
-    },
-    {
-      "token": "rypsw0",
-      "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
-      "ingredientName": "Sensitivity & Gum Toothpaste - Original",
-      "key": "sensitiviti gum toothpast original",
-      "unitType": "By Gram",
-      "category": "Cosmetics/ Tooth paste etc",
-      "vendor": "Watsons",
-      "slotN": 3,
-      "priceSgd": 10.2,
-      "size": 100,
-      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-oral-care-toothpaste-sensitivity-and-gum-extra-fresh-dental-sensitivity-relief-100g/p/BP_51696",
-      "itemName": "SENSODYNE Sensitive Teeth Oral Care Toothpaste Sensitivity and Gum Extra Fresh (Dental Sensitivity Relief) 100g",
-      "statedSize": "100g",
-      "perLabel": "$102.00/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 2 of 2, offered as a suggestion. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 1,
-      "askedAt": "2026-09-10T02:12:30.087Z"
-    },
-    {
-      "token": "1egnl6",
-      "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
-      "ingredientName": "Sensitivity & Gum Toothpaste - Original",
-      "key": "sensitiviti gum toothpast original",
-      "unitType": "By Gram",
-      "category": "Cosmetics/ Tooth paste etc",
-      "vendor": "Watsons",
-      "slotN": 3,
-      "priceSgd": 10.2,
-      "size": 100,
-      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-oral-care-toothpaste-sensitivity-and-gum-whitening-dental-sensitivity-relief-100g/p/BP_45103",
-      "itemName": "SENSODYNE Sensitive Teeth Oral Care Toothpaste Sensitivity and Gum Whitening (Dental Sensitivity Relief) 100g",
-      "statedSize": "100g",
-      "perLabel": "$102.00/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is the closest of 2 offered, best first. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-10T02:12:30.089Z"
-    },
-    {
-      "token": "w14ujz",
-      "ingredientId": "37369a18-4fe7-80c0-bae0-f52639895b21",
-      "ingredientName": "whey (Essential) [MyProtein]",
-      "key": "whei",
-      "unitType": "By Gram",
-      "category": "Protein Powder",
-      "vendor": "Carousell",
-      "slotN": 2,
-      "brand": "myprotein",
-      "priceSgd": 125.1,
-      "size": 20,
-      "url": "https://www.carousell.sg/p/momentous-essential-grass-fed-whey-protein-powder-20g-whey-isolate-protein-nsf-certified-gluten-free-25-servings-for-essential-everyday-use-unflavored-unflavoured-25-servings-pack-of-1-1438086257/",
-      "itemName": "momentous essential grass fed whey protein powder 20g whey isolate protein nsf certified gluten free 25 servings for essential everyday use unflavored unflavoured 25 servings pack of 1",
-      "statedSize": "20g",
-      "perLabel": "$6255.00/kg",
-      "reasons": [
-        {
-          "kind": "brand-unconfirmed",
-          "brand": "myprotein",
-          "note": "this row names myprotein and the product does not say so — a supplement is only recorded without asking when the brand matches. Accept if it is the right thing."
-        },
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 32,
-          "foundPer": 6255,
-          "perWord": "kg",
-          "vendor": "Carousell",
-          "note": "DEARER than the Carousell price already recorded: $80.00 / 2500g = $32.00/kg → $125.10 / 20g = $6255.00/kg. Not written — accept only if the old price is gone."
-        },
-        {
-          "kind": "undercut",
-          "rejected": 1,
-          "note": "1 cheaper listing was rejected as implausible"
-        },
-        {
-          "kind": "outlier",
-          "factor": 164.60526315789474,
-          "note": "164.6× DEARER than this row's other shop"
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-10T02:14:04.820Z"
     }
   ],
   "rejected": [
@@ -1009,9 +917,10 @@
       "rejectedAt": "2026-08-12T00:52:05.250Z"
     }
   ],
+  "ignored": [],
   "moves": {
-    "generatedAt": "2026-09-10T02:14:04.822Z",
-    "reconfirmed": 9,
+    "generatedAt": "2026-09-11T02:04:16.704Z",
+    "reconfirmed": 7,
     "moves": []
   }
 }
