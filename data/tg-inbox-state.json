@@ -1,31 +1,7 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-12T03:47:00.731Z",
+  "updatedAt": "2026-09-12T03:48:12.673Z",
   "offset": 0,
-  "asks": [
-    {
-      "token": "bub4bd",
-      "item": {
-        "raw": "Grocery",
-        "name": "Grocery",
-        "count": 1,
-        "amountG": null,
-        "volumetric": false
-      },
-      "candidates": [],
-      "messageId": 133,
-      "chatId": 7626546412,
-      "blocking": false,
-      "askedAt": "2026-09-12T03:46:35.255Z"
-    }
-  ],
-  "queue": [
-    {
-      "raw": "Grocery",
-      "name": "Grocery",
-      "count": 1,
-      "amountG": null,
-      "volumetric": false
-    }
-  ]
+  "asks": [],
+  "queue": []
 }
