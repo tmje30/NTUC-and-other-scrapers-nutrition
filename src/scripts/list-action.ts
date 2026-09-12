@@ -55,6 +55,51 @@ function readPayload(): ListActionPayload {
 const payload = readPayload();
 const client = new Client({ auth: config.notionToken() });
 
+/**
+ * **Add — a row typed into the page's search box.**
+ *
+ * ⚠️ **`addTextedItem`, the same call the Telegram intake makes**, so a row added from
+ * the page and a row texted to the bot are indistinguishable in Notion: same title
+ * shape, same relation, same dedupe-by-title that turns a second add into `Amount + 1`
+ * rather than a duplicate line.
+ *
+ * ⚠️ **The price is read from the INGREDIENT, not sent by the page.** The page knows a
+ * price — it is in `ingredients.json` — but that file is public and its figures are
+ * whatever the last build published. Reading the row here means the new grocery line
+ * quotes today's price book rather than a number a caller could simply assert.
+ *
+ * Handled before the `pages.retrieve` below because there is no row to retrieve yet.
+ */
+if (payload.op === "add") {
+	const { addTextedItem } = await import("../core/grocery-list.js");
+	const { readIngredientRows, pricePerKgLabelFor } = await import("../core/list-intake.js");
+
+	let row = null;
+	if (payload.ingredientId) {
+		const all = await readIngredientRows(client);
+		row = all.find((r) => r.pageId.replace(/-/g, "") === payload.ingredientId!.replace(/-/g, "")) ?? null;
+		// ⚠️ A missing row is NOT a failure. The index is published daily and the user may
+		// have renamed or retired the ingredient since; filing the line name-only is what
+		// the Telegram intake does with an unmatched item, and beats refusing the add.
+		if (!row) console.error(`Note: ingredient ${payload.ingredientId} is no longer in the DB — filing name-only.`);
+	}
+
+	const res = await addTextedItem(client, {
+		ingredient: row?.name ?? payload.name!,
+		ingredientId: row?.pageId,
+		count: payload.amount ?? 1,
+		priceSgd: row?.price?.sgd,
+		vendor: row?.price?.vendor,
+		pricePerKg: row ? pricePerKgLabelFor(row) : undefined,
+	});
+	console.error(
+		res.alreadyListed
+			? `Added: ${res.title} — already on the list, now ${res.amount}`
+			: `Added: ${res.title}`,
+	);
+	process.exit(0);
+}
+
 const ds = (await client.dataSources.retrieve({ data_source_id: GROCERY_LIST_DS })) as any;
 const props = resolveListProps(ds.properties ?? {});
 

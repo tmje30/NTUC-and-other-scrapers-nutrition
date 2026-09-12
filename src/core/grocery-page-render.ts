@@ -52,6 +52,22 @@ h1{font-size:1.35rem;margin:0 0 2px}
 .sub a{color:inherit}
 .note{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--warn);
   border-radius:8px;padding:10px 12px;margin:0 0 14px;font-size:.84rem;color:var(--dim)}
+/* ---- Add box ---- */
+.add{position:relative;margin:0 0 14px}
+.add input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;
+  background:var(--card);color:var(--fg);font:inherit}
+.add input:focus{outline:2px solid var(--acc);outline-offset:-1px}
+.add input:disabled{opacity:.5}
+.hits{list-style:none;margin:6px 0 0;padding:0;border:1px solid var(--line);border-radius:10px;
+  background:var(--card);overflow:hidden}
+.hits:empty{display:none}
+.hits li{display:flex;justify-content:space-between;gap:10px;align-items:baseline;
+  padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--line)}
+.hits li:last-child{border-bottom:0}
+.hits li:hover,.hits li[aria-selected="true"]{background:var(--accbg)}
+.hits .hn{font-weight:600;min-width:0;word-break:break-word}
+.hits .hp{color:var(--dim);font-size:.8rem;white-space:nowrap}
+.hits .new{color:var(--dim);font-style:italic;font-weight:400}
 ul.list{list-style:none;margin:0;padding:0}
 li.row{display:flex;gap:10px;align-items:flex-start;background:var(--card);
   border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px;
@@ -227,6 +243,127 @@ function script(endpoint: string, secret: string): string {
     });
   }
 
+  // ---- Add ---------------------------------------------------------------
+  //
+  // ⚠️ **The ingredient list is fetched ONCE and searched in the browser**, never
+  // queried per keystroke. The page is static and cannot reach Notion, and a shop
+  // basement is exactly where a per-keystroke round trip fails. ingredients.json
+  // is published beside the page by the daily build.
+  //
+  // ⚠️ **A free-typed item with no match is still addable.** That is what texting
+  // an unknown item to the bot does — it files the line name-only and prices it
+  // later — and a box that refused anything not already in Notion would be a worse
+  // list than the one you can text.
+  var box = document.getElementById("addbox");
+  var hits = document.getElementById("hits");
+  var INDEX = [];
+  var sel = -1;
+
+  if (box) fetch("ingredients.json", { cache: "no-cache" })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (d) { if (d && d.items) { INDEX = d.items; box.placeholder = "Add an item\\u2026"; } })
+    .catch(function () { /* free-typed adds still work without it */ });
+
+  function norm(s) { return String(s || "").toLowerCase(); }
+
+  // Prefix matches first, then anywhere. Typing "car" should offer Carrots before
+  // "Bicarbonate of soda", which contains "car" halfway through.
+  function search(q) {
+    var n = norm(q), starts = [], contains = [];
+    for (var i = 0; i < INDEX.length && starts.length + contains.length < 40; i++) {
+      var it = INDEX[i];
+      var hay = norm(it.name), term = norm(it.term);
+      if (hay.indexOf(n) === 0 || term.indexOf(n) === 0) starts.push(it);
+      else if (hay.indexOf(n) >= 0 || term.indexOf(n) >= 0) contains.push(it);
+    }
+    return starts.concat(contains).slice(0, 7);
+  }
+
+  function renderHits() {
+    var q = box.value.trim();
+    hits.innerHTML = "";
+    sel = -1;
+    if (!q) return;
+    var found = search(q);
+    found.forEach(function (it) {
+      var li = document.createElement("li");
+      li.dataset.id = it.id;
+      li.dataset.name = it.name;
+      var nm = document.createElement("span");
+      nm.className = "hn";
+      // A parked row is offered, not hidden — typing its name is the plainest way
+      // of saying you want it now. Same call the Telegram intake makes.
+      nm.textContent = (it.parked ? "\\u{1F4A4} " : "") + it.name;
+      var pr = document.createElement("span");
+      pr.className = "hp";
+      pr.textContent = it.price != null ? "$" + Number(it.price).toFixed(2) + (it.vendor ? " \\u00b7 " + it.vendor : "") : "";
+      li.appendChild(nm); li.appendChild(pr);
+      hits.appendChild(li);
+    });
+    // The escape hatch: add exactly what was typed, with no ingredient behind it.
+    var exact = found.some(function (f) { return norm(f.name) === norm(q); });
+    if (!exact) {
+      var li2 = document.createElement("li");
+      li2.dataset.id = "";
+      li2.dataset.name = q;
+      var n2 = document.createElement("span");
+      n2.className = "hn new";
+      n2.textContent = "Add \\u201c" + q + "\\u201d";
+      var p2 = document.createElement("span");
+      p2.className = "hp";
+      p2.textContent = "not in Ingredients";
+      li2.appendChild(n2); li2.appendChild(p2);
+      hits.appendChild(li2);
+    }
+  }
+
+  function addPicked(li) {
+    var name = li.dataset.name;
+    box.value = "";
+    hits.innerHTML = "";
+    box.disabled = true;
+    dispatch({ v: 1, op: "add", ingredientId: li.dataset.id || undefined, name: name, amount: 1 })
+      .then(function () {
+        box.disabled = false;
+        box.placeholder = "\\u2713 " + name + " added";
+        // ⚠️ The row is NOT drawn onto the list here. It does not exist until the
+        // workflow writes it, and inventing a line with a made-up id would give the
+        // user a checkbox that ticks nothing. The next build shows it for real.
+        setTimeout(function () { box.placeholder = "Add an item\\u2026"; }, 4000);
+      })
+      .catch(function () {
+        box.disabled = false;
+        box.value = name;
+        flash(box, "could not add \\u2014 try again");
+      });
+  }
+
+  if (box) {
+    box.addEventListener("input", renderHits);
+    hits.addEventListener("click", function (ev) {
+      var li = ev.target.closest("li");
+      if (li) addPicked(li);
+    });
+    // Keyboard: arrows move, Enter takes the highlighted row, or the first one.
+    box.addEventListener("keydown", function (ev) {
+      var items = hits.querySelectorAll("li");
+      if (ev.key === "ArrowDown" || ev.key === "ArrowUp") {
+        if (!items.length) return;
+        ev.preventDefault();
+        if (sel >= 0) items[sel].removeAttribute("aria-selected");
+        sel = ev.key === "ArrowDown" ? (sel + 1) % items.length : (sel <= 0 ? items.length - 1 : sel - 1);
+        items[sel].setAttribute("aria-selected", "true");
+      } else if (ev.key === "Enter") {
+        ev.preventDefault();
+        var pick = sel >= 0 ? items[sel] : items[0];
+        if (pick) addPicked(pick);
+      } else if (ev.key === "Escape") {
+        box.value = "";
+        hits.innerHTML = "";
+      }
+    });
+  }
+
   // ---- Totals ----------------------------------------------------------
   // Only rows still ON the list count. A ticked row has left the shopping, so it
   // leaves the total in the same motion — that is the whole point of ticking it.
@@ -343,7 +480,16 @@ export function renderListPage(rows: ListRow[], o: ListPageOptions): string {
 		? `<div class="note">The list could not be read from Notion just now, so this page is
        showing nothing rather than showing it wrong. Your list is safe in Notion.<br>
        <code>${esc(o.error)}</code></div>`
-		: `<ul class="list" id="list">${open.map((r) => rowHtml(r, live)).join("\n")}</ul>
+		: `${
+				live
+					? `<div class="add">
+    <input id="addbox" type="text" autocomplete="off" autocapitalize="off" spellcheck="false"
+      placeholder="Add an item…" aria-label="Add an item to the list">
+    <ul class="hits" id="hits" role="listbox"></ul>
+  </div>`
+					: ""
+			}
+  <ul class="list" id="list">${open.map((r) => rowHtml(r, live)).join("\n")}</ul>
   <p class="empty" id="empty"${open.length ? " hidden" : ""}>Nothing on the list. Text the bot to add something.</p>
 
   <div class="totals">

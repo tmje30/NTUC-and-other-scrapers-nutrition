@@ -368,6 +368,19 @@ try {
 	console.error(
 		`Wrote public/list.html (${open.length} to buy, $${t.full.toFixed(2)} → $${t.discounted.toFixed(2)})`,
 	);
+
+	// What the Add box searches — published beside the page so typing filters in the
+	// browser rather than round-tripping to Notion per keystroke. Its own try: the
+	// shopping list is useful without Add, and Add still takes free text without it.
+	try {
+		const { readIngredientRows, pricePerKgLabelFor } = await import("../core/list-intake.js");
+		const { buildIngredientIndex } = await import("../core/ingredient-index.js");
+		const index = buildIngredientIndex(await readIngredientRows(client), pricePerKgLabelFor);
+		await writeFile("public/ingredients.json", JSON.stringify(index), "utf8");
+		console.error(`Wrote public/ingredients.json (${index.items.length} searchable ingredients)`);
+	} catch (e: any) {
+		console.error(`Warning: ingredients.json skipped — ${e.message}. Add will still take free text.`);
+	}
 } catch (e: any) {
 	console.error(`Warning: failed to write public/list.html: ${e.message}`);
 	const escaped = String(e?.message ?? e).replace(/[&<>]/g, (c) => `&#${c.charCodeAt(0)};`);

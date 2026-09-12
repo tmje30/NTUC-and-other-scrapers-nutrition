@@ -109,10 +109,31 @@ const json = (body, status = 200) =>
  * anonymous POST into a GitHub Actions run; refusing a malformed one at the edge costs
  * nothing, while forwarding it spends a run to discover the same thing.
  */
+const NOTION_ID = /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i;
+
+/** Mirrors `MAX_ADD_NAME` in `src/core/list-action-parse.ts`. Kept in step by a test. */
+const MAX_ADD_NAME = 200;
+
 export function validListAction(p) {
 	if (!p || typeof p !== "object") return "payload is not an object";
-	if (p.op !== "tick" && p.op !== "untick" && p.op !== "amount") return "unknown op";
-	if (typeof p.pageId !== "string" || !/^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i.test(p.pageId)) {
+	if (p.op !== "tick" && p.op !== "untick" && p.op !== "amount" && p.op !== "add") return "unknown op";
+
+	// ⚠️ `add` creates a row, so it carries a name rather than a pageId. Everything else
+	// acts on a row that already exists.
+	if (p.op === "add") {
+		if (typeof p.name !== "string" || !p.name.trim()) return "name is required for add";
+		if (p.name.length > MAX_ADD_NAME) return "name is too long";
+		// Empty is legitimate — a free-typed item with no ingredient behind it.
+		if (p.ingredientId != null && p.ingredientId !== "" && !NOTION_ID.test(String(p.ingredientId))) {
+			return "ingredientId is not a Notion page id";
+		}
+		if (p.amount != null && (!Number.isFinite(Number(p.amount)) || Number(p.amount) < 1)) {
+			return "amount must be a number >= 1";
+		}
+		return null;
+	}
+
+	if (typeof p.pageId !== "string" || !NOTION_ID.test(p.pageId)) {
 		return "pageId is not a Notion page id";
 	}
 	if (p.op === "amount" && (!Number.isFinite(Number(p.amount)) || Number(p.amount) < 1)) {

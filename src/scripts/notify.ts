@@ -41,7 +41,7 @@ if (count > 0 || warning) {
  */
 try {
 	const summary = JSON.parse(await readFile("public/list.json", "utf8")) as ListSummary;
-	const listUrl = `${config.siteUrl().replace(/\/+$/, "")}/list.html`;
+	const listUrl = config.listUrl();
 	await sendListSummary(summary, listUrl);
 	console.error(
 		summary.count > 0

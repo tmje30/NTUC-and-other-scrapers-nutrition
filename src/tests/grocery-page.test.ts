@@ -13,6 +13,7 @@ import { due, lastSgtMidnight, queue, unqueue, type PendingFile } from "../core/
 // the edge gate and the repo parser against each other rather than trusting they agree.
 import { validListAction } from "../../relay/worker.mjs";
 import { parseListAction } from "../core/list-action-parse.js";
+import { isListHeader, stripListHeader } from "../core/list-parse.js";
 
 /**
  * The shopping page, and the hour before a ticked row leaves Notion.
@@ -410,3 +411,110 @@ eq("the trailing shop is stripped, the figure is not", parsePerUnitLine("x\n$4/k
 	discount: "$4/kg",
 	current: "$5/kg",
 });
+
+describe("a header line that declares a shopping list");
+
+// The four the user named, plus the plurals and the bare words that mean the same.
+for (const h of ["grocery", "grocery list", "shopping list", "to buy", "Grocery List", "TO BUY", "groceries"]) {
+	check(`"${h}" is a header`, isListHeader(h));
+}
+check("a trailing colon is the user's punctuation, not part of the word", isListHeader("Grocery list:"));
+check("…and a bullet is decoration", isListHeader("- shopping list"));
+
+// ⚠️⚠️ **Matched as a WHOLE line, never as a prefix.** A `startsWith` would swallow the
+// first real item — the quietest possible bug, because everything else still files and
+// the reply looks cheerful.
+check("'grocery bags' is an item, not a header", !isListHeader("grocery bags"));
+check("'to buy milk' is an item, not a header", !isListHeader("to buy milk"));
+check("'shopping list for mum' is an item", !isListHeader("shopping list for mum"));
+
+eq(
+	"a declared list drops the header and keeps the items",
+	stripListHeader("grocery list\n2kg chicken breast\nbananas x6").items.map((i) => i.name),
+	["chicken breast", "bananas"],
+);
+eq("…and reports that it was declared", stripListHeader("grocery list\nmilk").declared, true);
+
+// The comma form, which is how a one-line message is split.
+eq(
+	"a comma-separated list drops its header too",
+	stripListHeader("To buy, milk, eggs").items.map((i) => i.name),
+	["milk", "eggs"],
+);
+
+// ⚠️ An undeclared list must be untouched — plain text was always a shopping list here,
+// and this feature must not change what gets written, only what the reply says.
+const plain = stripListHeader("2kg chicken breast\nbananas x6");
+eq("an undeclared list keeps every line", plain.items.map((i) => i.name), ["chicken breast", "bananas"]);
+eq("…and is not marked declared", plain.declared, false);
+
+// ⚠️ A header with nothing under it is "show me the list", not an empty write.
+eq("a bare header declares with no items", stripListHeader("grocery list").items.length, 0);
+eq("…and is still declared", stripListHeader("grocery list").declared, true);
+
+describe("adding an item from the page");
+
+const addOk = (raw: unknown) => {
+	try {
+		return parseListAction(raw);
+	} catch (e: any) {
+		return e.message as string;
+	}
+};
+
+eq(
+	"an ingredient-backed add parses",
+	addOk({ v: 1, op: "add", ingredientId: "3d469a18-4fe7-802f-8620-000b6053908d", name: "Carrots" }),
+	{
+		v: 1,
+		op: "add",
+		pageId: "",
+		name: "Carrots",
+		ingredientId: "3d469a18-4fe7-802f-8620-000b6053908d",
+		amount: 1,
+	},
+);
+
+// ⚠️ A free-typed item with no match is legitimate — it is what texting an unknown item
+// does. Refusing it would make the box worse than the chat.
+eq("a free-typed add with no ingredient parses", addOk({ v: 1, op: "add", name: "harissa paste" }), {
+	v: 1,
+	op: "add",
+	pageId: "",
+	name: "harissa paste",
+	ingredientId: undefined,
+	amount: 1,
+});
+
+// ⚠️ `add` has no pageId — it is creating the row. Demanding one would make the shared
+// payload shape reject the only op that cannot have it.
+check("add needs no pageId", typeof addOk({ v: 1, op: "add", name: "x" }) !== "string");
+
+check("add with no name is refused", typeof addOk({ v: 1, op: "add" }) === "string");
+check("add with a blank name is refused", typeof addOk({ v: 1, op: "add", name: "   " }) === "string");
+// A garbage id must never reach a relation write.
+check(
+	"add with a non-Notion ingredientId is refused",
+	typeof addOk({ v: 1, op: "add", name: "x", ingredientId: "../../etc" }) === "string",
+);
+check(
+	"an absurdly long name is refused",
+	typeof addOk({ v: 1, op: "add", name: "x".repeat(500) }) === "string",
+);
+
+// The edge gate and the repo parser must still agree, now across four ops.
+check("edge and repo agree on a good add", bothAgree({ v: 1, op: "add", name: "Carrots" }));
+check("…and on a nameless add", bothAgree({ v: 1, op: "add" }));
+check(
+	"…and on a bad ingredientId",
+	bothAgree({ v: 1, op: "add", name: "x", ingredientId: "nope" }),
+);
+
+describe("the Add box on the page");
+
+check("a live page has the Add box", page.includes('id="addbox"'));
+check("…and somewhere to put the matches", page.includes('id="hits"'));
+check("…and fetches the ingredient index", page.includes("ingredients.json"));
+
+// ⚠️ A read-only page must not offer a box that cannot write.
+check("a read-only page has no Add box", !readOnly.includes('id="addbox"'));

@@ -40,3 +40,15 @@ console.error(
 		`$${t.full.toFixed(2)} full / $${t.discounted.toFixed(2)} with discounts` +
 		(t.unpriced ? `, ${t.unpriced} unpriced` : ""),
 );
+
+// What the Add box searches. Its own try: the page is useful without Add, and a
+// Notion hiccup reading Ingredients must not cost the shopping list.
+try {
+	const { readIngredientRows, pricePerKgLabelFor } = await import("../core/list-intake.js");
+	const { buildIngredientIndex } = await import("../core/ingredient-index.js");
+	const index = buildIngredientIndex(await readIngredientRows(client), pricePerKgLabelFor);
+	await writeFile("public/ingredients.json", JSON.stringify(index), "utf8");
+	console.error(`Wrote public/ingredients.json (${index.items.length} searchable ingredients)`);
+} catch (e: any) {
+	console.error(`Warning: ingredients.json skipped — ${e.message}. Add will still take free text.`);
+}

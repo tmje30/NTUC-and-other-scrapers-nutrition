@@ -230,3 +230,54 @@ export function sizeLabel(item: ParsedItem): string | undefined {
 		? `${+(item.amountG / 1000).toFixed(2)}${big}`
 		: `${Math.round(item.amountG)}${small}`;
 }
+
+/**
+ * **Words that mean "the rest of this message is my shopping list".**
+ *
+ * The user writes one of these as the first line and then the items underneath:
+ *
+ *     grocery list
+ *     2kg chicken breast
+ *     bananas x6
+ *
+ * ⚠️ **Plain text was ALREADY treated as a shopping list, so this is not what makes
+ * the items land in Notion.** What the header buys is two things the bare list
+ * cannot: the message is unambiguously a list rather than something the matcher had
+ * to guess at, and the reply carries a link to the shopping page once the rows are
+ * filed (user, 2026-09-12).
+ *
+ * ⚠️ **Matched only as a WHOLE line, never as a prefix.** "grocery bags" and "to buy
+ * milk" are items, not headers, and a `startsWith` would silently swallow the first
+ * thing on the list — the quietest possible bug, because the message still gets a
+ * cheerful reply about everything else.
+ */
+const LIST_HEADERS = ["grocery", "groceries", "grocery list", "shopping list", "shopping", "to buy"];
+
+/** Trailing `:` and decoration are the user's, not part of the word. */
+export function isListHeader(line: string): boolean {
+	const norm = line
+		.trim()
+		.replace(BULLET_RE, "")
+		.replace(/[:.!\-–—]+$/, "")
+		.trim()
+		.toLowerCase();
+	return LIST_HEADERS.includes(norm);
+}
+
+/**
+ * Split a message into "was it declared a list" and the item lines underneath.
+ *
+ * ⚠️ **A header with NOTHING under it is a request to SEE the list, not an empty
+ * write.** Texting "grocery list" on its own is the shortest way to ask for the page,
+ * and answering it with "I couldn't read any items in that" would be the system
+ * refusing the most obvious thing you could type at it.
+ */
+export function stripListHeader(message: string): { declared: boolean; items: ParsedItem[] } {
+	const lines = splitLines(message);
+	const declared = lines.length > 0 && isListHeader(lines[0]);
+	const rest = declared ? lines.slice(1) : lines;
+	return {
+		declared,
+		items: rest.map(parseItem).filter((i): i is ParsedItem => i !== null),
+	};
+}

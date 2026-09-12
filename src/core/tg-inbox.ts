@@ -11,7 +11,7 @@ import {
 	type InlineKeyboard,
 	type TgUpdate,
 } from "./telegram.js";
-import { parseList, sizeLabel, splitLines, type ParsedItem } from "./list-parse.js";
+import { parseList, sizeLabel, splitLines, stripListHeader, type ParsedItem } from "./list-parse.js";
 import {
 	decideList,
 	pricePerKgLabelFor,
@@ -432,7 +432,19 @@ async function handleMessage(
 		return;
 	}
 
-	const items = parseList(trimmed);
+	// ⚠️ **`declared` changes the REPLY, not the writing.** Plain text was always a
+	// shopping list here; a header line ("grocery list", "to buy") says so out loud and
+	// earns a link to the shopping page once the rows are filed. See `stripListHeader`.
+	const { declared, items } = stripListHeader(trimmed);
+
+	// A header with nothing under it is "show me the list", which is the shortest thing
+	// worth being able to type. Answering it with "I couldn't read any items" would be
+	// the bot refusing its own most obvious command.
+	if (declared && !items.length) {
+		await sendHtml(`🧾 <a href="${config.listUrl()}">Your grocery list →</a>`);
+		return;
+	}
+
 	if (!items.length) {
 		await sendHtml("I couldn't read any items in that. Send /help for the format.");
 		return;
@@ -463,6 +475,14 @@ async function handleMessage(
 	}
 
 	const reply = [...written, ...failed];
+	// ⚠️ **The link rides on the message that was being sent anyway, rather than being a
+	// second one** — the same rule `formatWeightGaps` follows. Two notifications for one
+	// texted list is how a useful confirmation becomes the thing you mute.
+	//
+	// ⚠️ **Only when something was actually WRITTEN.** A list whose every line went to the
+	// question queue has not changed the page yet, and a link to it would show the list as
+	// it was before you texted — which reads as the text having been ignored.
+	if (declared && written.length) reply.push(`🧾 <a href="${config.listUrl()}">Your grocery list →</a>`);
 	if (reply.length) await sendHtml(reply.join("\n"));
 
 	// Ask one message at a time, so each answer is unambiguous — a single message

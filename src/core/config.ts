@@ -65,6 +65,8 @@ export const config = {
 	reviewUrl: () => `${config.siteUrl().replace(/\/+$/, "")}/review.html`,
 	/** What the last sweep CHANGED in the price book. Derived from `siteUrl`, as above. */
 	movesUrl: () => `${config.siteUrl().replace(/\/+$/, "")}/moves.html`,
+	/** The shopping page. Derived from `siteUrl` so the four places that link it agree. */
+	listUrl: () => `${config.siteUrl().replace(/\/+$/, "")}/list.html`,
 	/**
 	 * "owner/repo" — where the Add button files its request. Actions sets
 	 * GITHUB_REPOSITORY for free; the default keeps local page builds working.

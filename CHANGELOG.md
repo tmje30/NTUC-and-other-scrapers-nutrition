@@ -7,6 +7,47 @@ All notable changes to this project are documented here. Format based on
 ## [Unreleased]
 
 ### Added
+- **A header line declares a shopping list, and gets the page back (2026-09-12).** Starting a
+  text with `grocery`, `groceries`, `grocery list`, `shopping`, `shopping list` or `to buy`
+  marks the rest of the message as your list; once the rows are filed the reply carries a
+  link to `list.html`.
+  ⚠️ **It does not change what gets WRITTEN.** Plain text was already treated as a shopping
+  list — the header buys the link and an unambiguous intent, nothing else. Anyone expecting
+  it to be what makes items land in Notion has the causality backwards.
+  ⚠️ **Matched as a WHOLE line, never as a prefix.** `grocery bags` and `to buy milk` are
+  items; a `startsWith` would silently swallow the first real thing on the list, which is
+  the quietest possible bug — everything else still files and the reply still looks cheerful.
+  ⚠️ **A header with nothing under it is "show me the list"**, not an empty write. Texting
+  `grocery list` on its own is the shortest way to ask for the page, and answering it with
+  "I couldn't read any items in that" would be the bot refusing its own most obvious command.
+  ⚠️ **The link rides on the message that was being sent anyway**, and only when something
+  was actually written — a list whose every line went to the question queue has not changed
+  the page yet, and linking to it would show the list as it was before you texted.
+- **An Add box on the shopping page, searching your Ingredients DB (2026-09-12).** Type into
+  it and it filters your ingredients live — prefix matches first, so `car` offers Carrots
+  before Bicarbonate — showing each row's cheapest price and shop. Picking one files it with
+  the ingredient relation, the price and the per-kg label, using `addTextedItem`: **the same
+  call the Telegram intake makes**, so a row added from the page and a row texted to the bot
+  are indistinguishable in Notion, including the dedupe that turns a second add into
+  `Amount + 1` rather than a duplicate line.
+  ⚠️ **The ingredient list is fetched ONCE and searched in the browser**, never queried per
+  keystroke: the page is static and cannot reach Notion, and a supermarket basement is
+  exactly where a per-keystroke round trip fails. The daily build publishes
+  `public/ingredients.json` beside the page.
+  ⚠️ **That file is PUBLIC**, like everything else the site publishes — names, cheapest
+  price, shop, and page ids. Rather less than the deals page already shows on its cards. A
+  page id is not a credential; the same judgement `tg-inbox-state.json` records.
+  ⚠️ **A free-typed item with no match is still addable**, filed name-only. That is exactly
+  what texting an unknown item does, and a box that refused anything not already in Notion
+  would be a worse list than the one you can text.
+  ⚠️ **The price is read from the INGREDIENT server-side, never taken from the page.** The
+  page knows a price — it is in the public index — but reading the row in the workflow means
+  the new line quotes today's price book rather than a figure any caller could assert.
+  ⚠️ **A vanished ingredient is not a failure**: the index is a day old at most, and if the
+  row has since been renamed or retired the line is filed name-only rather than refused.
+  ⚠️ **The new row is NOT drawn onto the page optimistically.** It does not exist until the
+  workflow writes it, and inventing a line with a made-up id would hand the user a checkbox
+  that ticks nothing.
 - **`list.html` — the shopping page, and a daily Telegram message carrying it (2026-09-11).**
   The sixth page: your Notion grocery List as something you can hold in one hand in a shop.
   Each line is a checkbox, an editable amount, the item, and **two price lines, one per

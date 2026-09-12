@@ -325,6 +325,61 @@ const TICK = { op: "tick", pageId: "3d469a18-4fe7-802f-8620-000b6053908d" };
 	check("…and still dispatches tgupdate", f.calls.some((c) => c.body?.event_type === "tgupdate"));
 }
 
+// ── /list: the `add` op ──────────────────────────────────────────────────────
+//
+// ⚠️ `add` is the one op with no pageId — it CREATES a row. The gate has to let it
+// through without one while still refusing everything malformed.
+
+{
+	const f = recorder();
+	const res = await handle(
+		listReq({ op: "add", name: "Carrots", ingredientId: "3d469a18-4fe7-802f-8620-000b6053908d" }),
+		ENV,
+		{ fetch: f },
+	);
+	eq("an ingredient-backed add is accepted", res.status, 200);
+	eq("…and dispatched as a list-action", f.calls[0].body.event_type, "list-action");
+	eq("…carrying the ingredient id", f.calls[0].body.client_payload.payload.ingredientId, "3d469a18-4fe7-802f-8620-000b6053908d");
+}
+
+{
+	// A free-typed item with no match — what texting an unknown item does.
+	const f = recorder();
+	const res = await handle(listReq({ op: "add", name: "harissa paste" }), ENV, { fetch: f });
+	eq("a free-typed add is accepted", res.status, 200);
+	eq("…and dispatches", f.calls.length, 1);
+}
+
+{
+	const f = recorder();
+	const res = await handle(listReq({ op: "add" }), ENV, { fetch: f });
+	eq("an add with no name is refused", res.status, 400);
+	eq("…and dispatches nothing", f.calls.length, 0);
+}
+
+{
+	// ⚠️ A garbage id must not reach a relation write, so it is stopped at the edge.
+	const f = recorder();
+	const res = await handle(listReq({ op: "add", name: "x", ingredientId: "../../etc/passwd" }), ENV, { fetch: f });
+	eq("an add with a bad ingredientId is refused", res.status, 400);
+	eq("…and dispatches nothing", f.calls.length, 0);
+}
+
+{
+	const f = recorder();
+	const res = await handle(listReq({ op: "add", name: "x".repeat(500) }), ENV, { fetch: f });
+	eq("an absurdly long name is refused", res.status, 400);
+	eq("…and dispatches nothing", f.calls.length, 0);
+}
+
+{
+	// ⚠️ The secret still gates `add`. A new op must not widen the door.
+	const f = recorder();
+	const res = await handle(listReq({ op: "add", name: "Carrots" }, { secret: "wrong" }), ENV, { fetch: f });
+	eq("add still needs the secret", res.status, 401);
+	eq("…and dispatches nothing", f.calls.length, 0);
+}
+
 // ── the midnight cron ────────────────────────────────────────────────────────
 
 {

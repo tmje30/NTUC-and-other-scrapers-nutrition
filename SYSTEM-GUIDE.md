@@ -123,6 +123,24 @@ most of the work; three shops still need a real browser or a Singapore address.
   of them appear on the page — they are shopping that is done.
   ⚠️ **Un-ticking a row in Notion cancels its deletion**, right up to the sweep. It
   re-reads the checkbox and spares anything no longer ticked.
+- **"How do I say 'this is my shopping list' when I text?"** Put one of these on the
+  first line: **grocery**, **groceries**, **grocery list**, **shopping**, **shopping
+  list**, **to buy**. The items go underneath, one per line or comma-separated, and
+  once they're filed the reply comes back with a link to your shopping page.
+  ⚠️ **It does not change what gets written** — plain text was always treated as a
+  list. The header buys you the link, and says plainly that you meant a list.
+  ⚠️ It has to be the **whole line**: `grocery bags` and `to buy milk` are items.
+- **"How do I just see the list?"** Text **`grocery list`** on its own — a header with
+  nothing under it is a request for the page, not an empty write.
+- **"How do I add something from the page itself?"** Type into the **Add** box at the
+  top. It searches your Ingredients database as you type, closest first, showing each
+  row's cheapest price and shop; tap one and it lands on the list with its price and
+  its link back to the ingredient — exactly as if you'd texted it. Anything not in
+  Ingredients can still be added as plain text (`Add "…"` at the foot of the list), and
+  it gets priced the same way a texted unknown does.
+  ⚠️ **A row you add does not appear on the page until the next build.** It is written
+  to Notion straight away; the page is only rewritten daily, and drawing a line for a
+  row that does not exist yet would give you a checkbox that ticks nothing.
 - **"Why midnight rather than an hour after I tick it?"** Because an hour after each
   tick meant rows vanishing while you were still in the shop, each on its own clock.
   One boundary keeps the list stable for the whole trip and clears it once, overnight,
