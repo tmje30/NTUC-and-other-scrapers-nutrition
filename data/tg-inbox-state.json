@@ -1,7 +1,57 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-04T03:17:16.329Z",
+  "updatedAt": "2026-09-12T03:46:35.823Z",
   "offset": 0,
-  "asks": [],
-  "queue": []
+  "asks": [
+    {
+      "token": "bub4bd",
+      "item": {
+        "raw": "Grocery",
+        "name": "Grocery",
+        "count": 1,
+        "amountG": null,
+        "volumetric": false
+      },
+      "candidates": [],
+      "messageId": 133,
+      "chatId": 7626546412,
+      "blocking": false,
+      "askedAt": "2026-09-12T03:46:35.255Z"
+    },
+    {
+      "token": "edl9of",
+      "item": {
+        "raw": "1 x eggs 30",
+        "name": "eggs 30",
+        "count": 1,
+        "amountG": null,
+        "volumetric": false
+      },
+      "candidates": [
+        {
+          "rowId": "37669a18-4fe7-8094-ad2b-d156a2f10a29",
+          "rowName": "egg  (Omega 3 Enriched) (550g)",
+          "score": 1
+        },
+        {
+          "rowId": "34b69a18-4fe7-807d-8439-fea7f149877f",
+          "rowName": "Eggs, Whole, small (1650g), {cheap}",
+          "score": 1
+        }
+      ],
+      "messageId": 134,
+      "chatId": 7626546412,
+      "blocking": true,
+      "askedAt": "2026-09-12T03:46:35.545Z"
+    }
+  ],
+  "queue": [
+    {
+      "raw": "Grocery",
+      "name": "Grocery",
+      "count": 1,
+      "amountG": null,
+      "volumetric": false
+    }
+  ]
 }
