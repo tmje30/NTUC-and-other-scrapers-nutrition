@@ -1,6 +1,7 @@
 import { Client } from "@notionhq/client";
 import { config } from "./config.js";
 import { INGREDIENTS_DS, ING_PROPS, categoryOf } from "./ingredients-schema.js";
+import { readDiscount } from "./discount.js";
 import {
 	DONT_SEARCH_TAGS,
 	PARKED_TAG,
@@ -163,6 +164,13 @@ export interface ScanRow {
 	ceilingGrams: number | null;
 	/** What one unit weighs on a By Unit row — `gramsPerUnitFor`. Null on a weighed row. */
 	gramsPerUnit: number | null;
+	/**
+	 * What the three discount columns already hold — read here so the sweep can tell a
+	 * promo it should REPLACE from one another shop owns, and can spot a discount left
+	 * behind by an offer that has ended, **without a second Notion read per row**.
+	 * See `DISCOUNT_PROPS`.
+	 */
+	discount: { price: string; location: string; rate: number | null };
 }
 
 /**
@@ -543,6 +551,7 @@ export async function readScanRows(
 			sizeCeiling,
 			ceilingGrams: ceilingGramsFor(unitType, sizeCeiling, target.packWeightG, target.packSize),
 			gramsPerUnit: gramsPerUnitFor(unitType, target.packWeightG, target.packSize),
+			discount: readDiscount(p),
 		});
 	}
 	return { rows, skipped };

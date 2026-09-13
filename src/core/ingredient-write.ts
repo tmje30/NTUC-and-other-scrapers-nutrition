@@ -4,6 +4,13 @@ import { deriveGenericName } from "./generic-name.js";
 import { humanizeProductName } from "./human-name.js";
 import { findSizeCeilingProp } from "./vendor-scan.js";
 import { INGREDIENTS_DS, ING_MACRO_PROPS, ING_PROPS } from "./ingredients-schema.js";
+import {
+	discountBeats,
+	discountProperties,
+	formatDiscount,
+	readDiscount,
+	type DiscountCapture,
+} from "./discount.js";
 import type { Macros } from "./macros.js";
 import {
 	chooseVendorSlot,
@@ -622,4 +629,67 @@ export async function rebaseIngredient(
 		skipped: [...base.skipped, ...slot.skipped],
 		slot: slot.decision,
 	};
+}
+
+/**
+ * **Record today's offer beside the shelf price, or clear a promo that has ended.**
+ *
+ * Called by the vendor sweep straight after a slot write lands, and only then: the
+ * price book and the discount columns describe the same pack at the same shop, and
+ * letting them come from different picks is how a row ends up advertising a discount
+ * on something it does not price. See `DISCOUNT_PROPS` for why the offer cannot simply
+ * be written into `Price [Vendor n]` instead.
+ *
+ * `kind: "clear"` is not optional housekeeping. A promo is the one number here with an
+ * expiry, and a discount column nobody ever empties is worse than an empty one — it
+ * reads as a live offer forever. The clear is scoped to the shop that owns the cells,
+ * so a sweep of Watsons never wipes Guardian's offer.
+ */
+export async function recordDiscount(
+	client: Client,
+	pageId: string,
+	write: { kind: "offer"; capture: DiscountCapture } | { kind: "clear"; vendor: string },
+): Promise<{ action: "wrote" | "cleared" | "kept"; reason?: string; written: string[]; skipped: string[] }> {
+	if (!pageId) throw new Error("no ingredient row to record against");
+	const props = await currentProps(client, pageId);
+	const held = readDiscount(props);
+
+	if (write.kind === "clear") {
+		if (!held.price && !held.location && held.rate == null) {
+			return { action: "kept", reason: "nothing recorded", written: [], skipped: [] };
+		}
+		// ⚠️ Only the shop that owns the cells may empty them. An unattributed leftover
+		// (location blank, price set) is cleared by whoever finds it — there is no shop
+		// to protect it for, and it cannot be re-derived.
+		if (held.location && held.location.toLowerCase() !== write.vendor.trim().toLowerCase()) {
+			return { action: "kept", reason: `held by ${held.location}`, written: [], skipped: [] };
+		}
+		const schema = await schemaOf(client);
+		const { properties, written, skipped } = discountProperties(schema, null);
+		if (!written.length) return { action: "kept", reason: skipped.join("; "), written, skipped };
+		await client.pages.update({ page_id: pageId, properties } as any);
+		return { action: "cleared", written, skipped };
+	}
+
+	const text = formatDiscount(write.capture);
+	if (
+		!discountBeats({
+			recordedLocation: held.location,
+			recordedRate: held.rate,
+			vendor: write.capture.vendor,
+			rate: text.rateValue,
+		})
+	) {
+		return {
+			action: "kept",
+			reason: `${held.location} is cheaper at $${held.rate?.toFixed(2)}`,
+			written: [],
+			skipped: [],
+		};
+	}
+	const schema = await schemaOf(client);
+	const { properties, written, skipped } = discountProperties(schema, text);
+	if (!written.length) return { action: "kept", reason: skipped.join("; "), written, skipped };
+	await client.pages.update({ page_id: pageId, properties } as any);
+	return { action: "wrote", written, skipped };
 }

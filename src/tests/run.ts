@@ -37,6 +37,7 @@ import "./directed-search.test.js";
 import "./sgt.test.js";
 import "./weight-gap.test.js";
 import "./grocery-page.test.js";
+import "./discount.test.js";
 import { report } from "./harness.js";
 
 // Imported dynamically, and last, because these suites `await` — one writes real
