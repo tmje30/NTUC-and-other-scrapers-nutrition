@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-10T02:14:04.820Z",
+  "updatedAt": "2026-09-15T02:09:10.569Z",
   "pending": [
     {
       "token": "oh1mpk",
@@ -803,6 +803,35 @@
       ],
       "rank": 0,
       "askedAt": "2026-09-09T12:26:48.337Z"
+    },
+    {
+      "token": "s8uyoy",
+      "ingredientId": "37369a18-4fe7-80c0-bae0-f52639895b21",
+      "ingredientName": "whey (Essential) [MyProtein]",
+      "key": "whei",
+      "unitType": "By Gram",
+      "category": "Protein Powder",
+      "vendor": "Carousell",
+      "slotN": 2,
+      "brand": "myprotein",
+      "priceSgd": 30,
+      "size": 750,
+      "url": "https://www.carousell.sg/p/myprotein-essential-whey-protein-vanilla-750g-1461744308/",
+      "itemName": "myprotein essential whey protein vanilla 750g",
+      "statedSize": "750g",
+      "perLabel": "$40.00/kg",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 32,
+          "foundPer": 40,
+          "perWord": "kg",
+          "vendor": "Carousell",
+          "note": "DEARER than the Carousell price already recorded: $80.00 / 2500g = $32.00/kg → $30.00 / 750g = $40.00/kg. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-09-15T02:09:10.568Z"
     }
   ],
   "rejected": [
@@ -917,10 +946,9 @@
       "rejectedAt": "2026-08-12T00:52:05.250Z"
     }
   ],
-  "ignored": [],
   "moves": {
-    "generatedAt": "2026-09-11T02:04:16.704Z",
-    "reconfirmed": 7,
+    "generatedAt": "2026-09-15T02:09:10.573Z",
+    "reconfirmed": 5,
     "moves": []
   }
 }
