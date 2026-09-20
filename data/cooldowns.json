@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-20T02:26:19.745Z",
+  "updatedAt": "2026-09-20T02:26:26.358Z",
   "entries": [
     {
       "key": "stock cube",
@@ -67,6 +67,20 @@
       "product": "China Loose Garlic",
       "packSizeG": 500,
       "monthlyAmount": 80
+    },
+    {
+      "key": "brown muscovado sugar",
+      "ingredientId": "34b69a18-4fe7-8079-955e-ef44e9443bac",
+      "ingredientName": "Muscovado Sugar (Brown)",
+      "reason": "ignored",
+      "addedAt": "2026-09-20T02:26:26.358Z",
+      "until": "2026-10-18T16:00:00.000Z",
+      "days": 29,
+      "basis": "ignored from the deals page for 4 weeks — until the start of that week (Mon, SGT)",
+      "store": "FairPrice",
+      "product": "Green Earth Dark Muscovado Sugar",
+      "packSizeG": null,
+      "monthlyAmount": 0
     }
   ]
 }
