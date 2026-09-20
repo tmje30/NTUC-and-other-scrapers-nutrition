@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-20T02:26:46.802Z",
+  "updatedAt": "2026-09-20T02:26:52.465Z",
   "entries": [
     {
       "key": "stock cube",
@@ -95,6 +95,20 @@
       "product": "China Loose Garlic",
       "packSizeG": 500,
       "monthlyAmount": 80
+    },
+    {
+      "key": "ginger",
+      "ingredientId": "34e69a18-4fe7-80ba-a84f-c9e6a8eb9d1c",
+      "ingredientName": "Ginger (Bentong)",
+      "reason": "ignored",
+      "addedAt": "2026-09-20T02:26:52.465Z",
+      "until": "2026-10-04T16:00:00.000Z",
+      "days": 15,
+      "basis": "ignored from the deals page for 2 weeks — until the start of that week (Mon, SGT)",
+      "store": "Sheng Siong",
+      "product": "Thailand Bentong Ginger",
+      "packSizeG": null,
+      "monthlyAmount": 0
     }
   ]
 }
