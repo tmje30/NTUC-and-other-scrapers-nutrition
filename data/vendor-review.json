@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-19T02:07:40.688Z",
+  "updatedAt": "2026-09-20T02:03:38.905Z",
   "pending": [
     {
       "token": "ydzr3h",
@@ -44,7 +44,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-19T02:07:40.687Z"
+      "askedAt": "2026-09-20T02:03:38.904Z"
     }
   ],
   "rejected": [
@@ -160,8 +160,8 @@
     }
   ],
   "moves": {
-    "generatedAt": "2026-09-19T02:07:40.690Z",
-    "reconfirmed": 5,
+    "generatedAt": "2026-09-20T02:03:38.909Z",
+    "reconfirmed": 9,
     "moves": []
   }
 }
