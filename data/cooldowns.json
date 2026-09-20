@@ -40,6 +40,19 @@
       "product": "Gourmet Rice Cooking Wine - 16% Alcohol",
       "packSizeG": 640,
       "monthlyAmount": 200
+    },
+    {
+      "key": "garlic",
+      "ingredientId": "34b69a18-4fe7-8037-8c0c-c42156a2604c",
+      "ingredientName": "Garlic (Old) ≈ China Loose Garlic",
+      "addedAt": "2026-09-20T00:51:20.929Z",
+      "until": "2027-02-10T00:51:20.929Z",
+      "days": 143,
+      "basis": "500g ÷ 80g/month = 6.25 months × 0.75 = 4.69 months",
+      "store": "FairPrice",
+      "product": "China Loose Garlic",
+      "packSizeG": 500,
+      "monthlyAmount": 80
     }
   ]
 }

@@ -157,6 +157,22 @@
       "listTitle": "[Sheng Siong] Rice Wine(Cooking)",
       "addedAt": "2026-08-05T06:04:17.778Z",
       "outcome": "open"
+    },
+    {
+      "id": "garlic-fairprice-china-loose-garlic-202609200051",
+      "ingredientId": "34b69a18-4fe7-8037-8c0c-c42156a2604c",
+      "ingredientName": "Garlic (Old) ≈ China Loose Garlic",
+      "key": "garlic",
+      "store": "NTUC",
+      "product": "China Loose Garlic",
+      "priceSgd": 2.95,
+      "packSizeG": 500,
+      "unitCount": null,
+      "volumetric": false,
+      "url": "https://www.fairprice.com.sg/product/10968533",
+      "listTitle": "Garlic (Old) ≈ China Loose Garlic (500g) [Fresh]",
+      "addedAt": "2026-09-20T00:51:20.929Z",
+      "outcome": "open"
     }
   ]
 }
