@@ -1,7 +1,23 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-07T03:50:44.829Z",
+  "updatedAt": "2026-09-20T00:51:07.822Z",
   "entries": [
+    {
+      "id": "egg-fairprice-pasar-fresh-eggs-202609200051",
+      "ingredientId": "34b69a18-4fe7-807d-8439-fea7f149877f",
+      "ingredientName": "Eggs, Whole, small (1650g), {cheap}",
+      "key": "egg",
+      "store": "NTUC",
+      "product": "Pasar Fresh Eggs",
+      "priceSgd": 6.95,
+      "packSizeG": 4950,
+      "unitCount": 30,
+      "volumetric": false,
+      "url": "https://www.fairprice.com.sg/product/pasar-fresh-eggs-30-per-pack-13294464",
+      "listTitle": "Eggs, Whole, small (1650g), {cheap} (30 pcs) [Pasar]",
+      "addedAt": "2026-09-20T00:51:07.822Z",
+      "outcome": "open"
+    },
     {
       "id": "stock-cube-sheng-siong-ikan-bilis-stock-cubes-202609070350",
       "ingredientId": "39869a18-4fe7-80f0-a7d6-f64d82bb05a1",

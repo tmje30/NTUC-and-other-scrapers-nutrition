@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-07T03:55:34.481Z",
+  "updatedAt": "2026-09-20T00:51:07.822Z",
   "entries": [
     {
       "key": "stock cube",
@@ -14,6 +14,19 @@
       "product": "Ikan Bilis Stock Cubes",
       "packSizeG": 60,
       "monthlyAmount": 0
+    },
+    {
+      "key": "egg",
+      "ingredientId": "34b69a18-4fe7-807d-8439-fea7f149877f",
+      "ingredientName": "Eggs, Whole, small (1650g), {cheap}",
+      "addedAt": "2026-09-20T00:51:07.822Z",
+      "until": "2026-09-25T00:51:07.822Z",
+      "days": 5,
+      "basis": "weekly buy → flat 5 days (pack size ignored)",
+      "store": "FairPrice",
+      "product": "Pasar Fresh Eggs",
+      "packSizeG": 4950,
+      "monthlyAmount": 23100
     },
     {
       "key": "rice wine",
