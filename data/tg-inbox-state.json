@@ -1,7 +1,35 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-13T03:39:31.703Z",
+  "updatedAt": "2026-09-20T03:16:34.306Z",
   "offset": 0,
-  "asks": [],
+  "asks": [
+    {
+      "token": "smhvw5",
+      "item": {
+        "raw": "Peanut butter x1",
+        "name": "Peanut butter",
+        "count": 1,
+        "amountG": null,
+        "volumetric": false
+      },
+      "candidates": [
+        {
+          "rowId": "37769a18-4fe7-80d2-941c-f245c5336646",
+          "rowName": "Peanut butter",
+          "score": 1
+        },
+        {
+          "rowId": "35169a18-4fe7-808f-a47a-dfb9826b4165",
+          "rowName": "Peanut Butter [adams]",
+          "score": 1,
+          "parked": true
+        }
+      ],
+      "messageId": 166,
+      "chatId": 7626546412,
+      "blocking": true,
+      "askedAt": "2026-09-20T03:16:34.306Z"
+    }
+  ],
   "queue": []
 }
