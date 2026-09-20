@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-20T00:51:07.822Z",
+  "updatedAt": "2026-09-20T00:51:22.087Z",
   "entries": [
     {
       "key": "stock cube",
@@ -17,16 +17,16 @@
     },
     {
       "key": "egg",
-      "ingredientId": "34b69a18-4fe7-807d-8439-fea7f149877f",
-      "ingredientName": "Eggs, Whole, small (1650g), {cheap}",
-      "addedAt": "2026-09-20T00:51:07.822Z",
-      "until": "2026-09-25T00:51:07.822Z",
+      "ingredientId": "37669a18-4fe7-8094-ad2b-d156a2f10a29",
+      "ingredientName": "egg  (Omega 3 Enriched) (550g) ≈ Pasar Fresh Eggs - Omega 3",
+      "addedAt": "2026-09-20T00:51:22.087Z",
+      "until": "2026-09-25T00:51:22.087Z",
       "days": 5,
       "basis": "weekly buy → flat 5 days (pack size ignored)",
       "store": "FairPrice",
-      "product": "Pasar Fresh Eggs",
-      "packSizeG": 4950,
-      "monthlyAmount": 23100
+      "product": "Pasar Fresh Eggs - Omega 3",
+      "packSizeG": 550,
+      "monthlyAmount": 0
     },
     {
       "key": "rice wine",

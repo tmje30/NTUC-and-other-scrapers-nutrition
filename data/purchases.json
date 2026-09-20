@@ -1,7 +1,23 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-20T00:51:07.822Z",
+  "updatedAt": "2026-09-20T00:51:22.087Z",
   "entries": [
+    {
+      "id": "egg-fairprice-pasar-fresh-eggs-omega-3-202609200051",
+      "ingredientId": "37669a18-4fe7-8094-ad2b-d156a2f10a29",
+      "ingredientName": "egg  (Omega 3 Enriched) (550g) ≈ Pasar Fresh Eggs - Omega 3",
+      "key": "egg",
+      "store": "NTUC",
+      "product": "Pasar Fresh Eggs - Omega 3",
+      "priceSgd": 3.99,
+      "packSizeG": 550,
+      "unitCount": 10,
+      "volumetric": false,
+      "url": "https://www.fairprice.com.sg/product/pasar-fresh-eggs-omega-3-10-per-pack-13190645",
+      "listTitle": "egg  (Omega 3 Enriched) (550g) ≈ Pasar Fresh Eggs - Omega 3 (10 pcs)",
+      "addedAt": "2026-09-20T00:51:22.087Z",
+      "outcome": "open"
+    },
     {
       "id": "egg-fairprice-pasar-fresh-eggs-202609200051",
       "ingredientId": "34b69a18-4fe7-807d-8439-fea7f149877f",
