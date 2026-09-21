@@ -1,7 +1,33 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-20T02:03:38.905Z",
+  "updatedAt": "2026-09-21T02:03:05.912Z",
   "pending": [
+    {
+      "token": "6sdf5y",
+      "ingredientId": "37369a18-4fe7-809b-b3bb-cc640507e5a9",
+      "ingredientName": "Creatine monohydrate [California gold]",
+      "key": "creatin monohydrat",
+      "unitType": "By Gram",
+      "category": "Suppliments",
+      "vendor": "Iherb",
+      "slotN": 1,
+      "brand": "california gold",
+      "priceSgd": 30.83,
+      "size": 1000,
+      "url": "https://sg.iherb.com/pr/vitamatic-creatine-monohydrate-micronized-powder-unflavored-35-274-oz-1-kg/160683",
+      "itemName": "Vitamatic, Creatine Monohydrate, Micronized Powder, Unflavored, 35.274 oz (1 kg)",
+      "statedSize": "1kg",
+      "perLabel": "$30.83/kg",
+      "reasons": [
+        {
+          "kind": "brand-unconfirmed",
+          "brand": "california gold",
+          "note": "this row names california gold and the product does not say so — a supplement is only recorded without asking when the brand matches. Accept if it is the right thing."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-09-21T02:02:22.964Z"
+    },
     {
       "token": "ydzr3h",
       "ingredientId": "37369a18-4fe7-80c0-bae0-f52639895b21",
@@ -44,7 +70,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-20T02:03:38.904Z"
+      "askedAt": "2026-09-21T02:03:05.912Z"
     }
   ],
   "rejected": [
@@ -160,8 +186,8 @@
     }
   ],
   "moves": {
-    "generatedAt": "2026-09-20T02:03:38.909Z",
-    "reconfirmed": 9,
+    "generatedAt": "2026-09-21T02:03:05.915Z",
+    "reconfirmed": 8,
     "moves": []
   }
 }
