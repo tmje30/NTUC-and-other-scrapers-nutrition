@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-21T02:03:05.912Z",
+  "updatedAt": "2026-09-22T02:09:27.423Z",
   "pending": [
     {
       "token": "6sdf5y",
@@ -26,7 +26,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-21T02:02:22.964Z"
+      "askedAt": "2026-09-22T02:08:30.261Z"
     },
     {
       "token": "ydzr3h",
@@ -70,7 +70,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-21T02:03:05.912Z"
+      "askedAt": "2026-09-22T02:09:27.423Z"
     }
   ],
   "rejected": [
@@ -186,8 +186,8 @@
     }
   ],
   "moves": {
-    "generatedAt": "2026-09-21T02:03:05.915Z",
-    "reconfirmed": 8,
+    "generatedAt": "2026-09-22T02:09:27.427Z",
+    "reconfirmed": 4,
     "moves": []
   }
 }
