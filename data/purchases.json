@@ -1,7 +1,23 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-20T00:51:22.087Z",
+  "updatedAt": "2026-09-22T04:37:03.752Z",
   "entries": [
+    {
+      "id": "green-tea-sheng-siong-green-tea-202609220437",
+      "ingredientId": "34b69a18-4fe7-80f1-8ecb-d764d2abe554",
+      "ingredientName": "Green Tea (50 x 2g)",
+      "key": "green tea",
+      "store": "Sheng Siong",
+      "product": "Green Tea",
+      "priceSgd": 4.95,
+      "packSizeG": 75,
+      "unitCount": 50,
+      "volumetric": false,
+      "url": "https://shengsiong.com.sg/product/heritage-farm-green-tea-50-x-15-g",
+      "listTitle": "Green Tea (50 x 2g) (50 pcs) [Heritage Farm]",
+      "addedAt": "2026-09-22T04:37:03.752Z",
+      "outcome": "open"
+    },
     {
       "id": "egg-fairprice-pasar-fresh-eggs-omega-3-202609200051",
       "ingredientId": "37669a18-4fe7-8094-ad2b-d156a2f10a29",
@@ -16,6 +32,22 @@
       "url": "https://www.fairprice.com.sg/product/pasar-fresh-eggs-omega-3-10-per-pack-13190645",
       "listTitle": "egg  (Omega 3 Enriched) (550g) ≈ Pasar Fresh Eggs - Omega 3 (10 pcs)",
       "addedAt": "2026-09-20T00:51:22.087Z",
+      "outcome": "open"
+    },
+    {
+      "id": "garlic-fairprice-china-loose-garlic-202609200051",
+      "ingredientId": "34b69a18-4fe7-8037-8c0c-c42156a2604c",
+      "ingredientName": "Garlic (Old) ≈ China Loose Garlic",
+      "key": "garlic",
+      "store": "NTUC",
+      "product": "China Loose Garlic",
+      "priceSgd": 2.95,
+      "packSizeG": 500,
+      "unitCount": null,
+      "volumetric": false,
+      "url": "https://www.fairprice.com.sg/product/10968533",
+      "listTitle": "Garlic (Old) ≈ China Loose Garlic (500g) [Fresh]",
+      "addedAt": "2026-09-20T00:51:20.929Z",
       "outcome": "open"
     },
     {
@@ -156,22 +188,6 @@
       "url": "https://shengsiong.com.sg/product/castle-gourmet-rice-cooking-wine-16-alcohol-640-ml",
       "listTitle": "[Sheng Siong] Rice Wine(Cooking)",
       "addedAt": "2026-08-05T06:04:17.778Z",
-      "outcome": "open"
-    },
-    {
-      "id": "garlic-fairprice-china-loose-garlic-202609200051",
-      "ingredientId": "34b69a18-4fe7-8037-8c0c-c42156a2604c",
-      "ingredientName": "Garlic (Old) ≈ China Loose Garlic",
-      "key": "garlic",
-      "store": "NTUC",
-      "product": "China Loose Garlic",
-      "priceSgd": 2.95,
-      "packSizeG": 500,
-      "unitCount": null,
-      "volumetric": false,
-      "url": "https://www.fairprice.com.sg/product/10968533",
-      "listTitle": "Garlic (Old) ≈ China Loose Garlic (500g) [Fresh]",
-      "addedAt": "2026-09-20T00:51:20.929Z",
       "outcome": "open"
     }
   ]

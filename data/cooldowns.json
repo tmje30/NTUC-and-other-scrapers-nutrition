@@ -1,20 +1,7 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-20T02:27:04.239Z",
+  "updatedAt": "2026-09-22T04:37:03.752Z",
   "entries": [
-    {
-      "key": "stock cube",
-      "ingredientId": "39869a18-4fe7-80f0-a7d6-f64d82bb05a1",
-      "ingredientName": "Stock cubes (120g)[Knorr]",
-      "addedAt": "2026-09-07T03:50:44.829Z",
-      "until": "2026-09-21T03:50:44.829Z",
-      "days": 14,
-      "basis": "no monthly usage → flat 14 days",
-      "store": "Sheng Siong",
-      "product": "Ikan Bilis Stock Cubes",
-      "packSizeG": 60,
-      "monthlyAmount": 0
-    },
     {
       "key": "egg",
       "ingredientId": "37669a18-4fe7-8094-ad2b-d156a2f10a29",
@@ -26,6 +13,33 @@
       "store": "FairPrice",
       "product": "Pasar Fresh Eggs - Omega 3",
       "packSizeG": 550,
+      "monthlyAmount": 0
+    },
+    {
+      "key": "ginger",
+      "ingredientId": "34e69a18-4fe7-80ba-a84f-c9e6a8eb9d1c",
+      "ingredientName": "Ginger (Bentong)",
+      "reason": "ignored",
+      "addedAt": "2026-09-20T02:26:52.465Z",
+      "until": "2026-10-04T16:00:00.000Z",
+      "days": 15,
+      "basis": "ignored from the deals page for 2 weeks — until the start of that week (Mon, SGT)",
+      "store": "Sheng Siong",
+      "product": "Thailand Bentong Ginger",
+      "packSizeG": null,
+      "monthlyAmount": 0
+    },
+    {
+      "key": "green tea",
+      "ingredientId": "34b69a18-4fe7-80f1-8ecb-d764d2abe554",
+      "ingredientName": "Green Tea (50 x 2g)",
+      "addedAt": "2026-09-22T04:37:03.752Z",
+      "until": "2026-10-06T04:37:03.752Z",
+      "days": 14,
+      "basis": "no monthly usage → flat 14 days",
+      "store": "Sheng Siong",
+      "product": "Green Tea",
+      "packSizeG": 75,
       "monthlyAmount": 0
     },
     {
@@ -84,33 +98,6 @@
       "monthlyAmount": 0
     },
     {
-      "key": "garlic",
-      "ingredientId": "34b69a18-4fe7-8037-8c0c-c42156a2604c",
-      "ingredientName": "Garlic (Old) ≈ China Loose Garlic",
-      "addedAt": "2026-09-20T00:51:20.929Z",
-      "until": "2027-02-10T00:51:20.929Z",
-      "days": 143,
-      "basis": "500g ÷ 80g/month = 6.25 months × 0.75 = 4.69 months",
-      "store": "FairPrice",
-      "product": "China Loose Garlic",
-      "packSizeG": 500,
-      "monthlyAmount": 80
-    },
-    {
-      "key": "ginger",
-      "ingredientId": "34e69a18-4fe7-80ba-a84f-c9e6a8eb9d1c",
-      "ingredientName": "Ginger (Bentong)",
-      "reason": "ignored",
-      "addedAt": "2026-09-20T02:26:52.465Z",
-      "until": "2026-10-04T16:00:00.000Z",
-      "days": 15,
-      "basis": "ignored from the deals page for 2 weeks — until the start of that week (Mon, SGT)",
-      "store": "Sheng Siong",
-      "product": "Thailand Bentong Ginger",
-      "packSizeG": null,
-      "monthlyAmount": 0
-    },
-    {
       "key": "cinnamon",
       "ingredientId": "34b69a18-4fe7-8089-bff1-d84e43a7b560",
       "ingredientName": "Cinnamon",
@@ -123,6 +110,19 @@
       "product": "Laobanniang Dried Cinnamon Stick",
       "packSizeG": null,
       "monthlyAmount": 0
+    },
+    {
+      "key": "garlic",
+      "ingredientId": "34b69a18-4fe7-8037-8c0c-c42156a2604c",
+      "ingredientName": "Garlic (Old) ≈ China Loose Garlic",
+      "addedAt": "2026-09-20T00:51:20.929Z",
+      "until": "2027-02-10T00:51:20.929Z",
+      "days": 143,
+      "basis": "500g ÷ 80g/month = 6.25 months × 0.75 = 4.69 months",
+      "store": "FairPrice",
+      "product": "China Loose Garlic",
+      "packSizeG": 500,
+      "monthlyAmount": 80
     }
   ]
 }
