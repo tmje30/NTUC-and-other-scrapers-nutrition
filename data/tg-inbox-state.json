@@ -1,7 +1,57 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-20T03:17:35.954Z",
+  "updatedAt": "2026-09-25T08:22:54.595Z",
   "offset": 0,
-  "asks": [],
-  "queue": []
+  "asks": [
+    {
+      "token": "4zuvsu",
+      "item": {
+        "raw": "List",
+        "name": "List",
+        "count": 1,
+        "amountG": null,
+        "volumetric": false
+      },
+      "candidates": [],
+      "messageId": 183,
+      "chatId": 7626546412,
+      "blocking": false,
+      "askedAt": "2026-09-25T08:22:53.814Z"
+    },
+    {
+      "token": "az7qxp",
+      "item": {
+        "raw": "Bread x1",
+        "name": "Bread",
+        "count": 1,
+        "amountG": null,
+        "volumetric": false
+      },
+      "candidates": [
+        {
+          "rowId": "34b69a18-4fe7-8062-b087-ed07794b3ddc",
+          "rowName": "Bread, Whole grain (Low GI), [Gardinier] (350g)",
+          "score": 1
+        },
+        {
+          "rowId": "39869a18-4fe7-8033-b52c-c02424bf56df",
+          "rowName": "Bread, Wholemeal, [FairPrice] (600g)",
+          "score": 1
+        }
+      ],
+      "messageId": 184,
+      "chatId": 7626546412,
+      "blocking": true,
+      "askedAt": "2026-09-25T08:22:54.301Z"
+    }
+  ],
+  "queue": [
+    {
+      "raw": "List",
+      "name": "List",
+      "count": 1,
+      "amountG": null,
+      "volumetric": false
+    }
+  ]
 }
