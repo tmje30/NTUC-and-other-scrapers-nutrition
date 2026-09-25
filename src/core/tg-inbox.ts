@@ -236,6 +236,12 @@ const HELP =
 	"I'll match each line to your Ingredients DB and add it to the grocery List " +
 	"with its price. Anything I'm unsure about I'll ask. Anything new, I'll price " +
 	"at the shops and send you a page.\n\n" +
+	// ⚠️ Listed even though plain text already does this, because "say it out loud"
+	// is the whole point of the header: it is the difference between the bot having
+	// guessed and the bot having been told. See `LIST_HEADERS`.
+	"🧾 <b>Want it said plainly?</b> Start with <code>List</code> (or send " +
+	"<code>/list milk, eggs</code>) and I'll reply with a link to the page. " +
+	"<code>List</code> or <code>/list</code> on its own just sends the link.\n\n" +
 	// ⚠️ Spelled out as "adds nothing", because the rest of this message has just
 	// promised that typing an item files it — and the whole reason search needs a
 	// slash is that those two behaviours share one text box.

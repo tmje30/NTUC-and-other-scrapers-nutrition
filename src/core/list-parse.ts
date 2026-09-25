@@ -250,8 +250,23 @@ export function sizeLabel(item: ParsedItem): string | undefined {
  * milk" are items, not headers, and a `startsWith` would silently swallow the first
  * thing on the list — the quietest possible bug, because the message still gets a
  * cheerful reply about everything else.
+ *
+ * ⚠️ **Bare `list` is in here, and it earns its place by being the word people
+ * actually type.** It is also the one header that reads like a thing you could
+ * buy — but only in the abstract: no row in the Ingredients DB is called "list",
+ * and the whole-line rule above means "list of paints" is still an item. If a
+ * grocery ever genuinely is named `list`, the fix is to text it with a quantity
+ * (`list x1`), not to take the word back out.
  */
-const LIST_HEADERS = ["grocery", "groceries", "grocery list", "shopping list", "shopping", "to buy"];
+const LIST_HEADERS = [
+	"list",
+	"grocery",
+	"groceries",
+	"grocery list",
+	"shopping list",
+	"shopping",
+	"to buy",
+];
 
 /** Trailing `:` and decoration are the user's, not part of the word. */
 export function isListHeader(line: string): boolean {
@@ -265,6 +280,37 @@ export function isListHeader(line: string): boolean {
 }
 
 /**
+ * **The same thing as a slash command: `/list milk, eggs`.**
+ *
+ * Telegram offers commands in its own menu and strips nothing from them, so the
+ * header words above and this are two spellings of one instruction. The command
+ * form buys one thing the header cannot: **items on the SAME line**. A header is
+ * whole-line-only because "to buy milk" has to stay an item, but `/list milk`
+ * cannot be anything except the command plus its argument, so the ambiguity that
+ * forced that rule doesn't exist here.
+ *
+ * `/l` is the one-thumb form, and `@BotName` is what Telegram appends in groups —
+ * both mirror `SEARCH_RE` in `item-search.ts` deliberately, so the two commands
+ * this bot has are typed the same way.
+ */
+const LIST_COMMAND_RE = /^\/(?:list|l)(?:@\w+)?(?:\s+([\s\S]*))?$/i;
+
+/**
+ * The items text of a `/list …`, `""` for a bare `/list`, or null when the
+ * message is not the command at all.
+ *
+ * ⚠️ Empty string and null are different answers, the same way `searchQuery`'s
+ * are: `""` means "the user asked about their list and named nothing" — which is
+ * a request to SEE it — while `null` means "this is not the command", which must
+ * fall through to the header rules untouched.
+ */
+export function listCommand(text: string): string | null {
+	const m = text.trim().match(LIST_COMMAND_RE);
+	if (!m) return null;
+	return (m[1] ?? "").trim();
+}
+
+/**
  * Split a message into "was it declared a list" and the item lines underneath.
  *
  * ⚠️ **A header with NOTHING under it is a request to SEE the list, not an empty
@@ -273,6 +319,11 @@ export function isListHeader(line: string): boolean {
  * refusing the most obvious thing you could type at it.
  */
 export function stripListHeader(message: string): { declared: boolean; items: ParsedItem[] } {
+	// The command form first: it is unambiguous, and its argument may sit on the same
+	// line, which the header path below is not allowed to assume.
+	const cmd = listCommand(message);
+	if (cmd !== null) return { declared: true, items: parseList(cmd) };
+
 	const lines = splitLines(message);
 	const declared = lines.length > 0 && isListHeader(lines[0]);
 	const rest = declared ? lines.slice(1) : lines;

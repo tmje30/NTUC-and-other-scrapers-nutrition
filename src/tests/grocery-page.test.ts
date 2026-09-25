@@ -13,7 +13,7 @@ import { due, lastSgtMidnight, queue, unqueue, type PendingFile } from "../core/
 // the edge gate and the repo parser against each other rather than trusting they agree.
 import { validListAction } from "../../relay/worker.mjs";
 import { parseListAction } from "../core/list-action-parse.js";
-import { isListHeader, stripListHeader } from "../core/list-parse.js";
+import { isListHeader, listCommand, stripListHeader } from "../core/list-parse.js";
 
 /**
  * The shopping page, and the hour before a ticked row leaves Notion.
@@ -451,6 +451,53 @@ eq("…and is not marked declared", plain.declared, false);
 // ⚠️ A header with nothing under it is "show me the list", not an empty write.
 eq("a bare header declares with no items", stripListHeader("grocery list").items.length, 0);
 eq("…and is still declared", stripListHeader("grocery list").declared, true);
+
+describe("'List' as a word and as a command");
+
+// The word the user actually types. Bare, capitalised, and with the colon they add.
+for (const h of ["List", "list", "LIST", "List:"]) {
+	check(`"${h}" is a header`, isListHeader(h));
+}
+// ⚠️ And still whole-line-only, or the first item on the list disappears.
+check("'list of paints' is an item, not a header", !isListHeader("list of paints"));
+check("'shopping list for mum' is unaffected", !isListHeader("shopping list for mum"));
+
+eq(
+	"'List' over the items declares and keeps them",
+	stripListHeader("List\n2kg chicken breast\nbananas x6").items.map((i) => i.name),
+	["chicken breast", "bananas"],
+);
+eq("…declared", stripListHeader("List\nmilk").declared, true);
+eq("'List, milk, eggs' is the comma form", stripListHeader("List, milk, eggs").items.map((i) => i.name), [
+	"milk",
+	"eggs",
+]);
+eq("bare 'List' is 'show me the list'", stripListHeader("List").items.length, 0);
+eq("…and is declared, so it earns the link", stripListHeader("List").declared, true);
+
+// The slash form. `null` vs `""` matters — see `listCommand`.
+eq("a bare /list asks to see it", listCommand("/list"), "");
+eq("/l is the one-thumb form", listCommand("/l"), "");
+eq("Telegram's group suffix is stripped", listCommand("/list@Big_Notion_Bot milk"), "milk");
+eq("plain text is not the command", listCommand("milk, eggs"), null);
+eq("neither is another command", listCommand("/search chicken"), null);
+// ⚠️ A word that merely STARTS with the command is not the command — "/listen" would
+// otherwise file its own arguments as groceries.
+eq("'/listen' is not /list", listCommand("/listen to this"), null);
+
+// ⚠️ **Items on the SAME line, which the header form cannot do.** `/list milk` is
+// unambiguous in a way "to buy milk" is not — that is the whole reason to have both.
+eq("/list takes items inline", stripListHeader("/list milk, 2kg chicken breast").items.map((i) => i.name), [
+	"milk",
+	"chicken breast",
+]);
+eq("…and underneath", stripListHeader("/list\nmilk\nbananas x6").items.map((i) => i.name), [
+	"milk",
+	"bananas",
+]);
+eq("…and quantities survive it", stripListHeader("/list bananas x6").items[0].count, 6);
+eq("a bare /list declares with no items", stripListHeader("/list").items.length, 0);
+eq("…and is declared", stripListHeader("/list").declared, true);
 
 describe("adding an item from the page");
 
