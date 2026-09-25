@@ -1,20 +1,7 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-22T04:37:03.752Z",
+  "updatedAt": "2026-09-25T08:22:29.236Z",
   "entries": [
-    {
-      "key": "egg",
-      "ingredientId": "37669a18-4fe7-8094-ad2b-d156a2f10a29",
-      "ingredientName": "egg  (Omega 3 Enriched) (550g) ≈ Pasar Fresh Eggs - Omega 3",
-      "addedAt": "2026-09-20T00:51:22.087Z",
-      "until": "2026-09-25T00:51:22.087Z",
-      "days": 5,
-      "basis": "weekly buy → flat 5 days (pack size ignored)",
-      "store": "FairPrice",
-      "product": "Pasar Fresh Eggs - Omega 3",
-      "packSizeG": 550,
-      "monthlyAmount": 0
-    },
     {
       "key": "ginger",
       "ingredientId": "34e69a18-4fe7-80ba-a84f-c9e6a8eb9d1c",
@@ -108,6 +95,20 @@
       "basis": "ignored from the deals page for 4 weeks — until the start of that week (Mon, SGT)",
       "store": "FairPrice",
       "product": "Laobanniang Dried Cinnamon Stick",
+      "packSizeG": null,
+      "monthlyAmount": 0
+    },
+    {
+      "key": "stock cube",
+      "ingredientId": "39869a18-4fe7-80f0-a7d6-f64d82bb05a1",
+      "ingredientName": "Stock cubes (120g)[Knorr]",
+      "reason": "ignored",
+      "addedAt": "2026-09-25T08:22:29.236Z",
+      "until": "2026-10-18T16:00:00.000Z",
+      "days": 23,
+      "basis": "ignored from the deals page for 4 weeks — until the start of that week (Mon, SGT)",
+      "store": "Sheng Siong",
+      "product": "Ikan Bilis Stock Cubes",
       "packSizeG": null,
       "monthlyAmount": 0
     },
