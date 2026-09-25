@@ -1,23 +1,7 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-25T08:43:39.042Z",
+  "updatedAt": "2026-09-25T09:31:21.337Z",
   "offset": 0,
-  "asks": [
-    {
-      "token": "4zuvsu",
-      "item": {
-        "raw": "List",
-        "name": "List",
-        "count": 1,
-        "amountG": null,
-        "volumetric": false
-      },
-      "candidates": [],
-      "messageId": 183,
-      "chatId": 7626546412,
-      "blocking": false,
-      "askedAt": "2026-09-25T08:22:53.814Z"
-    }
-  ],
+  "asks": [],
   "queue": []
 }
