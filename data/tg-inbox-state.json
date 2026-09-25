@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-25T08:23:19.970Z",
+  "updatedAt": "2026-09-25T08:32:03.230Z",
   "offset": 0,
   "asks": [
     {
@@ -19,13 +19,5 @@
       "askedAt": "2026-09-25T08:22:53.814Z"
     }
   ],
-  "queue": [
-    {
-      "raw": "List",
-      "name": "List",
-      "count": 1,
-      "amountG": null,
-      "volumetric": false
-    }
-  ]
+  "queue": []
 }
