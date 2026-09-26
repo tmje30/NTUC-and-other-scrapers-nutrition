@@ -1,7 +1,31 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-25T09:31:21.337Z",
+  "updatedAt": "2026-09-26T04:45:00.211Z",
   "offset": 0,
-  "asks": [],
-  "queue": []
+  "asks": [
+    {
+      "token": "rxczl7",
+      "item": {
+        "raw": "Chinchilla x 1",
+        "name": "Chinchilla",
+        "count": 1,
+        "amountG": null,
+        "volumetric": false
+      },
+      "candidates": [],
+      "messageId": 197,
+      "chatId": 7626546412,
+      "blocking": false,
+      "askedAt": "2026-09-26T04:44:59.724Z"
+    }
+  ],
+  "queue": [
+    {
+      "raw": "Chinchilla x 1",
+      "name": "Chinchilla",
+      "count": 1,
+      "amountG": null,
+      "volumetric": false
+    }
+  ]
 }
