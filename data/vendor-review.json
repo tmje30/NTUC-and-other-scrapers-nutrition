@@ -1,7 +1,79 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-25T02:14:13.359Z",
+  "updatedAt": "2026-09-26T05:20:58.603Z",
   "pending": [
+    {
+      "token": "828065",
+      "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
+      "ingredientName": "Sensitivity & Gum Toothpaste - Original",
+      "key": "sensitiviti gum toothpast original",
+      "unitType": "By Gram",
+      "category": "Cosmetics/ Tooth paste etc",
+      "vendor": "Watsons",
+      "slotN": 3,
+      "priceSgd": 7.3,
+      "size": 120,
+      "url": "https://www.watsons.com.sg/darlie-expert-gum-care-sensitivity-relief-toothpaste-120g-expiry-apr-2027/p/BP_30925",
+      "itemName": "DARLIE Expert Gum Care Sensitivity Relief Toothpaste 120g (Expiry: Apr`2027)",
+      "statedSize": "120g",
+      "perLabel": "$60.83/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 2 of 3, offered as a suggestion. Accept only if it is the same thing."
+        }
+      ],
+      "rank": 1,
+      "askedAt": "2026-09-26T05:19:15.511Z"
+    },
+    {
+      "token": "d1gvet",
+      "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
+      "ingredientName": "Sensitivity & Gum Toothpaste - Original",
+      "key": "sensitiviti gum toothpast original",
+      "unitType": "By Gram",
+      "category": "Cosmetics/ Tooth paste etc",
+      "vendor": "Watsons",
+      "slotN": 3,
+      "priceSgd": 9.1,
+      "size": 110,
+      "url": "https://www.watsons.com.sg/colgate-sensitive-pro-relief-original-toothpaste-110g/p/BP_41346",
+      "itemName": "COLGATE Sensitive Pro Relief Original Toothpaste 110g",
+      "statedSize": "110g",
+      "perLabel": "$82.73/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
+        }
+      ],
+      "rank": 2,
+      "askedAt": "2026-09-26T05:19:15.514Z"
+    },
+    {
+      "token": "0zsv0d",
+      "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
+      "ingredientName": "Sensitivity & Gum Toothpaste - Original",
+      "key": "sensitiviti gum toothpast original",
+      "unitType": "By Gram",
+      "category": "Cosmetics/ Tooth paste etc",
+      "vendor": "Watsons",
+      "slotN": 3,
+      "priceSgd": 7.5,
+      "size": 100,
+      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-gum-care-toothpaste-dental-sensitivity-relief-100g/p/BP_45477",
+      "itemName": "SENSODYNE Sensitive Teeth Gum Care Toothpaste (Dental Sensitivity Relief) 100g",
+      "statedSize": "100g",
+      "perLabel": "$75.00/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is the closest of 3 offered, best first. Accept only if it is the same thing."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-09-26T05:19:15.516Z"
+    },
     {
       "token": "ij4hr6",
       "ingredientId": "37369a18-4fe7-809b-b3bb-cc640507e5a9",
@@ -29,7 +101,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-25T02:13:22.087Z"
+      "askedAt": "2026-09-26T05:20:14.630Z"
     },
     {
       "token": "ydzr3h",
@@ -73,7 +145,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-25T02:14:13.359Z"
+      "askedAt": "2026-09-26T05:20:58.603Z"
     }
   ],
   "rejected": [
@@ -189,8 +261,8 @@
     }
   ],
   "moves": {
-    "generatedAt": "2026-09-25T02:14:13.363Z",
-    "reconfirmed": 4,
+    "generatedAt": "2026-09-26T05:20:58.609Z",
+    "reconfirmed": 8,
     "moves": []
   }
 }
