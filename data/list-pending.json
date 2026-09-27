@@ -1,40 +1,4 @@
 {
   "v": 1,
-  "pending": [
-    {
-      "pageId": "3e669a18-4fe7-8134-bed1-e0fc398e8510",
-      "tickedAt": "2026-09-27T03:14:47.863Z",
-      "name": "List"
-    },
-    {
-      "pageId": "3e669a18-4fe7-81a0-b465-e0109bd11322",
-      "tickedAt": "2026-09-27T03:31:08.547Z",
-      "name": "Bread, Wholemeal, [FairPrice] (600g)"
-    },
-    {
-      "pageId": "3e169a18-4fe7-818f-8c3c-c200f971f677",
-      "tickedAt": "2026-09-27T03:32:38.438Z",
-      "name": "Banana (Fruit)"
-    },
-    {
-      "pageId": "3e169a18-4fe7-818c-9574-c692dee74708",
-      "tickedAt": "2026-09-27T03:32:40.427Z",
-      "name": "egg  (Omega 3 Enriched) (550g) ≈ Pasar Fresh Eggs - Omega 3 (10 pcs)"
-    },
-    {
-      "pageId": "3e169a18-4fe7-81ba-b19c-e1c9d45ffe25",
-      "tickedAt": "2026-09-27T03:32:49.664Z",
-      "name": "Eggs, Whole, small (1650g), {cheap} (30 pcs) [Pasar]"
-    },
-    {
-      "pageId": "3e169a18-4fe7-8170-a409-d6cd44238386",
-      "tickedAt": "2026-09-27T03:34:50.279Z",
-      "name": "Garlic (Old) ≈ China Loose Garlic (500g) [Fresh]"
-    },
-    {
-      "pageId": "3e769a18-4fe7-81f9-bebe-f52b0591dcff",
-      "tickedAt": "2026-09-27T03:35:51.512Z",
-      "name": "chinchalok"
-    }
-  ]
+  "pending": []
 }
