@@ -216,6 +216,21 @@ silently stops happening**; nothing else in the cloud is watching. `npx wrangler
 shows each tick, and the Actions tab shows a run every 15 minutes (most exit in
 seconds having found nothing).
 
+It now keeps three clocks, told apart by `event.cron` in `scheduled()`:
+
+| pattern | SGT | dispatches | what stops if you delete it |
+| --- | --- | --- | --- |
+| `*/15 * * * *` | every 15 min | `tgsweep` | unanswered questions are never filed |
+| `0 16 * * *` | midnight | `listsweep` | ticked grocery rows are never cleared |
+| `0 4 * * *` | noon | `vendorsweep` | the price book and the discount columns go stale |
+
+⚠️ **The noon one was missing for 19 days and nothing said so.** `vendor-sweep.yml` has
+no `schedule:` of its own and had no dispatcher, so between 2026-09-09 and 09-28 it ran
+not once — and the three `(Discount)` columns added on 09-13 were never written to. The
+Actions tab showed the workflow green throughout, from a hand-pressed run three weeks
+old, because **a workflow nobody triggers cannot fail.** Each row above is a silent
+dependency of exactly that kind; the third one is the one that has already bitten.
+
 ⚠️ **Until the Worker is deployed, the poller is what sweeps** — in its own loop, every
 25 s, but only while the laptop is awake. That is the one part of the one-hour promise
 that still depends on this machine, and deploying the relay is what removes it.

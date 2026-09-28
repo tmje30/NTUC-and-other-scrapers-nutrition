@@ -48,8 +48,18 @@ LOG_COLO = "1"
 # `scheduled()` tells them apart by `event.cron`. Remove this line and rows ticked off on
 # the shopping page are never cleared, with nothing else failing — the same silent
 # dependency the Telegram sweep has on the line above.
+# ⚠️ **The third entry is the morning vendor sweep**, and 04:00 UTC is noon in Singapore.
+# Until 2026-09-28 NOTHING fired `vendor-sweep.yml`: it has no `schedule:` of its own and
+# nobody dispatched it, so its last run was a hand-pressed one on 2026-09-09 and the three
+# discount columns added on 09-13 had never been written to at all. The workflow was green
+# throughout, because a workflow nobody triggers cannot fail.
+#
+# Noon, not morning: ss-worker retries the Sheng Siong scan until 11:00 SGT and daily.yml's
+# backstop fires at 11:30, and the sweep ends by republishing through daily.yml — which
+# serialises on the `pages` concurrency group. It is also deliberately late in the day
+# because it reads live shelf prices into the price book, where the ratchet keeps them.
 [triggers]
-crons = ["*/15 * * * *", "0 16 * * *"]
+crons = ["*/15 * * * *", "0 16 * * *", "0 4 * * *"]
 
 # Nothing is logged persistently and no data is stored: the Worker holds no state
 # between requests. Observability is on so `wrangler tail` can show a live

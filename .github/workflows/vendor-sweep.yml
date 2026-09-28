@@ -20,8 +20,17 @@ name: Vendor sweep (cloud)
 # ⚠️ **No `schedule:` here, deliberately — the same reason `price-new-items.yml` has
 # none.** GitHub queues scheduled runs on this repo by 3–3¾ hours. The clock for
 # everything time-sensitive in this project is the relay's Cloudflare cron, which
-# already dispatches `rescan` and `tgsweep`; `vendorsweep` is meant to join them once
-# this has been watched for a few mornings.
+# dispatches `rescan`, `tgsweep`, `listsweep` — and, since 2026-09-28, `vendorsweep`
+# at 04:00 UTC / 12:00 SGT. See `VENDOR_SWEEP_CRON` in `relay/worker.mjs`.
+#
+# ⚠️⚠️ **That wiring took 19 days to notice was missing, and this is the warning.** From
+# 2026-09-09 to 09-28 nothing fired this workflow at all: no `schedule:`, no dispatcher,
+# and every run in the history a hand-pressed `workflow_dispatch`. The price book simply
+# stopped being refreshed, and the three discount columns added on 09-13 were never
+# written to once. Nothing went red, because a workflow nobody triggers cannot fail —
+# the Actions tab showed this file green the whole time, from a run three weeks old.
+# If the trigger is ever removed again, the tell is an EMPTY `Location (Discount)`
+# column across the whole Ingredients DB.
 on:
   workflow_dispatch:
     inputs:

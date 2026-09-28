@@ -401,6 +401,34 @@ const TICK = { op: "tick", pageId: "3d469a18-4fe7-802f-8620-000b6053908d" };
 	check("…and never listsweep", !f.calls.some((c) => c.body?.event_type === "listsweep"));
 }
 
+// ── the noon cron: the vendor sweep ──────────────────────────────────────────
+
+{
+	// ⚠️ The whole point of the wiring: a dispatch is what makes `vendor-sweep.yml` run
+	// with --write. Nothing else in the cloud fires it.
+	const f = recorder();
+	await scheduled({ cron: "0 4 * * *" }, ENV, { fetch: f });
+	eq("noon sends exactly one dispatch", f.calls.length, 1);
+	eq("…and it is vendorsweep", f.calls[0].body.event_type, "vendorsweep");
+	check("…and never tgsweep", !f.calls.some((c) => c.body?.event_type === "tgsweep"));
+}
+
+{
+	// ⚠️ Same trap as midnight: the quarter-hourly pattern matches 04:00 too, so the two
+	// must not be confused for one another in either direction.
+	const f = recorder();
+	await scheduled({ cron: "*/15 * * * *" }, ENV, { fetch: f });
+	check("a 15-minute tick never sends vendorsweep", !f.calls.some((c) => c.body?.event_type === "vendorsweep"));
+}
+
+{
+	// ⚠️ An unrecognised pattern must fall through to the Telegram sweep rather than doing
+	// nothing — that is what every tick except the two named ones is.
+	const f = recorder();
+	await scheduled({ cron: "7 9 * * *" }, ENV, { fetch: f });
+	eq("an unknown cron still sweeps Telegram", f.calls[0].body.event_type, "tgsweep");
+}
+
 // ── report ───────────────────────────────────────────────────────────────────
 console.log(`\nrelay — Telegram → GitHub`);
 for (const f of failures) console.log(`  FAIL  ${f}`);

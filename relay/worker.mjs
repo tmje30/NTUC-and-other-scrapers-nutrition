@@ -74,8 +74,43 @@ const LIST_EVENT = "list-action";
  */
 const LIST_SWEEP_EVENT = "listsweep";
 
+/**
+ * The event `vendor-sweep.yml` listens for — the morning price-book sweep.
+ *
+ * ⚠️ **Until this line existed, NOTHING fired that workflow.** It had no `schedule:` of
+ * its own (deliberately — see its header) and no dispatcher, so every run in its history
+ * was a hand-pressed `workflow_dispatch`, and the last one was 2026-09-09. The three
+ * discount columns landed on 09-13, four days later, which means the code that fills them
+ * had never once run when the gap was found on 09-28. A feature nothing triggers is
+ * indistinguishable from a feature that is broken, and this one looked fine: the workflow
+ * was green, because it had last been asked in September.
+ *
+ * ⚠️ **This Worker is the CLOCK, for the third time — see `tgsweep` and `listsweep`.**
+ * GitHub's `schedule:` is queued by ~3–3¾ h on a free public repo, and the sweep reads
+ * live shelf prices: a run meant for midday that lands at 15:30 is reading a different
+ * day's shelf. Remove the `0 4 * * *` trigger from `wrangler.toml` and the price book
+ * quietly stops being refreshed, with nothing failing to say so.
+ */
+const VENDOR_SWEEP_EVENT = "vendorsweep";
+
 /** Midnight in Singapore, in UTC. SGT is UTC+8 with no DST, so this never drifts. */
 const MIDNIGHT_SGT_CRON = "0 16 * * *";
+
+/**
+ * **Noon in Singapore — the vendor sweep's slot, and every hour of it is load-bearing.**
+ *
+ * ⚠️ **After the deals pipeline, not during it.** ss-worker retries the Sheng Siong scan
+ * until 03:00 UTC (11:00 SGT) and `daily.yml`'s backstop fires at 03:30 (11:30). The sweep
+ * ends by republishing the site through `daily.yml`, which serialises on the `pages`
+ * concurrency group — starting inside that window would queue the sweep's own publish
+ * behind a full deals scan that had not begun yet.
+ *
+ * ⚠️ **And not early.** "A discount read at 5am may not be the one on the shelf" is the
+ * user's rule (2026-08-11) and the reason `daily.yml`'s own cron is 11:30 SGT rather than
+ * midnight. A sweep writes those shelf prices into the price book, where the ratchet then
+ * keeps them, so it has more to lose by reading early than the deals page does.
+ */
+const VENDOR_SWEEP_CRON = "0 4 * * *";
 
 const ok = () => new Response("ok", { status: 200 });
 
@@ -354,6 +389,29 @@ export async function scheduled(_event, env, deps = {}) {
 	 */
 	if (_event?.cron === MIDNIGHT_SGT_CRON) {
 		await dispatch(doFetch, env, LIST_SWEEP_EVENT, {});
+		return;
+	}
+
+	/**
+	 * Noon in Singapore: sweep the shops and refresh the price book.
+	 *
+	 * ⚠️ **Returns early for the same reason midnight does.** The every-15-minutes pattern
+	 * matches 04:00 UTC too, and Cloudflare invokes this handler once per matching pattern —
+	 * so the Telegram half still happens on that separate invocation. (That pattern is spelled
+	 * out in words here and above because the slash in it would close this comment.)
+	 *
+	 * Falling through instead
+	 * would send `tgsweep` twice at noon, which is harmless and therefore exactly the kind
+	 * of thing that stays wrong for months.
+	 *
+	 * ⚠️ **A `repository_dispatch` makes the sweep WRITE.** `vendor-sweep.yml` treats a
+	 * dispatch as the cron and runs `--write --no-ask`; a `workflow_dispatch` defaults to
+	 * report-only. So this line is the difference between looking and recording, and it is
+	 * the whole point of wiring it: the discount columns are refreshed by writes, and a
+	 * promo nobody overwrites reads as live for ever.
+	 */
+	if (_event?.cron === VENDOR_SWEEP_CRON) {
+		await dispatch(doFetch, env, VENDOR_SWEEP_EVENT, {});
 		return;
 	}
 
