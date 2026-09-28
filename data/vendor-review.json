@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-28T01:21:06.518Z",
+  "updatedAt": "2026-09-28T02:03:06.430Z",
   "pending": [
     {
       "token": "828065",
@@ -24,7 +24,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-09-28T01:19:17.878Z"
+      "askedAt": "2026-09-28T02:01:18.548Z"
     },
     {
       "token": "d1gvet",
@@ -48,7 +48,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-09-28T01:19:17.881Z"
+      "askedAt": "2026-09-28T02:01:18.551Z"
     },
     {
       "token": "0zsv0d",
@@ -72,7 +72,36 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-28T01:19:17.883Z"
+      "askedAt": "2026-09-28T02:01:18.554Z"
+    },
+    {
+      "token": "49rbfs",
+      "ingredientId": "37369a18-4fe7-809b-b3bb-cc640507e5a9",
+      "ingredientName": "Creatine monohydrate [California gold]",
+      "key": "creatin monohydrat",
+      "unitType": "By Gram",
+      "category": "Suppliments",
+      "vendor": "Iherb",
+      "slotN": 1,
+      "brand": "california gold",
+      "priceSgd": 42.08,
+      "size": 997.9,
+      "url": "https://sg.iherb.com/pr/california-gold-nutrition-sport-pure-creatine-monohydrate-unflavored-2-2-lbs-1-kg/143718",
+      "itemName": "California Gold Nutrition, Sport, Pure Creatine Monohydrate, Unflavored, 2.2 lbs (1 kg)",
+      "statedSize": "998g",
+      "perLabel": "$42.17/kg",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 30.83,
+          "foundPer": 42.16855396332298,
+          "perWord": "kg",
+          "vendor": "Iherb",
+          "note": "DEARER than the Iherb price already recorded: $30.83 / 1000g = $30.83/kg → $42.08 / 997.9g = $42.17/kg. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-09-28T02:02:16.315Z"
     },
     {
       "token": "ydzr3h",
@@ -116,7 +145,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-28T01:21:06.517Z"
+      "askedAt": "2026-09-28T02:03:06.430Z"
     }
   ],
   "rejected": [
@@ -232,8 +261,8 @@
     }
   ],
   "moves": {
-    "generatedAt": "2026-09-28T01:21:06.520Z",
-    "reconfirmed": 9,
+    "generatedAt": "2026-09-28T02:03:06.433Z",
+    "reconfirmed": 7,
     "moves": []
   }
 }
