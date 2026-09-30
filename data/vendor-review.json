@@ -1,1028 +1,7 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-30T02:03:05.838Z",
+  "updatedAt": "2026-09-30T04:10:42.544Z",
   "pending": [
-    {
-      "token": "vo7ls3",
-      "ingredientId": "39c69a18-4fe7-80eb-bac0-fa46c8d26c9d",
-      "ingredientName": "Pu Erh (Tea bags) (100 x 2g)",
-      "key": "pu erh",
-      "unitType": "By Unit",
-      "category": "[7] Teas/Coffees",
-      "vendor": "NTUC",
-      "slotN": 1,
-      "priceSgd": 7.24,
-      "size": 12,
-      "url": "https://www.fairprice.com.sg/product/imperial-glutinious-rice-puer-tea-bags-12-per-pack-13201596",
-      "itemName": "Imperial Glutinious Rice Puer Tea Bags",
-      "statedSize": "12 pcs",
-      "brandName": "Imperial",
-      "perLabel": "$36.20/kg",
-      "reasons": [
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 6.25,
-          "foundPer": 60.333333333333336,
-          "perWord": "100 pcs",
-          "vendor": "NTUC",
-          "note": "DEARER than the NTUC price already recorded: $6.25 / 100 pcs = $6.25/100 pcs → $7.24 / 12 pcs = $60.33/100 pcs. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-29T04:02:36.008Z"
-    },
-    {
-      "token": "x9yj45",
-      "ingredientId": "39869a18-4fe7-8033-b52c-c02424bf56df",
-      "ingredientName": "Bread, Wholemeal, [FairPrice] (600g)",
-      "key": "bread",
-      "unitType": "By Unit",
-      "category": "[2] Wheat/Rice/Carbs",
-      "vendor": "NTUC",
-      "slotN": 1,
-      "brand": "fairprice",
-      "priceSgd": 2.4,
-      "size": 17,
-      "url": "https://www.fairprice.com.sg/product/fairprice-bread-wholemeal-500g-13200668",
-      "itemName": "FairPrice Bread - Wholemeal",
-      "statedSize": "17 pcs",
-      "brandName": "Fairprice",
-      "perLabel": "$4.00/kg",
-      "reasons": [
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 12,
-          "foundPer": 14.11764705882353,
-          "perWord": "100 pcs",
-          "vendor": "NTUC",
-          "note": "DEARER than the NTUC price already recorded: $2.40 / 20 pcs = $12.00/100 pcs → $2.40 / 17 pcs = $14.12/100 pcs. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-29T04:02:55.766Z"
-    },
-    {
-      "token": "sq7mad",
-      "ingredientId": "39869a18-4fe7-80c6-abc1-d1713f27ac47",
-      "ingredientName": "Chicken thigh, Boneless  [Seara]",
-      "key": "chicken thigh",
-      "unitType": "By Gram",
-      "category": "[1] Meats/Dairy/Proteins",
-      "vendor": "NTUC",
-      "slotN": 1,
-      "brand": "seara",
-      "priceSgd": 6.5,
-      "size": 1000,
-      "url": "https://www.fairprice.com.sg/product/seara-iqf-chicken-thigh-1kg-13281244",
-      "itemName": "Seara IQF Chicken Thigh",
-      "statedSize": "1kg",
-      "brandName": "Seara",
-      "perLabel": "$6.50/kg",
-      "reasons": [
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 4.465,
-          "foundPer": 6.5,
-          "perWord": "kg",
-          "vendor": "NTUC",
-          "note": "DEARER than the NTUC price already recorded: $8.93 / 2000g = $4.46/kg → $6.50 / 1000g = $6.50/kg. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-29T04:03:08.016Z"
-    },
-    {
-      "token": "s2gzte",
-      "ingredientId": "39869a18-4fe7-800c-b229-f5fefe795809",
-      "ingredientName": "Purple Cabbage",
-      "key": "purpl cabbag",
-      "unitType": "By Gram",
-      "category": "[3] Fruits/Vegetables",
-      "vendor": "Sheng Siong",
-      "slotN": 2,
-      "priceSgd": 1.4,
-      "size": 600,
-      "url": "https://shengsiong.com.sg/product/china-purple-cabbage-600-700-g",
-      "itemName": "China Purple Cabbage",
-      "statedSize": "600 - 700g",
-      "perLabel": "$2.33/kg",
-      "reasons": [
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 2.1666666666666665,
-          "foundPer": 2.333333333333333,
-          "perWord": "kg",
-          "vendor": "Sheng Siong",
-          "note": "DEARER than the Sheng Siong price already recorded: $1.30 / 600g = $2.17/kg → $1.40 / 600g = $2.33/kg. Not written — accept only if the old price is gone."
-        },
-        {
-          "kind": "size-range",
-          "note": "the pack size is a RANGE and was read at its top — the real pack may be smaller (and dearer per kg)"
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-29T04:03:19.859Z"
-    },
-    {
-      "token": "dbsqsu",
-      "ingredientId": "39869a18-4fe7-8029-9609-ea147e99672e",
-      "ingredientName": "Carrots",
-      "key": "carrot",
-      "unitType": "By Gram",
-      "category": "[3] Fruits/Vegetables",
-      "vendor": "Sheng Siong",
-      "slotN": 2,
-      "priceSgd": 1.6,
-      "size": 850,
-      "url": "https://shengsiong.com.sg/product/australia-china-carrots-850-900-g",
-      "itemName": "Australia / China Carrots",
-      "statedSize": "850 - 900g",
-      "perLabel": "$1.88/kg",
-      "reasons": [
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 1.777777777777778,
-          "foundPer": 1.8823529411764706,
-          "perWord": "kg",
-          "vendor": "Sheng Siong",
-          "note": "DEARER than the Sheng Siong price already recorded: $1.60 / 900g = $1.78/kg → $1.60 / 850g = $1.88/kg. Not written — accept only if the old price is gone."
-        },
-        {
-          "kind": "size-range",
-          "note": "the pack size is a RANGE and was read at its top — the real pack may be smaller (and dearer per kg)"
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-29T04:03:26.803Z"
-    },
-    {
-      "token": "bhnc16",
-      "ingredientId": "37669a18-4fe7-8094-ad2b-d156a2f10a29",
-      "ingredientName": "egg  (Omega 3 Enriched) (550g)",
-      "key": "egg",
-      "unitType": "By Unit",
-      "category": "[1] Meats/Dairy/Proteins",
-      "vendor": "Sheng Siong",
-      "slotN": 2,
-      "priceSgd": 2.7,
-      "size": 10,
-      "url": "https://shengsiong.com.sg/product/fresh-eggs-10s-550-g",
-      "itemName": "Fresh Eggs (10s)",
-      "statedSize": "10 pcs",
-      "perLabel": "$4.91/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is the closest of 3 offered, best first. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-29T04:04:19.096Z"
-    },
-    {
-      "token": "f67vcf",
-      "ingredientId": "34d69a18-4fe7-808a-a80b-c99b8072b99d",
-      "ingredientName": "Honey (Raw)",
-      "key": "honei",
-      "unitType": "By Gram",
-      "category": "[5[ Sugar/Sweetners",
-      "vendor": "Sheng Siong",
-      "slotN": 2,
-      "priceSgd": 6.3,
-      "size": 1000,
-      "url": "https://shengsiong.com.sg/product/hosen-honey-1-kg",
-      "itemName": "Honey",
-      "statedSize": "1kg",
-      "brandName": "Hosen",
-      "perLabel": "$6.30/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 2 of 3, offered as a suggestion. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 1,
-      "askedAt": "2026-09-29T04:06:00.804Z"
-    },
-    {
-      "token": "1vhhw0",
-      "ingredientId": "34d69a18-4fe7-808a-a80b-c99b8072b99d",
-      "ingredientName": "Honey (Raw)",
-      "key": "honei",
-      "unitType": "By Gram",
-      "category": "[5[ Sugar/Sweetners",
-      "vendor": "Sheng Siong",
-      "slotN": 2,
-      "priceSgd": 3.36,
-      "size": 500,
-      "url": "https://shengsiong.com.sg/product/hosen-honey-500-g",
-      "itemName": "Honey",
-      "statedSize": "500g",
-      "brandName": "Hosen",
-      "perLabel": "$6.72/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 2,
-      "askedAt": "2026-09-29T04:06:00.805Z"
-    },
-    {
-      "token": "fvl5q1",
-      "ingredientId": "34d69a18-4fe7-808a-a80b-c99b8072b99d",
-      "ingredientName": "Honey (Raw)",
-      "key": "honei",
-      "unitType": "By Gram",
-      "category": "[5[ Sugar/Sweetners",
-      "vendor": "Sheng Siong",
-      "slotN": 2,
-      "priceSgd": 3.36,
-      "size": 400,
-      "url": "https://shengsiong.com.sg/product/hosen-honey-400-g",
-      "itemName": "Honey",
-      "statedSize": "400g",
-      "brandName": "Hosen",
-      "perLabel": "$8.40/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is the closest of 3 offered, best first. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-29T04:06:00.805Z"
-    },
-    {
-      "token": "4s83oz",
-      "ingredientId": "34d69a18-4fe7-808c-85c7-dee84559e2af",
-      "ingredientName": "Edamame (peeled/Frozen)",
-      "key": "edamam",
-      "unitType": "By Gram",
-      "category": "[3] Fruits/Vegetables",
-      "vendor": "NTUC",
-      "slotN": 1,
-      "priceSgd": 5.2,
-      "size": 500,
-      "url": "https://www.fairprice.com.sg/product/kirei-frozen-edamame-500g-90008035",
-      "itemName": "Kirei Frozen Edamame",
-      "statedSize": "500g",
-      "brandName": "Kirei",
-      "perLabel": "$10.40/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 2 of 3, offered as a suggestion. Accept only if it is the same thing."
-        },
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 6.9,
-          "foundPer": 10.4,
-          "perWord": "kg",
-          "vendor": "NTUC",
-          "note": "DEARER than the NTUC price already recorded: $6.90 / 1000g = $6.90/kg → $5.20 / 500g = $10.40/kg. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 1,
-      "askedAt": "2026-09-29T04:06:19.101Z"
-    },
-    {
-      "token": "wvx7xj",
-      "ingredientId": "34d69a18-4fe7-808c-85c7-dee84559e2af",
-      "ingredientName": "Edamame (peeled/Frozen)",
-      "key": "edamam",
-      "unitType": "By Gram",
-      "category": "[3] Fruits/Vegetables",
-      "vendor": "NTUC",
-      "slotN": 1,
-      "priceSgd": 3.55,
-      "size": 250,
-      "url": "https://www.fairprice.com.sg/product/seaboss-skinless-edamame-250g-250-g-90141190",
-      "itemName": "Seaboss Skinless Edamame 250G",
-      "statedSize": "250g",
-      "brandName": "SEABOSS",
-      "perLabel": "$14.20/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
-        },
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 6.9,
-          "foundPer": 14.2,
-          "perWord": "kg",
-          "vendor": "NTUC",
-          "note": "DEARER than the NTUC price already recorded: $6.90 / 1000g = $6.90/kg → $3.55 / 250g = $14.20/kg. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 2,
-      "askedAt": "2026-09-29T04:06:19.101Z"
-    },
-    {
-      "token": "3n90th",
-      "ingredientId": "34d69a18-4fe7-808c-85c7-dee84559e2af",
-      "ingredientName": "Edamame (peeled/Frozen)",
-      "key": "edamam",
-      "unitType": "By Gram",
-      "category": "[3] Fruits/Vegetables",
-      "vendor": "NTUC",
-      "slotN": 1,
-      "priceSgd": 3.68,
-      "size": 400,
-      "url": "https://www.fairprice.com.sg/product/sunnyfarm-edamame-400-g-90179439",
-      "itemName": "SunnyFarm Edamame",
-      "statedSize": "400g",
-      "brandName": "Sunnyfarm",
-      "perLabel": "$9.20/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is the closest of 3 offered, best first. Accept only if it is the same thing."
-        },
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 6.9,
-          "foundPer": 9.2,
-          "perWord": "kg",
-          "vendor": "NTUC",
-          "note": "DEARER than the NTUC price already recorded: $6.90 / 1000g = $6.90/kg → $3.68 / 400g = $9.20/kg. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-29T04:06:19.102Z"
-    },
-    {
-      "token": "vf2y42",
-      "ingredientId": "34d69a18-4fe7-808c-85c7-dee84559e2af",
-      "ingredientName": "Edamame (peeled/Frozen)",
-      "key": "edamam",
-      "unitType": "By Gram",
-      "category": "[3] Fruits/Vegetables",
-      "vendor": "Sheng Siong",
-      "slotN": 2,
-      "priceSgd": 4.23,
-      "size": 500,
-      "url": "https://shengsiong.com.sg/product/young-sun-frozen-edamame-kernel-500-g",
-      "itemName": "Frozen Edamame Kernel",
-      "statedSize": "500g",
-      "brandName": "Young Sun",
-      "perLabel": "$8.46/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is the closest of 2 offered, best first. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-29T04:06:29.988Z"
-    },
-    {
-      "token": "jguxxc",
-      "ingredientId": "34c69a18-4fe7-8016-823e-d941bc6b92f0",
-      "ingredientName": "Sesame Oil",
-      "key": "sesam oil",
-      "unitType": "By ml",
-      "category": "[4] Fats/Oil",
-      "vendor": "Sheng Siong",
-      "slotN": 2,
-      "priceSgd": 9.73,
-      "size": 650,
-      "url": "https://shengsiong.com.sg/product/chee-seng-pure-black-sesame-oil-650-ml",
-      "itemName": "Pure Black Sesame Oil",
-      "statedSize": "650ml",
-      "brandName": "Chee Seng",
-      "perLabel": "$14.97/L",
-      "reasons": [
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 14.333333333333334,
-          "foundPer": 14.96923076923077,
-          "perWord": "L",
-          "vendor": "Sheng Siong",
-          "note": "DEARER than the Sheng Siong price already recorded: $4.30 / 300ml = $14.33/L → $9.73 / 650ml = $14.97/L. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-29T04:06:36.042Z"
-    },
-    {
-      "token": "gbzr41",
-      "ingredientId": "34c69a18-4fe7-80e2-af0a-f43a16115231",
-      "ingredientName": "White Pepper",
-      "key": "whit pepper",
-      "unitType": "By Gram",
-      "category": "[6]Sauces / Wines /Vinegars",
-      "vendor": "NTUC",
-      "slotN": 1,
-      "priceSgd": 4.02,
-      "size": 100,
-      "url": "https://www.fairprice.com.sg/product/fairprice-white-pepper-seed-100g-11046880",
-      "itemName": "FairPrice White Pepper - Seed",
-      "statedSize": "100g",
-      "brandName": "Fairprice",
-      "perLabel": "$40.20/kg",
-      "reasons": [
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 24.5,
-          "foundPer": 40.199999999999996,
-          "perWord": "kg",
-          "vendor": "NTUC",
-          "note": "DEARER than the NTUC price already recorded: $24.50 / 1000g = $24.50/kg → $4.02 / 100g = $40.20/kg. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-29T04:06:37.520Z"
-    },
-    {
-      "token": "u4vtu5",
-      "ingredientId": "34c69a18-4fe7-80f2-9d0c-eab7c0daa2bf",
-      "ingredientName": "Tau Kwa (Tofu)",
-      "key": "tofu",
-      "unitType": "By Gram",
-      "category": "[1] Meats/Dairy/Proteins",
-      "vendor": "Sheng Siong",
-      "slotN": 2,
-      "priceSgd": 1.42,
-      "size": 450,
-      "url": "https://shengsiong.com.sg/product/fortune-vacuum-packed-tau-kwa-450-g",
-      "itemName": "Vacuum Packed Tau Kwa",
-      "statedSize": "450g",
-      "brandName": "FORTUNE",
-      "perLabel": "$3.16/kg",
-      "reasons": [
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 2.8,
-          "foundPer": 3.1555555555555554,
-          "perWord": "kg",
-          "vendor": "Sheng Siong",
-          "note": "DEARER than the Sheng Siong price already recorded: $1.40 / 500g = $2.80/kg → $1.42 / 450g = $3.16/kg. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-29T04:06:59.456Z"
-    },
-    {
-      "token": "atk4td",
-      "ingredientId": "34c69a18-4fe7-80ae-8ff6-e24b8e4e26dc",
-      "ingredientName": "Soy Sauce (light)",
-      "key": "soy sauc",
-      "unitType": "By ml",
-      "category": "[6]Sauces / Wines /Vinegars",
-      "vendor": "NTUC",
-      "slotN": 1,
-      "priceSgd": 2.27,
-      "size": 500,
-      "url": "https://www.fairprice.com.sg/product/lee-kum-kee-soy-sauce-light-500ml-12602826",
-      "itemName": "Lee Kum Kee Soy Sauce - Light",
-      "statedSize": "500ml",
-      "brandName": "Lee Kum Kee",
-      "perLabel": "$4.54/L",
-      "reasons": [
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 4.374999999999999,
-          "foundPer": 4.54,
-          "perWord": "L",
-          "vendor": "NTUC",
-          "note": "DEARER than the NTUC price already recorded: $2.80 / 640ml = $4.37/L → $2.27 / 500ml = $4.54/L. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-29T04:07:13.849Z"
-    },
-    {
-      "token": "f213w2",
-      "ingredientId": "34c69a18-4fe7-80a9-af53-cf0c2e5cf7f8",
-      "ingredientName": "Oil (Bran)",
-      "key": "oil",
-      "unitType": "By ml",
-      "category": "[4] Fats/Oil",
-      "vendor": "NTUC",
-      "slotN": 1,
-      "priceSgd": 6.3,
-      "size": 1000,
-      "url": "https://www.fairprice.com.sg/product/rice-field-100-pure-rice-bran-oil-1-l-90089704",
-      "itemName": "Rice Field 100% Pure Rice Bran Oil",
-      "statedSize": "1L",
-      "brandName": "Rice Field",
-      "perLabel": "$6.30/L",
-      "reasons": [
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 5.2,
-          "foundPer": 6.3,
-          "perWord": "L",
-          "vendor": "NTUC",
-          "note": "DEARER than the NTUC price already recorded: $5.20 / 1000ml = $5.20/L → $6.30 / 1000ml = $6.30/L. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-29T04:07:39.718Z"
-    },
-    {
-      "token": "7s2mlq",
-      "ingredientId": "34b69a18-4fe7-80cd-ba18-dcc51da93d01",
-      "ingredientName": "Apple Cider vinegar (Unpasteurized)",
-      "key": "appl cider vinegar",
-      "unitType": "By ml",
-      "category": "[6]Sauces / Wines /Vinegars",
-      "vendor": "Sheng Siong",
-      "slotN": 2,
-      "priceSgd": 5.25,
-      "size": 473,
-      "url": "https://shengsiong.com.sg/product/heinz-apple-cider-vinegar-473-ml",
-      "itemName": "Apple Cider Vinegar",
-      "statedSize": "473ml",
-      "brandName": "Heinz",
-      "perLabel": "$11.10/L",
-      "reasons": [
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 6.501057082452431,
-          "foundPer": 11.099365750528541,
-          "perWord": "L",
-          "vendor": "Sheng Siong",
-          "note": "DEARER than the Sheng Siong price already recorded: $6.15 / 946ml = $6.50/L → $5.25 / 473ml = $11.10/L. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-29T04:07:51.945Z"
-    },
-    {
-      "token": "9hhe6h",
-      "ingredientId": "34b69a18-4fe7-8001-83c0-ea9d6d3d8cff",
-      "ingredientName": "Onion (not red)",
-      "key": "onion",
-      "unitType": "By Gram",
-      "category": "[3] Fruits/Vegetables",
-      "vendor": "Sheng Siong",
-      "slotN": 2,
-      "priceSgd": 2.8,
-      "size": 800,
-      "url": "https://shengsiong.com.sg/product/australia-holland-new-zealandyellow-onion-800-g",
-      "itemName": "Australia / Holland / New ZealandYellow Onion",
-      "statedSize": "800g",
-      "perLabel": "$3.50/kg",
-      "reasons": [
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 3.35,
-          "foundPer": 3.4999999999999996,
-          "perWord": "kg",
-          "vendor": "Sheng Siong",
-          "note": "DEARER than the Sheng Siong price already recorded: $2.68 / 800g = $3.35/kg → $2.80 / 800g = $3.50/kg. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-29T04:08:12.486Z"
-    },
-    {
-      "token": "vxemd3",
-      "ingredientId": "34b69a18-4fe7-80c7-9de6-fa3234a2a9d8",
-      "ingredientName": "Banana (Fruit)",
-      "key": "banana",
-      "unitType": "By Gram",
-      "category": "[3] Fruits/Vegetables",
-      "vendor": "NTUC",
-      "slotN": 1,
-      "priceSgd": 4.3,
-      "size": 500,
-      "url": "https://www.fairprice.com.sg/product/good-nature-organic-banana-500-g-90089344",
-      "itemName": "ZENXIN Organic Banana",
-      "statedSize": "500g",
-      "brandName": "Zenxin",
-      "perLabel": "$8.60/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 2 of 3, offered as a suggestion. Accept only if it is the same thing."
-        },
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 3.6428571428571423,
-          "foundPer": 8.6,
-          "perWord": "kg",
-          "vendor": "NTUC",
-          "note": "DEARER than the NTUC price already recorded: $2.55 / 700g = $3.64/kg → $4.30 / 500g = $8.60/kg. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 1,
-      "askedAt": "2026-09-29T04:08:22.123Z"
-    },
-    {
-      "token": "ogeit1",
-      "ingredientId": "34b69a18-4fe7-80c7-9de6-fa3234a2a9d8",
-      "ingredientName": "Banana (Fruit)",
-      "key": "banana",
-      "unitType": "By Gram",
-      "category": "[3] Fruits/Vegetables",
-      "vendor": "NTUC",
-      "slotN": 1,
-      "priceSgd": 5.98,
-      "size": 600,
-      "url": "https://www.fairprice.com.sg/product/orgo-fresh-pisang-mas-banana",
-      "itemName": "Agro Fresh Pisang Mas Banana",
-      "statedSize": "600g",
-      "brandName": "Agro Fresh",
-      "perLabel": "$9.97/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
-        },
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 3.6428571428571423,
-          "foundPer": 9.966666666666667,
-          "perWord": "kg",
-          "vendor": "NTUC",
-          "note": "DEARER than the NTUC price already recorded: $2.55 / 700g = $3.64/kg → $5.98 / 600g = $9.97/kg. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 2,
-      "askedAt": "2026-09-29T04:08:22.123Z"
-    },
-    {
-      "token": "le6xso",
-      "ingredientId": "34b69a18-4fe7-80c7-9de6-fa3234a2a9d8",
-      "ingredientName": "Banana (Fruit)",
-      "key": "banana",
-      "unitType": "By Gram",
-      "category": "[3] Fruits/Vegetables",
-      "vendor": "NTUC",
-      "slotN": 1,
-      "priceSgd": 1.95,
-      "size": 300,
-      "url": "https://www.fairprice.com.sg/product/sumifru-kamsookwang-banana-300g-13129810",
-      "itemName": "Sumifru Kamsookwang Banana",
-      "statedSize": "300g",
-      "brandName": "Sumifru",
-      "perLabel": "$6.50/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is the closest of 3 offered, best first. Accept only if it is the same thing."
-        },
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 3.6428571428571423,
-          "foundPer": 6.5,
-          "perWord": "kg",
-          "vendor": "NTUC",
-          "note": "DEARER than the NTUC price already recorded: $2.55 / 700g = $3.64/kg → $1.95 / 300g = $6.50/kg. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-29T04:08:22.124Z"
-    },
-    {
-      "token": "b4wd9o",
-      "ingredientId": "34b69a18-4fe7-80d2-b17d-d4167b9113c4",
-      "ingredientName": "Frozen Veg(Mixed)",
-      "key": "frozen vegetabl",
-      "unitType": "By Gram",
-      "category": "[3] Fruits/Vegetables",
-      "vendor": "NTUC",
-      "slotN": 1,
-      "priceSgd": 2.4,
-      "size": 500,
-      "url": "https://www.fairprice.com.sg/product/churo-frozen-mixed-vegetables-1-x-500g-90043495",
-      "itemName": "Churo Frozen Mixed Vegetables",
-      "statedSize": "500g",
-      "brandName": "Churo",
-      "perLabel": "$4.80/kg",
-      "reasons": [
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 4.6,
-          "foundPer": 4.8,
-          "perWord": "kg",
-          "vendor": "NTUC",
-          "note": "DEARER than the NTUC price already recorded: $4.60 / 1000g = $4.60/kg → $2.40 / 500g = $4.80/kg. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-29T04:08:45.339Z"
-    },
-    {
-      "token": "1wi52z",
-      "ingredientId": "34b69a18-4fe7-8062-b087-ed07794b3ddc",
-      "ingredientName": "Bread, Whole grain (Low GI), [Gardinier] (350g)",
-      "key": "bread",
-      "unitType": "By Unit",
-      "category": "[2] Wheat/Rice/Carbs",
-      "vendor": "Sheng Siong",
-      "slotN": 2,
-      "brand": "gardinier",
-      "priceSgd": 2.5,
-      "size": 11,
-      "url": "https://shengsiong.com.sg/product/gardenia-white-bread-400-g",
-      "itemName": "White Bread",
-      "statedSize": "11 pcs",
-      "brandName": "Gardenia",
-      "perLabel": "$7.14/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 2 of 3, offered as a suggestion. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 1,
-      "askedAt": "2026-09-29T04:09:06.097Z"
-    },
-    {
-      "token": "b6wiqu",
-      "ingredientId": "34b69a18-4fe7-8062-b087-ed07794b3ddc",
-      "ingredientName": "Bread, Whole grain (Low GI), [Gardinier] (350g)",
-      "key": "bread",
-      "unitType": "By Unit",
-      "category": "[2] Wheat/Rice/Carbs",
-      "vendor": "Sheng Siong",
-      "slotN": 2,
-      "brand": "gardinier",
-      "priceSgd": 3.2,
-      "size": 17,
-      "url": "https://shengsiong.com.sg/product/gardenia-white-bread-jumbo-600-600-g",
-      "itemName": "White Bread (Jumbo 600)",
-      "statedSize": "17 pcs",
-      "brandName": "Gardenia",
-      "perLabel": "$9.14/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 2,
-      "askedAt": "2026-09-29T04:09:06.097Z"
-    },
-    {
-      "token": "hay2mf",
-      "ingredientId": "34b69a18-4fe7-8062-b087-ed07794b3ddc",
-      "ingredientName": "Bread, Whole grain (Low GI), [Gardinier] (350g)",
-      "key": "bread",
-      "unitType": "By Unit",
-      "category": "[2] Wheat/Rice/Carbs",
-      "vendor": "Sheng Siong",
-      "slotN": 2,
-      "brand": "gardinier",
-      "priceSgd": 3.8,
-      "size": 11,
-      "url": "https://shengsiong.com.sg/product/gardenia-low-gi-nutri-multi-grain-bread-400-g",
-      "itemName": "Low GI Nutri Multi-Grain Bread",
-      "statedSize": "11 pcs",
-      "brandName": "Gardenia",
-      "perLabel": "$10.86/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is the closest of 3 offered, best first. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-29T04:09:06.098Z"
-    },
-    {
-      "token": "qui19q",
-      "ingredientId": "34b69a18-4fe7-805a-b781-e3300da041a4",
-      "ingredientName": "Milk  (Fresh) (Low Fat)",
-      "key": "milk",
-      "unitType": "By ml",
-      "category": "[1] Meats/Dairy/Proteins",
-      "vendor": "NTUC",
-      "slotN": 1,
-      "priceSgd": 6.97,
-      "size": 2000,
-      "url": "https://www.fairprice.com.sg/product/bcrs-meiji-low-fat-fresh-milk-regular-2l-13293680",
-      "itemName": "[BCRS] Meiji Low Fat Fresh Milk - Regular",
-      "statedSize": "2L",
-      "brandName": "Meiji",
-      "perLabel": "$3.48/L",
-      "reasons": [
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 2.42,
-          "foundPer": 3.485,
-          "perWord": "L",
-          "vendor": "NTUC",
-          "note": "DEARER than the NTUC price already recorded: $2.42 / 1000ml = $2.42/L → $6.97 / 2000ml = $3.48/L. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-29T04:09:11.877Z"
-    },
-    {
-      "token": "8ke5kx",
-      "ingredientId": "34b69a18-4fe7-8020-b136-ebb02d41c6ef",
-      "ingredientName": "Milk (Fresh) (Normal)",
-      "key": "milk",
-      "unitType": "By ml",
-      "category": "[1] Meats/Dairy/Proteins",
-      "vendor": "NTUC",
-      "slotN": 1,
-      "priceSgd": 6.7,
-      "size": 2000,
-      "url": "https://www.fairprice.com.sg/product/farm-fresh-milk-pure-2l-13287436",
-      "itemName": "[BCRS] Farm Fresh Milk - Pure",
-      "statedSize": "2L",
-      "brandName": "Farm Fresh",
-      "perLabel": "$3.35/L",
-      "reasons": [
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 3.201058201058201,
-          "foundPer": 3.35,
-          "perWord": "L",
-          "vendor": "NTUC",
-          "note": "DEARER than the NTUC price already recorded: $6.05 / 1890ml = $3.20/L → $6.70 / 2000ml = $3.35/L. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-29T04:09:27.233Z"
-    },
-    {
-      "token": "gdapzh",
-      "ingredientId": "34b69a18-4fe7-8020-b136-ebb02d41c6ef",
-      "ingredientName": "Milk (Fresh) (Normal)",
-      "key": "milk",
-      "unitType": "By ml",
-      "category": "[1] Meats/Dairy/Proteins",
-      "vendor": "Sheng Siong",
-      "slotN": 2,
-      "priceSgd": 6.7,
-      "size": 2000,
-      "url": "https://shengsiong.com.sg/product/farm-fresh-pure-fresh-milk-2-l-3116304",
-      "itemName": "Pure Fresh Milk",
-      "statedSize": "2L",
-      "brandName": "Farm Fresh",
-      "perLabel": "$3.35/L",
-      "reasons": [
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 3.07,
-          "foundPer": 3.35,
-          "perWord": "L",
-          "vendor": "Sheng Siong",
-          "note": "DEARER than the Sheng Siong price already recorded: $3.07 / 1000ml = $3.07/L → $6.70 / 2000ml = $3.35/L. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-29T04:09:30.387Z"
-    },
-    {
-      "token": "8neh9y",
-      "ingredientId": "34b69a18-4fe7-805e-aedc-c6f292e6007e",
-      "ingredientName": "Instant Coffee (plain)",
-      "key": "instant coffe",
-      "unitType": "By Gram",
-      "category": "[7] Teas/Coffees",
-      "vendor": "Sheng Siong",
-      "slotN": 2,
-      "priceSgd": 7.45,
-      "size": 100,
-      "url": "https://shengsiong.com.sg/product/nescafe-classic-jar-instant-soluble-coffee-100-g",
-      "itemName": "Classic Jar Instant Soluble Coffee",
-      "statedSize": "100g",
-      "brandName": "Nescafe",
-      "perLabel": "$74.50/kg",
-      "reasons": [
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 40.45,
-          "foundPer": 74.5,
-          "perWord": "kg",
-          "vendor": "Sheng Siong",
-          "note": "DEARER than the Sheng Siong price already recorded: $8.09 / 200g = $40.45/kg → $7.45 / 100g = $74.50/kg. Not written — accept only if the old price is gone."
-        },
-        {
-          "kind": "outlier",
-          "factor": 3.7029585798816576,
-          "note": "3.7× DEARER than this row's other shop"
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-29T04:09:36.733Z"
-    },
-    {
-      "token": "spq8qh",
-      "ingredientId": "34b69a18-4fe7-80f1-8ecb-d764d2abe554",
-      "ingredientName": "Green Tea (50 x 2g)",
-      "key": "green tea",
-      "unitType": "By Unit",
-      "category": "[7] Teas/Coffees",
-      "vendor": "Sheng Siong",
-      "slotN": 2,
-      "priceSgd": 7.75,
-      "size": 50,
-      "url": "https://shengsiong.com.sg/product/osk-japanese-green-tea-teabag-50-x-2-g",
-      "itemName": "Japanese Green Tea Teabag",
-      "statedSize": "50 pcs",
-      "brandName": "OSK",
-      "perLabel": "$77.50/kg",
-      "reasons": [
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 13.8,
-          "foundPer": 15.5,
-          "perWord": "100 pcs",
-          "vendor": "Sheng Siong",
-          "note": "DEARER than the Sheng Siong price already recorded: $6.90 / 50 pcs = $13.80/100 pcs → $7.75 / 50 pcs = $15.50/100 pcs. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-29T04:09:50.861Z"
-    },
-    {
-      "token": "6bi6q1",
-      "ingredientId": "34b69a18-4fe7-804a-b0d1-f396d121b472",
-      "ingredientName": "Butter",
-      "key": "butter",
-      "unitType": "By Gram",
-      "category": "[4] Fats/Oil",
-      "vendor": "NTUC",
-      "slotN": 1,
-      "priceSgd": 6.1,
-      "size": 250,
-      "url": "https://www.fairprice.com.sg/product/westgold-block-butter-unsalted-250g-13067250",
-      "itemName": "Westgold Block Butter - Unsalted",
-      "statedSize": "250g",
-      "brandName": "Westgold",
-      "perLabel": "$24.40/kg",
-      "reasons": [
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 22.8,
-          "foundPer": 24.4,
-          "perWord": "kg",
-          "vendor": "NTUC",
-          "note": "DEARER than the NTUC price already recorded: $5.70 / 250g = $22.80/kg → $6.10 / 250g = $24.40/kg. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-29T04:09:56.502Z"
-    },
-    {
-      "token": "o9zgse",
-      "ingredientId": "34b69a18-4fe7-8079-955e-ef44e9443bac",
-      "ingredientName": "Muscovado Sugar (Brown)",
-      "key": "brown muscovado sugar",
-      "unitType": "By Gram",
-      "category": "[5[ Sugar/Sweetners",
-      "vendor": "NTUC",
-      "slotN": 1,
-      "priceSgd": 6.35,
-      "size": 325,
-      "url": "https://www.fairprice.com.sg/product/tate-and-lyle-dark-muscovado-sugar",
-      "itemName": "Tate and Lyle Dark Muscovado Sugar",
-      "statedSize": "325g",
-      "brandName": "Tate and Lyle",
-      "perLabel": "$19.54/kg",
-      "reasons": [
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 12.52,
-          "foundPer": 19.538461538461537,
-          "perWord": "kg",
-          "vendor": "NTUC",
-          "note": "DEARER than the NTUC price already recorded: $3.13 / 250g = $12.52/kg → $6.35 / 325g = $19.54/kg. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-29T04:10:16.749Z"
-    },
-    {
-      "token": "6a6jwr",
-      "ingredientId": "34b69a18-4fe7-807d-8439-fea7f149877f",
-      "ingredientName": "Eggs, Whole, small (1650g), {cheap}",
-      "key": "egg",
-      "unitType": "By Unit",
-      "category": "[1] Meats/Dairy/Proteins",
-      "vendor": "Sheng Siong",
-      "slotN": 2,
-      "priceSgd": 6.95,
-      "size": 10,
-      "url": "https://shengsiong.com.sg/product/egg-for-you-fresh-eggs-30s-1650-g",
-      "itemName": "Fresh Eggs (30s)",
-      "statedSize": "10 pcs",
-      "brandName": "Egg For You",
-      "perLabel": "$4.21/kg",
-      "reasons": [
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 44.333333333333336,
-          "foundPer": 69.50000000000001,
-          "perWord": "100 pcs",
-          "vendor": "Sheng Siong",
-          "note": "DEARER than the Sheng Siong price already recorded: $6.65 / 15 pcs = $44.33/100 pcs → $6.95 / 10 pcs = $69.50/100 pcs. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-29T04:11:01.041Z"
-    },
     {
       "token": "828065",
       "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
@@ -1157,6 +136,1027 @@
       ],
       "rank": 0,
       "askedAt": "2026-09-30T02:03:05.838Z"
+    },
+    {
+      "token": "vo7ls3",
+      "ingredientId": "39c69a18-4fe7-80eb-bac0-fa46c8d26c9d",
+      "ingredientName": "Pu Erh (Tea bags) (100 x 2g)",
+      "key": "pu erh",
+      "unitType": "By Unit",
+      "category": "[7] Teas/Coffees",
+      "vendor": "NTUC",
+      "slotN": 1,
+      "priceSgd": 7.24,
+      "size": 12,
+      "url": "https://www.fairprice.com.sg/product/imperial-glutinious-rice-puer-tea-bags-12-per-pack-13201596",
+      "itemName": "Imperial Glutinious Rice Puer Tea Bags",
+      "statedSize": "12 pcs",
+      "brandName": "Imperial",
+      "perLabel": "$36.20/kg",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 6.25,
+          "foundPer": 60.333333333333336,
+          "perWord": "100 pcs",
+          "vendor": "NTUC",
+          "note": "DEARER than the NTUC price already recorded: $6.25 / 100 pcs = $6.25/100 pcs → $7.24 / 12 pcs = $60.33/100 pcs. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-09-30T04:02:32.091Z"
+    },
+    {
+      "token": "x9yj45",
+      "ingredientId": "39869a18-4fe7-8033-b52c-c02424bf56df",
+      "ingredientName": "Bread, Wholemeal, [FairPrice] (600g)",
+      "key": "bread",
+      "unitType": "By Unit",
+      "category": "[2] Wheat/Rice/Carbs",
+      "vendor": "NTUC",
+      "slotN": 1,
+      "brand": "fairprice",
+      "priceSgd": 2.4,
+      "size": 17,
+      "url": "https://www.fairprice.com.sg/product/fairprice-bread-wholemeal-500g-13200668",
+      "itemName": "FairPrice Bread - Wholemeal",
+      "statedSize": "17 pcs",
+      "brandName": "Fairprice",
+      "perLabel": "$4.00/kg",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 12,
+          "foundPer": 14.11764705882353,
+          "perWord": "100 pcs",
+          "vendor": "NTUC",
+          "note": "DEARER than the NTUC price already recorded: $2.40 / 20 pcs = $12.00/100 pcs → $2.40 / 17 pcs = $14.12/100 pcs. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-09-30T04:02:49.044Z"
+    },
+    {
+      "token": "sq7mad",
+      "ingredientId": "39869a18-4fe7-80c6-abc1-d1713f27ac47",
+      "ingredientName": "Chicken thigh, Boneless  [Seara]",
+      "key": "chicken thigh",
+      "unitType": "By Gram",
+      "category": "[1] Meats/Dairy/Proteins",
+      "vendor": "NTUC",
+      "slotN": 1,
+      "brand": "seara",
+      "priceSgd": 6.5,
+      "size": 1000,
+      "url": "https://www.fairprice.com.sg/product/seara-iqf-chicken-thigh-1kg-13281244",
+      "itemName": "Seara IQF Chicken Thigh",
+      "statedSize": "1kg",
+      "brandName": "Seara",
+      "perLabel": "$6.50/kg",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 4.465,
+          "foundPer": 6.5,
+          "perWord": "kg",
+          "vendor": "NTUC",
+          "note": "DEARER than the NTUC price already recorded: $8.93 / 2000g = $4.46/kg → $6.50 / 1000g = $6.50/kg. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-09-30T04:02:58.445Z"
+    },
+    {
+      "token": "s2gzte",
+      "ingredientId": "39869a18-4fe7-800c-b229-f5fefe795809",
+      "ingredientName": "Purple Cabbage",
+      "key": "purpl cabbag",
+      "unitType": "By Gram",
+      "category": "[3] Fruits/Vegetables",
+      "vendor": "Sheng Siong",
+      "slotN": 2,
+      "priceSgd": 1.4,
+      "size": 600,
+      "url": "https://shengsiong.com.sg/product/china-purple-cabbage-600-700-g",
+      "itemName": "China Purple Cabbage",
+      "statedSize": "600 - 700g",
+      "perLabel": "$2.33/kg",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 2.1666666666666665,
+          "foundPer": 2.333333333333333,
+          "perWord": "kg",
+          "vendor": "Sheng Siong",
+          "note": "DEARER than the Sheng Siong price already recorded: $1.30 / 600g = $2.17/kg → $1.40 / 600g = $2.33/kg. Not written — accept only if the old price is gone."
+        },
+        {
+          "kind": "size-range",
+          "note": "the pack size is a RANGE and was read at its top — the real pack may be smaller (and dearer per kg)"
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-09-30T04:03:08.027Z"
+    },
+    {
+      "token": "dbsqsu",
+      "ingredientId": "39869a18-4fe7-8029-9609-ea147e99672e",
+      "ingredientName": "Carrots",
+      "key": "carrot",
+      "unitType": "By Gram",
+      "category": "[3] Fruits/Vegetables",
+      "vendor": "Sheng Siong",
+      "slotN": 2,
+      "priceSgd": 1.6,
+      "size": 850,
+      "url": "https://shengsiong.com.sg/product/australia-china-carrots-850-900-g",
+      "itemName": "Australia / China Carrots",
+      "statedSize": "850 - 900g",
+      "perLabel": "$1.88/kg",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 1.777777777777778,
+          "foundPer": 1.8823529411764706,
+          "perWord": "kg",
+          "vendor": "Sheng Siong",
+          "note": "DEARER than the Sheng Siong price already recorded: $1.60 / 900g = $1.78/kg → $1.60 / 850g = $1.88/kg. Not written — accept only if the old price is gone."
+        },
+        {
+          "kind": "size-range",
+          "note": "the pack size is a RANGE and was read at its top — the real pack may be smaller (and dearer per kg)"
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-09-30T04:03:17.708Z"
+    },
+    {
+      "token": "bhnc16",
+      "ingredientId": "37669a18-4fe7-8094-ad2b-d156a2f10a29",
+      "ingredientName": "egg  (Omega 3 Enriched) (550g)",
+      "key": "egg",
+      "unitType": "By Unit",
+      "category": "[1] Meats/Dairy/Proteins",
+      "vendor": "Sheng Siong",
+      "slotN": 2,
+      "priceSgd": 2.7,
+      "size": 10,
+      "url": "https://shengsiong.com.sg/product/fresh-eggs-10s-550-g",
+      "itemName": "Fresh Eggs (10s)",
+      "statedSize": "10 pcs",
+      "perLabel": "$4.91/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is the closest of 3 offered, best first. Accept only if it is the same thing."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-09-30T04:04:04.255Z"
+    },
+    {
+      "token": "f67vcf",
+      "ingredientId": "34d69a18-4fe7-808a-a80b-c99b8072b99d",
+      "ingredientName": "Honey (Raw)",
+      "key": "honei",
+      "unitType": "By Gram",
+      "category": "[5[ Sugar/Sweetners",
+      "vendor": "Sheng Siong",
+      "slotN": 2,
+      "priceSgd": 6.3,
+      "size": 1000,
+      "url": "https://shengsiong.com.sg/product/hosen-honey-1-kg",
+      "itemName": "Honey",
+      "statedSize": "1kg",
+      "brandName": "Hosen",
+      "perLabel": "$6.30/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 2 of 3, offered as a suggestion. Accept only if it is the same thing."
+        }
+      ],
+      "rank": 1,
+      "askedAt": "2026-09-30T04:05:38.220Z"
+    },
+    {
+      "token": "1vhhw0",
+      "ingredientId": "34d69a18-4fe7-808a-a80b-c99b8072b99d",
+      "ingredientName": "Honey (Raw)",
+      "key": "honei",
+      "unitType": "By Gram",
+      "category": "[5[ Sugar/Sweetners",
+      "vendor": "Sheng Siong",
+      "slotN": 2,
+      "priceSgd": 3.36,
+      "size": 500,
+      "url": "https://shengsiong.com.sg/product/hosen-honey-500-g",
+      "itemName": "Honey",
+      "statedSize": "500g",
+      "brandName": "Hosen",
+      "perLabel": "$6.72/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
+        }
+      ],
+      "rank": 2,
+      "askedAt": "2026-09-30T04:05:38.220Z"
+    },
+    {
+      "token": "fvl5q1",
+      "ingredientId": "34d69a18-4fe7-808a-a80b-c99b8072b99d",
+      "ingredientName": "Honey (Raw)",
+      "key": "honei",
+      "unitType": "By Gram",
+      "category": "[5[ Sugar/Sweetners",
+      "vendor": "Sheng Siong",
+      "slotN": 2,
+      "priceSgd": 3.36,
+      "size": 400,
+      "url": "https://shengsiong.com.sg/product/hosen-honey-400-g",
+      "itemName": "Honey",
+      "statedSize": "400g",
+      "brandName": "Hosen",
+      "perLabel": "$8.40/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is the closest of 3 offered, best first. Accept only if it is the same thing."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-09-30T04:05:38.220Z"
+    },
+    {
+      "token": "g19own",
+      "ingredientId": "34d69a18-4fe7-808c-85c7-dee84559e2af",
+      "ingredientName": "Edamame (peeled/Frozen)",
+      "key": "edamam",
+      "unitType": "By Gram",
+      "category": "[3] Fruits/Vegetables",
+      "vendor": "NTUC",
+      "slotN": 1,
+      "priceSgd": 3.68,
+      "size": 500,
+      "url": "https://www.fairprice.com.sg/product/sunnyfarm-edamame-beans-500-g-90179440",
+      "itemName": "SunnyFarm Edamame Beans",
+      "statedSize": "500g",
+      "brandName": "Sunnyfarm",
+      "perLabel": "$7.36/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 2 of 3, offered as a suggestion. Accept only if it is the same thing."
+        },
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 6.9,
+          "foundPer": 7.36,
+          "perWord": "kg",
+          "vendor": "NTUC",
+          "note": "DEARER than the NTUC price already recorded: $6.90 / 1000g = $6.90/kg → $3.68 / 500g = $7.36/kg. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 1,
+      "askedAt": "2026-09-30T04:06:03.287Z"
+    },
+    {
+      "token": "4s83oz",
+      "ingredientId": "34d69a18-4fe7-808c-85c7-dee84559e2af",
+      "ingredientName": "Edamame (peeled/Frozen)",
+      "key": "edamam",
+      "unitType": "By Gram",
+      "category": "[3] Fruits/Vegetables",
+      "vendor": "NTUC",
+      "slotN": 1,
+      "priceSgd": 5.2,
+      "size": 500,
+      "url": "https://www.fairprice.com.sg/product/kirei-frozen-edamame-500g-90008035",
+      "itemName": "Kirei Frozen Edamame",
+      "statedSize": "500g",
+      "brandName": "Kirei",
+      "perLabel": "$10.40/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
+        },
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 6.9,
+          "foundPer": 10.4,
+          "perWord": "kg",
+          "vendor": "NTUC",
+          "note": "DEARER than the NTUC price already recorded: $6.90 / 1000g = $6.90/kg → $5.20 / 500g = $10.40/kg. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 2,
+      "askedAt": "2026-09-30T04:06:03.287Z"
+    },
+    {
+      "token": "3n90th",
+      "ingredientId": "34d69a18-4fe7-808c-85c7-dee84559e2af",
+      "ingredientName": "Edamame (peeled/Frozen)",
+      "key": "edamam",
+      "unitType": "By Gram",
+      "category": "[3] Fruits/Vegetables",
+      "vendor": "NTUC",
+      "slotN": 1,
+      "priceSgd": 3.68,
+      "size": 400,
+      "url": "https://www.fairprice.com.sg/product/sunnyfarm-edamame-400-g-90179439",
+      "itemName": "SunnyFarm Edamame",
+      "statedSize": "400g",
+      "brandName": "Sunnyfarm",
+      "perLabel": "$9.20/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is the closest of 3 offered, best first. Accept only if it is the same thing."
+        },
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 6.9,
+          "foundPer": 9.2,
+          "perWord": "kg",
+          "vendor": "NTUC",
+          "note": "DEARER than the NTUC price already recorded: $6.90 / 1000g = $6.90/kg → $3.68 / 400g = $9.20/kg. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-09-30T04:06:03.287Z"
+    },
+    {
+      "token": "vf2y42",
+      "ingredientId": "34d69a18-4fe7-808c-85c7-dee84559e2af",
+      "ingredientName": "Edamame (peeled/Frozen)",
+      "key": "edamam",
+      "unitType": "By Gram",
+      "category": "[3] Fruits/Vegetables",
+      "vendor": "Sheng Siong",
+      "slotN": 2,
+      "priceSgd": 4.23,
+      "size": 500,
+      "url": "https://shengsiong.com.sg/product/young-sun-frozen-edamame-kernel-500-g",
+      "itemName": "Frozen Edamame Kernel",
+      "statedSize": "500g",
+      "brandName": "Young Sun",
+      "perLabel": "$8.46/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is the closest of 2 offered, best first. Accept only if it is the same thing."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-09-30T04:06:10.970Z"
+    },
+    {
+      "token": "jguxxc",
+      "ingredientId": "34c69a18-4fe7-8016-823e-d941bc6b92f0",
+      "ingredientName": "Sesame Oil",
+      "key": "sesam oil",
+      "unitType": "By ml",
+      "category": "[4] Fats/Oil",
+      "vendor": "Sheng Siong",
+      "slotN": 2,
+      "priceSgd": 9.73,
+      "size": 650,
+      "url": "https://shengsiong.com.sg/product/chee-seng-pure-black-sesame-oil-650-ml",
+      "itemName": "Pure Black Sesame Oil",
+      "statedSize": "650ml",
+      "brandName": "Chee Seng",
+      "perLabel": "$14.97/L",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 14.333333333333334,
+          "foundPer": 14.96923076923077,
+          "perWord": "L",
+          "vendor": "Sheng Siong",
+          "note": "DEARER than the Sheng Siong price already recorded: $4.30 / 300ml = $14.33/L → $9.73 / 650ml = $14.97/L. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-09-30T04:06:18.613Z"
+    },
+    {
+      "token": "gbzr41",
+      "ingredientId": "34c69a18-4fe7-80e2-af0a-f43a16115231",
+      "ingredientName": "White Pepper",
+      "key": "whit pepper",
+      "unitType": "By Gram",
+      "category": "[6]Sauces / Wines /Vinegars",
+      "vendor": "NTUC",
+      "slotN": 1,
+      "priceSgd": 4.02,
+      "size": 100,
+      "url": "https://www.fairprice.com.sg/product/fairprice-white-pepper-seed-100g-11046880",
+      "itemName": "FairPrice White Pepper - Seed",
+      "statedSize": "100g",
+      "brandName": "Fairprice",
+      "perLabel": "$40.20/kg",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 24.5,
+          "foundPer": 40.199999999999996,
+          "perWord": "kg",
+          "vendor": "NTUC",
+          "note": "DEARER than the NTUC price already recorded: $24.50 / 1000g = $24.50/kg → $4.02 / 100g = $40.20/kg. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-09-30T04:06:20.249Z"
+    },
+    {
+      "token": "u4vtu5",
+      "ingredientId": "34c69a18-4fe7-80f2-9d0c-eab7c0daa2bf",
+      "ingredientName": "Tau Kwa (Tofu)",
+      "key": "tofu",
+      "unitType": "By Gram",
+      "category": "[1] Meats/Dairy/Proteins",
+      "vendor": "Sheng Siong",
+      "slotN": 2,
+      "priceSgd": 1.42,
+      "size": 450,
+      "url": "https://shengsiong.com.sg/product/fortune-vacuum-packed-tau-kwa-450-g",
+      "itemName": "Vacuum Packed Tau Kwa",
+      "statedSize": "450g",
+      "brandName": "FORTUNE",
+      "perLabel": "$3.16/kg",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 2.8,
+          "foundPer": 3.1555555555555554,
+          "perWord": "kg",
+          "vendor": "Sheng Siong",
+          "note": "DEARER than the Sheng Siong price already recorded: $1.40 / 500g = $2.80/kg → $1.42 / 450g = $3.16/kg. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-09-30T04:06:45.497Z"
+    },
+    {
+      "token": "atk4td",
+      "ingredientId": "34c69a18-4fe7-80ae-8ff6-e24b8e4e26dc",
+      "ingredientName": "Soy Sauce (light)",
+      "key": "soy sauc",
+      "unitType": "By ml",
+      "category": "[6]Sauces / Wines /Vinegars",
+      "vendor": "NTUC",
+      "slotN": 1,
+      "priceSgd": 2.27,
+      "size": 500,
+      "url": "https://www.fairprice.com.sg/product/lee-kum-kee-soy-sauce-light-500ml-12602826",
+      "itemName": "Lee Kum Kee Soy Sauce - Light",
+      "statedSize": "500ml",
+      "brandName": "Lee Kum Kee",
+      "perLabel": "$4.54/L",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 4.374999999999999,
+          "foundPer": 4.54,
+          "perWord": "L",
+          "vendor": "NTUC",
+          "note": "DEARER than the NTUC price already recorded: $2.80 / 640ml = $4.37/L → $2.27 / 500ml = $4.54/L. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-09-30T04:07:00.497Z"
+    },
+    {
+      "token": "f213w2",
+      "ingredientId": "34c69a18-4fe7-80a9-af53-cf0c2e5cf7f8",
+      "ingredientName": "Oil (Bran)",
+      "key": "oil",
+      "unitType": "By ml",
+      "category": "[4] Fats/Oil",
+      "vendor": "NTUC",
+      "slotN": 1,
+      "priceSgd": 6.3,
+      "size": 1000,
+      "url": "https://www.fairprice.com.sg/product/rice-field-100-pure-rice-bran-oil-1-l-90089704",
+      "itemName": "Rice Field 100% Pure Rice Bran Oil",
+      "statedSize": "1L",
+      "brandName": "Rice Field",
+      "perLabel": "$6.30/L",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 5.2,
+          "foundPer": 6.3,
+          "perWord": "L",
+          "vendor": "NTUC",
+          "note": "DEARER than the NTUC price already recorded: $5.20 / 1000ml = $5.20/L → $6.30 / 1000ml = $6.30/L. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-09-30T04:07:24.869Z"
+    },
+    {
+      "token": "7s2mlq",
+      "ingredientId": "34b69a18-4fe7-80cd-ba18-dcc51da93d01",
+      "ingredientName": "Apple Cider vinegar (Unpasteurized)",
+      "key": "appl cider vinegar",
+      "unitType": "By ml",
+      "category": "[6]Sauces / Wines /Vinegars",
+      "vendor": "Sheng Siong",
+      "slotN": 2,
+      "priceSgd": 5.25,
+      "size": 473,
+      "url": "https://shengsiong.com.sg/product/heinz-apple-cider-vinegar-473-ml",
+      "itemName": "Apple Cider Vinegar",
+      "statedSize": "473ml",
+      "brandName": "Heinz",
+      "perLabel": "$11.10/L",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 6.501057082452431,
+          "foundPer": 11.099365750528541,
+          "perWord": "L",
+          "vendor": "Sheng Siong",
+          "note": "DEARER than the Sheng Siong price already recorded: $6.15 / 946ml = $6.50/L → $5.25 / 473ml = $11.10/L. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-09-30T04:07:37.266Z"
+    },
+    {
+      "token": "9hhe6h",
+      "ingredientId": "34b69a18-4fe7-8001-83c0-ea9d6d3d8cff",
+      "ingredientName": "Onion (not red)",
+      "key": "onion",
+      "unitType": "By Gram",
+      "category": "[3] Fruits/Vegetables",
+      "vendor": "Sheng Siong",
+      "slotN": 2,
+      "priceSgd": 2.8,
+      "size": 800,
+      "url": "https://shengsiong.com.sg/product/australia-holland-new-zealandyellow-onion-800-g",
+      "itemName": "Australia / Holland / New ZealandYellow Onion",
+      "statedSize": "800g",
+      "perLabel": "$3.50/kg",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 3.35,
+          "foundPer": 3.4999999999999996,
+          "perWord": "kg",
+          "vendor": "Sheng Siong",
+          "note": "DEARER than the Sheng Siong price already recorded: $2.68 / 800g = $3.35/kg → $2.80 / 800g = $3.50/kg. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-09-30T04:07:57.913Z"
+    },
+    {
+      "token": "ogeit1",
+      "ingredientId": "34b69a18-4fe7-80c7-9de6-fa3234a2a9d8",
+      "ingredientName": "Banana (Fruit)",
+      "key": "banana",
+      "unitType": "By Gram",
+      "category": "[3] Fruits/Vegetables",
+      "vendor": "NTUC",
+      "slotN": 1,
+      "priceSgd": 5.98,
+      "size": 600,
+      "url": "https://www.fairprice.com.sg/product/orgo-fresh-pisang-mas-banana",
+      "itemName": "Agro Fresh Pisang Mas Banana",
+      "statedSize": "600g",
+      "brandName": "Agro Fresh",
+      "perLabel": "$9.97/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 2 of 3, offered as a suggestion. Accept only if it is the same thing."
+        },
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 3.6428571428571423,
+          "foundPer": 9.966666666666667,
+          "perWord": "kg",
+          "vendor": "NTUC",
+          "note": "DEARER than the NTUC price already recorded: $2.55 / 700g = $3.64/kg → $5.98 / 600g = $9.97/kg. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 1,
+      "askedAt": "2026-09-30T04:08:06.898Z"
+    },
+    {
+      "token": "vzeowd",
+      "ingredientId": "34b69a18-4fe7-80c7-9de6-fa3234a2a9d8",
+      "ingredientName": "Banana (Fruit)",
+      "key": "banana",
+      "unitType": "By Gram",
+      "category": "[3] Fruits/Vegetables",
+      "vendor": "NTUC",
+      "slotN": 1,
+      "priceSgd": 38.4,
+      "size": 17,
+      "url": "https://www.fairprice.com.sg/product/brothers-all-natural-banana-crisps-12-x-17g-90007104",
+      "itemName": "Brothers-All-Natural Banana Crisps",
+      "statedSize": "17g",
+      "brandName": "Brothers All Natural",
+      "perLabel": "$2258.82/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
+        },
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 3.6428571428571423,
+          "foundPer": 2258.823529411765,
+          "perWord": "kg",
+          "vendor": "NTUC",
+          "note": "DEARER than the NTUC price already recorded: $2.55 / 700g = $3.64/kg → $38.40 / 17g = $2258.82/kg. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 2,
+      "askedAt": "2026-09-30T04:08:06.899Z"
+    },
+    {
+      "token": "vxemd3",
+      "ingredientId": "34b69a18-4fe7-80c7-9de6-fa3234a2a9d8",
+      "ingredientName": "Banana (Fruit)",
+      "key": "banana",
+      "unitType": "By Gram",
+      "category": "[3] Fruits/Vegetables",
+      "vendor": "NTUC",
+      "slotN": 1,
+      "priceSgd": 4.3,
+      "size": 500,
+      "url": "https://www.fairprice.com.sg/product/good-nature-organic-banana-500-g-90089344",
+      "itemName": "ZENXIN Organic Banana",
+      "statedSize": "500g",
+      "brandName": "Zenxin",
+      "perLabel": "$8.60/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is the closest of 3 offered, best first. Accept only if it is the same thing."
+        },
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 3.6428571428571423,
+          "foundPer": 8.6,
+          "perWord": "kg",
+          "vendor": "NTUC",
+          "note": "DEARER than the NTUC price already recorded: $2.55 / 700g = $3.64/kg → $4.30 / 500g = $8.60/kg. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-09-30T04:08:06.899Z"
+    },
+    {
+      "token": "b4wd9o",
+      "ingredientId": "34b69a18-4fe7-80d2-b17d-d4167b9113c4",
+      "ingredientName": "Frozen Veg(Mixed)",
+      "key": "frozen vegetabl",
+      "unitType": "By Gram",
+      "category": "[3] Fruits/Vegetables",
+      "vendor": "NTUC",
+      "slotN": 1,
+      "priceSgd": 2.4,
+      "size": 500,
+      "url": "https://www.fairprice.com.sg/product/churo-frozen-mixed-vegetables-1-x-500g-90043495",
+      "itemName": "Churo Frozen Mixed Vegetables",
+      "statedSize": "500g",
+      "brandName": "Churo",
+      "perLabel": "$4.80/kg",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 4.6,
+          "foundPer": 4.8,
+          "perWord": "kg",
+          "vendor": "NTUC",
+          "note": "DEARER than the NTUC price already recorded: $4.60 / 1000g = $4.60/kg → $2.40 / 500g = $4.80/kg. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-09-30T04:08:27.837Z"
+    },
+    {
+      "token": "1wi52z",
+      "ingredientId": "34b69a18-4fe7-8062-b087-ed07794b3ddc",
+      "ingredientName": "Bread, Whole grain (Low GI), [Gardinier] (350g)",
+      "key": "bread",
+      "unitType": "By Unit",
+      "category": "[2] Wheat/Rice/Carbs",
+      "vendor": "Sheng Siong",
+      "slotN": 2,
+      "brand": "gardinier",
+      "priceSgd": 2.5,
+      "size": 11,
+      "url": "https://shengsiong.com.sg/product/gardenia-white-bread-400-g",
+      "itemName": "White Bread",
+      "statedSize": "11 pcs",
+      "brandName": "Gardenia",
+      "perLabel": "$7.14/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 2 of 3, offered as a suggestion. Accept only if it is the same thing."
+        }
+      ],
+      "rank": 1,
+      "askedAt": "2026-09-30T04:08:52.690Z"
+    },
+    {
+      "token": "b6wiqu",
+      "ingredientId": "34b69a18-4fe7-8062-b087-ed07794b3ddc",
+      "ingredientName": "Bread, Whole grain (Low GI), [Gardinier] (350g)",
+      "key": "bread",
+      "unitType": "By Unit",
+      "category": "[2] Wheat/Rice/Carbs",
+      "vendor": "Sheng Siong",
+      "slotN": 2,
+      "brand": "gardinier",
+      "priceSgd": 3.2,
+      "size": 17,
+      "url": "https://shengsiong.com.sg/product/gardenia-white-bread-jumbo-600-600-g",
+      "itemName": "White Bread (Jumbo 600)",
+      "statedSize": "17 pcs",
+      "brandName": "Gardenia",
+      "perLabel": "$9.14/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
+        }
+      ],
+      "rank": 2,
+      "askedAt": "2026-09-30T04:08:52.690Z"
+    },
+    {
+      "token": "hay2mf",
+      "ingredientId": "34b69a18-4fe7-8062-b087-ed07794b3ddc",
+      "ingredientName": "Bread, Whole grain (Low GI), [Gardinier] (350g)",
+      "key": "bread",
+      "unitType": "By Unit",
+      "category": "[2] Wheat/Rice/Carbs",
+      "vendor": "Sheng Siong",
+      "slotN": 2,
+      "brand": "gardinier",
+      "priceSgd": 3.8,
+      "size": 11,
+      "url": "https://shengsiong.com.sg/product/gardenia-low-gi-nutri-multi-grain-bread-400-g",
+      "itemName": "Low GI Nutri Multi-Grain Bread",
+      "statedSize": "11 pcs",
+      "brandName": "Gardenia",
+      "perLabel": "$10.86/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is the closest of 3 offered, best first. Accept only if it is the same thing."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-09-30T04:08:52.690Z"
+    },
+    {
+      "token": "qui19q",
+      "ingredientId": "34b69a18-4fe7-805a-b781-e3300da041a4",
+      "ingredientName": "Milk  (Fresh) (Low Fat)",
+      "key": "milk",
+      "unitType": "By ml",
+      "category": "[1] Meats/Dairy/Proteins",
+      "vendor": "NTUC",
+      "slotN": 1,
+      "priceSgd": 6.97,
+      "size": 2000,
+      "url": "https://www.fairprice.com.sg/product/bcrs-meiji-low-fat-fresh-milk-regular-2l-13293680",
+      "itemName": "[BCRS] Meiji Low Fat Fresh Milk - Regular",
+      "statedSize": "2L",
+      "brandName": "Meiji",
+      "perLabel": "$3.48/L",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 2.42,
+          "foundPer": 3.485,
+          "perWord": "L",
+          "vendor": "NTUC",
+          "note": "DEARER than the NTUC price already recorded: $2.42 / 1000ml = $2.42/L → $6.97 / 2000ml = $3.48/L. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-09-30T04:09:00.457Z"
+    },
+    {
+      "token": "8ke5kx",
+      "ingredientId": "34b69a18-4fe7-8020-b136-ebb02d41c6ef",
+      "ingredientName": "Milk (Fresh) (Normal)",
+      "key": "milk",
+      "unitType": "By ml",
+      "category": "[1] Meats/Dairy/Proteins",
+      "vendor": "NTUC",
+      "slotN": 1,
+      "priceSgd": 6.7,
+      "size": 2000,
+      "url": "https://www.fairprice.com.sg/product/farm-fresh-milk-pure-2l-13287436",
+      "itemName": "[BCRS] Farm Fresh Milk - Pure",
+      "statedSize": "2L",
+      "brandName": "Farm Fresh",
+      "perLabel": "$3.35/L",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 3.201058201058201,
+          "foundPer": 3.35,
+          "perWord": "L",
+          "vendor": "NTUC",
+          "note": "DEARER than the NTUC price already recorded: $6.05 / 1890ml = $3.20/L → $6.70 / 2000ml = $3.35/L. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-09-30T04:09:18.521Z"
+    },
+    {
+      "token": "gdapzh",
+      "ingredientId": "34b69a18-4fe7-8020-b136-ebb02d41c6ef",
+      "ingredientName": "Milk (Fresh) (Normal)",
+      "key": "milk",
+      "unitType": "By ml",
+      "category": "[1] Meats/Dairy/Proteins",
+      "vendor": "Sheng Siong",
+      "slotN": 2,
+      "priceSgd": 6.7,
+      "size": 2000,
+      "url": "https://shengsiong.com.sg/product/farm-fresh-pure-fresh-milk-2-l-3116304",
+      "itemName": "Pure Fresh Milk",
+      "statedSize": "2L",
+      "brandName": "Farm Fresh",
+      "perLabel": "$3.35/L",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 3.07,
+          "foundPer": 3.35,
+          "perWord": "L",
+          "vendor": "Sheng Siong",
+          "note": "DEARER than the Sheng Siong price already recorded: $3.07 / 1000ml = $3.07/L → $6.70 / 2000ml = $3.35/L. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-09-30T04:09:22.044Z"
+    },
+    {
+      "token": "8neh9y",
+      "ingredientId": "34b69a18-4fe7-805e-aedc-c6f292e6007e",
+      "ingredientName": "Instant Coffee (plain)",
+      "key": "instant coffe",
+      "unitType": "By Gram",
+      "category": "[7] Teas/Coffees",
+      "vendor": "Sheng Siong",
+      "slotN": 2,
+      "priceSgd": 7.45,
+      "size": 100,
+      "url": "https://shengsiong.com.sg/product/nescafe-classic-jar-instant-soluble-coffee-100-g",
+      "itemName": "Classic Jar Instant Soluble Coffee",
+      "statedSize": "100g",
+      "brandName": "Nescafe",
+      "perLabel": "$74.50/kg",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 40.45,
+          "foundPer": 74.5,
+          "perWord": "kg",
+          "vendor": "Sheng Siong",
+          "note": "DEARER than the Sheng Siong price already recorded: $8.09 / 200g = $40.45/kg → $7.45 / 100g = $74.50/kg. Not written — accept only if the old price is gone."
+        },
+        {
+          "kind": "outlier",
+          "factor": 3.7029585798816576,
+          "note": "3.7× DEARER than this row's other shop"
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-09-30T04:09:34.567Z"
+    },
+    {
+      "token": "spq8qh",
+      "ingredientId": "34b69a18-4fe7-80f1-8ecb-d764d2abe554",
+      "ingredientName": "Green Tea (50 x 2g)",
+      "key": "green tea",
+      "unitType": "By Unit",
+      "category": "[7] Teas/Coffees",
+      "vendor": "Sheng Siong",
+      "slotN": 2,
+      "priceSgd": 7.75,
+      "size": 50,
+      "url": "https://shengsiong.com.sg/product/osk-japanese-green-tea-teabag-50-x-2-g",
+      "itemName": "Japanese Green Tea Teabag",
+      "statedSize": "50 pcs",
+      "brandName": "OSK",
+      "perLabel": "$77.50/kg",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 13.8,
+          "foundPer": 15.5,
+          "perWord": "100 pcs",
+          "vendor": "Sheng Siong",
+          "note": "DEARER than the Sheng Siong price already recorded: $6.90 / 50 pcs = $13.80/100 pcs → $7.75 / 50 pcs = $15.50/100 pcs. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-09-30T04:09:45.767Z"
+    },
+    {
+      "token": "6bi6q1",
+      "ingredientId": "34b69a18-4fe7-804a-b0d1-f396d121b472",
+      "ingredientName": "Butter",
+      "key": "butter",
+      "unitType": "By Gram",
+      "category": "[4] Fats/Oil",
+      "vendor": "NTUC",
+      "slotN": 1,
+      "priceSgd": 6.1,
+      "size": 250,
+      "url": "https://www.fairprice.com.sg/product/westgold-block-butter-unsalted-250g-13067250",
+      "itemName": "Westgold Block Butter - Unsalted",
+      "statedSize": "250g",
+      "brandName": "Westgold",
+      "perLabel": "$24.40/kg",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 22.8,
+          "foundPer": 24.4,
+          "perWord": "kg",
+          "vendor": "NTUC",
+          "note": "DEARER than the NTUC price already recorded: $5.70 / 250g = $22.80/kg → $6.10 / 250g = $24.40/kg. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-09-30T04:09:51.483Z"
+    },
+    {
+      "token": "o9zgse",
+      "ingredientId": "34b69a18-4fe7-8079-955e-ef44e9443bac",
+      "ingredientName": "Muscovado Sugar (Brown)",
+      "key": "brown muscovado sugar",
+      "unitType": "By Gram",
+      "category": "[5[ Sugar/Sweetners",
+      "vendor": "NTUC",
+      "slotN": 1,
+      "priceSgd": 6.35,
+      "size": 325,
+      "url": "https://www.fairprice.com.sg/product/tate-and-lyle-dark-muscovado-sugar",
+      "itemName": "Tate and Lyle Dark Muscovado Sugar",
+      "statedSize": "325g",
+      "brandName": "Tate and Lyle",
+      "perLabel": "$19.54/kg",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 12.52,
+          "foundPer": 19.538461538461537,
+          "perWord": "kg",
+          "vendor": "NTUC",
+          "note": "DEARER than the NTUC price already recorded: $3.13 / 250g = $12.52/kg → $6.35 / 325g = $19.54/kg. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-09-30T04:10:06.717Z"
+    },
+    {
+      "token": "6a6jwr",
+      "ingredientId": "34b69a18-4fe7-807d-8439-fea7f149877f",
+      "ingredientName": "Eggs, Whole, small (1650g), {cheap}",
+      "key": "egg",
+      "unitType": "By Unit",
+      "category": "[1] Meats/Dairy/Proteins",
+      "vendor": "Sheng Siong",
+      "slotN": 2,
+      "priceSgd": 6.95,
+      "size": 10,
+      "url": "https://shengsiong.com.sg/product/egg-for-you-fresh-eggs-30s-1650-g",
+      "itemName": "Fresh Eggs (30s)",
+      "statedSize": "10 pcs",
+      "brandName": "Egg For You",
+      "perLabel": "$4.21/kg",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 44.333333333333336,
+          "foundPer": 69.50000000000001,
+          "perWord": "100 pcs",
+          "vendor": "Sheng Siong",
+          "note": "DEARER than the Sheng Siong price already recorded: $6.65 / 15 pcs = $44.33/100 pcs → $6.95 / 10 pcs = $69.50/100 pcs. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-09-30T04:10:42.544Z"
     }
   ],
   "rejected": [
@@ -1272,8 +1272,8 @@
     }
   ],
   "moves": {
-    "generatedAt": "2026-09-30T02:03:07.012Z",
-    "reconfirmed": 5,
+    "generatedAt": "2026-09-30T04:10:42.544Z",
+    "reconfirmed": 60,
     "moves": []
   }
 }
