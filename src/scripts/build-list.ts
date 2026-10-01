@@ -29,6 +29,7 @@ await writeFile(
 			repo: config.repo(),
 			listEndpoint: config.listEndpoint(),
 			listSecret: config.listSecret(),
+			listLiveUrl: config.listLiveUrl(),
 			siteUrl: config.siteUrl(),
 			generatedAt: new Date(),
 		}),

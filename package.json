@@ -17,6 +17,7 @@
     "dry-run": "tsx src/github/main.ts --dry-run",
     "build-site": "tsx src/scripts/build-site.ts",
     "build-list": "tsx src/scripts/build-list.ts",
+    "build-list-fragment": "tsx src/scripts/build-list-fragment.ts",
     "list-action": "tsx src/scripts/list-action.ts",
     "list-sweep": "tsx src/scripts/list-sweep.ts",
     "notify": "tsx src/scripts/notify.ts",

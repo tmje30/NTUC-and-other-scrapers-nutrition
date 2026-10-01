@@ -349,6 +349,9 @@ try {
 			repo: config.repo(),
 			listEndpoint: config.listEndpoint(),
 			listSecret: config.listSecret(),
+			// So a list texted after this deploy still shows up without waiting for the
+			// next one. See `ListFragment`.
+			listLiveUrl: config.listLiveUrl(),
 			siteUrl: config.siteUrl(),
 			generatedAt: new Date(),
 		}),

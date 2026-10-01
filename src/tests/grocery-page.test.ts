@@ -7,7 +7,7 @@ import {
 	type ListRow,
 	parsePerUnitLine,
 } from "../core/grocery-page.js";
-import { renderListPage } from "../core/grocery-page-render.js";
+import { listFragment, renderListPage, sameFragment } from "../core/grocery-page-render.js";
 import { due, lastSgtMidnight, queue, unqueue, type PendingFile } from "../core/list-pending.js";
 // @ts-expect-error — the relay is plain ESM with no types; this is the point of testing
 // the edge gate and the repo parser against each other rather than trusting they agree.
@@ -210,6 +210,70 @@ const equal = renderListPage([row({ name: "Fish Sauce", currentPrice: 2.29, buyP
 	listSecret: "s",
 });
 check("an offer at the regular price gets no second line", !equal.includes('class="pl cut"'));
+
+describe("catching up with a list texted since the page was built");
+
+// ⚠️ The measurement behind all of this: a list texted at 10:56 UTC on 2026-10-01 was in
+// Notion within ~30 s and did not reach list.html for ~14 hours, because only the daily
+// scan publishes that page. The snapshot is what closes the gap.
+const built = new Date("2026-10-01T10:00:00.000Z");
+const live = renderListPage([row({ name: "Carrots", currentPrice: 2 })], {
+	repo: "owner/repo",
+	listEndpoint: "https://relay.example/list",
+	listSecret: "s3cret",
+	listLiveUrl: "https://raw.example/data/list-live.json",
+	generatedAt: built,
+});
+check("the page is told where the snapshot is", live.includes('"https://raw.example/data/list-live.json"'));
+// ⚠️ ISO on both sides or the page's string compare is not a date compare.
+check("…and when it was built, in ISO", live.includes('"2026-10-01T10:00:00.000Z"'));
+check("…and it fetches on load", live.includes("catchUp()"));
+// ⚠️ raw sends max-age=300; five minutes of staleness is long enough to look broken.
+check("…with a cache-buster", live.includes('"?t=" + Date.now()'));
+
+// ⚠️ A page given no URL must behave exactly as it did before any of this existed.
+const noLive = renderListPage([row({ name: "Carrots", currentPrice: 2 })], {
+	repo: "owner/repo",
+	listEndpoint: "https://relay.example/list",
+	listSecret: "s3cret",
+});
+check("no URL means no snapshot is fetched", noLive.includes('LIVE_URL = ""'));
+
+// ── the snapshot itself ──────────────────────────────────────────────────────
+
+const listRows = [
+	row({ pageId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", name: "Carrots", currentPrice: 1.6, buyPrice: 0.95, amount: 2 }),
+	row({ pageId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", name: "Red rice", currentPrice: 5 }),
+	row({ pageId: "cccccccc-cccc-cccc-cccc-cccccccccccc", name: "Old shopping", ticked: true }),
+];
+const frag = listFragment(listRows, built);
+
+eq("the snapshot counts only what is left to buy", frag.count, 2);
+check("…and leaves a row ticked in Notion out of the markup", !frag.rowsHtml.includes("Old shopping"));
+// 2×1.60 + 5 = 8.20 full; 2×0.95 + 5 = 6.90 discounted. The same arithmetic as the page.
+eq("…with the page's own totals", [frag.full.toFixed(2), frag.discounted.toFixed(2)], ["8.20", "6.90"]);
+eq("…and the time it was taken", frag.generatedAt, "2026-10-01T10:00:00.000Z");
+
+// ⚠️⚠️ **The rows must be LIVE whatever built them.** tg-inbox.yml has no LIST_SECRET, so
+// a fragment that inherited the ambient `live` would commit `disabled` controls — and
+// swapped into a live page that is a shopping list you cannot tick.
+check("the snapshot's controls are never disabled", !frag.rowsHtml.includes("disabled"));
+check("…and it is the same markup the page bakes", frag.rowsHtml.includes('<li class="row" data-id='));
+
+// ⚠️ The identity rule that makes "this file changed" a usable trigger: the timestamp is
+// NOT part of it. Rewriting on every run would re-swap identical rows on every page load
+// and make the rebuild job fire for a /search that changed nothing.
+check("a later snapshot of the same list is the same list", sameFragment(frag, listFragment(listRows, new Date())));
+check(
+	"…an added row is not",
+	!sameFragment(frag, listFragment([...listRows, row({ pageId: "dddddddd-dddd-dddd-dddd-dddddddddddd", name: "Milk" })], built)),
+);
+check(
+	"…nor a changed amount",
+	!sameFragment(frag, listFragment([row({ ...listRows[0], amount: 3 }), listRows[1], listRows[2]], built)),
+);
+// ⚠️ Nothing to compare against is "write a good one", not "unchanged".
+check("…and no previous snapshot never counts as the same", !sameFragment(null, frag));
 
 describe("the night before a row is cleared");
 

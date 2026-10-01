@@ -31,6 +31,11 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write # commit data/tg-inbox-state.json and data/vendor-review.json
+    outputs:
+      # Whether this update actually changed the shopping list — set by
+      # build-list-fragment, which compares the rows rather than the timestamp. A
+      # /search, a button tap or a message that matched nothing leaves it false.
+      listChanged: ${{ steps.fragment.outputs.changed }}
 
     steps:
       - uses: actions/checkout@v7
@@ -58,6 +63,27 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
 
+      # ⚠️ **The fast half of the fix for "texted items take a long time to show up".**
+      # Measured 2026-10-01: a list texted at 10:56 UTC was in Notion within ~30 s and did
+      # not reach list.html for ~14 hours, because the only thing that publishes that page
+      # is daily.yml and it runs the whole shop scan first. This writes the rows the page
+      # fetches on load instead — Notion only, no shops, a few seconds.
+      #
+      # ⚠️ `if: always()` for the same reason the commit below is: the handler reports
+      # per-update failures into the chat rather than throwing, so reaching here after a
+      # failure means something structural — and a row that WAS written should still show.
+      #
+      # ⚠️ Its own `continue-on-error`: a Notion hiccup here must not fail a run whose
+      # Notion write already succeeded and whose reply is already on the user's phone. The
+      # page then stays a day behind, exactly as it did before any of this existed.
+      - name: Snapshot the list for the page
+        id: fragment
+        if: always()
+        continue-on-error: true
+        run: npm run build-list-fragment
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+
       # ⚠️ `if: always()` — the state file must be committed even when the handler
       # failed. A run that asked a question and then died would otherwise leave the
       # question on screen with live buttons and no record of it anywhere, and the
@@ -67,12 +93,16 @@ jobs:
       # reason to keep whatever state was written.
       - name: Commit the inbox state
         if: always()
+        # Needed only by the fragment regeneration inside the retry loop below.
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           # tg-inbox-state.json — outstanding questions + the unpriced queue.
           # vendor-review.json — price-book review taps answered from the same chat.
-          git add data/tg-inbox-state.json data/vendor-review.json
+          # list-live.json — the rows list.html fetches on load. See the step above.
+          git add data/tg-inbox-state.json data/vendor-review.json data/list-live.json
           if git diff --staged --quiet; then
             echo "no data change"
             exit 0
@@ -98,7 +128,15 @@ jobs:
             git fetch origin "${{ github.ref_name }}"
             git reset --hard "origin/${{ github.ref_name }}"
             npx tsx src/scripts/merge-data.ts /tmp/data-base /tmp/data-mine data
-            git add data/tg-inbox-state.json data/vendor-review.json
+            # ⚠️ **Regenerated, not merged.** list-live.json is derived from Notion, so two
+            # runs racing it have no conflict to resolve — Notion already holds both rows,
+            # and a fresh read is strictly truer than either side's copy. merge-data knows
+            # nothing about this file (see DATA_FILES) and the reset above would otherwise
+            # leave the other run's older snapshot in place.
+            # GITHUB_OUTPUT is cleared for this call so the retry cannot append a second,
+            # contradictory `changed=` line to the step output the rebuild job reads.
+            GITHUB_OUTPUT= npm run build-list-fragment || true
+            git add data/tg-inbox-state.json data/vendor-review.json data/list-live.json
             if git diff --staged --quiet; then
               echo "already applied upstream — nothing left to push"
               exit 0
@@ -107,3 +145,33 @@ jobs:
           done
           echo "::error::could not push the inbox state after 5 attempts"
           exit 1
+
+  # ⚠️ **The slow half of the same fix, and the one that makes the page itself correct.**
+  # The snapshot above gets the rows onto the page in seconds, but the page is still the
+  # one the last scan baked — its prices, its discounts and its totals are yesterday's.
+  # This republishes it properly. ~4 minutes, almost all of it the shop scan.
+  #
+  # ⚠️ **Only when the list actually changed.** This workflow runs once per Telegram
+  # update — every tap of every inline button included — and a full deals scan per tap
+  # would hammer four shops and bury every real publish in the deployment history. That
+  # is the same reason price-new-items.yml gates its own rebuild on an output.
+  #
+  # ⚠️ `quiet: true`: the digest belongs to the morning run. The inbox has already
+  # replied in the chat with the ✅ lines and a link to the page, so a second Telegram
+  # message here would be the third notification for one texted list.
+  #
+  # ⚠️ These permissions must be granted HERE, not only in daily.yml — a called
+  # workflow's token is capped by the caller's. Inheriting `contents: write` alone would
+  # strip `pages: write` and the deploy would fail after the scan had already run.
+  rebuild:
+    needs: handle
+    if: needs.handle.outputs.listChanged == 'true'
+    permissions:
+      contents: read
+      actions: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/daily.yml
+    with:
+      quiet: true
+    secrets: inherit

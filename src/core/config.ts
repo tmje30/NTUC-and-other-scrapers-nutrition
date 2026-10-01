@@ -100,6 +100,21 @@ export const config = {
 	 */
 	listSecret: () => optional("LIST_SECRET"),
 	/**
+	 * Public URL of `data/list-live.json` — the snapshot `list.html` fetches on load so a
+	 * texted item appears without waiting for the next site build. See `ListFragment`.
+	 *
+	 * ⚠️ **`raw.githubusercontent`, deliberately, and not the Pages site.** A file on Pages
+	 * only exists once `daily.yml` has deployed, which is the ~4-minute scan this is meant
+	 * to skip; `raw` serves whatever is on the branch seconds after the inbox pushes it, and
+	 * sends `Access-Control-Allow-Origin: *` so the page may read it cross-origin (both
+	 * checked 2026-10-01). It caches for 300 s, which the page defeats with a `?t=`.
+	 *
+	 * ⚠️ The branch is in the URL and `main` is this repo's. A fork on another default
+	 * branch sets `LIST_LIVE_URL` rather than editing this.
+	 */
+	listLiveUrl: () =>
+		optional("LIST_LIVE_URL", `https://raw.githubusercontent.com/${config.repo()}/main/data/list-live.json`),
+	/**
 	 * Claude API key, for the macro lookup behind "Add to Ingredients".
 	 * `optional` on purpose: unset simply means the new row is written without
 	 * nutrition figures, which is a worse row but still a correct one. Only the

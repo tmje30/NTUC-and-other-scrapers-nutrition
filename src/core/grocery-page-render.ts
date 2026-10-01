@@ -34,6 +34,12 @@ export interface ListPageOptions {
 	 */
 	listSecret?: string;
 	generatedAt?: Date;
+	/**
+	 * Public URL of `data/list-live.json`, which the page fetches on load to catch up with
+	 * anything texted since it was built. See `ListFragment` — omit it and the page is
+	 * exactly what it was before, i.e. correct but up to a day behind.
+	 */
+	listLiveUrl?: string;
 	/** Link back to the deals page, so the pages stay one site. */
 	siteUrl?: string;
 	/** Shown instead of the list when the Notion read failed. */
@@ -202,6 +208,79 @@ function rowHtml(r: ListRow, live: boolean): string {
 </li>`;
 }
 
+/** Where the fast-path snapshot is committed. Public repo, so `raw` serves it to the page. */
+export const LIST_LIVE_PATH = "data/list-live.json";
+
+/**
+ * **The list as the page can swap it in, with no site rebuild.**
+ *
+ * `list.html` is a static file and the only thing that publishes it is `daily.yml`, which
+ * runs the whole shop scan first. Measured 2026-10-01: a list texted at 10:56 UTC had its
+ * Notion row within ~30 s and did not reach the page for **~14 hours**, because the next
+ * publish was the following morning's. (The 11:30 SGT backstop does not help — the guard
+ * skips it once the day's page exists, which is why those runs finish in 9–11 s.)
+ *
+ * So the inbox commits this instead, and the page fetches it on load. The row markup is
+ * rendered by `rowHtml` — **the same function the baked page uses** — because the one thing
+ * this must never become is a second renderer that formats prices slightly differently
+ * from the real one.
+ *
+ * ⚠️ **Rows are always rendered LIVE (`rowHtml(r, true)`), whatever the environment that
+ * built them.** A read-only page never fetches this: `script()` is only emitted when the
+ * endpoint and secret are both set. But `tg-inbox.yml` has no `LIST_SECRET` in its env, so
+ * passing the ambient `live` through would quietly commit a fragment full of `disabled`
+ * controls — which, swapped into a live page, is a shopping list you cannot tick.
+ *
+ * ⚠️ **No secret and no token are in here**, only what the page already shows the world.
+ */
+export interface ListFragment {
+	/** When the list last CHANGED, not when the script last ran. See `sameFragment`. */
+	generatedAt: string;
+	count: number;
+	full: number;
+	discounted: number;
+	unpriced: number;
+	/** `<li class="row">…</li>` for every row still to buy. */
+	rowsHtml: string;
+}
+
+export function listFragment(rows: ListRow[], now: Date = new Date()): ListFragment {
+	// Same filter as `renderListPage`: a row already ticked in Notion is shopping that is
+	// done, and the page is the list of what is left.
+	const open = rows.filter((r) => !r.ticked);
+	const t = totals(open);
+	return {
+		generatedAt: now.toISOString(),
+		count: open.length,
+		full: t.full,
+		discounted: t.discounted,
+		unpriced: t.unpriced,
+		rowsHtml: open.map((r) => rowHtml(r, true)).join("\n"),
+	};
+}
+
+/**
+ * True when two snapshots hold the same list. **`generatedAt` is deliberately ignored.**
+ *
+ * ⚠️ This is what keeps the timestamp meaningful and the signal honest. Rewriting the file
+ * on every run would make `generatedAt` "when the inbox last ran" — so the page would
+ * re-swap identical rows on every load, and the workflow could not tell a texted list from
+ * a `/search` that changed nothing. Compared here, the file is written only when the list
+ * really moved, which makes "this file changed" a usable trigger for the rebuild job.
+ */
+export function sameFragment(a: ListFragment | null | undefined, b: ListFragment): boolean {
+	if (!a) return false;
+	return (
+		a.rowsHtml === b.rowsHtml &&
+		a.count === b.count &&
+		a.unpriced === b.unpriced &&
+		// Rounded to the cent: these are rendered as money, and a float that differs in the
+		// twelfth decimal is not a change to the shopping list.
+		a.full.toFixed(2) === b.full.toFixed(2) &&
+		a.discounted.toFixed(2) === b.discounted.toFixed(2)
+	);
+}
+
 /**
  * The page's own script. It POSTs to the relay's `/list`, and that is the whole auth story
  * — there is nothing to enable, nothing stored in the browser, and no GitHub credential on
@@ -219,11 +298,13 @@ function rowHtml(r: ListRow, live: boolean): string {
  * ⚠️ **The totals are recomputed in the browser, not re-fetched.** See `grocery-page.ts`:
  * a tick must show its arithmetic immediately, and the page is only rewritten daily.
  */
-function script(endpoint: string, secret: string): string {
+function script(endpoint: string, secret: string, live: { url: string; builtAt: string } | null): string {
 	return `<script>
 (function () {
   var ENDPOINT = ${JSON.stringify(endpoint)};
   var SECRET = ${JSON.stringify(secret)};
+  var LIVE_URL = ${JSON.stringify(live?.url ?? "")};
+  var BUILT_AT = ${JSON.stringify(live?.builtAt ?? "")};
 
   var list = document.getElementById("list");
   var tray = document.getElementById("tray");
@@ -451,14 +532,51 @@ function script(endpoint: string, secret: string): string {
     trayList.appendChild(item);
   }
 
+  // ---- Catching up with a list texted since this page was built -----------
+  //
+  // ⚠️ **This is why a texted item shows up in seconds instead of tomorrow.** The page
+  // itself is republished only by the daily scan; the inbox commits data/list-live.json
+  // as it writes the Notion row, and that file is served by raw.githubusercontent with
+  // Access-Control-Allow-Origin:* (checked 2026-10-01). So this is one GET to a CDN, not
+  // a rebuild.
+  //
+  // ⚠️ **Only when the snapshot is NEWER than this page.** The daily build bakes the same
+  // rows in, so after a rebuild the file is older than the page and must be left alone —
+  // otherwise every load would overwrite fresh markup with a stale copy of itself.
+  //
+  // ⚠️ **And only before you have touched anything.** Replacing the list wholesale would
+  // detach the <li> each undo button in the tray closes over, so a tick taken during the
+  // round trip would lose its undo. A page you have started shopping on is never rewritten
+  // under you; the swap happens on load or not at all.
+  //
+  // ⚠️ Failure is silent and harmless: no network, a 404 before the first commit, or junk
+  // JSON all leave the baked page exactly as it was. That is the whole point of baking it.
+  function catchUp() {
+    if (!LIVE_URL || !BUILT_AT) return;
+    // Cache-buster: raw sends max-age=300, and five minutes is long enough to look broken.
+    fetch(LIVE_URL + "?t=" + Date.now(), { cache: "no-store" })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        if (!d || typeof d.rowsHtml !== "string" || !d.generatedAt) return;
+        if (d.generatedAt <= BUILT_AT) return;
+        if (trayList.children.length) return;
+        list.innerHTML = d.rowsHtml;
+        recount();
+        var sub = document.getElementById("count");
+        if (sub) sub.title = "updated from your texted list at " + d.generatedAt;
+      })
+      .catch(function () { /* the baked page is already correct enough */ });
+  }
 
   recount();
+  catchUp();
 })();
 </script>`;
 }
 
 export function renderListPage(rows: ListRow[], o: ListPageOptions): string {
-	const when = (o.generatedAt ?? new Date()).toLocaleString("en-SG", {
+	const builtAt = o.generatedAt ?? new Date();
+	const when = builtAt.toLocaleString("en-SG", {
 		timeZone: "Asia/Singapore",
 		dateStyle: "medium",
 		timeStyle: "short",
@@ -530,7 +648,16 @@ ${
 ${body}
 <footer>Ticking a box clears the row from your Notion list at midnight.
   Amounts save as you change them.</footer>
-${live ? script(o.listEndpoint, o.listSecret!) : ""}
+${
+	live
+		? script(
+				o.listEndpoint,
+				o.listSecret!,
+				// ⚠️ ISO on both sides, so the page's string compare is a real date compare.
+				o.listLiveUrl ? { url: o.listLiveUrl, builtAt: builtAt.toISOString() } : null,
+			)
+		: ""
+}
 </body>
 </html>`;
 }
