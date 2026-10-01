@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-30T04:10:42.544Z",
+  "updatedAt": "2026-10-01T04:11:05.703Z",
   "pending": [
     {
       "token": "828065",
@@ -138,6 +138,35 @@
       "askedAt": "2026-09-30T02:03:05.838Z"
     },
     {
+      "token": "haqqb5",
+      "ingredientId": "3b269a18-4fe7-814f-8e7c-e1eaf939c812",
+      "ingredientName": "Toothpaste - Repair & Protect [Sensodyne]",
+      "key": "toothpast repair protect",
+      "unitType": "By Gram",
+      "category": "Cosmetics/ Tooth paste etc",
+      "vendor": "Guardian",
+      "slotN": 4,
+      "brand": "sensodyne",
+      "priceSgd": 10.45,
+      "size": 100,
+      "url": "https://www.guardian.com.sg/sensodyne-sensitive-repair-and-protect-toothpaste-100-g-152098.html",
+      "itemName": "Sensodyne Sensitive Repair and Protect Toothpaste 100 g",
+      "statedSize": "100g",
+      "perLabel": "$104.50/kg",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 102,
+          "foundPer": 104.5,
+          "perWord": "kg",
+          "vendor": "Guardian",
+          "note": "DEARER than the Guardian price already recorded: $10.20 / 100g = $102.00/kg → $10.45 / 100g = $104.50/kg. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-10-01T04:02:15.686Z"
+    },
+    {
       "token": "vo7ls3",
       "ingredientId": "39c69a18-4fe7-80eb-bac0-fa46c8d26c9d",
       "ingredientName": "Pu Erh (Tea bags) (100 x 2g)",
@@ -164,7 +193,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-30T04:02:32.091Z"
+      "askedAt": "2026-10-01T04:02:16.854Z"
     },
     {
       "token": "x9yj45",
@@ -194,7 +223,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-30T04:02:49.044Z"
+      "askedAt": "2026-10-01T04:02:35.130Z"
     },
     {
       "token": "sq7mad",
@@ -224,7 +253,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-30T04:02:58.445Z"
+      "askedAt": "2026-10-01T04:02:43.310Z"
     },
     {
       "token": "s2gzte",
@@ -256,7 +285,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-30T04:03:08.027Z"
+      "askedAt": "2026-10-01T04:02:53.881Z"
     },
     {
       "token": "dbsqsu",
@@ -288,7 +317,32 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-30T04:03:17.708Z"
+      "askedAt": "2026-10-01T04:02:59.874Z"
+    },
+    {
+      "token": "s95muz",
+      "ingredientId": "37669a18-4fe7-8094-ad2b-d156a2f10a29",
+      "ingredientName": "egg  (Omega 3 Enriched) (550g)",
+      "key": "egg",
+      "unitType": "By Unit",
+      "category": "[1] Meats/Dairy/Proteins",
+      "vendor": "Sheng Siong",
+      "slotN": 2,
+      "priceSgd": 6.95,
+      "size": 30,
+      "url": "https://shengsiong.com.sg/product/egg-for-you-fresh-eggs-30s-1650-g",
+      "itemName": "Fresh Eggs (30s)",
+      "statedSize": "30 pcs",
+      "brandName": "Egg For You",
+      "perLabel": "$12.64/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
+        }
+      ],
+      "rank": 2,
+      "askedAt": "2026-10-01T04:03:45.843Z"
     },
     {
       "token": "bhnc16",
@@ -312,57 +366,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-30T04:04:04.255Z"
-    },
-    {
-      "token": "f67vcf",
-      "ingredientId": "34d69a18-4fe7-808a-a80b-c99b8072b99d",
-      "ingredientName": "Honey (Raw)",
-      "key": "honei",
-      "unitType": "By Gram",
-      "category": "[5[ Sugar/Sweetners",
-      "vendor": "Sheng Siong",
-      "slotN": 2,
-      "priceSgd": 6.3,
-      "size": 1000,
-      "url": "https://shengsiong.com.sg/product/hosen-honey-1-kg",
-      "itemName": "Honey",
-      "statedSize": "1kg",
-      "brandName": "Hosen",
-      "perLabel": "$6.30/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 2 of 3, offered as a suggestion. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 1,
-      "askedAt": "2026-09-30T04:05:38.220Z"
-    },
-    {
-      "token": "1vhhw0",
-      "ingredientId": "34d69a18-4fe7-808a-a80b-c99b8072b99d",
-      "ingredientName": "Honey (Raw)",
-      "key": "honei",
-      "unitType": "By Gram",
-      "category": "[5[ Sugar/Sweetners",
-      "vendor": "Sheng Siong",
-      "slotN": 2,
-      "priceSgd": 3.36,
-      "size": 500,
-      "url": "https://shengsiong.com.sg/product/hosen-honey-500-g",
-      "itemName": "Honey",
-      "statedSize": "500g",
-      "brandName": "Hosen",
-      "perLabel": "$6.72/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 2,
-      "askedAt": "2026-09-30T04:05:38.220Z"
+      "askedAt": "2026-10-01T04:03:45.843Z"
     },
     {
       "token": "fvl5q1",
@@ -383,11 +387,61 @@
       "reasons": [
         {
           "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 2 of 3, offered as a suggestion. Accept only if it is the same thing."
+        }
+      ],
+      "rank": 1,
+      "askedAt": "2026-10-01T04:05:45.141Z"
+    },
+    {
+      "token": "f67vcf",
+      "ingredientId": "34d69a18-4fe7-808a-a80b-c99b8072b99d",
+      "ingredientName": "Honey (Raw)",
+      "key": "honei",
+      "unitType": "By Gram",
+      "category": "[5[ Sugar/Sweetners",
+      "vendor": "Sheng Siong",
+      "slotN": 2,
+      "priceSgd": 6.3,
+      "size": 1000,
+      "url": "https://shengsiong.com.sg/product/hosen-honey-1-kg",
+      "itemName": "Honey",
+      "statedSize": "1kg",
+      "brandName": "Hosen",
+      "perLabel": "$6.30/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
+        }
+      ],
+      "rank": 2,
+      "askedAt": "2026-10-01T04:05:45.141Z"
+    },
+    {
+      "token": "xlv7ai",
+      "ingredientId": "34d69a18-4fe7-808a-a80b-c99b8072b99d",
+      "ingredientName": "Honey (Raw)",
+      "key": "honei",
+      "unitType": "By Gram",
+      "category": "[5[ Sugar/Sweetners",
+      "vendor": "Sheng Siong",
+      "slotN": 2,
+      "priceSgd": 18.84,
+      "size": 1000,
+      "url": "https://shengsiong.com.sg/product/wescobee-honey-1-kg",
+      "itemName": "Honey",
+      "statedSize": "1kg",
+      "brandName": "Wescobee",
+      "perLabel": "$18.84/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
           "note": "no product here MATCHED this row — this is the closest of 3 offered, best first. Accept only if it is the same thing."
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-30T04:05:38.220Z"
+      "askedAt": "2026-10-01T04:05:45.142Z"
     },
     {
       "token": "g19own",
@@ -420,7 +474,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-09-30T04:06:03.287Z"
+      "askedAt": "2026-10-01T04:06:11.447Z"
     },
     {
       "token": "4s83oz",
@@ -453,7 +507,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-09-30T04:06:03.287Z"
+      "askedAt": "2026-10-01T04:06:11.447Z"
     },
     {
       "token": "3n90th",
@@ -486,7 +540,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-30T04:06:03.287Z"
+      "askedAt": "2026-10-01T04:06:11.447Z"
     },
     {
       "token": "vf2y42",
@@ -511,7 +565,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-30T04:06:10.970Z"
+      "askedAt": "2026-10-01T04:06:19.309Z"
     },
     {
       "token": "jguxxc",
@@ -540,7 +594,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-30T04:06:18.613Z"
+      "askedAt": "2026-10-01T04:06:25.752Z"
     },
     {
       "token": "gbzr41",
@@ -569,7 +623,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-30T04:06:20.249Z"
+      "askedAt": "2026-10-01T04:06:27.416Z"
     },
     {
       "token": "u4vtu5",
@@ -598,36 +652,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-30T04:06:45.497Z"
-    },
-    {
-      "token": "atk4td",
-      "ingredientId": "34c69a18-4fe7-80ae-8ff6-e24b8e4e26dc",
-      "ingredientName": "Soy Sauce (light)",
-      "key": "soy sauc",
-      "unitType": "By ml",
-      "category": "[6]Sauces / Wines /Vinegars",
-      "vendor": "NTUC",
-      "slotN": 1,
-      "priceSgd": 2.27,
-      "size": 500,
-      "url": "https://www.fairprice.com.sg/product/lee-kum-kee-soy-sauce-light-500ml-12602826",
-      "itemName": "Lee Kum Kee Soy Sauce - Light",
-      "statedSize": "500ml",
-      "brandName": "Lee Kum Kee",
-      "perLabel": "$4.54/L",
-      "reasons": [
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 4.374999999999999,
-          "foundPer": 4.54,
-          "perWord": "L",
-          "vendor": "NTUC",
-          "note": "DEARER than the NTUC price already recorded: $2.80 / 640ml = $4.37/L → $2.27 / 500ml = $4.54/L. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-30T04:07:00.497Z"
+      "askedAt": "2026-10-01T04:06:52.948Z"
     },
     {
       "token": "f213w2",
@@ -656,7 +681,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-30T04:07:24.869Z"
+      "askedAt": "2026-10-01T04:07:35.614Z"
     },
     {
       "token": "7s2mlq",
@@ -685,7 +710,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-30T04:07:37.266Z"
+      "askedAt": "2026-10-01T04:07:49.256Z"
     },
     {
       "token": "9hhe6h",
@@ -713,73 +738,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-30T04:07:57.913Z"
-    },
-    {
-      "token": "ogeit1",
-      "ingredientId": "34b69a18-4fe7-80c7-9de6-fa3234a2a9d8",
-      "ingredientName": "Banana (Fruit)",
-      "key": "banana",
-      "unitType": "By Gram",
-      "category": "[3] Fruits/Vegetables",
-      "vendor": "NTUC",
-      "slotN": 1,
-      "priceSgd": 5.98,
-      "size": 600,
-      "url": "https://www.fairprice.com.sg/product/orgo-fresh-pisang-mas-banana",
-      "itemName": "Agro Fresh Pisang Mas Banana",
-      "statedSize": "600g",
-      "brandName": "Agro Fresh",
-      "perLabel": "$9.97/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 2 of 3, offered as a suggestion. Accept only if it is the same thing."
-        },
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 3.6428571428571423,
-          "foundPer": 9.966666666666667,
-          "perWord": "kg",
-          "vendor": "NTUC",
-          "note": "DEARER than the NTUC price already recorded: $2.55 / 700g = $3.64/kg → $5.98 / 600g = $9.97/kg. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 1,
-      "askedAt": "2026-09-30T04:08:06.898Z"
-    },
-    {
-      "token": "vzeowd",
-      "ingredientId": "34b69a18-4fe7-80c7-9de6-fa3234a2a9d8",
-      "ingredientName": "Banana (Fruit)",
-      "key": "banana",
-      "unitType": "By Gram",
-      "category": "[3] Fruits/Vegetables",
-      "vendor": "NTUC",
-      "slotN": 1,
-      "priceSgd": 38.4,
-      "size": 17,
-      "url": "https://www.fairprice.com.sg/product/brothers-all-natural-banana-crisps-12-x-17g-90007104",
-      "itemName": "Brothers-All-Natural Banana Crisps",
-      "statedSize": "17g",
-      "brandName": "Brothers All Natural",
-      "perLabel": "$2258.82/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
-        },
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 3.6428571428571423,
-          "foundPer": 2258.823529411765,
-          "perWord": "kg",
-          "vendor": "NTUC",
-          "note": "DEARER than the NTUC price already recorded: $2.55 / 700g = $3.64/kg → $38.40 / 17g = $2258.82/kg. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 2,
-      "askedAt": "2026-09-30T04:08:06.899Z"
+      "askedAt": "2026-10-01T04:08:12.790Z"
     },
     {
       "token": "vxemd3",
@@ -800,7 +759,7 @@
       "reasons": [
         {
           "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is the closest of 3 offered, best first. Accept only if it is the same thing."
+          "note": "no product here MATCHED this row — this is alternative 2 of 3, offered as a suggestion. Accept only if it is the same thing."
         },
         {
           "kind": "dearer-than-recorded",
@@ -811,8 +770,74 @@
           "note": "DEARER than the NTUC price already recorded: $2.55 / 700g = $3.64/kg → $4.30 / 500g = $8.60/kg. Not written — accept only if the old price is gone."
         }
       ],
+      "rank": 1,
+      "askedAt": "2026-10-01T04:08:22.537Z"
+    },
+    {
+      "token": "ogeit1",
+      "ingredientId": "34b69a18-4fe7-80c7-9de6-fa3234a2a9d8",
+      "ingredientName": "Banana (Fruit)",
+      "key": "banana",
+      "unitType": "By Gram",
+      "category": "[3] Fruits/Vegetables",
+      "vendor": "NTUC",
+      "slotN": 1,
+      "priceSgd": 5.98,
+      "size": 600,
+      "url": "https://www.fairprice.com.sg/product/orgo-fresh-pisang-mas-banana",
+      "itemName": "Agro Fresh Pisang Mas Banana",
+      "statedSize": "600g",
+      "brandName": "Agro Fresh",
+      "perLabel": "$9.97/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
+        },
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 3.6428571428571423,
+          "foundPer": 9.966666666666667,
+          "perWord": "kg",
+          "vendor": "NTUC",
+          "note": "DEARER than the NTUC price already recorded: $2.55 / 700g = $3.64/kg → $5.98 / 600g = $9.97/kg. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 2,
+      "askedAt": "2026-10-01T04:08:22.538Z"
+    },
+    {
+      "token": "07wikz",
+      "ingredientId": "34b69a18-4fe7-80c7-9de6-fa3234a2a9d8",
+      "ingredientName": "Banana (Fruit)",
+      "key": "banana",
+      "unitType": "By Gram",
+      "category": "[3] Fruits/Vegetables",
+      "vendor": "NTUC",
+      "slotN": 1,
+      "priceSgd": 1.95,
+      "size": 300,
+      "url": "https://www.fairprice.com.sg/product/sumifru-kamsookwang-banana-300g-13129810",
+      "itemName": "Sumifru Kamsookwang Banana",
+      "statedSize": "300g",
+      "brandName": "Sumifru",
+      "perLabel": "$6.50/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is the closest of 3 offered, best first. Accept only if it is the same thing."
+        },
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 3.6428571428571423,
+          "foundPer": 6.5,
+          "perWord": "kg",
+          "vendor": "NTUC",
+          "note": "DEARER than the NTUC price already recorded: $2.55 / 700g = $3.64/kg → $1.95 / 300g = $6.50/kg. Not written — accept only if the old price is gone."
+        }
+      ],
       "rank": 0,
-      "askedAt": "2026-09-30T04:08:06.899Z"
+      "askedAt": "2026-10-01T04:08:22.538Z"
     },
     {
       "token": "b4wd9o",
@@ -841,7 +866,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-30T04:08:27.837Z"
+      "askedAt": "2026-10-01T04:08:42.227Z"
     },
     {
       "token": "1wi52z",
@@ -867,7 +892,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-09-30T04:08:52.690Z"
+      "askedAt": "2026-10-01T04:08:59.827Z"
     },
     {
       "token": "b6wiqu",
@@ -893,7 +918,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-09-30T04:08:52.690Z"
+      "askedAt": "2026-10-01T04:08:59.827Z"
     },
     {
       "token": "hay2mf",
@@ -919,7 +944,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-30T04:08:52.690Z"
+      "askedAt": "2026-10-01T04:08:59.827Z"
     },
     {
       "token": "qui19q",
@@ -948,7 +973,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-30T04:09:00.457Z"
+      "askedAt": "2026-10-01T04:09:06.750Z"
     },
     {
       "token": "8ke5kx",
@@ -977,36 +1002,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-30T04:09:18.521Z"
-    },
-    {
-      "token": "gdapzh",
-      "ingredientId": "34b69a18-4fe7-8020-b136-ebb02d41c6ef",
-      "ingredientName": "Milk (Fresh) (Normal)",
-      "key": "milk",
-      "unitType": "By ml",
-      "category": "[1] Meats/Dairy/Proteins",
-      "vendor": "Sheng Siong",
-      "slotN": 2,
-      "priceSgd": 6.7,
-      "size": 2000,
-      "url": "https://shengsiong.com.sg/product/farm-fresh-pure-fresh-milk-2-l-3116304",
-      "itemName": "Pure Fresh Milk",
-      "statedSize": "2L",
-      "brandName": "Farm Fresh",
-      "perLabel": "$3.35/L",
-      "reasons": [
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 3.07,
-          "foundPer": 3.35,
-          "perWord": "L",
-          "vendor": "Sheng Siong",
-          "note": "DEARER than the Sheng Siong price already recorded: $3.07 / 1000ml = $3.07/L → $6.70 / 2000ml = $3.35/L. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-30T04:09:22.044Z"
+      "askedAt": "2026-10-01T04:09:21.234Z"
     },
     {
       "token": "8neh9y",
@@ -1040,36 +1036,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-30T04:09:34.567Z"
-    },
-    {
-      "token": "spq8qh",
-      "ingredientId": "34b69a18-4fe7-80f1-8ecb-d764d2abe554",
-      "ingredientName": "Green Tea (50 x 2g)",
-      "key": "green tea",
-      "unitType": "By Unit",
-      "category": "[7] Teas/Coffees",
-      "vendor": "Sheng Siong",
-      "slotN": 2,
-      "priceSgd": 7.75,
-      "size": 50,
-      "url": "https://shengsiong.com.sg/product/osk-japanese-green-tea-teabag-50-x-2-g",
-      "itemName": "Japanese Green Tea Teabag",
-      "statedSize": "50 pcs",
-      "brandName": "OSK",
-      "perLabel": "$77.50/kg",
-      "reasons": [
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 13.8,
-          "foundPer": 15.5,
-          "perWord": "100 pcs",
-          "vendor": "Sheng Siong",
-          "note": "DEARER than the Sheng Siong price already recorded: $6.90 / 50 pcs = $13.80/100 pcs → $7.75 / 50 pcs = $15.50/100 pcs. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-09-30T04:09:45.767Z"
+      "askedAt": "2026-10-01T04:09:33.237Z"
     },
     {
       "token": "6bi6q1",
@@ -1098,7 +1065,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-30T04:09:51.483Z"
+      "askedAt": "2026-10-01T04:10:11.279Z"
     },
     {
       "token": "o9zgse",
@@ -1127,7 +1094,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-30T04:10:06.717Z"
+      "askedAt": "2026-10-01T04:10:28.427Z"
     },
     {
       "token": "6a6jwr",
@@ -1156,7 +1123,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-09-30T04:10:42.544Z"
+      "askedAt": "2026-10-01T04:11:05.703Z"
     }
   ],
   "rejected": [
@@ -1272,8 +1239,8 @@
     }
   ],
   "moves": {
-    "generatedAt": "2026-09-30T04:10:42.544Z",
-    "reconfirmed": 60,
+    "generatedAt": "2026-10-01T04:11:05.704Z",
+    "reconfirmed": 62,
     "moves": []
   }
 }
