@@ -1,6 +1,6 @@
 # Grocery Deal Scraper — System Guide
 
-*Last updated: 2026-09-08 · Covers changes through commit b5113fb*
+*Last updated: 2026-10-01 · Covers changes through commit 9c401e4*
 
 ## What this is
 
@@ -40,6 +40,13 @@ so six pages in all: deals, history, new items, review, moves, and — since
 2026-09-11 — the **shopping list** you actually take to the shop. Since 2026-08-24
 the price check runs in the cloud for the four shops reachable from it, which is
 most of the work; three shops still need a real browser or a Singapore address.
+
+Since 2026-09-13 the price book also keeps **today's offer beside the normal price**:
+when a shop is running a promotion, the offer, its price per kg/L and the shop's name
+go into three *discount* columns on the ingredient, while the normal-price columns
+stay untouched. Since 2026-09-28 the cloud price check **runs by itself at noon every
+day** — before that it only ran when someone pressed the button, and for nineteen days
+nobody did.
 
 ## What it does (features)
 
@@ -130,7 +137,11 @@ most of the work; three shops still need a real browser or a Singapore address.
   ⚠️ **It does not change what gets written** — plain text was always treated as a
   list. The header buys you the link, and says plainly that you meant a list.
   ⚠️ It has to be the **whole line**: `grocery bags` and `to buy milk` are items.
-- **"How do I just see the list?"** Text **`grocery list`** on its own — a header with
+- **"Is there a command for the list?"** Yes — **`/list`** (or `/l`). Unlike the header
+  words it can take items on the **same line**: `/list milk, eggs`. `List` on its own
+  line also works as a header (added 2026-09-25). Before that, texting `List` tried to
+  buy an item called "List".
+- **"How do I just see the list?"** Text **`grocery list`** (or `/list`) on its own — a header with
   nothing under it is a request for the page, not an empty write.
 - **"How do I add something from the page itself?"** Type into the **Add** box at the
   top. It searches your Ingredients database as you type, closest first, showing each
@@ -186,7 +197,34 @@ most of the work; three shops still need a real browser or a Singapore address.
 - **"Where do I answer those questions?"** On the **review page**
   (`review.html`), one page for the whole scan rather than one Telegram card per
   pick. Each card shows the pack, the price, what the shop calls it, and why it is
-  being asked about, with **OK** and **Don't use** underneath.
+  being asked about, with **OK** and **Don't use** underneath. Cards are split into
+  four tabs — **Food / Supplements / Household / Cosmetics**, from the ingredient's
+  Notion Category — and the deals page uses the same four tabs (since 2026-09-09).
+- **"What are my options under Don't use?"** Seven: *Pack too large*, *Pack too
+  small*, *Wrong item*, *Wrong brand*, *Item is slightly off criteria*, *Price or size
+  looks misread*, and two added in September:
+  - **Too expensive** — records the price per kg/L you refused, and from then on the
+    scan drops anything at or above it for that row at that shop. Without this,
+    refusing the dearest pack just promotes the next-dearest and you get asked again
+    a few cents lower.
+  - **Ignore** — for an item that shop simply doesn't sell (e.g. an in-house product
+    elsewhere), where every result is a substitute. ⚠️ **It stops the questions, not
+    the scan**: a confident match is still recorded, which is how you find out the day
+    the shop starts selling it. Ignored rows are listed in red at the foot of the
+    review page, each with an **OK** that lifts the ignore.
+- **"How do I tell it which version of a product I want?"** Use the ingredient's
+  **Notes** column: comma-separated keywords, of which a product must match **at least
+  one** (e.g. `High DHA, EPA, Strength, Concentrated`). The Name's `( )` properties are
+  all required; Notes keywords are "any one of". Anything inside `{ }` in Notes is a
+  private note and is ignored, exactly as in the Name. A strength range with a unit —
+  `1000-1100mg` — means that range.
+- **"Where do I see a shop's current promotion for something I buy?"** On the
+  ingredient row in Notion: **`Price (Discount)`** (e.g. `$4.90 / 500g`),
+  **`Price per kg/L (discount)`** and **`Location (Discount)`**. Filled by the noon
+  price check when a shop is running an offer, and **emptied again** by that shop once
+  the offer ends. If several shops are on offer, the cheapest per kg wins. ⚠️ If the
+  `Location (Discount)` column is empty on *every* row, the noon check has stopped
+  running — that is the tell.
   ⚠️ **The price it quotes is a shop's SHELF price, never its promo price.** The
   price book records what a thing normally costs; a discount belongs on the deals
   page. Before 2026-09-02 a sale price could be written in as your recorded price
@@ -203,7 +241,8 @@ most of the work; three shops still need a real browser or a Singapore address.
   same figure is not news and is left out.
 - **"Can the whole price check run without my laptop?"** Yes, for the four shops
   the cloud can reach (NTUC, Sheng Siong, Guardian, MyProtein) — that is 106 of the
-  120 row×shop pairs. Watsons, iHerb and Carousell still need a real browser or a
+  120 row×shop pairs — and since 2026-09-28 it runs **every day at 12:00 SGT** on its
+  own. Watsons, iHerb and Carousell still need a real browser or a
   Singapore address, and are swept from the laptop.
 - **"The page says a shop is missing — can I fix it now?"** Tap **Rescan** in the
   warning banner. It fetches fresh Sheng Siong prices from the cloud and rebuilds
@@ -375,6 +414,15 @@ Switch-over order, the four secrets, and the way back are in
 has no process to hold it in — every update is a fresh checkout. Two taps seconds
 apart are two runs writing that file, resolved by the three-way merge in
 `src/core/merge-data.ts`.
+
+⚠️ **Since September the relay is the clock for three more things**, all for the
+same reason (GitHub's own schedule runs hours late on a free public repo): the
+shopping list's **midnight clear-out** (`0 16 * * *` UTC = 00:00 SGT, dispatches
+`listsweep`) and the **noon price-book sweep** (`0 4 * * *` UTC = 12:00 SGT,
+dispatches `vendorsweep`). It also has a second door, **`POST /list`**, which takes
+ticks, amounts and Add from the shopping page. Remove a cron line and that job simply
+stops — nothing fails, nothing goes red. That is exactly what happened to the price
+book from 2026-09-09 to 09-28.
 
 **The write-back leg.** Everything above is read-only. Writing to Notion needs a
 token, and the deals page is a static file that cannot hold one — so a button on
@@ -1111,6 +1159,20 @@ is appended last.
   deck — because `review-ok` now clears **every** question for that row+shop
   (`withoutPendingForSlot`), not just the tapped one.
 
+**Tabs (2026-09-09).** Cards are grouped into **Food / Supplements / Household /
+Cosmetics** by `groupOf`, from the row's Notion `Category`. Radio inputs and a
+sibling selector — no JavaScript — and every panel shows until a radio is checked, so
+a stylesheet that fails to load shows the whole queue rather than hiding it.
+`groupOf` matches `/suppl[ei]ment/`, not `suppl` (which "Household Supplies" also
+contains), and **Food is the fallback**, so a blank or renamed Category lands there
+rather than vanishing. An empty tab is a bare label, never a "0". The deals page uses
+the same `groupOf` and the same four tabs; its panels are `.tabpanel`, **not**
+`.panel`, because the deals page already has a `.panel` (the `⋯` dropdown) and
+reusing the name took every card out of the flow — there is a test for that collision.
+
+**Ignored rows** (`ignored` in `data/vendor-review.json`) list in red at the foot of
+the page, newest first, each with an **OK** that fires `review-unignore`.
+
 **Two rules that are easy to get wrong:**
 - ⚠️ **The page build runs inside the sweep.** A throw here does not just lose the
   page — it kills a `--write` run that may already have written prices to Notion.
@@ -1137,6 +1199,67 @@ Each entry names the product and links to it, and the percentage is computed fro
 **per-1000 figure, never the pack price**: Tau Kwa going $1.40 → $1.40 across 400 g →
 500 g is a 20% cut that a pack-price comparison reports as no change at all.
 
+### Shopping page — `public/list.html` (added 2026-09-11)
+
+**Where it lives:** `src/core/grocery-page.ts` (`readGroceryList`, `totals`) and
+`src/core/grocery-page-render.ts` (`renderListPage`). Written by `build-site.ts` on
+every site build, or on its own by `npm run build-list` (Notion only, no shop scan —
+for previewing). **Reads:** the Notion grocery List. **Writes:** nothing itself;
+every tap goes through the relay.
+
+- **Rows shown** are the *unticked* rows. A row already ticked in Notion is shopping
+  that is done and is neither shown nor ever swept.
+- **Two price lines per row** — the regular price and per-kg figure with its shop,
+  then the offer with its own per-kg figure, % and shop — lifted verbatim from the
+  user's `Price D%/C` formula and regrouped by price instead of by unit. A row with
+  no genuine reduction gets one line. No Notion column was created for this.
+- **Totals:** *Total cost* (everything at regular price) and *Total cost with %*
+  (today's prices; undiscounted rows count at full price). An **unpriced** row counts
+  towards neither, and the page says how many there are.
+- **The Add box** searches `public/ingredients.json`, published beside the page by
+  the same build (`src/core/ingredient-index.ts`), entirely in the browser — no
+  network per keystroke. Prefix matches rank first; parked rows are offered with 💤.
+  Picking one sends an `add` with the ingredient id; free text sends `add` with only
+  a name. Either way the row is written by `addTextedItem`, **the same call the
+  Telegram intake uses**, so a page-added and a texted row are identical, including
+  the dedupe that turns a second add into `Amount + 1`. The price is read from the
+  ingredient **server-side**, never taken from the page. ⚠️ `ingredients.json` is
+  public (names, cheapest price, shop, page ids — no token). The index is written in
+  its own `try`, so a Notion hiccup costs the autocomplete, not the page.
+
+**A tap's path:**
+
+```
+list.html ──POST /list (X-List-Secret)──▶ relay Worker ──dispatch: list-action──▶ list-action.yml
+                                                                                   └─ npm run list-action
+   tick   → Tickbox = true  + queued in data/list-pending.json
+   untick → Tickbox = false + taken off the queue
+   amount → Amount  = n   (floored at 1)
+   add    → new row via addTextedItem
+```
+
+- **`src/core/list-action-parse.ts`** — `parseListAction` validates the payload
+  (`op` must be one of the four; `pageId` is shape-checked before it reaches a write).
+  The relay checks the same shape first.
+- **`src/core/list-pending.ts`** — the queue between a tick and a delete.
+  `sweepPending` deletes only what is **in this queue**, only if ticked **before the
+  most recent Singapore midnight** (`due()`, so a late sweep cannot take a tick made
+  on today's trip), and only after **re-reading the Tickbox** — un-ticking in Notion
+  cancels the delete. "Delete" is Notion's **trash** (~30 days recoverable); the API
+  has no permanent delete.
+- **`npm run list-sweep`** (`src/scripts/list-sweep.ts`) — the **only script in the
+  project that removes a user's Notion row**. Triggered by `list-sweep.yml` from the
+  relay's midnight cron. `--dry-run` reports what would go; `--no-push` skips the
+  commit. An empty queue exits before opening a Notion client.
+- **Credential:** the page carries `LIST_SECRET` in public, deliberately (any device,
+  nothing to enable). It grants these four list operations and nothing else — not
+  repo write. An unset secret renders the page **read-only**, controls disabled in the
+  markup. Rotate with `wrangler secret put LIST_SECRET` plus the same value as the
+  repo's Actions secret.
+
+Tests: `src/tests/grocery-page.test.ts` (including the `/list` command and header
+words).
+
 ### The Telegram inbox — texting a list in
 
 The first **inbound** path in the project: everything else here is a page being
@@ -1148,6 +1271,13 @@ the thinking and one holds the state.
   whole word and never as a character**: `Carrots x 1kg` reached the matcher as
   `"Carrots x"` and scored 0.65 against a row that `Carrots` scores 1.000 on — while
   a leading character class turns `Xylitol` into `ylitol`.
+- **List header and `/list`.** A first line of exactly `grocery`, `groceries`,
+  `grocery list`, `shopping`, `shopping list`, `to buy` or `list` (whole line, after
+  stripping a bullet and trailing punctuation) marks the message as the shopping list;
+  the reply then carries a link to `list.html`. `/list`, `/l` and `/list@Bot` are the
+  same instruction as a command and, unlike a header, accept items on the same line
+  (`/list milk, eggs`). `/listen …` is guarded against. A header or command with no
+  items is a request for the page link.
 - **`src/core/list-intake.ts`** — matches each line to an Ingredients row with the
   same scorer the deals page uses, and returns one of **three verdicts**:
 
@@ -1236,16 +1366,27 @@ A single dependency-free ESM file (`relay/worker.mjs`, ~200 lines) deployed to
 Cloudflare's free tier; `wrangler deploy` uploads it as-is, there is no build step.
 Full setup, verification and rollback in [`relay/README.md`](relay/README.md).
 
-- **It holds no state** and does two things: turn a Telegram webhook delivery into a
-  `repository_dispatch`, and fire a `tgsweep` dispatch every 15 minutes on its cron
-  trigger. It also sends the typing indicator, so the chat acknowledges you in about
+- **It holds no state** and does three things: turn a Telegram webhook delivery into a
+  `repository_dispatch`; forward shopping-page taps from **`POST /list`** (checked
+  against `X-List-Secret`, routed *before* the Telegram checks) as a `list-action`
+  dispatch; and act as the clock. Three cron triggers (`relay/wrangler.toml`), told
+  apart by `event.cron`:
+
+  | cron (UTC) | SGT | dispatches |
+  |---|---|---|
+  | `*/15 * * * *` | every 15 min | `tgsweep` (one-hour rule + new-item pricing) |
+  | `0 16 * * *` | 00:00 | `listsweep` — shopping-list clear-out |
+  | `0 4 * * *` | 12:00 | `vendorsweep` — price-book sweep (`VENDOR_SWEEP_CRON`, since 2026-09-28) |
+ It also sends the typing indicator, so the chat acknowledges you in about
   a second while Actions takes 20–60 s.
 - **It is fail-closed.** A request without the exact
   `X-Telegram-Bot-Api-Secret-Token` gets `401`, and a missing `WEBHOOK_SECRET` in the
   environment fails the same way rather than opening up — the URL is public the moment
   it is guessed, and an unauthenticated webhook is a stranger writing to the grocery
   list. `ALLOWED_CHAT_ID` is a second gate: exactly one chat is answered.
-- **Four secrets** (`wrangler secret put`), documented in `relay/wrangler.toml`:
+- **Five secrets** (`wrangler secret put`), documented in `relay/wrangler.toml` —
+  the four below plus **`LIST_SECRET`** (what `list.html` sends; an unset value
+  refuses every `/list` call):
   `WEBHOOK_SECRET`, `TELEGRAM_BOT_TOKEN`, `GITHUB_TOKEN` (fine-grained PAT, this repo
   only, **Contents: read and write** — that and only that is what
   `repository_dispatch` needs; Administration does not grant it), `ALLOWED_CHAT_ID`.
@@ -1255,7 +1396,7 @@ Full setup, verification and rollback in [`relay/README.md`](relay/README.md).
   if the PAT is revoked, which is why it was created with **no expiry** — a decision,
   not an oversight.
 - **Live:** `https://grocery-telegram-relay.tmje30.workers.dev`. `npx wrangler tail`
-  from `relay/` is the live log; `relay/worker.test.mjs` has 33 offline cases and runs
+  from `relay/` is the live log; `relay/worker.test.mjs` has 78 offline cases (as of 2026-09-28) and runs
   as part of `npm test`.
 
 ### The Sheng Siong scanner — `ss-worker/` (added 2026-08-13)
@@ -1526,9 +1667,14 @@ commodity gate spends real money. None of those announce themselves.
 **Built as of 2026-08-11**, as `npm run vendor-scan` — no longer just a probe. Full
 detail in `docs/vendor-scoping.md`, which governs; this is the orientation.
 
-⚠️ **Nothing schedules `vendor-scan`.** Not `daily.yml`, not Task Scheduler. It is
-still a command someone runs, deliberately — it drives a headed browser for four of
-the shops and can only run on the laptop.
+⚠️ **The cloud sweep is scheduled; the laptop scan is not.** Since 2026-09-28 the
+relay fires `vendor-sweep.yml` at **12:00 SGT** daily for the four cloud-reachable
+shops. Before that *nothing* triggered it — no `schedule:`, no dispatcher — and from
+2026-09-09 to 09-28 the price book was not refreshed at all while the workflow showed
+green from a three-week-old run. The laptop-only shops (Watsons, iHerb, Carousell,
+Shopee) still need a headed browser and are run from the laptop. **Noon, not
+morning**, because `ss-worker` retries Sheng Siong until 11:00 and `daily.yml`'s
+backstop fires at 11:30, and the sweep republishes through `daily.yml`.
 
 ⚠️ **The baseline and the price book used to be separate sets of columns, and that
 distinction is gone as of 2026-08-09.** The price book is now the *only* record of
@@ -1647,6 +1793,69 @@ On the first sweep carrying all three (run 34194029818): 61 written, 3 dearer
 suggestions withheld, 4 unchanged picks re-confirmed instead of re-asked, queue 51
 to 44 across two runs.
 
+**Two more Don't-use answers (September 2026)** — the menu now holds *Pack too
+large*, *Pack too small*, *Wrong item*, *Wrong brand*, *Item is slightly off
+criteria*, *Too expensive*, *Price or size looks misread* and **Ignore**.
+- **Too expensive** (`too-expensive`) records the refused **rate** — price ÷ size ×
+  1000 in the row's own units, never a pack price ($45 is dear for 60 softgels and
+  cheap for 300) — and `rateCeilingFor` drops any later candidate at or above it. It
+  matters most on a slot with nothing recorded, where the ratchet has nothing to
+  compare against. The sweep reports what the ceiling dropped.
+- **Ignore** (`ignore`) is for a row the shop does not sell at all. It does **not**
+  stop the scan — a confident pick still lands in the price book — it only stops
+  uncertain picks raising cards. Scoped to one row at one shop. In the queue-file
+  merge the `ignored` list takes **theirs outright** (unlike refusals, which are
+  unioned), because it is the one part a tap can *remove* from, and a union would
+  resurrect an ignore the user just lifted.
+
+**Supplements are not recorded on brand alone (2026-09-09).** A supplement row that
+names a `[brand]` is only written without asking when the product carries that
+brand; otherwise it becomes a card. This is softer than the Brand Specific tag (which
+makes a wrong brand a hard miss).
+
+**The `Notes` column (2026-09-09)** — keywords of which a find must satisfy **at least
+one** (an OR, where the Name's `( )` properties are an AND). Split on commas,
+semicolons, full stops and newlines — not spaces, so `High DHA` stays one idea. A word
+in both Notes and the Name's brackets is required once, under the Notes rule. `{ }`
+in Notes is a private note, as in the Name; an unclosed `{` takes the rest of the
+cell. Reported as one requirement, `one of: …`. An empty cell constrains nothing.
+
+**Matcher fixes in the same period:**
+- **Numbers are judged on the number.** A requirement containing a digit (`1000 mg`,
+  `SPF 30`) skips the word test — which used to reduce it to `mg` or `spf` and pass
+  anything — and is compared with digits kept: `1000 mg` accepts `1,000 mg` and
+  refuses `1,100 mg`.
+- **A typed range means a range.** `1000-1100mg` in Notes previously produced no
+  tokens and silently passed everything. A hyphen between two numbers *with a unit*
+  is now a range; without a unit it falls back to plain comparison.
+- **Hyphenated compounds.** Two adjacent tokens whose concatenation is a whole token
+  on the other side count as both present (`Multi-vitamin` ↔ `Multivitamin`: 0.619
+  → 0.900). Adjacency is the safety — it is not a substring match.
+- **Counted rows rate per 100 pieces.** On a By Unit row, a capsule pack with a count
+  and no weight used to be discarded for lacking a per-100 g figure — leaving a
+  powder as iHerb's only candidate for a multivitamin. Marketplace guards keep their
+  per-100 g scale.
+- **The weight-gap note** ("add a size to the name") now fires only on an accepted
+  candidate, never on a near-miss the matcher rejected.
+- **Synonyms:** `strong`, `strongest` and `high potency` fold onto `strength`.
+
+**Discount columns (2026-09-13) — `src/core/discount.ts`.** `atShelfPrice` strips a
+promo from every scan result before the price book sees it (a promo in
+`Price [Vendor n]` gets locked in by the ratchet). The offer now lands in three
+existing `rich_text` columns instead: `Price (Discount)`, `Price per kg/L (discount)`
+(lower-case d, read through `DISCOUNT_RATE_ALIASES`) and `Location (Discount)`. Rules:
+written only where a slot write landed, so offer and shelf price describe one pack at
+one shop; one set of columns across all slots, so **cheapest per kg wins** and a shop
+may always refresh its own entry; the rate follows the row's unit type (per kg, per L,
+or per 10 pcs). It **clears** — but only by the shop that set it, not by one that
+merely found no match. No schema was changed. Per the 2026-09-13 commit, the clear
+path was unit-tested but had not yet run live.
+
+**Six slots, and Danish units (2026-09-11).** `VENDOR_SLOT_COUNT` is now **6** — the
+number of slots a schema *may* have, after `Vendor 5`/`Vendor 6` were added to
+`Ingredients (Denmark)`. `weight.ts` reads `gr` (REMA's `300 GR.`), `cl` and `dl`.
+Groundwork only; the Denmark DB stays off Telegram and the sweeps.
+
 ⚠️⚠️ **"Don't use" is NOT "ignore forever", and this is the load-bearing rule.**
 
 | | scope | effect on the deals page |
@@ -1705,6 +1914,13 @@ typechecks the Cloudflare Worker on its own.*
 - **`npm run build-site`** — the cloud's main job. Runs `runOnce()`, writes
   `public/index.html`, `public/summary.json` (deal counts), and
   `public/targets.json` (the search-term list runners fetch). Needs `.env`.
+- **`npm run build-list`** — writes only `public/list.html` from the Notion grocery
+  List, without the shop scan. For previewing; `build-site` publishes it normally.
+- **`npm run list-action -- --payload '<json>'`** — apply one shopping-page tap
+  (`tick` / `untick` / `amount` / `add`). What `list-action.yml` runs; `--no-push`
+  skips the commit.
+- **`npm run list-sweep`** — move yesterday's page-ticked rows to Notion's trash.
+  `--dry-run` says what would go. What `list-sweep.yml` runs at midnight SGT.
 - **`npm run notify`** — reads `public/summary.json` and sends the Telegram
   message. Run by the cloud *after* the page is deployed, so the link is live.
 - **`npm run push-ss`** — the residential runner. Fetches search terms from the
@@ -1761,8 +1977,9 @@ typechecks the Cloudflare Worker on its own.*
   line where it would land in shell history.
 - **`npm run ext:build`** — rebuild the Chrome extension's `dist/`. Required after
   editing `synonyms.json`.
-- **`npm test`** — the 1,225 offline cases (`src/tests/`, then the relay and
-  Sheng Siong Worker suites). Free, fast, no network.
+- **`npm test`** — the offline cases (1,440 core + 78 relay + 35 Sheng Siong Worker
+  as of 2026-09-28): `src/tests/`, then the relay and Sheng Siong Worker suites.
+  Free, fast, no network.
 - **`npm run check`** — TypeScript type-check (no emit). **`npm run build`** emits
   `dist/`.
 
@@ -1821,12 +2038,15 @@ typechecks the Cloudflare Worker on its own.*
 
 ### The cloud jobs
 
-Nine GitHub Actions workflows:
+Eleven GitHub Actions workflows:
 
 - **`.github/workflows/vendor-sweep.yml`** — the price-book sweep in the cloud.
   Runs `vendor-scan` against the four shops the cloud can reach (NTUC, Sheng Siong,
   Guardian, MyProtein — 106 of the 120 row×shop pairs), then publishes the review
   page.
+  ⚠️ **Triggered by the relay at 12:00 SGT since 2026-09-28** (`vendorsweep`
+  dispatch). It has no `schedule:` of its own. If the trigger is ever lost again, the
+  tell is an empty `Location (Discount)` column across the whole Ingredients DB.
   ⚠️ **Report-only unless asked.** A manual run writes nothing by default; `write`
   records the clear picks, `ask` sends the Telegram message as well.
   ⚠️ **`SHENGSIONG_VIA_WORKER=1` is what makes the job real.** Without it the Sheng
@@ -1941,6 +2161,19 @@ Nine GitHub Actions workflows:
   blast radius from writing to Notion. Issue titles use a fixed `Item: ` prefix,
   which is what the workflow's allowlist matches, so renaming a button on the page
   cannot break the two-tap path.
+- **`.github/workflows/list-action.yml`** (added 2026-09-11) — one shopping-page tap.
+  `repository_dispatch: list-action` from the relay's `/list`; runs `npm run
+  list-action`, which commits `data/list-pending.json` itself. **No `concurrency`
+  group** — every tap is a different row, and a cancelled tap is a checkbox that
+  ticked on screen and did nothing. Races are handled by `reapply`.
+- **`.github/workflows/list-sweep.yml`** (added 2026-09-11) — the midnight clear-out,
+  `repository_dispatch: listsweep` from the relay's `0 16 * * *` cron. **Has** a
+  `concurrency` group (two sweeps would trash the same row). `workflow_dispatch`
+  offers a `dry-run` box. ⚠️ **The only workflow that deletes a Notion row.** Its own
+  workflow rather than a job in `tg-sweep.yml`, so a Telegram outage cannot silently
+  stop the list being cleared.
+- `daily.yml`'s build step now also receives **`LIST_SECRET`**, which it bakes into
+  the public `list.html`.
 - **`.github/workflows/tg-inbox.yml`** — one Telegram update, handled. Triggered by
   `repository_dispatch: tgupdate` from the relay Worker; runs `npm run tg-handle` with
   the update in `TG_UPDATE`, then commits `data/tg-inbox-state.json`. ⚠️ **No
@@ -2037,6 +2270,12 @@ secrets in the cloud — names only here, never values):
   write**. Needed by the Worker (as a `wrangler secret`) and wanted in `.env` so the
   laptop's `repository_dispatch` doesn't depend on the `gh` CLI's keyring. ⚠️ Not the
   same thing as the automatic `GITHUB_TOKEN` inside an Actions run.
+- **`LIST_SECRET`** — what `list.html` sends to the relay's `/list`. Set in **two**
+  places with the same value: `wrangler secret put LIST_SECRET` on the relay, and as a
+  repo Actions secret (read by `daily.yml`'s build). ⚠️ **It is embedded in the public
+  page by design.** Unset → the page renders read-only.
+- **`LIST_ENDPOINT`** — optional override for the relay's `/list` URL (defaults to the
+  live relay); for a fork or local `wrangler dev`.
 - **`SITE_URL`** — public URL of the Pages page (defaults to the live URL);
   used in the Telegram message.
 - **`SHENGSIONG_LIVE`** — set to `1` to force the live Sheng Siong scan instead
@@ -2060,8 +2299,9 @@ secrets in the cloud — names only here, never values):
 Access the Notion integration needs:
 
 - **Read** on the **Ingredients** and **Meal prep** databases — the daily scan.
-- **Write** ("Insert content") on the **grocery List** database — the Buy button.
-  Reading alone is no longer enough.
+- **Write** ("Insert content") on the **grocery List** database — the Buy button,
+  the shopping page's ticks/amounts/Add, and the midnight sweep, which moves rows to
+  the trash. Reading alone is no longer enough.
 - **Write** on **Ingredients** — the Add / Replace / park buttons and the
   extension.
 
@@ -2083,8 +2323,10 @@ Other requirements:
     generating a new one on both sides, not recovering it.
   - ⚠️ The Worker name is a **positional** argument to `wrangler tail`
     (`wrangler tail ss-worker`), not `--name`.
-  - **Free-plan cron limit is 5 per account**, and this project uses **3** (one on
-    the relay, two on `ss-worker`).
+  - **Free-plan cron limit is 5 per account**, and per the two `wrangler.toml` files
+    this project now declares **5** (three on the relay since 2026-09-28, two on
+    `ss-worker`). ⚠️ A sixth scheduled job needs a paid plan or folding into an
+    existing cron.
   - `ss-worker` needs `SCAN_SECRET` and `GITHUB_TOKEN`; the same `SCAN_SECRET` value
     must also be a **repository secret** on GitHub, so `scan-request.yml` and
     `price-new-items.yml` can present it.
@@ -2113,6 +2355,17 @@ Other requirements:
 - **Price book** — the `Vendor 1..4` slot columns on an Ingredients row: for each
   shop, the price, pack size, URL and item name you have on record there. Since the
   old baseline columns were deleted this is the **only** price record.
+- **Discount columns** — `Price (Discount)`, `Price per kg/L (discount)`,
+  `Location (Discount)` on an Ingredients row: today's best promotion, kept *beside*
+  the price book rather than in it, and cleared when the offer ends.
+- **Notes (column)** — keywords on an ingredient of which a matched product must
+  contain at least one. `{ }` inside it is a private note.
+- **Rate ceiling** — the price per kg/L you refused with *Too expensive*; anything at
+  or above it is no longer offered for that row at that shop.
+- **Ignore (review)** — "this shop doesn't sell this row": no more questions for that
+  row at that shop, but confident matches are still recorded.
+- **`list-pending.json`** — the queue of rows ticked on the shopping page, waiting
+  for the midnight clear-out. The only rows that can ever be deleted.
 - **Slot** — one shop's four columns on one row. It is the unit the price book
   writes and the unit a question is about: once a price is recorded for a row at a
   shop, a question about a *different* product for that same row and shop is stale,
@@ -2234,6 +2487,25 @@ Other requirements:
   token saved in the browser, instead of the default two-tap GitHub-issue flow.
 
 ## What changed in this update
+
+- **2026-10-01 — the shopping page, the noon price check, and a sharper matcher.**
+  - **Shopping page (`list.html`)**: tick, edit amounts and add items from any phone,
+    with nothing to set up; ticked rows go to Notion's trash at midnight. New
+    workflows `list-action.yml` and `list-sweep.yml`, new commands `build-list`,
+    `list-action`, `list-sweep`, and a new `LIST_SECRET`. Texting `List` or
+    `/list milk, eggs` now works as the list command.
+  - **BUG: the cloud price check had not run since 2026-09-09.** Nothing triggered it,
+    and it showed green regardless. The relay now fires it at 12:00 SGT daily, which
+    brings the project to five Cloudflare cron triggers, the free-plan limit.
+  - **Discount columns**: a shop's current offer is now recorded beside the normal
+    price instead of being thrown away.
+  - **Review page**: four category tabs (also on the deals page), and two new Don't-use
+    answers — *Too expensive* (sets a price ceiling) and *Ignore* (shop doesn't sell
+    it). Branded supplements are asked about rather than recorded on a wrong brand.
+  - **Matching**: a new Notes column of "any one of" keywords; numbers like `1000 mg`
+    and ranges like `1000-1100mg` are now judged on the number; `Multi-vitamin` finds
+    `Multivitamin`; capsule packs are no longer discarded on tablet-counted rows.
+  - **Groundwork for Denmark**: six vendor slots and Danish units (`gr`, `cl`, `dl`).
 
 - **2026-09-08 — the review page stops asking about things that have not changed.**
   It had been re-offering the same worse-value products every morning: a CeraVe
