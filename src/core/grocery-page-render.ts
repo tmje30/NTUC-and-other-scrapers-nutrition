@@ -88,6 +88,10 @@ li.row input.tick:disabled{cursor:not-allowed;opacity:.45}
 .qty input:disabled{border-color:transparent;opacity:.7}
 .body{flex:1 1 auto;min-width:0}
 .nm{font-weight:600;word-break:break-word}
+/* The name is a link when the product has a URL. Underlined faintly rather than coloured:
+   it must still read as the item on your list first, and a list of blue links is not one. */
+a.nm{color:inherit;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
+a.nm:hover{text-decoration-color:var(--acc)}
 .pl{font-size:.82rem;word-break:break-word;margin-top:3px;color:var(--dim)}
 .pl b{font-weight:600}
 /* The regular price is context; the offer is the news. Same size, different weight of
@@ -160,6 +164,28 @@ function priceLine(
 	return `<div class="pl ${opts.cls}">${line}</div>`;
 }
 
+/**
+ * The item name, as a link to the product you are actually going to buy.
+ *
+ * ⚠️ **The name, not just the shop label beside the price** (user, 2026-10-03: "can the
+ * card in the grocery list open up the product online"). The shop label has always been a
+ * link, but it is three small words at the end of a price line — in a shop, one-handed,
+ * the thing you press is the name of the thing you are looking for.
+ *
+ * ⚠️ **It points at the MAIN product, never the offer**, even on a discounted row. The
+ * offer keeps its own small link on the discount line, which is the shape the user asked
+ * for; swapping the big target to the promo would mean the obvious tap opens a listing
+ * that stops existing the day the promo ends.
+ *
+ * ⚠️ `.nm` keeps its class either way, so a row with no URL looks exactly as it did, and
+ * the page's own script goes on reading `.nm` for the undo tray without caring which it got.
+ */
+function nameHtml(r: ListRow): string {
+	const name = esc(r.name);
+	if (!r.currentUrl) return `<span class="nm">${name}</span>`;
+	return `<a class="nm" href="${esc(r.currentUrl)}" target="_blank" rel="noopener">${name}</a>`;
+}
+
 function priceBlock(r: ListRow): string {
 	const pct = discountPct(r);
 	const regular = priceLine(r.currentPrice, r.currentPerUnit, r.currentVendor, {
@@ -201,7 +227,7 @@ function rowHtml(r: ListRow, live: boolean): string {
   <span class="qty"><input class="amt" type="number" min="1" step="1" value="${r.amount}"${off}
     aria-label="How many ${esc(r.name)}"><span>&times;</span></span>
   <span class="body">
-    <span class="nm">${esc(r.name)}</span>
+    ${nameHtml(r)}
     ${priceBlock(r)}
     ${tags(r)}
   </span>

@@ -1,11 +1,13 @@
 import { check, describe, eq } from "./harness.js";
 import {
+	attachProductUrls,
 	discountPct,
 	parseCurrentPrice,
 	resolveExtraProps,
 	totals,
 	type ListRow,
 	parsePerUnitLine,
+	urlsFromSlots,
 } from "../core/grocery-page.js";
 import { listFragment, renderListPage, sameFragment } from "../core/grocery-page-render.js";
 import { due, lastSgtMidnight, queue, unqueue, type PendingFile } from "../core/list-pending.js";
@@ -210,6 +212,87 @@ const equal = renderListPage([row({ name: "Fish Sauce", currentPrice: 2.29, buyP
 	listSecret: "s",
 });
 check("an offer at the regular price gets no second line", !equal.includes('class="pl cut"'));
+
+describe("opening the product online");
+
+/**
+ * ⚠️ **The page has rendered these links since it was written; nothing ever showed one.**
+ * It read the list's own `URL - Current` / `URL - discount/Cheap` columns, and those are
+ * empty on every row (0 of 6 still to buy, checked 2026-10-03). The URLs live one relation
+ * away, in the Ingredients row's vendor slots, which the sweep fills on every price it
+ * records.
+ */
+const slots = [
+	{ vendorName: "NTUC", urlValue: "https://ntuc.test/carrots", priceValue: 2.0, sizeValue: 500 },
+	{ vendorName: "Sheng Siong", urlValue: "https://ss.test/carrots", priceValue: 1.6, sizeValue: 1000 },
+	{ vendorName: "Guardian", urlValue: "", priceValue: 1.0, sizeValue: 1000 },
+];
+const idx = urlsFromSlots(slots);
+eq("each shop's own product page is indexed", idx.byVendor.get("ntuc"), "https://ntuc.test/carrots");
+// ⚠️ Cheapest PER KG, not the sticker price: $1.60/1000g beats $2.00/500g.
+eq("the cheapest is per kg, not per pack", idx.cheapest, "https://ss.test/carrots");
+check("a slot with no URL is not indexed", !idx.byVendor.has("guardian"));
+
+const linked = (over: Partial<ListRow>) =>
+	attachProductUrls([row({ ingredientId: "ing-1", ...over })], new Map([["ing-1", idx]]))[0];
+
+eq(
+	"the main link follows the shop the regular price came from",
+	linked({ currentVendor: "Sheng Siong" }).currentUrl,
+	"https://ss.test/carrots",
+);
+eq("…matched however the shop is capitalised", linked({ currentVendor: "sheng siong" }).currentUrl, "https://ss.test/carrots");
+eq("…falling back to the cheapest when no shop is named", linked({ currentVendor: null }).currentUrl, "https://ss.test/carrots");
+
+/**
+ * ⚠️⚠️ **A named shop with no URL gets NO link — it must NOT fall through to the cheapest.**
+ * The page renders the link under the shop's own name (`— NTUC ↗`), so a fallthrough
+ * produces a link labelled NTUC that opens a different shop. Found on live data the day
+ * this was written: Purple Cabbage's regular price is NTUC's and the only URL recorded for
+ * it is Sheng Siong's. A mislabelled link is a wrong shop to walk to; no link is honest.
+ */
+eq("a named shop with no URL gets no link", linked({ currentVendor: "Guardian" }).currentUrl, null);
+eq("the offer link follows the DISCOUNT shop", linked({ dealVendor: "NTUC" }).dealUrl, "https://ntuc.test/carrots");
+
+// ⚠️⚠️ No cheapest-fallback for the offer: a link under a line that says "−41%" must open
+// the shop running it, not merely some shop that sells the thing.
+eq("an offer at a shop with no URL gets NO link", linked({ dealVendor: "Guardian" }).dealUrl, null);
+eq("…and neither does a row with no discount shop", linked({ dealVendor: null }).dealUrl, null);
+
+// ⚠️ A URL typed into the list by hand is the user's and is never overwritten.
+eq(
+	"a hand-typed link wins over the scraped one",
+	linked({ currentVendor: "Sheng Siong", currentUrl: "https://mine.test/x" }).currentUrl,
+	"https://mine.test/x",
+);
+// A row linked to no ingredient is left exactly as it was.
+eq("a row with no ingredient is untouched", attachProductUrls([row({ name: "Loose" })], new Map())[0].currentUrl, null);
+
+const linkedPage = renderListPage(
+	[
+		row({
+			name: "Carrots",
+			currentPrice: 1.6,
+			buyPrice: 0.95,
+			currentVendor: "NTUC",
+			dealVendor: "Sheng Siong",
+			currentUrl: "https://ntuc.test/carrots",
+			dealUrl: "https://ss.test/carrots",
+		}),
+	],
+	{ repo: "owner/repo", listEndpoint: "https://relay.example/list", listSecret: "s" },
+);
+check("the item NAME opens the main product", linkedPage.includes('<a class="nm" href="https://ntuc.test/carrots"'));
+check("…in a new tab, safely", linkedPage.includes('target="_blank" rel="noopener"'));
+// ⚠️ The big target is the main product even on a discounted row — the offer gets the
+// small link beside its own price, which is what was asked for.
+check("the offer keeps its own small link", linkedPage.includes('href="https://ss.test/carrots"'));
+const noLink = renderListPage([row({ name: "Carrots", currentPrice: 2 })], {
+	repo: "owner/repo",
+	listEndpoint: "https://relay.example/list",
+	listSecret: "s",
+});
+check("a row with no URL is still a plain span", noLink.includes('<span class="nm">Carrots</span>'));
 
 describe("catching up with a list texted since the page was built");
 

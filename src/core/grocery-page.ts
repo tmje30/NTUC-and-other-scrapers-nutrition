@@ -1,5 +1,8 @@
 import type { Client } from "@notionhq/client";
 import { GROCERY_LIST_DS, resolveListProps, type ListProps } from "./grocery-list.js";
+import { normTag, queryAll } from "./notion.js";
+import { INGREDIENTS_DS } from "./ingredients-schema.js";
+import { pricePer1000, readVendorSlots, resolveVendorSlotProps } from "./vendor-slots.js";
 
 /**
  * **`list.html` — the shopping page.** Your Notion grocery List, as something you can
@@ -62,6 +65,15 @@ export interface ListRow {
 	dealUrl: string | null;
 	currentUrl: string | null;
 	ticked: boolean;
+	/**
+	 * The Ingredients row this line is linked to, when it is linked to one.
+	 *
+	 * ⚠️ Carried only so the product URLs can be fetched from that row's vendor slots —
+	 * see `attachProductUrls`. The list's own `URL - Current` / `URL - discount/Cheap`
+	 * columns exist but were empty on every row when checked (0 of 6, 2026-10-03), so
+	 * without this the page has nothing to link to.
+	 */
+	ingredientId?: string | null;
 }
 
 /**
@@ -204,11 +216,112 @@ export async function readGroceryList(client: Client): Promise<ListRow[]> {
 				dealUrl: get(extra.dealUrl)?.url || null,
 				currentUrl: get(extra.currentUrl)?.url || null,
 				ticked: Boolean(get(props.done)?.checkbox),
+				ingredientId: (get(props.ingredientRelation)?.relation ?? [])[0]?.id ?? null,
 			});
 		}
 		cursor = res.has_more ? res.next_cursor : undefined;
 	} while (cursor);
-	return rows;
+
+	// ⚠️ Its own try: a shopping list without links is the page as it has always been, and
+	// a hiccup reading Ingredients must not cost you the list itself.
+	try {
+		return attachProductUrls(rows, await readIngredientUrls(client));
+	} catch {
+		return rows;
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Where to buy it — the product pages behind each row
+// ---------------------------------------------------------------------------
+
+/**
+ * **The shop links on the shopping page, fetched from the Ingredients row's vendor slots.**
+ *
+ * The page has rendered a link beside each price since it was written — `priceLine` takes a
+ * `url` and emits `— Sheng Siong ↗`. Nothing ever appeared, because it was reading the
+ * list's own `URL - Current` and `URL - discount/Cheap` columns and **those are empty on
+ * every row** (0 of 6 still to buy, checked 2026-10-03). The URLs do exist, one level away:
+ * the sweep writes `URL [Vendor n]` into the Ingredients row every time it records a price.
+ *
+ * ⚠️ **The row's own columns still win.** They are the user's to type in, and a hand-entered
+ * link must not be overwritten by a scraped one. This only fills what is blank.
+ *
+ * ⚠️ **One query for the whole Ingredients DB, not one fetch per row.** ~90 ingredients
+ * against ~6 open rows either way; per-row fetches would be 6 round trips that grow with the
+ * shopping list, on a page build that already waits on Notion twice.
+ */
+export interface IngredientUrls {
+	/** `normTag`'d shop name → that shop's product page. */
+	byVendor: Map<string, string>;
+	/**
+	 * The cheapest priced slot's URL, for a row whose shop cannot be named.
+	 *
+	 * ⚠️ "Cheapest" is per kg/L — `pricePer1000`, the same expression Notion's own
+	 * `Cheapest Price/Kg` uses — never the sticker price. A 2 kg bag at $6 is cheaper than
+	 * a 250 g one at $4, and linking the smaller figure would send you to the dearer shelf.
+	 */
+	cheapest: string | null;
+}
+
+/** Index one ingredient's slots. Pure, so the precedence above can be pinned by tests. */
+export function urlsFromSlots(
+	slots: readonly { vendorName: string; urlValue: string; priceValue: number | null; sizeValue: number | null }[],
+): IngredientUrls {
+	const byVendor = new Map<string, string>();
+	let cheapest: string | null = null;
+	let best = Infinity;
+	for (const s of slots) {
+		if (!s.urlValue) continue;
+		if (s.vendorName) byVendor.set(normTag(s.vendorName), s.urlValue);
+		const per = pricePer1000(s.priceValue, s.sizeValue);
+		if (per != null && per < best) {
+			best = per;
+			cheapest = s.urlValue;
+		}
+	}
+	return { byVendor, cheapest };
+}
+
+/**
+ * Fill each row's two links from its ingredient. Pure — the Notion read is separate.
+ *
+ * `currentVendor` is the shop named by the user's own `Current Price` formula, i.e. where
+ * the regular price comes from, so matching it by name IS "the cheapest main product".
+ * `cheapest` is the fallback for a row whose formula named no shop.
+ */
+export function attachProductUrls(rows: ListRow[], index: Map<string, IngredientUrls>): ListRow[] {
+	return rows.map((r) => {
+		const u = r.ingredientId ? index.get(r.ingredientId) : undefined;
+		if (!u) return r;
+		const at = (vendor: string | null) => (vendor ? (u.byVendor.get(normTag(vendor)) ?? null) : null);
+		return {
+			...r,
+			// ⚠️⚠️ **`cheapest` is for a row that names NO shop, never for one whose shop simply
+			// has no URL recorded.** The page renders the link UNDER THE SHOP'S NAME — `— NTUC ↗`
+			// — so falling through from an unmatched NTUC to the cheapest slot produced a link
+			// labelled NTUC that opened shengsiong.com.sg. Caught on live data, 2026-10-03:
+			// Purple Cabbage, whose regular price is NTUC's and whose only recorded URL is Sheng
+			// Siong's. No link at all is the honest answer; a mislabelled one is a wrong shop to
+			// walk to.
+			currentUrl: r.currentUrl ?? at(r.currentVendor) ?? (r.currentVendor ? null : u.cheapest),
+			// ⚠️ No `cheapest` fallback here, deliberately. The offer link must point at the
+			// shop running the offer; falling back to "some shop that sells this" would open a
+			// product that is not on promo under a line that says it is.
+			dealUrl: r.dealUrl ?? at(r.dealVendor),
+		};
+	});
+}
+
+/** Read every ingredient's vendor slots once, keyed by page id. */
+export async function readIngredientUrls(client: Client): Promise<Map<string, IngredientUrls>> {
+	const ds = (await client.dataSources.retrieve({ data_source_id: INGREDIENTS_DS } as any)) as any;
+	const slotDefs = resolveVendorSlotProps(ds.properties ?? {});
+	const index = new Map<string, IngredientUrls>();
+	for (const page of await queryAll(client, INGREDIENTS_DS)) {
+		index.set(page.id, urlsFromSlots(readVendorSlots(page.properties ?? {}, slotDefs)));
+	}
+	return index;
 }
 
 // ---------------------------------------------------------------------------
