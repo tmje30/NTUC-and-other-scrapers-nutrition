@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-02T04:13:12.862Z",
+  "updatedAt": "2026-10-03T04:13:37.924Z",
   "pending": [
     {
       "token": "828065",
@@ -164,7 +164,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-02T04:05:14.386Z"
+      "askedAt": "2026-10-03T04:04:55.208Z"
     },
     {
       "token": "x9yj45",
@@ -194,7 +194,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-02T04:05:30.322Z"
+      "askedAt": "2026-10-03T04:05:14.444Z"
     },
     {
       "token": "sq7mad",
@@ -224,7 +224,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-02T04:05:37.160Z"
+      "askedAt": "2026-10-03T04:05:22.807Z"
     },
     {
       "token": "s2gzte",
@@ -256,7 +256,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-02T04:05:52.108Z"
+      "askedAt": "2026-10-03T04:05:37.176Z"
     },
     {
       "token": "dbsqsu",
@@ -288,82 +288,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-02T04:05:59.997Z"
-    },
-    {
-      "token": "840qkk",
-      "ingredientId": "37669a18-4fe7-8094-ad2b-d156a2f10a29",
-      "ingredientName": "egg  (Omega 3 Enriched) (550g)",
-      "key": "egg",
-      "unitType": "By Unit",
-      "category": "[1] Meats/Dairy/Proteins",
-      "vendor": "NTUC",
-      "slotN": 1,
-      "priceSgd": 2.85,
-      "size": 10,
-      "url": "https://www.fairprice.com.sg/product/pasar-fresh-eggs-10-eggs-550g-451724",
-      "itemName": "Pasar Fresh Eggs",
-      "statedSize": "10 pcs",
-      "brandName": "Pasar",
-      "perLabel": "$5.18/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 2 of 3, offered as a suggestion. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 1,
-      "askedAt": "2026-10-02T04:06:39.343Z"
-    },
-    {
-      "token": "9l7kwz",
-      "ingredientId": "37669a18-4fe7-8094-ad2b-d156a2f10a29",
-      "ingredientName": "egg  (Omega 3 Enriched) (550g)",
-      "key": "egg",
-      "unitType": "By Unit",
-      "category": "[1] Meats/Dairy/Proteins",
-      "vendor": "NTUC",
-      "slotN": 1,
-      "priceSgd": 4.7,
-      "size": 15,
-      "url": "https://www.fairprice.com.sg/product/13065350",
-      "itemName": "Dasoon Premium Fresh Eggs",
-      "statedSize": "15 pcs",
-      "brandName": "Dasoon",
-      "perLabel": "$8.55/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 2,
-      "askedAt": "2026-10-02T04:06:39.344Z"
-    },
-    {
-      "token": "qge134",
-      "ingredientId": "37669a18-4fe7-8094-ad2b-d156a2f10a29",
-      "ingredientName": "egg  (Omega 3 Enriched) (550g)",
-      "key": "egg",
-      "unitType": "By Unit",
-      "category": "[1] Meats/Dairy/Proteins",
-      "vendor": "NTUC",
-      "slotN": 1,
-      "priceSgd": 6.95,
-      "size": 30,
-      "url": "https://www.fairprice.com.sg/product/pasar-fresh-eggs-30-per-pack-13294464",
-      "itemName": "Pasar Fresh Eggs",
-      "statedSize": "30 pcs",
-      "brandName": "Pasar",
-      "perLabel": "$12.64/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is the closest of 3 offered, best first. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-10-02T04:06:39.344Z"
+      "askedAt": "2026-10-03T04:05:44.192Z"
     },
     {
       "token": "s95muz",
@@ -388,7 +313,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-10-02T04:06:46.903Z"
+      "askedAt": "2026-10-03T04:06:27.175Z"
     },
     {
       "token": "bhnc16",
@@ -412,7 +337,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-02T04:06:46.903Z"
+      "askedAt": "2026-10-03T04:06:27.175Z"
     },
     {
       "token": "f67vcf",
@@ -437,7 +362,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-10-02T04:08:27.703Z"
+      "askedAt": "2026-10-03T04:08:12.940Z"
     },
     {
       "token": "d6lr2l",
@@ -462,7 +387,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-10-02T04:08:27.703Z"
+      "askedAt": "2026-10-03T04:08:12.941Z"
     },
     {
       "token": "fvl5q1",
@@ -487,7 +412,40 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-02T04:08:27.704Z"
+      "askedAt": "2026-10-03T04:08:12.941Z"
+    },
+    {
+      "token": "xoxexm",
+      "ingredientId": "34d69a18-4fe7-808c-85c7-dee84559e2af",
+      "ingredientName": "Edamame (peeled/Frozen)",
+      "key": "edamam",
+      "unitType": "By Gram",
+      "category": "[3] Fruits/Vegetables",
+      "vendor": "NTUC",
+      "slotN": 1,
+      "priceSgd": 4.2,
+      "size": 500,
+      "url": "https://www.fairprice.com.sg/product/seaboss-edamame-500-g-90027996",
+      "itemName": "Seaboss Edamame",
+      "statedSize": "500g",
+      "brandName": "SEABOSS",
+      "perLabel": "$8.40/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 2 of 3, offered as a suggestion. Accept only if it is the same thing."
+        },
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 6.9,
+          "foundPer": 8.4,
+          "perWord": "kg",
+          "vendor": "NTUC",
+          "note": "DEARER than the NTUC price already recorded: $6.90 / 1000g = $6.90/kg → $4.20 / 500g = $8.40/kg. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 1,
+      "askedAt": "2026-10-03T04:08:32.406Z"
     },
     {
       "token": "g19own",
@@ -508,7 +466,7 @@
       "reasons": [
         {
           "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 2 of 3, offered as a suggestion. Accept only if it is the same thing."
+          "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
         },
         {
           "kind": "dearer-than-recorded",
@@ -519,41 +477,8 @@
           "note": "DEARER than the NTUC price already recorded: $6.90 / 1000g = $6.90/kg → $3.68 / 500g = $7.36/kg. Not written — accept only if the old price is gone."
         }
       ],
-      "rank": 1,
-      "askedAt": "2026-10-02T04:08:45.833Z"
-    },
-    {
-      "token": "4s83oz",
-      "ingredientId": "34d69a18-4fe7-808c-85c7-dee84559e2af",
-      "ingredientName": "Edamame (peeled/Frozen)",
-      "key": "edamam",
-      "unitType": "By Gram",
-      "category": "[3] Fruits/Vegetables",
-      "vendor": "NTUC",
-      "slotN": 1,
-      "priceSgd": 5.2,
-      "size": 500,
-      "url": "https://www.fairprice.com.sg/product/kirei-frozen-edamame-500g-90008035",
-      "itemName": "Kirei Frozen Edamame",
-      "statedSize": "500g",
-      "brandName": "Kirei",
-      "perLabel": "$10.40/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
-        },
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 6.9,
-          "foundPer": 10.4,
-          "perWord": "kg",
-          "vendor": "NTUC",
-          "note": "DEARER than the NTUC price already recorded: $6.90 / 1000g = $6.90/kg → $5.20 / 500g = $10.40/kg. Not written — accept only if the old price is gone."
-        }
-      ],
       "rank": 2,
-      "askedAt": "2026-10-02T04:08:45.833Z"
+      "askedAt": "2026-10-03T04:08:32.406Z"
     },
     {
       "token": "3n90th",
@@ -586,7 +511,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-02T04:08:45.834Z"
+      "askedAt": "2026-10-03T04:08:32.406Z"
     },
     {
       "token": "vf2y42",
@@ -611,7 +536,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-02T04:08:53.032Z"
+      "askedAt": "2026-10-03T04:08:45.196Z"
     },
     {
       "token": "jguxxc",
@@ -640,7 +565,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-02T04:08:58.397Z"
+      "askedAt": "2026-10-03T04:08:52.081Z"
     },
     {
       "token": "gbzr41",
@@ -669,7 +594,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-02T04:09:00.132Z"
+      "askedAt": "2026-10-03T04:08:54.019Z"
     },
     {
       "token": "u4vtu5",
@@ -698,7 +623,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-02T04:09:23.473Z"
+      "askedAt": "2026-10-03T04:09:21.793Z"
     },
     {
       "token": "dnrjbs",
@@ -727,7 +652,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-02T04:09:34.410Z"
+      "askedAt": "2026-10-03T04:09:35.365Z"
     },
     {
       "token": "f213w2",
@@ -756,7 +681,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-02T04:10:08.141Z"
+      "askedAt": "2026-10-03T04:09:58.331Z"
     },
     {
       "token": "7s2mlq",
@@ -785,7 +710,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-02T04:10:19.208Z"
+      "askedAt": "2026-10-03T04:10:14.802Z"
     },
     {
       "token": "9hhe6h",
@@ -813,10 +738,10 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-02T04:10:36.813Z"
+      "askedAt": "2026-10-03T04:10:37.506Z"
     },
     {
-      "token": "m34o6u",
+      "token": "ln6rsl",
       "ingredientId": "34b69a18-4fe7-80c7-9de6-fa3234a2a9d8",
       "ingredientName": "Banana (Fruit)",
       "key": "banana",
@@ -824,29 +749,62 @@
       "category": "[3] Fruits/Vegetables",
       "vendor": "NTUC",
       "slotN": 1,
-      "priceSgd": 38.4,
-      "size": 17,
-      "url": "https://www.fairprice.com.sg/product/brothers-all-natural-banana-crisps-12-x-17g-90007104",
-      "itemName": "Brothers-All-Natural Banana Crisps",
-      "statedSize": "17g",
-      "brandName": "Brothers All Natural",
-      "perLabel": "$2258.82/kg",
+      "priceSgd": 4.55,
+      "size": 820,
+      "url": "https://www.fairprice.com.sg/product/sumifru-sweet-mountain-bananas-820g-13137896",
+      "itemName": "Sumifru Sweet Mountain Bananas",
+      "statedSize": "820g",
+      "brandName": "Sumifru",
+      "perLabel": "$5.55/kg",
       "reasons": [
         {
           "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 2 of 2, offered as a suggestion. Accept only if it is the same thing."
+          "note": "no product here MATCHED this row — this is alternative 2 of 3, offered as a suggestion. Accept only if it is the same thing."
         },
         {
           "kind": "dearer-than-recorded",
           "recordedPer": 3.6428571428571423,
-          "foundPer": 2258.823529411765,
+          "foundPer": 5.548780487804878,
           "perWord": "kg",
           "vendor": "NTUC",
-          "note": "DEARER than the NTUC price already recorded: $2.55 / 700g = $3.64/kg → $38.40 / 17g = $2258.82/kg. Not written — accept only if the old price is gone."
+          "note": "DEARER than the NTUC price already recorded: $2.55 / 700g = $3.64/kg → $4.55 / 820g = $5.55/kg. Not written — accept only if the old price is gone."
         }
       ],
       "rank": 1,
-      "askedAt": "2026-10-02T04:10:45.705Z"
+      "askedAt": "2026-10-03T04:10:44.525Z"
+    },
+    {
+      "token": "wusvuz",
+      "ingredientId": "34b69a18-4fe7-80c7-9de6-fa3234a2a9d8",
+      "ingredientName": "Banana (Fruit)",
+      "key": "banana",
+      "unitType": "By Gram",
+      "category": "[3] Fruits/Vegetables",
+      "vendor": "NTUC",
+      "slotN": 1,
+      "priceSgd": 5.98,
+      "size": 600,
+      "url": "https://www.fairprice.com.sg/product/orgo-fresh-pisang-mas-banana",
+      "itemName": "Agro Fresh Pisang Mas Banana",
+      "statedSize": "600g",
+      "brandName": "Agro Fresh",
+      "perLabel": "$9.97/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
+        },
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 3.6428571428571423,
+          "foundPer": 9.966666666666667,
+          "perWord": "kg",
+          "vendor": "NTUC",
+          "note": "DEARER than the NTUC price already recorded: $2.55 / 700g = $3.64/kg → $5.98 / 600g = $9.97/kg. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 2,
+      "askedAt": "2026-10-03T04:10:44.525Z"
     },
     {
       "token": "vxemd3",
@@ -867,7 +825,7 @@
       "reasons": [
         {
           "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is the closest of 2 offered, best first. Accept only if it is the same thing."
+          "note": "no product here MATCHED this row — this is the closest of 3 offered, best first. Accept only if it is the same thing."
         },
         {
           "kind": "dearer-than-recorded",
@@ -879,7 +837,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-02T04:10:45.705Z"
+      "askedAt": "2026-10-03T04:10:44.525Z"
     },
     {
       "token": "b4wd9o",
@@ -908,7 +866,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-02T04:11:05.099Z"
+      "askedAt": "2026-10-03T04:11:06.425Z"
     },
     {
       "token": "1wi52z",
@@ -934,7 +892,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-10-02T04:11:27.199Z"
+      "askedAt": "2026-10-03T04:11:29.479Z"
     },
     {
       "token": "b6wiqu",
@@ -960,7 +918,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-10-02T04:11:27.199Z"
+      "askedAt": "2026-10-03T04:11:29.479Z"
     },
     {
       "token": "hay2mf",
@@ -986,7 +944,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-02T04:11:27.200Z"
+      "askedAt": "2026-10-03T04:11:29.480Z"
     },
     {
       "token": "qui19q",
@@ -1015,7 +973,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-02T04:11:36.787Z"
+      "askedAt": "2026-10-03T04:11:55.588Z"
     },
     {
       "token": "8ke5kx",
@@ -1044,7 +1002,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-02T04:11:50.186Z"
+      "askedAt": "2026-10-03T04:12:14.671Z"
     },
     {
       "token": "shzecn",
@@ -1073,7 +1031,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-02T04:11:53.299Z"
+      "askedAt": "2026-10-03T04:12:17.768Z"
     },
     {
       "token": "8neh9y",
@@ -1102,12 +1060,41 @@
         },
         {
           "kind": "outlier",
-          "factor": 3.7029585798816576,
-          "note": "3.7× DEARER than this row's other shop"
+          "factor": 4.440397350993377,
+          "note": "4.4× DEARER than this row's other shop"
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-02T04:12:01.133Z"
+      "askedAt": "2026-10-03T04:12:23.864Z"
+    },
+    {
+      "token": "la0k34",
+      "ingredientId": "34b69a18-4fe7-80f1-8ecb-d764d2abe554",
+      "ingredientName": "Green Tea (50 x 2g)",
+      "key": "green tea",
+      "unitType": "By Unit",
+      "category": "[7] Teas/Coffees",
+      "vendor": "Sheng Siong",
+      "slotN": 2,
+      "priceSgd": 7.75,
+      "size": 50,
+      "url": "https://shengsiong.com.sg/product/osk-japanese-green-tea-teabag-50-x-2-g",
+      "itemName": "Japanese Green Tea Teabag",
+      "statedSize": "50 pcs",
+      "brandName": "OSK",
+      "perLabel": "$77.50/kg",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 13.8,
+          "foundPer": 15.5,
+          "perWord": "100 pcs",
+          "vendor": "Sheng Siong",
+          "note": "DEARER than the Sheng Siong price already recorded: $6.90 / 50 pcs = $13.80/100 pcs → $7.75 / 50 pcs = $15.50/100 pcs. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-10-03T04:12:40.237Z"
     },
     {
       "token": "6bi6q1",
@@ -1136,10 +1123,10 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-02T04:12:20.794Z"
+      "askedAt": "2026-10-03T04:12:46.057Z"
     },
     {
-      "token": "o9zgse",
+      "token": "ynznq9",
       "ingredientId": "34b69a18-4fe7-8079-955e-ef44e9443bac",
       "ingredientName": "Muscovado Sugar (Brown)",
       "key": "brown muscovado sugar",
@@ -1147,25 +1134,25 @@
       "category": "[5[ Sugar/Sweetners",
       "vendor": "NTUC",
       "slotN": 1,
-      "priceSgd": 6.35,
-      "size": 325,
-      "url": "https://www.fairprice.com.sg/product/tate-and-lyle-dark-muscovado-sugar",
-      "itemName": "Tate and Lyle Dark Muscovado Sugar",
-      "statedSize": "325g",
-      "brandName": "Tate and Lyle",
-      "perLabel": "$19.54/kg",
+      "priceSgd": 4,
+      "size": 250,
+      "url": "https://www.fairprice.com.sg/product/redman-dark-muscovado-sugar",
+      "itemName": "RedMan Dark Muscovado Sugar",
+      "statedSize": "250g",
+      "brandName": "Redman",
+      "perLabel": "$16.00/kg",
       "reasons": [
         {
           "kind": "dearer-than-recorded",
           "recordedPer": 12.52,
-          "foundPer": 19.538461538461537,
+          "foundPer": 16,
           "perWord": "kg",
           "vendor": "NTUC",
-          "note": "DEARER than the NTUC price already recorded: $3.13 / 250g = $12.52/kg → $6.35 / 325g = $19.54/kg. Not written — accept only if the old price is gone."
+          "note": "DEARER than the NTUC price already recorded: $3.13 / 250g = $12.52/kg → $4.00 / 250g = $16.00/kg. Not written — accept only if the old price is gone."
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-02T04:12:37.692Z"
+      "askedAt": "2026-10-03T04:13:04.606Z"
     },
     {
       "token": "6a6jwr",
@@ -1194,7 +1181,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-02T04:13:12.862Z"
+      "askedAt": "2026-10-03T04:13:37.924Z"
     }
   ],
   "rejected": [
@@ -1310,20 +1297,8 @@
     }
   ],
   "moves": {
-    "generatedAt": "2026-10-02T04:13:12.863Z",
-    "reconfirmed": 57,
-    "moves": [
-      {
-        "row": "Instant Coffee (plain)",
-        "vendor": "NTUC",
-        "recordedText": "$8.45 / 420g",
-        "foundText": "$7.55 / 450g",
-        "recordedPer": 20.119047619047617,
-        "foundPer": 16.77777777777778,
-        "perWord": "kg",
-        "product": "Ah Huat Kopitiam Instant White Coffee",
-        "url": "https://www.fairprice.com.sg/product/ah-huat-kopitiam-instant-white-coffee-450g-13188220"
-      }
-    ]
+    "generatedAt": "2026-10-03T04:13:37.925Z",
+    "reconfirmed": 59,
+    "moves": []
   }
 }
