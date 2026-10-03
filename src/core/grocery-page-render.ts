@@ -90,8 +90,11 @@ li.row input.tick:disabled{cursor:not-allowed;opacity:.45}
 .nm{font-weight:600;word-break:break-word}
 /* The name is a link when the product has a URL. Underlined faintly rather than coloured:
    it must still read as the item on your list first, and a list of blue links is not one. */
-a.nm{color:inherit;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
+a.nm{color:inherit;text-decoration:underline;text-decoration-color:var(--dim);text-underline-offset:3px}
 a.nm:hover{text-decoration-color:var(--acc)}
+/* ⚠️ The arrow is a ::after, NOT markup: the page's script reads .nm's textContent for the
+   undo tray, and an arrow inside the element would ride along into the tray's label. */
+a.nm::after{content:" \\2197";font-size:.78em;color:var(--dim);text-decoration:none}
 .pl{font-size:.82rem;word-break:break-word;margin-top:3px;color:var(--dim)}
 .pl b{font-weight:600}
 /* The regular price is context; the offer is the news. Same size, different weight of
