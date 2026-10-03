@@ -1,5 +1,6 @@
 import type { Client } from "@notionhq/client";
 import { GROCERY_LIST_DS, resolveListProps, type ListProps } from "./grocery-list.js";
+import { readDiscount } from "./discount.js";
 import { normTag, queryAll } from "./notion.js";
 import { INGREDIENTS_DS } from "./ingredients-schema.js";
 import { pricePer1000, readVendorSlots, resolveVendorSlotProps } from "./vendor-slots.js";
@@ -262,11 +263,24 @@ export interface IngredientUrls {
 	 * a 250 g one at $4, and linking the smaller figure would send you to the dearer shelf.
 	 */
 	cheapest: string | null;
+	/**
+	 * `URL item (Discount)` — the offer's own listing, written by the sweep beside the
+	 * price and name of the thing on promo (column added by the user, 2026-10-03).
+	 *
+	 * ⚠️ **Preferred over the vendor slot's URL for the offer link, and the difference is
+	 * real.** The slot records what that shop normally sells this row as; the discount
+	 * columns record what is on offer today, and they are not always the same listing —
+	 * Green Tea's Sheng Siong slot says "Green Tea" while its promo was on a different
+	 * teabag. The offer link must open the thing the "−21%" refers to.
+	 */
+	offer: string | null;
 }
 
 /** Index one ingredient's slots. Pure, so the precedence above can be pinned by tests. */
 export function urlsFromSlots(
 	slots: readonly { vendorName: string; urlValue: string; priceValue: number | null; sizeValue: number | null }[],
+	/** `URL item (Discount)`, when that row has one. See `IngredientUrls.offer`. */
+	offer: string | null = null,
 ): IngredientUrls {
 	const byVendor = new Map<string, string>();
 	let cheapest: string | null = null;
@@ -280,7 +294,7 @@ export function urlsFromSlots(
 			cheapest = s.urlValue;
 		}
 	}
-	return { byVendor, cheapest };
+	return { byVendor, cheapest, offer: offer || null };
 }
 
 /**
@@ -308,7 +322,9 @@ export function attachProductUrls(rows: ListRow[], index: Map<string, Ingredient
 			// ⚠️ No `cheapest` fallback here, deliberately. The offer link must point at the
 			// shop running the offer; falling back to "some shop that sells this" would open a
 			// product that is not on promo under a line that says it is.
-			dealUrl: r.dealUrl ?? at(r.dealVendor),
+			// ⚠️ The discount column FIRST: it names the listing that is actually on offer, which
+			// is not always the one the slot records. The vendor slot is the fallback.
+			dealUrl: r.dealUrl ?? u.offer ?? at(r.dealVendor),
 		};
 	});
 }
@@ -319,7 +335,10 @@ export async function readIngredientUrls(client: Client): Promise<Map<string, In
 	const slotDefs = resolveVendorSlotProps(ds.properties ?? {});
 	const index = new Map<string, IngredientUrls>();
 	for (const page of await queryAll(client, INGREDIENTS_DS)) {
-		index.set(page.id, urlsFromSlots(readVendorSlots(page.properties ?? {}, slotDefs)));
+		index.set(
+			page.id,
+			urlsFromSlots(readVendorSlots(page.properties ?? {}, slotDefs), readDiscount(page.properties ?? {}).url),
+		);
 	}
 	return index;
 }

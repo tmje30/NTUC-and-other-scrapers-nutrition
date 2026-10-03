@@ -55,7 +55,7 @@ eq("a counted pack with no weight anywhere falls back to pieces", rate("By Unit"
 check("a free or missing price has no rate", rate("By Gram", 0, 500) === null);
 check("a pack with no size has no rate", rate("By Gram", 4.9, null) === null);
 
-describe("discounts — what goes in the four cells");
+describe("discounts — what goes in the five cells");
 
 const offer = formatDiscount({
 	vendor: "Guardian",
@@ -64,12 +64,15 @@ const offer = formatDiscount({
 	size: 100,
 	rowName: "Toothpaste, Sensitive",
 	itemName: "Sensodyne Repair & Protect 100g",
+	url: "https://guardian.test/sensodyne-100g",
 });
 // ⚠️ **The figure alone** (user, 2026-10-03). No $, no pack — the pack moved to the item cell.
 eq("the price cell is the bare figure", offer.price, "6.63");
 eq("the item cell carries the name and the pack", offer.itemName, "Sensodyne Repair & Protect 100g (100g)");
 eq("the rate cell carries the unit", offer.rate, "$66.30/kg");
 eq("the location cell is the shop", offer.location, "Guardian");
+// ⚠️ The offer's OWN listing, into the url column the user added on 2026-10-03.
+eq("the url cell is the offer listing", offer.url, "https://guardian.test/sensodyne-100g");
 eq("...and the rate is kept as a number for the compare", offer.rateValue, 66.3);
 
 const counted = formatDiscount({
@@ -155,9 +158,11 @@ const schema = {
 	[DISCOUNT_PROPS.RATE]: { type: "rich_text" },
 	[DISCOUNT_PROPS.LOCATION]: { type: "rich_text" },
 	[DISCOUNT_PROPS.ITEM]: { type: "rich_text" },
+	// ⚠️ A `url` property, NOT rich text — see DISCOUNT_PROPS.URL.
+	[DISCOUNT_PROPS.URL]: { type: "url" },
 };
 const wrote = discountProperties(schema, offer);
-eq("all four columns are sent", wrote.written.length, 4);
+eq("all five columns are sent", wrote.written.length, 5);
 eq("the price lands as rich text", wrote.properties[DISCOUNT_PROPS.PRICE].rich_text[0].text.content, "6.63");
 eq(
 	"...and the item name beside it",
@@ -165,15 +170,15 @@ eq(
 	"Sensodyne Repair & Protect 100g (100g)",
 );
 const cleared = discountProperties(schema, null);
-eq("a clear sends all four", cleared.written.length, 4);
+eq("a clear sends all five", cleared.written.length, 5);
 eq("...as genuinely empty cells", cleared.properties[DISCOUNT_PROPS.LOCATION].rich_text.length, 0);
 
 // ⚠️ A missing column is reported by name, never a thrown update. A database with two of
 // the three still gets the two — the extension refusing every capture over one renamed
 // column is a mistake this project has already made once (2026-08-09).
 const partial = discountProperties({ [DISCOUNT_PROPS.LOCATION]: { type: "rich_text" } }, offer);
-eq("a database missing three columns still writes the fourth", partial.written.length, 1);
-eq("...and names what it could not write", partial.skipped.length, 3);
+eq("a database missing four columns still writes the fifth", partial.written.length, 1);
+eq("...and names what it could not write", partial.skipped.length, 4);
 check(
 	"...by column name",
 	partial.skipped.some((s) => s.includes(DISCOUNT_PROPS.PRICE)),
@@ -185,3 +190,37 @@ const legacy = discountProperties(
 	offer,
 );
 check("the rate is written under whichever spelling exists", "Price per kg/L (Discount)" in legacy.properties);
+
+/**
+ * ⚠️⚠️ **`URL item (Discount)` is a `url` property and the other four are rich text.**
+ * Sending `{rich_text:[…]}` at a url column is a 400 that takes the WHOLE update with it —
+ * including the four cells that were fine — so the writer goes by the schema's declared
+ * type rather than assuming one.
+ */
+eq("the url column is written as a url, not rich text", wrote.properties[DISCOUNT_PROPS.URL], {
+	url: "https://guardian.test/sensodyne-100g",
+});
+// ⚠️ An empty url is `null`, not `""`: Notion rejects an empty string for a url column.
+eq("clearing it sends null", cleared.properties[DISCOUNT_PROPS.URL], { url: null });
+
+// A shop that published no link for the offer clears the cell, rather than leaving the
+// PREVIOUS offer's URL sitting under this one's name and price.
+const noLink = formatDiscount({
+	vendor: "NTUC",
+	unitType: "By Gram",
+	promoSgd: 2.0,
+	size: 500,
+	rowName: "Rice",
+	itemName: "Some Rice",
+});
+eq("no link from the shop is an empty url", noLink.url, "");
+eq("…which clears the cell", discountProperties(schema, noLink).properties[DISCOUNT_PROPS.URL], { url: null });
+
+// ⚠️ A column of a type this cannot write is reported, never guessed at. It is the user's
+// column, and a wrong shape fails the whole update rather than just that cell.
+const wrongType = discountProperties({ [DISCOUNT_PROPS.URL]: { type: "number" } }, offer);
+eq("a column of the wrong type writes nothing", wrongType.written.length, 0);
+check(
+	"…and says what it found instead",
+	wrongType.skipped.some((s) => s.includes("number")),
+);

@@ -49,6 +49,19 @@ export const DISCOUNT_PROPS = {
 	 * if it ever goes missing rather than failing the whole write.
 	 */
 	ITEM: "Item name (Discount)",
+	/**
+	 * **URL — the offer's own product page** (column created by the user, 2026-10-03).
+	 *
+	 * ⚠️ **A `url` property, not `rich_text` like the other three.** `discountProperties`
+	 * therefore writes it by the schema's declared type rather than assuming; sending
+	 * `{rich_text:[…]}` at a url column is a 400 that would take the whole update with it,
+	 * including the three cells that were fine.
+	 *
+	 * ⚠️ It is the URL of the pack named in `ITEM`, captured from the same pick, so the two
+	 * always describe one listing. The shopping page prefers it over the vendor slot's URL
+	 * for the offer link — see `readIngredientUrls`.
+	 */
+	URL: "URL item (Discount)",
 } as const;
 
 /** Every spelling the rate column has had. **Read through this** — see `CATEGORY_ALIASES`. */
@@ -113,6 +126,8 @@ export interface DiscountCapture {
 	size: number | null;
 	rowName: string;
 	itemName: string;
+	/** The offer listing's own page at that shop. Absent when the module gave none. */
+	url?: string | null;
 }
 
 export interface DiscountText {
@@ -122,11 +137,13 @@ export interface DiscountText {
 	location: string;
 	/** The shop's product name with its pack — `Max's peanut butter (300g)`. */
 	itemName: string;
+	/** That listing's page, or `""` when the shop published none. */
+	url: string;
 	/** The rate as a number, for `discountBeats`. Null when the pack has no divisor. */
 	rateValue: number | null;
 }
 
-/** The four strings exactly as they go into Notion. */
+/** The five cells exactly as they go into Notion. */
 export function formatDiscount(c: DiscountCapture): DiscountText {
 	const rate = discountRate({
 		unitType: c.unitType,
@@ -145,6 +162,10 @@ export function formatDiscount(c: DiscountCapture): DiscountText {
 		// `name (size)`. A pack the shop never stated leaves the brackets off entirely
 		// rather than writing an empty pair.
 		itemName: c.itemName + (c.size != null ? ` (${c.size}${unitWord(c.unitType)})` : ""),
+		// ⚠️ `""`, never undefined: `discountProperties` reads an empty value as "clear this
+		// cell", which is the right answer for a shop that published no link for the offer —
+		// and leaves no previous offer's URL sitting under this one's name.
+		url: c.url ?? "",
 		rateValue: rate?.value ?? null,
 	};
 }
@@ -201,6 +222,7 @@ export function readDiscount(props: Record<string, any>): {
 	price: string;
 	location: string;
 	itemName: string;
+	url: string;
 	rate: number | null;
 } {
 	const text = (name: string) =>
@@ -217,14 +239,16 @@ export function readDiscount(props: Record<string, any>): {
 		price: text(DISCOUNT_PROPS.PRICE),
 		location: text(DISCOUNT_PROPS.LOCATION),
 		itemName: text(DISCOUNT_PROPS.ITEM),
+		// A `url` property, so read as one rather than through `text` — see DISCOUNT_PROPS.URL.
+		url: String(props?.[DISCOUNT_PROPS.URL]?.url ?? "").trim(),
 		rate: parseRecordedRate(rateText),
 	};
 }
 
-/** True when any of the four cells holds something — i.e. a clear would do work. */
+/** True when any of the five cells holds something — i.e. a clear would do work. */
 export function hasDiscount(props: Record<string, any>): boolean {
 	const d = readDiscount(props);
-	return Boolean(d.price || d.location || d.itemName || d.rate != null);
+	return Boolean(d.price || d.location || d.itemName || d.url || d.rate != null);
 }
 
 /**
@@ -244,17 +268,33 @@ export function discountProperties(
 	const written: string[] = [];
 	const skipped: string[] = [];
 	const rateProp = DISCOUNT_RATE_ALIASES.find((n) => schema[n]) ?? DISCOUNT_PROPS.RATE;
+	/**
+	 * ⚠️ **Written by the column's DECLARED TYPE, not by assuming rich text.** `URL item
+	 * (Discount)` is a `url` property and the other four are `rich_text`; sending
+	 * `{rich_text:[…]}` at a url column is a 400 that takes the WHOLE update with it,
+	 * including the cells that were fine. Reading the type is also what lets the user
+	 * change one of these to a url column later without this quietly breaking.
+	 */
 	const put = (prop: string, value: string) => {
-		if (!schema[prop]) {
+		const type = schema[prop]?.type;
+		if (!type) {
 			skipped.push(`no "${prop}" column`);
 			return;
 		}
-		properties[prop] = { rich_text: value ? [{ type: "text", text: { content: value } }] : [] };
+		if (type === "url") properties[prop] = { url: value || null };
+		else if (type === "rich_text")
+			properties[prop] = { rich_text: value ? [{ type: "text", text: { content: value } }] : [] };
+		else {
+			// Neither shape fits, so write nothing rather than guess at a cell the user owns.
+			skipped.push(`"${prop}" is a ${type} column, not rich text or url`);
+			return;
+		}
 		written.push(prop);
 	};
 	put(DISCOUNT_PROPS.PRICE, text?.price ?? "");
 	put(rateProp, text?.rate ?? "");
 	put(DISCOUNT_PROPS.LOCATION, text?.location ?? "");
 	put(DISCOUNT_PROPS.ITEM, text?.itemName ?? "");
+	put(DISCOUNT_PROPS.URL, text?.url ?? "");
 	return { properties, written, skipped };
 }

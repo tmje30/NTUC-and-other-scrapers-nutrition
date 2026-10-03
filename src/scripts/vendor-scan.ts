@@ -898,6 +898,8 @@ async function main(): Promise<void> {
 						size,
 						rowName: row.name,
 						itemName: p.name,
+						// The offer listing's own page, straight into `URL item (Discount)`.
+						url: p.url,
 					});
 					if (
 						!discountBeats({
@@ -926,6 +928,11 @@ async function main(): Promise<void> {
 							size,
 							rowName: row.name,
 							itemName: p.name,
+							// ⚠️ Must match the capture passed to `formatDiscount` above, field for
+							// field — that one decides whether this offer wins the columns, this one
+							// is what actually lands in them. A URL on one and not the other would
+							// write a row whose link is missing for no reason anybody could see.
+							url: p.url,
 						},
 					});
 					if (res.action === "wrote") {
