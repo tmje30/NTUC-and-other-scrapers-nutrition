@@ -206,6 +206,45 @@ export function isRecordedUnchanged(
 }
 
 /**
+ * **The slot already holds THIS product — the price is simply what the shop charges now.**
+ *
+ * ⚠️ **The user's rule, 2026-10-03: "if the item is exactly the same, but the price has
+ * risen use that price. If it is a new product confirm as normal."** `dearerThanRecorded`
+ * was written before the sweep ran unattended, when every dearer find was indistinguishable
+ * from a mis-match, and it treats both the same way: queue a question. For the same listing
+ * at the same pack that is the wrong answer twice over — the price book goes on quoting a
+ * figure the shop has stopped charging, and the question comes back every single morning
+ * because nothing about it ever changes.
+ *
+ * This is `isRecordedUnchanged` with the price test removed, and that single difference is
+ * the whole idea:
+ *
+ *   same listing + same pack + same price  → nothing happened      (`isRecordedUnchanged`)
+ *   same listing + same pack + new price   → the shop moved it     (THIS — write it)
+ *   anything else                          → a different product   (ask, as before)
+ *
+ * ⚠️⚠️ **Identity is still required, and it is the only thing standing between this and
+ * the bug the ratchet exists to prevent.** Accepting a rise on price alone would let a
+ * substitution repoint the slot's URL and name at another product while the figure crept
+ * up — which is exactly how Guardian at $8.50 could have become Guardian at $12.00 in
+ * silence. Same URL, or failing that the same item name, at the same size: `findRecordedListing`
+ * decides, and it matches on neither price nor row.
+ *
+ * ⚠️ **Not restricted to a RISE.** A fall on the same listing is a price cut and was
+ * already written without a question; naming this "dearer" would make the predicate read
+ * as if it were the gate rather than the identity test it is.
+ */
+export function isSameProduct(
+	slot: { sizeValue: number | null; urlValue?: string; itemNameValue?: string },
+	product: { url?: string; name: string },
+	size: number | null,
+): boolean {
+	if (slot.sizeValue == null || size == null) return false;
+	if (Math.abs(slot.sizeValue - size) >= 0.001) return false;
+	return findRecordedListing(slot, [product]) !== undefined;
+}
+
+/**
  * **Two sweeps write this file, and only one of them looked at any given shop.**
  *
  * ⚠️⚠️ The cloud sweep covers NTUC, Sheng Siong, Guardian and My Protein; the laptop

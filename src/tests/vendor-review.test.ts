@@ -9,6 +9,7 @@ import {
 	findRecordedListing,
 	groupOf,
 	isRecordedUnchanged,
+	isSameProduct,
 	mergeVendorReview,
 	isRejectReason,
 	isRejectedPick,
@@ -1006,6 +1007,51 @@ check(
 );
 // An empty slot has nothing to be unchanged against.
 check("an empty slot is never 'unchanged'", !isRecordedUnchanged({ priceValue: null, sizeValue: null }, samePack, 2250));
+
+describe("the same product at a new price is recorded, not queried");
+
+/**
+ * ⚠️ **The user's rule, 2026-10-03: "if the item is exactly the same, but the price has
+ * risen use that price. If it is a new product confirm as normal."** The old gate queued
+ * every dearer find, so a shop that simply put its own price up produced the same question
+ * every morning for ever — and the price book went on quoting a figure nobody charges.
+ */
+const dearerSame = { ...samePack, priceSgd: 359 };
+check("the same listing at a dearer price IS the same product", isSameProduct(slotHolds, dearerSame, 2250));
+const cheaperSame = { ...samePack, priceSgd: 299 };
+check("…and at a cheaper one too — this is identity, not a direction", isSameProduct(slotHolds, cheaperSame, 2250));
+check("…and when nothing moved at all", isSameProduct(slotHolds, samePack, 2250));
+
+// ⚠️ The distinction the two predicates draw, stated as one pair: a price move is NOT
+// "unchanged", but it IS the same product. That gap is exactly the new behaviour.
+check("a price move is not 'unchanged'", !isRecordedUnchanged(slotHolds, dearerSame, 2250));
+
+/**
+ * ⚠️⚠️ **Identity is the only thing standing between this and the bug the ratchet exists
+ * for.** Accepting a rise on price alone would let a substitution repoint the slot's URL
+ * and name at another product while the figure crept up — Guardian at $8.50 silently
+ * becoming Guardian at $12.00. These three are what stop it.
+ */
+check(
+	"a different product at a dearer price is NOT the same product",
+	!isSameProduct(slotHolds, { url: "https://myprotein.test/p/other", name: "Impact Whey 2.25kg" }, 2250),
+);
+check("a different PACK of the same listing is not either", !isSameProduct(slotHolds, dearerSame, 2000));
+check("…nor is anything at all against an empty slot", !isSameProduct({ sizeValue: null }, dearerSame, 2250));
+// A re-worded title on the same URL is still the same jar — the URL is checked first.
+check(
+	"a re-worded title on the same URL survives a price rise",
+	isSameProduct(slotHolds, { ...dearerSame, name: "Essential Whey Protein 2.25kg Strawberry" }, 2250),
+);
+// ⚠️ A shop with no URL at all falls back to the item name, which must still be exact.
+check(
+	"with no URL, the item name must still match exactly",
+	!isSameProduct({ sizeValue: 2250, itemNameValue: "Essential Whey 2.25kg" }, { name: "Impact Whey 2.25kg" }, 2250),
+);
+check(
+	"…and does when it does",
+	isSameProduct({ sizeValue: 2250, itemNameValue: "Essential Whey 2.25kg" }, { name: "Essential Whey 2.25kg" }, 2250),
+);
 
 /**
  * ⚠️ **Four tabs, and no JavaScript in them** (user, 2026-09-09). Radio inputs plus a

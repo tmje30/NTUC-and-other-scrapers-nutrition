@@ -23,12 +23,32 @@ import { packWeightOf, type UnitType } from "./notion.js";
  * the other two. They are not typos to tidy; they are what Notion is storing.
  */
 export const DISCOUNT_PROPS = {
-	/** Rich text — what you pay today, with the pack, e.g. `$4.90 / 500g`. */
+	/**
+	 * Rich text — **the price and nothing else**, e.g. `5.95`.
+	 *
+	 * ⚠️ **No `$`, and no pack size** (user, 2026-10-03). It used to hold `$5.95 / 2000g`,
+	 * which put two facts in a column named for one and left `Item name (Discount)` empty
+	 * beside it. The pack now travels with the item it describes — see `ITEM`.
+	 */
 	PRICE: "Price (Discount)",
 	/** Rich text — the same offer per kg/L/10 pc, e.g. `$9.80/kg`. */
 	RATE: "Price per kg/L (discount)",
 	/** Rich text — which shop is running it, e.g. `Guardian`. */
 	LOCATION: "Location (Discount)",
+	/**
+	 * Rich text — **what is actually on offer, with its pack**, e.g.
+	 * `Max's peanut butter (300g)` (user, 2026-10-03).
+	 *
+	 * ⚠️ The shop's own product name, not the row's. `Location (Discount)` says where and
+	 * `Price (Discount)` says how much; without this the row said an offer existed and not
+	 * what it was on — and a row's general name ("Peanut butter") is not enough to find a
+	 * jar on a shelf.
+	 *
+	 * ⚠️ Confirmed present in the live schema (introspected 2026-10-03, `rich_text`). It is
+	 * the user's column; nothing here creates it, and `discountProperties` skips it by name
+	 * if it ever goes missing rather than failing the whole write.
+	 */
+	ITEM: "Item name (Discount)",
 } as const;
 
 /** Every spelling the rate column has had. **Read through this** — see `CATEGORY_ALIASES`. */
@@ -96,14 +116,17 @@ export interface DiscountCapture {
 }
 
 export interface DiscountText {
+	/** Bare figure — `5.95`, no currency and no pack. See `DISCOUNT_PROPS.PRICE`. */
 	price: string;
 	rate: string;
 	location: string;
+	/** The shop's product name with its pack — `Max's peanut butter (300g)`. */
+	itemName: string;
 	/** The rate as a number, for `discountBeats`. Null when the pack has no divisor. */
 	rateValue: number | null;
 }
 
-/** The three strings exactly as they go into Notion. */
+/** The four strings exactly as they go into Notion. */
 export function formatDiscount(c: DiscountCapture): DiscountText {
 	const rate = discountRate({
 		unitType: c.unitType,
@@ -113,9 +136,15 @@ export function formatDiscount(c: DiscountCapture): DiscountText {
 		itemName: c.itemName,
 	});
 	return {
-		price: `$${c.promoSgd.toFixed(2)}` + (c.size != null ? ` / ${c.size}${unitWord(c.unitType)}` : ""),
+		// ⚠️ **The figure alone.** Two decimals, because it is money being read by a human,
+		// but no `$` and no size — the column is named `Price` and now holds only that.
+		price: c.promoSgd.toFixed(2),
 		rate: rate ? `$${rate.value.toFixed(2)}${rate.label}` : "",
 		location: c.vendor,
+		// ⚠️ The pack moved HERE from the price column, in the shape the user asked for:
+		// `name (size)`. A pack the shop never stated leaves the brackets off entirely
+		// rather than writing an empty pair.
+		itemName: c.itemName + (c.size != null ? ` (${c.size}${unitWord(c.unitType)})` : ""),
 		rateValue: rate?.value ?? null,
 	};
 }
@@ -171,6 +200,7 @@ export function discountBeats(args: {
 export function readDiscount(props: Record<string, any>): {
 	price: string;
 	location: string;
+	itemName: string;
 	rate: number | null;
 } {
 	const text = (name: string) =>
@@ -186,14 +216,15 @@ export function readDiscount(props: Record<string, any>): {
 	return {
 		price: text(DISCOUNT_PROPS.PRICE),
 		location: text(DISCOUNT_PROPS.LOCATION),
+		itemName: text(DISCOUNT_PROPS.ITEM),
 		rate: parseRecordedRate(rateText),
 	};
 }
 
-/** True when any of the three cells holds something — i.e. a clear would do work. */
+/** True when any of the four cells holds something — i.e. a clear would do work. */
 export function hasDiscount(props: Record<string, any>): boolean {
 	const d = readDiscount(props);
-	return Boolean(d.price || d.location || d.rate != null);
+	return Boolean(d.price || d.location || d.itemName || d.rate != null);
 }
 
 /**
@@ -224,5 +255,6 @@ export function discountProperties(
 	put(DISCOUNT_PROPS.PRICE, text?.price ?? "");
 	put(rateProp, text?.rate ?? "");
 	put(DISCOUNT_PROPS.LOCATION, text?.location ?? "");
+	put(DISCOUNT_PROPS.ITEM, text?.itemName ?? "");
 	return { properties, written, skipped };
 }

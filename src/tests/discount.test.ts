@@ -55,7 +55,7 @@ eq("a counted pack with no weight anywhere falls back to pieces", rate("By Unit"
 check("a free or missing price has no rate", rate("By Gram", 0, 500) === null);
 check("a pack with no size has no rate", rate("By Gram", 4.9, null) === null);
 
-describe("discounts — what goes in the three cells");
+describe("discounts — what goes in the four cells");
 
 const offer = formatDiscount({
 	vendor: "Guardian",
@@ -65,7 +65,9 @@ const offer = formatDiscount({
 	rowName: "Toothpaste, Sensitive",
 	itemName: "Sensodyne Repair & Protect 100g",
 });
-eq("the price cell carries the pack", offer.price, "$6.63 / 100g");
+// ⚠️ **The figure alone** (user, 2026-10-03). No $, no pack — the pack moved to the item cell.
+eq("the price cell is the bare figure", offer.price, "6.63");
+eq("the item cell carries the name and the pack", offer.itemName, "Sensodyne Repair & Protect 100g (100g)");
 eq("the rate cell carries the unit", offer.rate, "$66.30/kg");
 eq("the location cell is the shop", offer.location, "Guardian");
 eq("...and the rate is kept as a number for the compare", offer.rateValue, 66.3);
@@ -78,7 +80,9 @@ const counted = formatDiscount({
 	rowName: "Eggs",
 	itemName: "",
 });
-eq("a counted pack says pcs, not g", counted.price, "$3.50 / 10 pcs");
+eq("a counted pack is still just the figure", counted.price, "3.50");
+// A shop that gave no name leaves the pack standing alone rather than inventing one.
+eq("...and a counted pack reads pcs in the item cell", counted.itemName, " (10 pcs)");
 eq("...and quotes per ten", counted.rate, "$3.50/10 pc");
 
 describe("discounts — one set of columns, four vendor slots");
@@ -150,20 +154,26 @@ const schema = {
 	[DISCOUNT_PROPS.PRICE]: { type: "rich_text" },
 	[DISCOUNT_PROPS.RATE]: { type: "rich_text" },
 	[DISCOUNT_PROPS.LOCATION]: { type: "rich_text" },
+	[DISCOUNT_PROPS.ITEM]: { type: "rich_text" },
 };
 const wrote = discountProperties(schema, offer);
-eq("all three columns are sent", wrote.written.length, 3);
-eq("the price lands as rich text", wrote.properties[DISCOUNT_PROPS.PRICE].rich_text[0].text.content, "$6.63 / 100g");
+eq("all four columns are sent", wrote.written.length, 4);
+eq("the price lands as rich text", wrote.properties[DISCOUNT_PROPS.PRICE].rich_text[0].text.content, "6.63");
+eq(
+	"...and the item name beside it",
+	wrote.properties[DISCOUNT_PROPS.ITEM].rich_text[0].text.content,
+	"Sensodyne Repair & Protect 100g (100g)",
+);
 const cleared = discountProperties(schema, null);
-eq("a clear sends all three", cleared.written.length, 3);
+eq("a clear sends all four", cleared.written.length, 4);
 eq("...as genuinely empty cells", cleared.properties[DISCOUNT_PROPS.LOCATION].rich_text.length, 0);
 
 // ⚠️ A missing column is reported by name, never a thrown update. A database with two of
 // the three still gets the two — the extension refusing every capture over one renamed
 // column is a mistake this project has already made once (2026-08-09).
 const partial = discountProperties({ [DISCOUNT_PROPS.LOCATION]: { type: "rich_text" } }, offer);
-eq("a database missing two columns still writes the third", partial.written.length, 1);
-eq("...and names what it could not write", partial.skipped.length, 2);
+eq("a database missing three columns still writes the fourth", partial.written.length, 1);
+eq("...and names what it could not write", partial.skipped.length, 3);
 check(
 	"...by column name",
 	partial.skipped.some((s) => s.includes(DISCOUNT_PROPS.PRICE)),
