@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-03T08:19:07.949Z",
+  "updatedAt": "2026-10-03T09:18:24.987Z",
   "pending": [
     {
       "token": "828065",
@@ -193,7 +193,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T08:10:33.371Z"
+      "askedAt": "2026-10-03T09:10:14.782Z"
     },
     {
       "token": "x9yj45",
@@ -223,7 +223,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T08:10:53.112Z"
+      "askedAt": "2026-10-03T09:10:38.831Z"
     },
     {
       "token": "sq7mad",
@@ -253,7 +253,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T08:11:02.027Z"
+      "askedAt": "2026-10-03T09:10:46.240Z"
     },
     {
       "token": "dbsqsu",
@@ -285,7 +285,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T08:11:27.161Z"
+      "askedAt": "2026-10-03T09:11:06.288Z"
     },
     {
       "token": "s95muz",
@@ -310,7 +310,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-10-03T08:12:11.444Z"
+      "askedAt": "2026-10-03T09:11:52.960Z"
     },
     {
       "token": "bhnc16",
@@ -334,7 +334,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T08:12:11.445Z"
+      "askedAt": "2026-10-03T09:11:52.960Z"
     },
     {
       "token": "f67vcf",
@@ -359,7 +359,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-10-03T08:13:57.005Z"
+      "askedAt": "2026-10-03T09:13:29.937Z"
     },
     {
       "token": "d6lr2l",
@@ -384,7 +384,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-10-03T08:13:57.005Z"
+      "askedAt": "2026-10-03T09:13:29.938Z"
     },
     {
       "token": "fvl5q1",
@@ -409,7 +409,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T08:13:57.005Z"
+      "askedAt": "2026-10-03T09:13:29.938Z"
     },
     {
       "token": "xoxexm",
@@ -442,7 +442,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-10-03T08:14:27.500Z"
+      "askedAt": "2026-10-03T09:13:46.635Z"
     },
     {
       "token": "g19own",
@@ -475,7 +475,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-10-03T08:14:27.500Z"
+      "askedAt": "2026-10-03T09:13:46.635Z"
     },
     {
       "token": "3n90th",
@@ -508,7 +508,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T08:14:27.500Z"
+      "askedAt": "2026-10-03T09:13:46.635Z"
     },
     {
       "token": "vf2y42",
@@ -533,7 +533,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T08:14:37.052Z"
+      "askedAt": "2026-10-03T09:13:55.685Z"
     },
     {
       "token": "jguxxc",
@@ -562,7 +562,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T08:14:43.483Z"
+      "askedAt": "2026-10-03T09:14:03.033Z"
     },
     {
       "token": "gbzr41",
@@ -591,7 +591,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T08:14:44.788Z"
+      "askedAt": "2026-10-03T09:14:05.518Z"
     },
     {
       "token": "u4vtu5",
@@ -620,7 +620,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T08:15:07.569Z"
+      "askedAt": "2026-10-03T09:14:32.508Z"
     },
     {
       "token": "f213w2",
@@ -649,7 +649,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T08:15:49.290Z"
+      "askedAt": "2026-10-03T09:15:10.388Z"
     },
     {
       "token": "7s2mlq",
@@ -678,7 +678,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T08:16:02.872Z"
+      "askedAt": "2026-10-03T09:15:23.323Z"
     },
     {
       "token": "rm2ibk",
@@ -707,106 +707,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T08:16:17.186Z"
-    },
-    {
-      "token": "wusvuz",
-      "ingredientId": "34b69a18-4fe7-80c7-9de6-fa3234a2a9d8",
-      "ingredientName": "Banana (Fruit)",
-      "key": "banana",
-      "unitType": "By Gram",
-      "category": "[3] Fruits/Vegetables",
-      "vendor": "NTUC",
-      "slotN": 1,
-      "priceSgd": 5.98,
-      "size": 600,
-      "url": "https://www.fairprice.com.sg/product/orgo-fresh-pisang-mas-banana",
-      "itemName": "Agro Fresh Pisang Mas Banana",
-      "statedSize": "600g",
-      "brandName": "Agro Fresh",
-      "perLabel": "$9.97/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 2 of 3, offered as a suggestion. Accept only if it is the same thing."
-        },
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 3.6428571428571423,
-          "foundPer": 9.966666666666667,
-          "perWord": "kg",
-          "vendor": "NTUC",
-          "note": "DEARER than the NTUC price already recorded: $2.55 / 700g = $3.64/kg → $5.98 / 600g = $9.97/kg. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 1,
-      "askedAt": "2026-10-03T08:16:33.349Z"
-    },
-    {
-      "token": "afrlzm",
-      "ingredientId": "34b69a18-4fe7-80c7-9de6-fa3234a2a9d8",
-      "ingredientName": "Banana (Fruit)",
-      "key": "banana",
-      "unitType": "By Gram",
-      "category": "[3] Fruits/Vegetables",
-      "vendor": "NTUC",
-      "slotN": 1,
-      "priceSgd": 38.4,
-      "size": 17,
-      "url": "https://www.fairprice.com.sg/product/brothers-all-natural-banana-crisps-12-x-17g-90007104",
-      "itemName": "Brothers-All-Natural Banana Crisps",
-      "statedSize": "17g",
-      "brandName": "Brothers All Natural",
-      "perLabel": "$2258.82/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
-        },
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 3.6428571428571423,
-          "foundPer": 2258.823529411765,
-          "perWord": "kg",
-          "vendor": "NTUC",
-          "note": "DEARER than the NTUC price already recorded: $2.55 / 700g = $3.64/kg → $38.40 / 17g = $2258.82/kg. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 2,
-      "askedAt": "2026-10-03T08:16:33.349Z"
-    },
-    {
-      "token": "vxemd3",
-      "ingredientId": "34b69a18-4fe7-80c7-9de6-fa3234a2a9d8",
-      "ingredientName": "Banana (Fruit)",
-      "key": "banana",
-      "unitType": "By Gram",
-      "category": "[3] Fruits/Vegetables",
-      "vendor": "NTUC",
-      "slotN": 1,
-      "priceSgd": 4.3,
-      "size": 500,
-      "url": "https://www.fairprice.com.sg/product/good-nature-organic-banana-500-g-90089344",
-      "itemName": "ZENXIN Organic Banana",
-      "statedSize": "500g",
-      "brandName": "Zenxin",
-      "perLabel": "$8.60/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is the closest of 3 offered, best first. Accept only if it is the same thing."
-        },
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 3.6428571428571423,
-          "foundPer": 8.6,
-          "perWord": "kg",
-          "vendor": "NTUC",
-          "note": "DEARER than the NTUC price already recorded: $2.55 / 700g = $3.64/kg → $4.30 / 500g = $8.60/kg. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-10-03T08:16:33.350Z"
+      "askedAt": "2026-10-03T09:15:37.221Z"
     },
     {
       "token": "b4wd9o",
@@ -835,7 +736,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T08:16:57.148Z"
+      "askedAt": "2026-10-03T09:16:20.745Z"
     },
     {
       "token": "1wi52z",
@@ -861,7 +762,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-10-03T08:17:18.412Z"
+      "askedAt": "2026-10-03T09:16:40.671Z"
     },
     {
       "token": "b6wiqu",
@@ -887,7 +788,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-10-03T08:17:18.412Z"
+      "askedAt": "2026-10-03T09:16:40.672Z"
     },
     {
       "token": "hay2mf",
@@ -913,7 +814,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T08:17:18.413Z"
+      "askedAt": "2026-10-03T09:16:40.672Z"
     },
     {
       "token": "qui19q",
@@ -942,7 +843,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T08:17:24.734Z"
+      "askedAt": "2026-10-03T09:16:45.861Z"
     },
     {
       "token": "8ke5kx",
@@ -971,7 +872,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T08:17:40.068Z"
+      "askedAt": "2026-10-03T09:17:01.492Z"
     },
     {
       "token": "shzecn",
@@ -1000,7 +901,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T08:17:43.964Z"
+      "askedAt": "2026-10-03T09:17:04.554Z"
     },
     {
       "token": "z741nx",
@@ -1029,7 +930,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T08:17:45.945Z"
+      "askedAt": "2026-10-03T09:17:06.694Z"
     },
     {
       "token": "8neh9y",
@@ -1063,7 +964,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T08:17:51.338Z"
+      "askedAt": "2026-10-03T09:17:09.287Z"
     },
     {
       "token": "la0k34",
@@ -1092,7 +993,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T08:18:00.875Z"
+      "askedAt": "2026-10-03T09:17:19.299Z"
     },
     {
       "token": "6bi6q1",
@@ -1121,7 +1022,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T08:18:06.740Z"
+      "askedAt": "2026-10-03T09:17:25.691Z"
     },
     {
       "token": "6a6jwr",
@@ -1150,7 +1051,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T08:19:07.949Z"
+      "askedAt": "2026-10-03T09:18:24.987Z"
     }
   ],
   "rejected": [
@@ -1266,8 +1167,8 @@
     }
   ],
   "moves": {
-    "generatedAt": "2026-10-03T08:19:07.950Z",
-    "reconfirmed": 62,
+    "generatedAt": "2026-10-03T09:18:24.987Z",
+    "reconfirmed": 63,
     "moves": []
   }
 }
