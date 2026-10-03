@@ -224,6 +224,8 @@ export function readDiscount(props: Record<string, any>): {
 	itemName: string;
 	url: string;
 	rate: number | null;
+	/** The rate cell VERBATIM (`$18.40/kg`), for anything that re-displays it. */
+	rateText: string;
 } {
 	const text = (name: string) =>
 		((props?.[name]?.rich_text ?? []) as any[])
@@ -242,6 +244,7 @@ export function readDiscount(props: Record<string, any>): {
 		// A `url` property, so read as one rather than through `text` — see DISCOUNT_PROPS.URL.
 		url: String(props?.[DISCOUNT_PROPS.URL]?.url ?? "").trim(),
 		rate: parseRecordedRate(rateText),
+		rateText,
 	};
 }
 

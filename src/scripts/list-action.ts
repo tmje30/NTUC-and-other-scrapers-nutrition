@@ -4,6 +4,7 @@ import { commitAndPushData } from "../core/git-data-push.js";
 import { GROCERY_LIST_DS, resolveListProps } from "../core/grocery-list.js";
 import { parseListAction, type ListActionPayload } from "../core/list-action-parse.js";
 import { PENDING_PATH, queue, readPending, unqueue, writePending } from "../core/list-pending.js";
+import { readDiscount } from "../core/discount.js";
 
 /**
  * One tap on `list.html`, applied. **The privileged half of the shopping page.**
@@ -84,14 +85,47 @@ if (payload.op === "add") {
 		if (!row) console.error(`Note: ingredient ${payload.ingredientId} is no longer in the DB — filing name-only.`);
 	}
 
+	/**
+	 * **An ingredient with a live offer is added AT the offer** (user, 2026-10-03).
+	 *
+	 * ⚠️ `Price , To Buy ` is documented as "the discounted price actually being offered"
+	 * and `Vendor %` as the shop running it — but this path was filling both from the
+	 * cheapest VENDOR SLOT, which is the shelf price. Adding Butter the day it was on
+	 * promo produced a row reading $5.50 flat, while the Ingredients row recorded a $4.60
+	 * Sheng Siong offer with a link: no `−%`, no offer line, and so no offer link, on the
+	 * one row where all three existed.
+	 *
+	 * ⚠️ `Current Price ` is a formula and is NOT written here — it keeps resolving the
+	 * regular price through the relation, which is exactly what makes the two lines differ
+	 * and the percentage appear.
+	 *
+	 * ⚠️ Taken only when the cell parses to a real figure AND names a shop. A half-filled
+	 * set of discount columns is a stale capture, and pricing a shopping row off it would
+	 * quote an offer nobody is running.
+	 */
+	const offer = await (async () => {
+		if (!row) return null;
+		try {
+			const page = (await client.pages.retrieve({ page_id: row.pageId })) as any;
+			const d = readDiscount(page.properties ?? {});
+			const sgd = Number(String(d.price).replace(/[^0-9.]/g, ""));
+			if (!d.location || !Number.isFinite(sgd) || sgd <= 0) return null;
+			return { sgd, vendor: d.location, perKg: d.rateText || undefined };
+		} catch {
+			// A row that cannot be read is a row with no offer. The add still happens.
+			return null;
+		}
+	})();
+
 	const res = await addTextedItem(client, {
 		ingredient: row?.name ?? payload.name!,
 		ingredientId: row?.pageId,
 		count: payload.amount ?? 1,
-		priceSgd: row?.price?.sgd,
-		vendor: row?.price?.vendor,
-		pricePerKg: row ? pricePerKgLabelFor(row) : undefined,
+		priceSgd: offer?.sgd ?? row?.price?.sgd,
+		vendor: offer?.vendor ?? row?.price?.vendor,
+		pricePerKg: offer?.perKg ?? (row ? pricePerKgLabelFor(row) : undefined),
 	});
+	if (offer) console.error(`On offer: $${offer.sgd.toFixed(2)} at ${offer.vendor} — added at the offer price.`);
 	console.error(
 		res.alreadyListed
 			? `Added: ${res.title} — already on the list, now ${res.amount}`
