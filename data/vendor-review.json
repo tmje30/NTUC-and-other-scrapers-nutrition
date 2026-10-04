@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-03T09:18:24.987Z",
+  "updatedAt": "2026-10-04T04:11:53.591Z",
   "pending": [
     {
       "token": "828065",
@@ -193,7 +193,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T09:10:14.782Z"
+      "askedAt": "2026-10-04T04:03:16.980Z"
     },
     {
       "token": "x9yj45",
@@ -223,7 +223,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T09:10:38.831Z"
+      "askedAt": "2026-10-04T04:03:36.419Z"
     },
     {
       "token": "sq7mad",
@@ -253,7 +253,36 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T09:10:46.240Z"
+      "askedAt": "2026-10-04T04:03:44.760Z"
+    },
+    {
+      "token": "6f1xgc",
+      "ingredientId": "39869a18-4fe7-8029-9609-ea147e99672e",
+      "ingredientName": "Carrots",
+      "key": "carrot",
+      "unitType": "By Gram",
+      "category": "[3] Fruits/Vegetables",
+      "vendor": "NTUC",
+      "slotN": 1,
+      "priceSgd": 1.1,
+      "size": 500,
+      "url": "https://www.fairprice.com.sg/product/pasar-prepacked-carrots-500g-13000321",
+      "itemName": "Pasar Prepacked Carrots ",
+      "statedSize": "500g",
+      "brandName": "Pasar",
+      "perLabel": "$2.20/kg",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 1.9,
+          "foundPer": 2.2,
+          "perWord": "kg",
+          "vendor": "NTUC",
+          "note": "DEARER than the NTUC price already recorded: $0.95 / 500g = $1.90/kg → $1.10 / 500g = $2.20/kg. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-10-04T04:04:00.285Z"
     },
     {
       "token": "dbsqsu",
@@ -285,7 +314,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T09:11:06.288Z"
+      "askedAt": "2026-10-04T04:04:04.098Z"
     },
     {
       "token": "s95muz",
@@ -310,7 +339,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-10-03T09:11:52.960Z"
+      "askedAt": "2026-10-04T04:04:50.676Z"
     },
     {
       "token": "bhnc16",
@@ -334,7 +363,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T09:11:52.960Z"
+      "askedAt": "2026-10-04T04:04:50.677Z"
     },
     {
       "token": "f67vcf",
@@ -359,7 +388,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-10-03T09:13:29.937Z"
+      "askedAt": "2026-10-04T04:06:33.078Z"
     },
     {
       "token": "d6lr2l",
@@ -384,7 +413,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-10-03T09:13:29.938Z"
+      "askedAt": "2026-10-04T04:06:33.079Z"
     },
     {
       "token": "fvl5q1",
@@ -409,7 +438,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T09:13:29.938Z"
+      "askedAt": "2026-10-04T04:06:33.079Z"
     },
     {
       "token": "xoxexm",
@@ -442,7 +471,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-10-03T09:13:46.635Z"
+      "askedAt": "2026-10-04T04:07:08.536Z"
     },
     {
       "token": "g19own",
@@ -475,7 +504,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-10-03T09:13:46.635Z"
+      "askedAt": "2026-10-04T04:07:08.536Z"
     },
     {
       "token": "3n90th",
@@ -508,7 +537,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T09:13:46.635Z"
+      "askedAt": "2026-10-04T04:07:08.536Z"
     },
     {
       "token": "vf2y42",
@@ -533,7 +562,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T09:13:55.685Z"
+      "askedAt": "2026-10-04T04:07:16.838Z"
     },
     {
       "token": "jguxxc",
@@ -562,7 +591,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T09:14:03.033Z"
+      "askedAt": "2026-10-04T04:07:23.170Z"
     },
     {
       "token": "gbzr41",
@@ -591,7 +620,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T09:14:05.518Z"
+      "askedAt": "2026-10-04T04:07:25.938Z"
     },
     {
       "token": "u4vtu5",
@@ -620,7 +649,36 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T09:14:32.508Z"
+      "askedAt": "2026-10-04T04:07:51.196Z"
+    },
+    {
+      "token": "g12kqn",
+      "ingredientId": "34c69a18-4fe7-80ae-8ff6-e24b8e4e26dc",
+      "ingredientName": "Soy Sauce (light)",
+      "key": "soy sauc",
+      "unitType": "By ml",
+      "category": "[6]Sauces / Wines /Vinegars",
+      "vendor": "NTUC",
+      "slotN": 1,
+      "priceSgd": 2.27,
+      "size": 500,
+      "url": "https://www.fairprice.com.sg/product/lee-kum-kee-soy-sauce-light-500ml-12602826",
+      "itemName": "Lee Kum Kee Soy Sauce - Light",
+      "statedSize": "500ml",
+      "brandName": "Lee Kum Kee",
+      "perLabel": "$4.54/L",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 4.374999999999999,
+          "foundPer": 4.54,
+          "perWord": "L",
+          "vendor": "NTUC",
+          "note": "DEARER than the NTUC price already recorded: $2.80 / 640ml = $4.37/L → $2.27 / 500ml = $4.54/L. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-10-04T04:08:03.884Z"
     },
     {
       "token": "f213w2",
@@ -649,7 +707,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T09:15:10.388Z"
+      "askedAt": "2026-10-04T04:08:28.858Z"
     },
     {
       "token": "7s2mlq",
@@ -678,7 +736,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T09:15:23.323Z"
+      "askedAt": "2026-10-04T04:08:42.461Z"
     },
     {
       "token": "rm2ibk",
@@ -707,7 +765,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T09:15:37.221Z"
+      "askedAt": "2026-10-04T04:08:57.869Z"
     },
     {
       "token": "b4wd9o",
@@ -736,7 +794,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T09:16:20.745Z"
+      "askedAt": "2026-10-04T04:09:38.599Z"
     },
     {
       "token": "1wi52z",
@@ -762,7 +820,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-10-03T09:16:40.671Z"
+      "askedAt": "2026-10-04T04:10:01.727Z"
     },
     {
       "token": "b6wiqu",
@@ -788,7 +846,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-10-03T09:16:40.672Z"
+      "askedAt": "2026-10-04T04:10:01.727Z"
     },
     {
       "token": "hay2mf",
@@ -814,7 +872,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T09:16:40.672Z"
+      "askedAt": "2026-10-04T04:10:01.728Z"
     },
     {
       "token": "qui19q",
@@ -843,7 +901,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T09:16:45.861Z"
+      "askedAt": "2026-10-04T04:10:08.927Z"
     },
     {
       "token": "8ke5kx",
@@ -872,7 +930,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T09:17:01.492Z"
+      "askedAt": "2026-10-04T04:10:23.290Z"
     },
     {
       "token": "shzecn",
@@ -901,36 +959,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T09:17:04.554Z"
-    },
-    {
-      "token": "z741nx",
-      "ingredientId": "34b69a18-4fe7-805e-aedc-c6f292e6007e",
-      "ingredientName": "Instant Coffee (plain)",
-      "key": "instant coffe",
-      "unitType": "By Gram",
-      "category": "[7] Teas/Coffees",
-      "vendor": "NTUC",
-      "slotN": 1,
-      "priceSgd": 8.45,
-      "size": 420,
-      "url": "https://www.fairprice.com.sg/product/nescafe-ipoh-white-coffee-gao-siew-dai-15s-x-31g-13083149",
-      "itemName": "Nescafe Instant Ipoh White Coffee - Gao Siew Dai",
-      "statedSize": "420g",
-      "brandName": "Nescafe",
-      "perLabel": "$20.12/kg",
-      "reasons": [
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 16.77777777777778,
-          "foundPer": 20.119047619047617,
-          "perWord": "kg",
-          "vendor": "NTUC",
-          "note": "DEARER than the NTUC price already recorded: $7.55 / 450g = $16.78/kg → $8.45 / 420g = $20.12/kg. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-10-03T09:17:06.694Z"
+      "askedAt": "2026-10-04T04:10:27.593Z"
     },
     {
       "token": "8neh9y",
@@ -964,7 +993,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T09:17:09.287Z"
+      "askedAt": "2026-10-04T04:10:35.291Z"
     },
     {
       "token": "la0k34",
@@ -993,7 +1022,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T09:17:19.299Z"
+      "askedAt": "2026-10-04T04:10:44.385Z"
     },
     {
       "token": "6bi6q1",
@@ -1022,7 +1051,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T09:17:25.691Z"
+      "askedAt": "2026-10-04T04:10:51.314Z"
     },
     {
       "token": "6a6jwr",
@@ -1051,7 +1080,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-03T09:18:24.987Z"
+      "askedAt": "2026-10-04T04:11:53.591Z"
     }
   ],
   "rejected": [
@@ -1167,8 +1196,8 @@
     }
   ],
   "moves": {
-    "generatedAt": "2026-10-03T09:18:24.987Z",
-    "reconfirmed": 63,
+    "generatedAt": "2026-10-04T04:11:53.591Z",
+    "reconfirmed": 62,
     "moves": []
   }
 }
