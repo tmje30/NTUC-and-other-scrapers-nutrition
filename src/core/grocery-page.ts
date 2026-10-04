@@ -1,6 +1,7 @@
 import type { Client } from "@notionhq/client";
 import { GROCERY_LIST_DS, resolveListProps, type ListProps } from "./grocery-list.js";
 import { readDiscount } from "./discount.js";
+import { readVendorLocations, vendorAtLocation, type LocationMode, type VendorLocations } from "./vendor-locations.js";
 import { normTag, queryAll } from "./notion.js";
 import { INGREDIENTS_DS } from "./ingredients-schema.js";
 import { pricePer1000, readVendorSlots, resolveVendorSlotProps } from "./vendor-slots.js";
@@ -67,6 +68,8 @@ export interface ListRow {
 	currentUrl: string | null;
 	/** `Item name (Discount)` from the ingredient — what the offer is ON. */
 	dealItemName?: string | null;
+	/** What each Location toggle mode resolves to for this row. See `bestAtLocation`. */
+	atLocation?: Record<LocationMode, LocationPick>;
 	ticked: boolean;
 	/**
 	 * The Ingredients row this line is linked to, when it is linked to one.
@@ -248,7 +251,11 @@ export async function readGroceryList(client: Client): Promise<ListRow[]> {
 	// ⚠️ Its own try: a shopping list without links is the page as it has always been, and
 	// a hiccup reading Ingredients must not cost you the list itself.
 	try {
-		return attachProductUrls(rows, await readIngredientUrls(client));
+		// ⚠️ Both reads in ONE try: a page with links but no location data would render a
+		// toggle whose Home and Work tabs are empty, which reads as "nothing is near you"
+		// rather than "this did not load".
+		const [index, locations] = await Promise.all([readIngredientUrls(client), readVendorLocations(client)]);
+		return attachProductUrls(rows, index, locations);
 	} catch {
 		return rows;
 	}
@@ -305,6 +312,19 @@ export interface IngredientUrls {
 	 * recorded, the row name is actively misleading about what is on offer.
 	 */
 	offerName: string | null;
+	/**
+	 * Every PRICED slot, kept so the Location toggle can pick a different winner per mode.
+	 * `cheapest` ignores these and uses the row's own formula; `home` and `work` cannot.
+	 */
+	slots: readonly VendorSlotLite[];
+}
+
+/** One shop's price for a row, reduced to what a location pick needs. */
+export interface VendorSlotLite {
+	vendorName: string;
+	priceValue: number | null;
+	sizeValue: number | null;
+	urlValue: string;
 }
 
 /** Index one ingredient's slots. Pure, so the precedence above can be pinned by tests. */
@@ -327,7 +347,20 @@ export function urlsFromSlots(
 			cheapest = s.urlValue;
 		}
 	}
-	return { byVendor, cheapest, offer: offer || null, offerName: offerName || null };
+	return {
+		byVendor,
+		cheapest,
+		offer: offer || null,
+		offerName: offerName || null,
+		// ⚠️ Only PRICED slots: a slot with a name and no figure cannot win a "cheapest here"
+		// comparison, and keeping it would let a shop with no price beat one that has one.
+		slots: slots.filter((x) => pricePer1000(x.priceValue, x.sizeValue) != null).map((x) => ({
+			vendorName: x.vendorName,
+			priceValue: x.priceValue,
+			sizeValue: x.sizeValue,
+			urlValue: x.urlValue,
+		})),
+	};
 }
 
 /**
@@ -337,7 +370,12 @@ export function urlsFromSlots(
  * the regular price comes from, so matching it by name IS "the cheapest main product".
  * `cheapest` is the fallback for a row whose formula named no shop.
  */
-export function attachProductUrls(rows: ListRow[], index: Map<string, IngredientUrls>): ListRow[] {
+export function attachProductUrls(
+	rows: ListRow[],
+	index: Map<string, IngredientUrls>,
+	/** Omitted (a local preview, or a failed read) leaves `atLocation` unset and the toggle off. */
+	locations?: VendorLocations,
+): ListRow[] {
 	return rows.map((r) => {
 		const u = r.ingredientId ? index.get(r.ingredientId) : undefined;
 		if (!u) return r;
@@ -359,6 +397,13 @@ export function attachProductUrls(rows: ListRow[], index: Map<string, Ingredient
 			// is not always the one the slot records. The vendor slot is the fallback.
 			dealUrl: r.dealUrl ?? u.offer ?? at(r.dealVendor),
 			dealItemName: r.dealItemName ?? u.offerName,
+			atLocation: locations
+				? {
+						cheapest: bestAtLocation(u.slots, locations, "cheapest"),
+						home: bestAtLocation(u.slots, locations, "home"),
+						work: bestAtLocation(u.slots, locations, "work"),
+					}
+				: r.atLocation,
 		};
 	});
 }
@@ -423,3 +468,59 @@ export function discountPct(r: ListRow): number | null {
 	return pct > 0 ? pct : null;
 }
 
+
+// ---------------------------------------------------------------------------
+// The Location toggle — which shop wins, per trip
+// ---------------------------------------------------------------------------
+
+/** The winning shop for one row in one mode, or the fact that there isn't one. */
+export interface LocationPick {
+	/** Cheapest per kg/L among the shops reachable in this mode. Null when none are. */
+	price: number | null;
+	size: number | null;
+	vendor: string | null;
+	url: string | null;
+	/**
+	 * True when the row HAS a price but only at a shop not tagged for this trip.
+	 *
+	 * ⚠️ **Surfaced rather than hidden** (user's call, 2026-10-04). Six of nine shops carried
+	 * no Home/Office tag, so dropping these rows would empty the list on a missing tag and
+	 * look exactly like having nothing left to buy.
+	 */
+	elsewhere: boolean;
+}
+
+/**
+ * The cheapest reachable shop for one row in one mode.
+ *
+ * ⚠️ **Cheapest per kg/L, never the sticker price** — `pricePer1000`, the same expression
+ * Notion's own `Cheapest Price/Kg` uses. A 2 kg bag at $6 beats a 250 g one at $4, and
+ * ranking on the smaller figure would send you to the dearer shelf.
+ */
+export function bestAtLocation(
+	slots: readonly VendorSlotLite[],
+	locations: VendorLocations,
+	mode: LocationMode,
+): LocationPick {
+	let best: VendorSlotLite | null = null;
+	let bestPer = Infinity;
+	let anyPriced = false;
+	for (const s of slots) {
+		const per = pricePer1000(s.priceValue, s.sizeValue);
+		if (per == null) continue;
+		anyPriced = true;
+		if (!vendorAtLocation(locations, s.vendorName, mode)) continue;
+		if (per < bestPer) {
+			bestPer = per;
+			best = s;
+		}
+	}
+	if (!best) return { price: null, size: null, vendor: null, url: null, elsewhere: anyPriced };
+	return {
+		price: best.priceValue,
+		size: best.sizeValue,
+		vendor: best.vendorName || null,
+		url: best.urlValue || null,
+		elsewhere: false,
+	};
+}

@@ -1,4 +1,5 @@
 import { discountPct, totals, type ListRow } from "./grocery-page.js";
+import { LOCATION_LABELS, LOCATION_MODES, type LocationMode } from "./vendor-locations.js";
 
 /**
  * The HTML half of `list.html`. Split from `grocery-page.ts` so the Notion read and the
@@ -100,6 +101,25 @@ a.nm::after{content:" \\2197";font-size:.78em;color:var(--dim);text-decoration:n
 .pl.on{font-size:.78rem;color:var(--dim);margin-top:1px;padding-left:2px}
 .pl.on a{color:inherit;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:2px}
 .pl.on a::after{content:" \\2197";font-size:.92em}
+.pl.none{font-size:.8rem;color:var(--dim);font-style:italic}
+/* ---- Location toggle ---- */
+/* ⚠️ Which prices show is pure CSS off :checked — the script only keeps the totals in step,
+   so the control still works with scripting off. The radios are visually hidden, not
+   display:none, or they stop being focusable. */
+.loc{border:1px solid var(--line);border-radius:10px;background:var(--card);margin:0 0 14px;
+  padding:8px 10px 10px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.loc legend{font-size:.72rem;color:var(--dim);text-transform:uppercase;letter-spacing:.06em;padding:0 4px}
+.loc input{position:absolute;opacity:0;width:1px;height:1px}
+.loc label{font-size:.85rem;padding:5px 12px;border:1px solid var(--line);border-radius:999px;
+  cursor:pointer;color:var(--dim);user-select:none}
+.loc input:checked + label{background:var(--accbg);border-color:var(--acc);color:var(--acc);font-weight:600}
+.loc input:focus-visible + label{outline:2px solid var(--acc);outline-offset:2px}
+/* Only the chosen trip's prices are shown. One block per mode is rendered server-side, so
+   there is no second price renderer in the browser — see localeBlock(). */
+.mode{display:none}
+#loc:has(#loc-cheapest:checked) ~ .list .m-cheapest,
+#loc:has(#loc-home:checked) ~ .list .m-home,
+#loc:has(#loc-work:checked) ~ .list .m-work{display:block}
 .pl{font-size:.82rem;word-break:break-word;margin-top:3px;color:var(--dim)}
 .pl b{font-weight:600}
 /* The regular price is context; the offer is the news. Same size, different weight of
@@ -251,18 +271,117 @@ function tags(r: ListRow): string {
  * silently forgets is worse than one that plainly cannot, and a local preview built from an
  * empty `.env` is the ordinary way to reach this state.
  */
-function rowHtml(r: ListRow, live: boolean): string {
-	const base = r.currentPrice ?? r.buyPrice;
-	const disc = r.buyPrice ?? base;
+/**
+ * One row's prices **for a trip that is not "wherever is cheapest"**.
+ *
+ * ⚠️ **Rendered server-side, three times, and switched with CSS.** The alternative was
+ * handing the browser the figures and formatting them there — which is a second price
+ * renderer, and the one thing this file has consistently refused to grow. See
+ * `ListFragment` for the same call made the same way.
+ *
+ * ⚠️ **The discount survives only if its shop is on this trip.** A `−16%` under a Home
+ * heading, won at a shop you will not pass, is an offer you cannot take.
+ */
+function localeBlock(r: ListRow, mode: LocationMode): string {
+	const pick = r.atLocation?.[mode];
+	if (!pick) return "";
+	if (pick.price == null) {
+		return `<div class="pl none">${
+			pick.elsewhere ? "not at a shop on this trip" : "no price here yet"
+		}</div>`;
+	}
+	const dealHere = r.dealVendor != null && normish(r.dealVendor) === normish(pick.vendor ?? "");
+	const pct = dealHere ? discountPct(r) : null;
+	return (
+		priceLine(pick.price, null, pick.vendor, { cls: "reg", url: pick.url }) +
+		(pct != null ? priceLine(r.buyPrice, r.perKg, r.dealVendor, { cls: "cut", pct, url: r.dealUrl }) : "") +
+		(pct != null ? offerName(r, true) : "")
+	);
+}
+
+/**
+ * Which modes this page can offer.
+ *
+ * ⚠️ **The toggle appears only when the location data actually arrived.** `readGroceryList`
+ * leaves `atLocation` unset when the Website Used read fails or when a local preview has no
+ * token, and a Home tab that is empty for that reason reads as "nothing is near you" — the
+ * worst possible lie for a shopping list to tell. No data, no toggle, page exactly as before.
+ */
+/**
+ * **The Location toggle.** Which trip are you on — anywhere, Home, or Work?
+ *
+ * ⚠️ **Radio inputs, operable before any script runs**, the same standard the review page's
+ * tabs hold themselves to. The script only keeps the TOTALS in step; which prices are shown
+ * is pure CSS off `:checked`, so the control still works with scripting off.
+ *
+ * ⚠️ **`Cheapest` is first and checked.** It is what this page has always shown, and a
+ * toggle that silently started you somewhere else would change the meaning of every figure
+ * on the page without saying so.
+ */
+function locationToggle(modes: LocationMode[]): string {
+	const buttons = modes
+		.map(
+			(m, i) =>
+				`<input type="radio" name="loc" id="loc-${m}" value="${m}"${i === 0 ? " checked" : ""}>` +
+				`<label for="loc-${m}">${esc(LOCATION_LABELS[m])}</label>`,
+		)
+		.join("\n    ");
+	return `<fieldset class="loc" id="loc">
+    <legend>Location</legend>
+    ${buttons}
+  </fieldset>`;
+}
+
+export function modesFor(rows: readonly ListRow[]): LocationMode[] {
+	return rows.some((r) => r.atLocation) ? LOCATION_MODES : ["cheapest"];
+}
+
+/** The same normalisation `normTag` does, without dragging Notion into the renderer. */
+const normish = (s: string) => s.trim().replace(/\s+/g, " ").toLowerCase();
+
+/** What one row costs in one mode: [full, discounted]. Drives the totals, per mode. */
+function modeTotals(r: ListRow, mode: LocationMode): [number | null, number | null] {
+	if (mode === "cheapest") {
+		const base = r.currentPrice ?? r.buyPrice;
+		return [base, r.buyPrice ?? base];
+	}
+	const pick = r.atLocation?.[mode];
+	if (!pick || pick.price == null) return [null, null];
+	const dealHere = r.dealVendor != null && normish(r.dealVendor) === normish(pick.vendor ?? "");
+	return [pick.price, dealHere && r.buyPrice != null ? r.buyPrice : pick.price];
+}
+
+function rowHtml(r: ListRow, live: boolean, modes: LocationMode[]): string {
 	const off = live ? "" : " disabled";
-	return `<li class="row" data-id="${esc(r.pageId)}" data-full="${base ?? ""}" data-disc="${disc ?? ""}">
+	// ⚠️ One pair of figures per mode, on the <li> itself, because `recount` sums from the
+	// DOM and must follow the toggle. A single data-full would total the wrong trip.
+	const data = modes
+		.map((m) => {
+			const [full, disc] = modeTotals(r, m);
+			return ` data-full-${m}="${full ?? ""}" data-disc-${m}="${disc ?? ""}"`;
+		})
+		.join("");
+	// ⚠️ `tags` rides INSIDE the cheapest block when there is a toggle. It says "no price —
+	// not in the totals", which `localeBlock` already says better per trip ("not at a shop on
+	// this trip"), and left outside it printed both at once on an unpriced row.
+	const blocks =
+		modes.length > 1
+			? modes
+					.map(
+						(m) =>
+							`<span class="mode m-${m}">${
+								m === "cheapest" ? priceBlock(r) + tags(r) : localeBlock(r, m)
+							}</span>`,
+					)
+					.join("")
+			: priceBlock(r) + tags(r);
+	return `<li class="row" data-id="${esc(r.pageId)}"${data}>
   <input class="tick" type="checkbox"${off} aria-label="Tick off ${esc(r.name)}">
   <span class="qty"><input class="amt" type="number" min="1" step="1" value="${r.amount}"${off}
     aria-label="How many ${esc(r.name)}"><span>&times;</span></span>
   <span class="body">
     ${nameHtml(r)}
-    ${priceBlock(r)}
-    ${tags(r)}
+    ${blocks}
   </span>
 </li>`;
 }
@@ -314,7 +433,7 @@ export function listFragment(rows: ListRow[], now: Date = new Date()): ListFragm
 		full: t.full,
 		discounted: t.discounted,
 		unpriced: t.unpriced,
-		rowsHtml: open.map((r) => rowHtml(r, true)).join("\n"),
+		rowsHtml: open.map((r) => rowHtml(r, true, modesFor(open))).join("\n"),
 	};
 }
 
@@ -507,12 +626,34 @@ function script(endpoint: string, secret: string, live: { url: string; builtAt: 
   // ---- Totals ----------------------------------------------------------
   // Only rows still ON the list count. A ticked row has left the shopping, so it
   // leaves the total in the same motion — that is the whole point of ticking it.
+  // ---- Location --------------------------------------------------------
+  //
+  // ⚠️ **The script does NOT decide which prices are visible** — the CSS does, off the
+  // radio's :checked. All this does is tell recount() which pair of data attributes to
+  // sum, so the totals follow the trip. With scripting off the toggle still switches the
+  // prices; only the totals stay on the mode the page was built in.
+  //
+  // ⚠️ The chosen mode is remembered per browser, because the trip you are on does not
+  // change between page loads the way the list does. localStorage is wrapped: it throws in
+  // a private window, and a shopping list must not die for want of a preference.
+  var LOC_KEY = "grocery-list-location";
+  function currentMode() {
+    var on = document.querySelector('#loc input[name="loc"]:checked');
+    return on ? on.value : "cheapest";
+  }
+  function MODE_KEY() {
+    var m = currentMode();
+    return m.charAt(0).toUpperCase() + m.slice(1);
+  }
+
   function recount() {
     var full = 0, disc = 0, n = 0;
     list.querySelectorAll("li.row:not(.going)").forEach(function (li) {
       var q = parseInt(li.querySelector("input.amt").value, 10);
       if (!isFinite(q) || q < 1) q = 1;
-      var f = parseFloat(li.dataset.full), d = parseFloat(li.dataset.disc);
+      // ⚠️ Per MODE. One pair of figures would total whichever trip was rendered first,
+      // which is how a Home total ends up quoting prices from a shop you are not visiting.
+      var f = parseFloat(li.dataset["full" + MODE_KEY()]), d = parseFloat(li.dataset["disc" + MODE_KEY()]);
       if (isFinite(f)) { full += f * q; disc += (isFinite(d) ? d : f) * q; }
       n++;
     });
@@ -627,6 +768,19 @@ function script(endpoint: string, secret: string, live: { url: string; builtAt: 
       .catch(function () { /* the baked page is already correct enough */ });
   }
 
+  var locBox = document.getElementById("loc");
+  if (locBox) {
+    try {
+      var saved = localStorage.getItem(LOC_KEY);
+      var savedBtn = saved && document.getElementById("loc-" + saved);
+      if (savedBtn) savedBtn.checked = true;
+    } catch (e) { /* private window — the default mode is a fine answer */ }
+    locBox.addEventListener("change", function () {
+      try { localStorage.setItem(LOC_KEY, currentMode()); } catch (e) {}
+      recount();
+    });
+  }
+
   recount();
   catchUp();
 })();
@@ -652,6 +806,7 @@ export function renderListPage(rows: ListRow[], o: ListPageOptions): string {
 	// Controls that looked live and silently dropped every tick would be worse than
 	// controls that say plainly they cannot save.
 	const live = Boolean(o.listSecret) && Boolean(o.listEndpoint) && !o.error;
+	const modes = modesFor(open);
 
 	const body = o.error
 		? `<div class="note">The list could not be read from Notion just now, so this page is
@@ -666,7 +821,8 @@ export function renderListPage(rows: ListRow[], o: ListPageOptions): string {
   </div>`
 					: ""
 			}
-  <ul class="list" id="list">${open.map((r) => rowHtml(r, live)).join("\n")}</ul>
+  ${modes.length > 1 ? locationToggle(modes) : ""}
+  <ul class="list" id="list">${open.map((r) => rowHtml(r, live, modes)).join("\n")}</ul>
   <p class="empty" id="empty"${open.length ? " hidden" : ""}>Nothing on the list. Text the bot to add something.</p>
 
   <div class="totals">
