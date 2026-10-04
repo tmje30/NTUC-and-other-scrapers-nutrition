@@ -95,6 +95,11 @@ a.nm:hover{text-decoration-color:var(--acc)}
 /* ⚠️ The arrow is a ::after, NOT markup: the page's script reads .nm's textContent for the
    undo tray, and an arrow inside the element would ride along into the tray's label. */
 a.nm::after{content:" \\2197";font-size:.78em;color:var(--dim);text-decoration:none}
+/* The product an offer is ON, under its price. Dimmer and smaller than the price lines —
+   it is the label on the thing, not another figure to compare against them. */
+.pl.on{font-size:.78rem;color:var(--dim);margin-top:1px;padding-left:2px}
+.pl.on a{color:inherit;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:2px}
+.pl.on a::after{content:" \\2197";font-size:.92em}
 .pl{font-size:.82rem;word-break:break-word;margin-top:3px;color:var(--dim)}
 .pl b{font-weight:600}
 /* The regular price is context; the offer is the news. Same size, different weight of
@@ -206,7 +211,32 @@ function priceBlock(r: ListRow): string {
 					url: r.dealUrl,
 				})
 			: "";
-	return regular + discount;
+	return regular + discount + offerName(r, pct != null);
+}
+
+/**
+ * **What the offer is actually ON, under the discounted price** (user, 2026-10-04).
+ *
+ * ⚠️ **The row name is not an answer to "which one is on offer".** A row called `Butter`
+ * at −16% does not tell you which tub to reach for, and on a row whose promo is a
+ * DIFFERENT product from the one normally recorded it is actively misleading — Green Tea's
+ * Sheng Siong slot held "Green Tea" while the promo was on another teabag entirely. This is
+ * the shop's own wording, from `Item name (Discount)`.
+ *
+ * ⚠️ **Only under a line that showed a discount.** Without a `−%` above it there is no
+ * offer for this name to belong to, and a stray product name under a plain price reads as
+ * the thing you are buying rather than the thing that is cheap.
+ *
+ * ⚠️ The name is the link, as asked. It points at `dealUrl` — the offer's own listing from
+ * `URL item (Discount)` — so the two always describe one product.
+ */
+function offerName(r: ListRow, discounted: boolean): string {
+	const name = (r.dealItemName ?? "").trim();
+	if (!discounted || !name) return "";
+	const label = esc(name);
+	return `<div class="pl on">${
+		r.dealUrl ? `<a href="${esc(r.dealUrl)}" target="_blank" rel="noopener">${label}</a>` : label
+	}</div>`;
 }
 
 /** Whatever is left to say about a row once its prices are on the page. */

@@ -749,3 +749,55 @@ check("…and is not one of the price formulas", ex.priceDC === "Price D%/C" && 
 const richSchema = { ...formulaSchema, "Vendor %": { type: "rich_text" } };
 eq("a rich-text Vendor % is still resolved as one", resolveListProps(richSchema).vendor, "Vendor %");
 eq("…and then no formula is claimed for it", resolveExtraProps(richSchema).dealVendorFormula, null);
+
+describe("the product an offer is on, named under its price");
+
+/**
+ * ⚠️ **The row name is not an answer to "which one is on offer"** (user, 2026-10-04). A row
+ * called `Butter` at −16% does not say which tub to reach for, and where the promo is on a
+ * DIFFERENT product from the one normally recorded it is actively misleading — Green Tea's
+ * Sheng Siong slot held "Green Tea" while the promo was on another teabag.
+ */
+const withOffer = renderListPage(
+	[
+		row({
+			name: "Butter",
+			currentPrice: 5.5,
+			buyPrice: 4.6,
+			currentVendor: "Sheng Siong",
+			dealVendor: "Sheng Siong",
+			dealItemName: "Cowhead Pure Creamery Butter (250g)",
+			dealUrl: "https://ss.test/cowhead-butter-250g",
+		}),
+	],
+	{ repo: "o/r", listEndpoint: "https://relay.example/list", listSecret: "s" },
+);
+check("the offer names its product", withOffer.includes("Cowhead Pure Creamery Butter (250g)"));
+check("…as a link to that listing", withOffer.includes('<div class="pl on"><a href="https://ss.test/cowhead-butter-250g"'));
+// ⚠️ Under the discounted price, not above it — it belongs to the offer, not to the row.
+check("…below the discount line", withOffer.indexOf('class="pl cut"') < withOffer.indexOf('class="pl on"'));
+
+// ⚠️ No `−%`, no offer, so no product name: a stray name under a plain price reads as the
+// thing you are buying rather than the thing that is cheap.
+const noDiscount = renderListPage(
+	[row({ name: "Butter", currentPrice: 5.5, buyPrice: 5.5, dealItemName: "Cowhead Pure Creamery Butter (250g)" })],
+	{ repo: "o/r", listEndpoint: "https://relay.example/list", listSecret: "s" },
+);
+check("an undiscounted row names no product", !noDiscount.includes('class="pl on"'));
+
+// A recorded offer with no link still names the product, as plain text.
+const noUrl = renderListPage(
+	[row({ name: "Butter", currentPrice: 5.5, buyPrice: 4.6, dealItemName: "Cowhead Pure Creamery Butter (250g)" })],
+	{ repo: "o/r", listEndpoint: "https://relay.example/list", listSecret: "s" },
+);
+check("no link still names it", noUrl.includes('<div class="pl on">Cowhead Pure Creamery Butter (250g)</div>'));
+
+// The index carries it off the ingredient, beside the URL.
+const ix = urlsFromSlots(slots, "https://ss.test/offer", "Cowhead Pure Creamery Butter (250g)");
+eq("the index carries the offer's name", ix.offerName, "Cowhead Pure Creamery Butter (250g)");
+eq("…and an empty one is null, not ''", urlsFromSlots(slots, null, "").offerName, null);
+eq(
+	"…and it reaches the row",
+	attachProductUrls([row({ ingredientId: "i" })], new Map([["i", ix]]))[0].dealItemName,
+	"Cowhead Pure Creamery Butter (250g)",
+);

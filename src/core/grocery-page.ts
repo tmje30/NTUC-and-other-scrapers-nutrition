@@ -65,6 +65,8 @@ export interface ListRow {
 	currentPerUnit: string | null;
 	dealUrl: string | null;
 	currentUrl: string | null;
+	/** `Item name (Discount)` from the ingredient — what the offer is ON. */
+	dealItemName?: string | null;
 	ticked: boolean;
 	/**
 	 * The Ingredients row this line is linked to, when it is linked to one.
@@ -294,6 +296,15 @@ export interface IngredientUrls {
 	 * teabag. The offer link must open the thing the "−21%" refers to.
 	 */
 	offer: string | null;
+	/**
+	 * `Item name (Discount)` — what the offer is actually ON, e.g.
+	 * `Cowhead Pure Creamery Butter (250g)`.
+	 *
+	 * ⚠️ The shop's own wording, not the row's. "Butter −16%" does not tell you which tub to
+	 * reach for, and on a row whose promo is a DIFFERENT product from the one normally
+	 * recorded, the row name is actively misleading about what is on offer.
+	 */
+	offerName: string | null;
 }
 
 /** Index one ingredient's slots. Pure, so the precedence above can be pinned by tests. */
@@ -301,6 +312,8 @@ export function urlsFromSlots(
 	slots: readonly { vendorName: string; urlValue: string; priceValue: number | null; sizeValue: number | null }[],
 	/** `URL item (Discount)`, when that row has one. See `IngredientUrls.offer`. */
 	offer: string | null = null,
+	/** `Item name (Discount)`. See `IngredientUrls.offerName`. */
+	offerName: string | null = null,
 ): IngredientUrls {
 	const byVendor = new Map<string, string>();
 	let cheapest: string | null = null;
@@ -314,7 +327,7 @@ export function urlsFromSlots(
 			cheapest = s.urlValue;
 		}
 	}
-	return { byVendor, cheapest, offer: offer || null };
+	return { byVendor, cheapest, offer: offer || null, offerName: offerName || null };
 }
 
 /**
@@ -345,6 +358,7 @@ export function attachProductUrls(rows: ListRow[], index: Map<string, Ingredient
 			// ⚠️ The discount column FIRST: it names the listing that is actually on offer, which
 			// is not always the one the slot records. The vendor slot is the fallback.
 			dealUrl: r.dealUrl ?? u.offer ?? at(r.dealVendor),
+			dealItemName: r.dealItemName ?? u.offerName,
 		};
 	});
 }
@@ -355,10 +369,9 @@ export async function readIngredientUrls(client: Client): Promise<Map<string, In
 	const slotDefs = resolveVendorSlotProps(ds.properties ?? {});
 	const index = new Map<string, IngredientUrls>();
 	for (const page of await queryAll(client, INGREDIENTS_DS)) {
-		index.set(
-			page.id,
-			urlsFromSlots(readVendorSlots(page.properties ?? {}, slotDefs), readDiscount(page.properties ?? {}).url),
-		);
+		// Read once: the four discount cells are parsed together and both halves are wanted.
+		const d = readDiscount(page.properties ?? {});
+		index.set(page.id, urlsFromSlots(readVendorSlots(page.properties ?? {}, slotDefs), d.url, d.itemName));
 	}
 	return index;
 }
