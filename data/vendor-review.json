@@ -1,171 +1,7 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-04T04:11:53.591Z",
+  "updatedAt": "2026-10-04T06:41:02.927Z",
   "pending": [
-    {
-      "token": "828065",
-      "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
-      "ingredientName": "Sensitivity & Gum Toothpaste - Original",
-      "key": "sensitiviti gum toothpast original",
-      "unitType": "By Gram",
-      "category": "Cosmetics/ Tooth paste etc",
-      "vendor": "Watsons",
-      "slotN": 3,
-      "priceSgd": 7.3,
-      "size": 120,
-      "url": "https://www.watsons.com.sg/darlie-expert-gum-care-sensitivity-relief-toothpaste-120g-expiry-apr-2027/p/BP_30925",
-      "itemName": "DARLIE Expert Gum Care Sensitivity Relief Toothpaste 120g (Expiry: Apr`2027)",
-      "statedSize": "120g",
-      "perLabel": "$60.83/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 2 of 3, offered as a suggestion. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 1,
-      "askedAt": "2026-10-03T06:59:13.326Z"
-    },
-    {
-      "token": "d1gvet",
-      "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
-      "ingredientName": "Sensitivity & Gum Toothpaste - Original",
-      "key": "sensitiviti gum toothpast original",
-      "unitType": "By Gram",
-      "category": "Cosmetics/ Tooth paste etc",
-      "vendor": "Watsons",
-      "slotN": 3,
-      "priceSgd": 9.1,
-      "size": 110,
-      "url": "https://www.watsons.com.sg/colgate-sensitive-pro-relief-original-toothpaste-110g/p/BP_41346",
-      "itemName": "COLGATE Sensitive Pro Relief Original Toothpaste 110g",
-      "statedSize": "110g",
-      "perLabel": "$82.73/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 2,
-      "askedAt": "2026-10-03T06:59:13.421Z"
-    },
-    {
-      "token": "0zsv0d",
-      "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
-      "ingredientName": "Sensitivity & Gum Toothpaste - Original",
-      "key": "sensitiviti gum toothpast original",
-      "unitType": "By Gram",
-      "category": "Cosmetics/ Tooth paste etc",
-      "vendor": "Watsons",
-      "slotN": 3,
-      "priceSgd": 7.5,
-      "size": 100,
-      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-gum-care-toothpaste-dental-sensitivity-relief-100g/p/BP_45477",
-      "itemName": "SENSODYNE Sensitive Teeth Gum Care Toothpaste (Dental Sensitivity Relief) 100g",
-      "statedSize": "100g",
-      "perLabel": "$75.00/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is the closest of 3 offered, best first. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-10-03T06:59:13.422Z"
-    },
-    {
-      "token": "wvddch",
-      "ingredientId": "3b269a18-4fe7-814f-8e7c-e1eaf939c812",
-      "ingredientName": "Toothpaste - Repair & Protect [Sensodyne]",
-      "key": "toothpast repair protect",
-      "unitType": "By Gram",
-      "category": "Cosmetics/ Tooth paste etc",
-      "vendor": "Watsons",
-      "slotN": 3,
-      "brand": "sensodyne",
-      "priceSgd": 10.45,
-      "size": 100,
-      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-oral-care-toothpaste-deep-repair-protect-extra-fresh-dental-sensitivity-relief-100g/p/BP_64752",
-      "itemName": "SENSODYNE Sensitive Teeth Oral Care Toothpaste Deep Repair & Protect Extra Fresh (Dental Sensitivity Relief) 100g",
-      "statedSize": "100g",
-      "perLabel": "$104.50/kg",
-      "reasons": [
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 102,
-          "foundPer": 104.5,
-          "perWord": "kg",
-          "vendor": "Watsons",
-          "note": "DEARER than the Watsons price already recorded: $10.20 / 100g = $102.00/kg → $10.45 / 100g = $104.50/kg. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-10-03T06:59:28.832Z"
-    },
-    {
-      "token": "0erdx5",
-      "ingredientId": "37369a18-4fe7-809b-b3bb-cc640507e5a9",
-      "ingredientName": "Creatine monohydrate [California gold]",
-      "key": "creatin monohydrat",
-      "unitType": "By Gram",
-      "category": "Suppliments",
-      "vendor": "Iherb",
-      "slotN": 1,
-      "brand": "california gold",
-      "priceSgd": 41.12,
-      "size": 997.9,
-      "url": "https://sg.iherb.com/pr/california-gold-nutrition-sport-pure-creatine-monohydrate-unflavored-2-2-lbs-1-kg/143718",
-      "itemName": "California Gold Nutrition, Sport, Pure Creatine Monohydrate, Unflavored, 2.2 lbs (1 kg)",
-      "statedSize": "998g",
-      "perLabel": "$41.21/kg",
-      "reasons": [
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 30.83,
-          "foundPer": 41.2065337208137,
-          "perWord": "kg",
-          "vendor": "Iherb",
-          "note": "DEARER than the Iherb price already recorded: $30.83 / 1000g = $30.83/kg → $41.12 / 997.9g = $41.21/kg. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-10-03T07:00:33.823Z"
-    },
-    {
-      "token": "34rk8a",
-      "ingredientId": "37369a18-4fe7-80d1-91ef-eb21cedf53ae",
-      "ingredientName": "Omega 3 800 [california gold] (1000-1100 mg)",
-      "key": "omega3 800",
-      "unitType": "By Unit",
-      "category": "Suppliments",
-      "vendor": "Iherb",
-      "slotN": 1,
-      "brand": "california gold",
-      "priceSgd": 54.23,
-      "size": 60,
-      "url": "https://sg.iherb.com/pr/doctor-s-best-vegan-omega-3-epa-dha-60-veggie-softgels-1-000-mg-per-softgel/143722",
-      "itemName": "Doctor's Best, Vegan Omega-3, EPA+DHA, 60 Veggie Softgels (1,000 mg per Softgel)",
-      "statedSize": "60 pcs",
-      "perLabel": "$9.04/10 pc",
-      "reasons": [
-        {
-          "kind": "brand-unconfirmed",
-          "brand": "california gold",
-          "note": "this row names california gold and the product does not say so — a supplement is only recorded without asking when the brand matches. Accept if it is the right thing."
-        },
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 37.66666666666667,
-          "foundPer": 90.38333333333333,
-          "perWord": "100 pcs",
-          "vendor": "Iherb",
-          "note": "DEARER than the Iherb price already recorded: $45.20 / 120 pcs = $37.67/100 pcs → $54.23 / 60 pcs = $90.38/100 pcs. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-10-03T07:00:53.683Z"
-    },
     {
       "token": "vo7ls3",
       "ingredientId": "39c69a18-4fe7-80eb-bac0-fa46c8d26c9d",
@@ -1081,6 +917,170 @@
       ],
       "rank": 0,
       "askedAt": "2026-10-04T04:11:53.591Z"
+    },
+    {
+      "token": "828065",
+      "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
+      "ingredientName": "Sensitivity & Gum Toothpaste - Original",
+      "key": "sensitiviti gum toothpast original",
+      "unitType": "By Gram",
+      "category": "Cosmetics/ Tooth paste etc",
+      "vendor": "Watsons",
+      "slotN": 3,
+      "priceSgd": 7.3,
+      "size": 120,
+      "url": "https://www.watsons.com.sg/darlie-expert-gum-care-sensitivity-relief-toothpaste-120g-expiry-apr-2027/p/BP_30925",
+      "itemName": "DARLIE Expert Gum Care Sensitivity Relief Toothpaste 120g (Expiry: Apr`2027)",
+      "statedSize": "120g",
+      "perLabel": "$60.83/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 2 of 3, offered as a suggestion. Accept only if it is the same thing."
+        }
+      ],
+      "rank": 1,
+      "askedAt": "2026-10-04T06:37:04.983Z"
+    },
+    {
+      "token": "d1gvet",
+      "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
+      "ingredientName": "Sensitivity & Gum Toothpaste - Original",
+      "key": "sensitiviti gum toothpast original",
+      "unitType": "By Gram",
+      "category": "Cosmetics/ Tooth paste etc",
+      "vendor": "Watsons",
+      "slotN": 3,
+      "priceSgd": 9.1,
+      "size": 110,
+      "url": "https://www.watsons.com.sg/colgate-sensitive-pro-relief-original-toothpaste-110g/p/BP_41346",
+      "itemName": "COLGATE Sensitive Pro Relief Original Toothpaste 110g",
+      "statedSize": "110g",
+      "perLabel": "$82.73/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
+        }
+      ],
+      "rank": 2,
+      "askedAt": "2026-10-04T06:37:04.986Z"
+    },
+    {
+      "token": "0zsv0d",
+      "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
+      "ingredientName": "Sensitivity & Gum Toothpaste - Original",
+      "key": "sensitiviti gum toothpast original",
+      "unitType": "By Gram",
+      "category": "Cosmetics/ Tooth paste etc",
+      "vendor": "Watsons",
+      "slotN": 3,
+      "priceSgd": 7.5,
+      "size": 100,
+      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-gum-care-toothpaste-dental-sensitivity-relief-100g/p/BP_45477",
+      "itemName": "SENSODYNE Sensitive Teeth Gum Care Toothpaste (Dental Sensitivity Relief) 100g",
+      "statedSize": "100g",
+      "perLabel": "$75.00/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is the closest of 3 offered, best first. Accept only if it is the same thing."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-10-04T06:37:04.991Z"
+    },
+    {
+      "token": "xefbbf",
+      "ingredientId": "3b269a18-4fe7-814f-8e7c-e1eaf939c812",
+      "ingredientName": "Toothpaste - Repair & Protect [Sensodyne]",
+      "key": "toothpast repair protect",
+      "unitType": "By Gram",
+      "category": "Cosmetics/ Tooth paste etc",
+      "vendor": "Watsons",
+      "slotN": 3,
+      "brand": "sensodyne",
+      "priceSgd": 10.45,
+      "size": 100,
+      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-oral-care-toothpaste-deep-repair-protect-dental-sensitivity-relief-100g/p/BP_31370",
+      "itemName": "SENSODYNE Sensitive Teeth Oral Care Toothpaste Deep Repair & Protect (Dental Sensitivity Relief) 100g",
+      "statedSize": "100g",
+      "perLabel": "$104.50/kg",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 102,
+          "foundPer": 104.5,
+          "perWord": "kg",
+          "vendor": "Watsons",
+          "note": "DEARER than the Watsons price already recorded: $10.20 / 100g = $102.00/kg → $10.45 / 100g = $104.50/kg. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-10-04T06:38:41.683Z"
+    },
+    {
+      "token": "0erdx5",
+      "ingredientId": "37369a18-4fe7-809b-b3bb-cc640507e5a9",
+      "ingredientName": "Creatine monohydrate [California gold]",
+      "key": "creatin monohydrat",
+      "unitType": "By Gram",
+      "category": "Suppliments",
+      "vendor": "Iherb",
+      "slotN": 1,
+      "brand": "california gold",
+      "priceSgd": 41.2,
+      "size": 997.9,
+      "url": "https://sg.iherb.com/pr/california-gold-nutrition-sport-pure-creatine-monohydrate-unflavored-2-2-lbs-1-kg/143718",
+      "itemName": "California Gold Nutrition, Sport, Pure Creatine Monohydrate, Unflavored, 2.2 lbs (1 kg)",
+      "statedSize": "998g",
+      "perLabel": "$41.29/kg",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 30.83,
+          "foundPer": 41.28670207435616,
+          "perWord": "kg",
+          "vendor": "Iherb",
+          "note": "DEARER than the Iherb price already recorded: $30.83 / 1000g = $30.83/kg → $41.20 / 997.9g = $41.29/kg. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-10-04T06:40:38.132Z"
+    },
+    {
+      "token": "34rk8a",
+      "ingredientId": "37369a18-4fe7-80d1-91ef-eb21cedf53ae",
+      "ingredientName": "Omega 3 800 [california gold] (1000-1100 mg)",
+      "key": "omega3 800",
+      "unitType": "By Unit",
+      "category": "Suppliments",
+      "vendor": "Iherb",
+      "slotN": 1,
+      "brand": "california gold",
+      "priceSgd": 54.32,
+      "size": 60,
+      "url": "https://sg.iherb.com/pr/doctor-s-best-vegan-omega-3-epa-dha-60-veggie-softgels-1-000-mg-per-softgel/143722",
+      "itemName": "Doctor's Best, Vegan Omega-3, EPA+DHA, 60 Veggie Softgels (1,000 mg per Softgel)",
+      "statedSize": "60 pcs",
+      "perLabel": "$9.05/10 pc",
+      "reasons": [
+        {
+          "kind": "brand-unconfirmed",
+          "brand": "california gold",
+          "note": "this row names california gold and the product does not say so — a supplement is only recorded without asking when the brand matches. Accept if it is the right thing."
+        },
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 37.66666666666667,
+          "foundPer": 90.53333333333333,
+          "perWord": "100 pcs",
+          "vendor": "Iherb",
+          "note": "DEARER than the Iherb price already recorded: $45.20 / 120 pcs = $37.67/100 pcs → $54.32 / 60 pcs = $90.53/100 pcs. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-10-04T06:41:02.927Z"
     }
   ],
   "rejected": [
@@ -1196,8 +1196,8 @@
     }
   ],
   "moves": {
-    "generatedAt": "2026-10-04T04:11:53.591Z",
-    "reconfirmed": 62,
+    "generatedAt": "2026-10-04T06:41:04.117Z",
+    "reconfirmed": 4,
     "moves": []
   }
 }
