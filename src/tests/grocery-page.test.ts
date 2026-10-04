@@ -10,6 +10,7 @@ import {
 	urlsFromSlots,
 } from "../core/grocery-page.js";
 import { listFragment, renderListPage, sameFragment } from "../core/grocery-page-render.js";
+import { resolveListProps } from "../core/grocery-list.js";
 import { due, lastSgtMidnight, queue, unqueue, type PendingFile } from "../core/list-pending.js";
 // @ts-expect-error — the relay is plain ESM with no types; this is the point of testing
 // the edge gate and the repo parser against each other rather than trusting they agree.
@@ -712,3 +713,39 @@ check("…and fetches the ingredient index", page.includes("ingredients.json"));
 
 // ⚠️ A read-only page must not offer a box that cannot write.
 check("a read-only page has no Add box", !readOnly.includes('id="addbox"'));
+
+describe("the discount shop when Vendor % is a formula");
+
+/**
+ * ⚠️⚠️ **A live schema change, 2026-10-04, and it broke silently.** `Vendor %` was rich
+ * text; the user rewired it to derive the shop from the Ingredients row, and
+ * `resolveListProps` — which looks for the vendor among the RICH TEXT columns — resolved it
+ * to null for every row at once. Nothing throws. `dealVendor` goes null, `priceLine` falls
+ * back to `currentVendor`, and the offer line goes on rendering while naming the shop with
+ * the REGULAR price. "−21% — NTUC" about a Sheng Siong offer is worse than no label at all.
+ * Same trap as `Current Price ` becoming a formula in August; see `currentPriceFormula`.
+ */
+const formulaSchema = {
+	Name: { type: "title" },
+	"Price , To Buy ": { type: "number" },
+	"Amount ": { type: "number" },
+	Tickbox: { type: "checkbox" },
+	"Price per kg/L": { type: "rich_text" },
+	"List [Ingredients]": { type: "relation" },
+	"Price D%/C": { type: "formula" },
+	"Current Price ": { type: "formula" },
+	"Vendor %": { type: "formula" },
+	"Discount Name ": { type: "formula" },
+	"URL - Current ": { type: "url" },
+	"URL - discount/Cheap ": { type: "url" },
+};
+const ex = resolveExtraProps(formulaSchema);
+eq("the vendor formula is found", ex.dealVendorFormula, "Vendor %");
+// ⚠️ Not confused with the other formulas, which are prices and names.
+check("…and is not one of the price formulas", ex.priceDC === "Price D%/C" && ex.currentPriceFormula === "Current Price ");
+
+// ⚠️ Rich text still wins where it exists: a user who changes it back must not need a
+// code change, so the formula is a fallback and never an override.
+const richSchema = { ...formulaSchema, "Vendor %": { type: "rich_text" } };
+eq("a rich-text Vendor % is still resolved as one", resolveListProps(richSchema).vendor, "Vendor %");
+eq("…and then no formula is claimed for it", resolveExtraProps(richSchema).dealVendorFormula, null);

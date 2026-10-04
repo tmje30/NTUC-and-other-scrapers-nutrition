@@ -96,6 +96,18 @@ export interface ExtraListProps {
 	dealUrl: string | null;
 	/** `URL - Current ` */
 	currentUrl: string | null;
+	/**
+	 * `Vendor %` **when it is a formula** — which it became on 2026-10-04.
+	 *
+	 * ⚠️ **Exactly the trap `currentPriceFormula` was created for, sprung a second time.**
+	 * `resolveListProps` looks for the vendor among the RICH TEXT columns, so the moment the
+	 * user rewired it to derive the shop from the Ingredients row, `props.vendor` resolved to
+	 * null — silently, for every row at once. Nothing throws: `dealVendor` becomes null, and
+	 * `priceLine` falls back to `currentVendor`, so the offer line goes on rendering and
+	 * simply names the WRONG SHOP — the one with the regular price. A page that says "−21% —
+	 * NTUC" about a Sheng Siong offer is worse than one that says nothing.
+	 */
+	dealVendorFormula: string | null;
 }
 
 const norm = (s: string) => s.trim().replace(/\s+/g, " ").toLowerCase();
@@ -115,6 +127,9 @@ export function resolveExtraProps(schema: Record<string, { type: string }>): Ext
 		currentPriceFormula: pick(formulas, (n) => n.includes("current") && n.includes("price")),
 		dealUrl: pick(urls, (n) => n.includes("discount") || n.includes("cheap")),
 		currentUrl: pick(urls, (n) => n.includes("current")),
+		// "vendor" is distinctive among the formulas: the others are prices, names and
+		// Home/Office. See the warning on the field.
+		dealVendorFormula: pick(formulas, (n) => n.includes("vendor")),
 	};
 }
 
@@ -207,7 +222,12 @@ export async function readGroceryList(client: Client): Promise<ListRow[]> {
 				buyPrice: Number.isFinite(buy) && buy > 0 ? buy : null,
 				currentPrice: current.price,
 				currentVendor: current.vendor,
-				dealVendor: plain(get(props.vendor)?.rich_text).trim() || null,
+				// Rich text first — that is what it was, and a user who changes it back must not
+				// have to wait for a code change. The formula is the fallback, not the override.
+				dealVendor:
+					plain(get(props.vendor)?.rich_text).trim() ||
+					formulaText(get(extra.dealVendorFormula)).trim() ||
+					null,
 				priceDC,
 				// `Price per kg/L` is the discount's figure and is preferred when present;
 				// the formula's own first segment is the fallback for a row written before
