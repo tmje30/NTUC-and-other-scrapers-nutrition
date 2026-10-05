@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-04T06:41:02.927Z",
+  "updatedAt": "2026-10-05T02:03:36.842Z",
   "pending": [
     {
       "token": "vo7ls3",
@@ -940,7 +940,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-10-04T06:37:04.983Z"
+      "askedAt": "2026-10-05T02:02:06.097Z"
     },
     {
       "token": "d1gvet",
@@ -964,7 +964,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-10-04T06:37:04.986Z"
+      "askedAt": "2026-10-05T02:02:06.099Z"
     },
     {
       "token": "0zsv0d",
@@ -988,36 +988,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-04T06:37:04.991Z"
-    },
-    {
-      "token": "xefbbf",
-      "ingredientId": "3b269a18-4fe7-814f-8e7c-e1eaf939c812",
-      "ingredientName": "Toothpaste - Repair & Protect [Sensodyne]",
-      "key": "toothpast repair protect",
-      "unitType": "By Gram",
-      "category": "Cosmetics/ Tooth paste etc",
-      "vendor": "Watsons",
-      "slotN": 3,
-      "brand": "sensodyne",
-      "priceSgd": 10.45,
-      "size": 100,
-      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-oral-care-toothpaste-deep-repair-protect-dental-sensitivity-relief-100g/p/BP_31370",
-      "itemName": "SENSODYNE Sensitive Teeth Oral Care Toothpaste Deep Repair & Protect (Dental Sensitivity Relief) 100g",
-      "statedSize": "100g",
-      "perLabel": "$104.50/kg",
-      "reasons": [
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 102,
-          "foundPer": 104.5,
-          "perWord": "kg",
-          "vendor": "Watsons",
-          "note": "DEARER than the Watsons price already recorded: $10.20 / 100g = $102.00/kg → $10.45 / 100g = $104.50/kg. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-10-04T06:38:41.683Z"
+      "askedAt": "2026-10-05T02:02:06.100Z"
     },
     {
       "token": "0erdx5",
@@ -1046,7 +1017,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-04T06:40:38.132Z"
+      "askedAt": "2026-10-05T02:03:14.557Z"
     },
     {
       "token": "34rk8a",
@@ -1080,7 +1051,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-04T06:41:02.927Z"
+      "askedAt": "2026-10-05T02:03:36.842Z"
     }
   ],
   "rejected": [
@@ -1196,8 +1167,8 @@
     }
   ],
   "moves": {
-    "generatedAt": "2026-10-04T06:41:04.117Z",
-    "reconfirmed": 4,
+    "generatedAt": "2026-10-05T02:03:38.276Z",
+    "reconfirmed": 5,
     "moves": []
   }
 }
