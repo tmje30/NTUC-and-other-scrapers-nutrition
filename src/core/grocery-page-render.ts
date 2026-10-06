@@ -126,6 +126,10 @@ a.nm::after{content:" \\2197";font-size:.78em;color:var(--dim);text-decoration:n
    ink — a smaller offer line would be the wrong way round. */
 .pl.reg{opacity:.75}
 .pl.cut{color:var(--fg)}
+/* An offer at a shop this trip does not pass is still shown — it is what the price here is
+   being compared against — but it is not money you are going to save today. */
+.pl.cut.away{opacity:.6}
+.away{font-size:.74rem;color:var(--dim);font-style:italic;white-space:nowrap}
 .tags{margin-top:4px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .off{background:var(--accbg);color:var(--acc);border-radius:999px;padding:1px 8px;
   font-size:.74rem;font-weight:700;white-space:nowrap}
@@ -174,7 +178,7 @@ function priceLine(
 	price: number | null,
 	perUnit: string | null,
 	vendor: string | null,
-	opts: { cls: string; pct?: number | null; url?: string | null } = { cls: "" },
+	opts: { cls: string; pct?: number | null; url?: string | null; note?: string } = { cls: "" },
 ): string {
 	if (price == null && !perUnit) return "";
 	const bits: string[] = [];
@@ -189,6 +193,7 @@ function priceLine(
 			(opts.url ? `<a href="${esc(opts.url)}" target="_blank" rel="noopener">${label} ↗</a>` : label) +
 			`</span>`;
 	}
+	if (opts.note) line += ` <span class="away">${esc(opts.note)}</span>`;
 	return `<div class="pl ${opts.cls}">${line}</div>`;
 }
 
@@ -279,24 +284,41 @@ function tags(r: ListRow): string {
  * renderer, and the one thing this file has consistently refused to grow. See
  * `ListFragment` for the same call made the same way.
  *
- * ⚠️ **The discount survives only if its shop is on this trip.** A `−16%` under a Home
- * heading, won at a shop you will not pass, is an offer you cannot take.
+ * ⚠️⚠️ **The offer line is shown in EVERY mode, reachable or not** (user, 2026-10-06:
+ * "always show the discount row no matter. it is used to compare potential prices"). It
+ * first did the opposite — a `−62%` at Sheng Siong simply vanished under the Work heading —
+ * which threw away the one figure that tells you what the price in front of you is worth.
+ * Seeing "$22.80 NTUC" against "$8.65 Sheng Siong" is the whole point of the toggle; seeing
+ * $22.80 alone just looks like the price of toothpaste.
+ *
+ * ⚠️ **An unreachable offer is marked, not hidden**: dimmed, and labelled *not on this
+ * trip*. It is a comparison, so it must not read as money you are about to save — and
+ * `modeTotals` deliberately leaves it out of this trip's total for the same reason. An
+ * offer shown at full strength AND excluded from the sum would be the page contradicting
+ * itself without saying which half to believe.
  */
 function localeBlock(r: ListRow, mode: LocationMode): string {
 	const pick = r.atLocation?.[mode];
 	if (!pick) return "";
-	if (pick.price == null) {
-		return `<div class="pl none">${
-			pick.elsewhere ? "not at a shop on this trip" : "no price here yet"
-		}</div>`;
-	}
+	const pct = discountPct(r);
 	const dealHere = r.dealVendor != null && normish(r.dealVendor) === normish(pick.vendor ?? "");
-	const pct = dealHere ? discountPct(r) : null;
-	return (
-		priceLine(pick.price, null, pick.vendor, { cls: "reg", url: pick.url }) +
-		(pct != null ? priceLine(r.buyPrice, r.perKg, r.dealVendor, { cls: "cut", pct, url: r.dealUrl }) : "") +
-		(pct != null ? offerName(r, true) : "")
-	);
+	const deal =
+		pct != null
+			? priceLine(r.buyPrice, r.perKg, r.dealVendor ?? r.currentVendor, {
+					cls: dealHere ? "cut" : "cut away",
+					pct,
+					url: r.dealUrl,
+					note: dealHere ? undefined : "not on this trip",
+				}) + offerName(r, true)
+			: "";
+	if (pick.price == null) {
+		return (
+			`<div class="pl none">${
+				pick.elsewhere ? "not at a shop on this trip" : "no price here yet"
+			}</div>` + deal
+		);
+	}
+	return priceLine(pick.price, null, pick.vendor, { cls: "reg", url: pick.url }) + deal;
 }
 
 /**
@@ -339,7 +361,13 @@ export function modesFor(rows: readonly ListRow[]): LocationMode[] {
 /** The same normalisation `normTag` does, without dragging Notion into the renderer. */
 const normish = (s: string) => s.trim().replace(/\s+/g, " ").toLowerCase();
 
-/** What one row costs in one mode: [full, discounted]. Drives the totals, per mode. */
+/**
+ * What one row costs in one mode: [full, discounted]. Drives the totals, per mode.
+ *
+ * ⚠️ **`dealHere` gates the TOTAL, not the display.** `localeBlock` prints an unreachable
+ * offer anyway, as a comparison; this must not count it, because the total answers "what
+ * will this trip cost me" and an offer at a shop you are not going to is not a saving.
+ */
 function modeTotals(r: ListRow, mode: LocationMode): [number | null, number | null] {
 	if (mode === "cheapest") {
 		const base = r.currentPrice ?? r.buyPrice;

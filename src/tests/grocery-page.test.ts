@@ -801,3 +801,112 @@ eq(
 	attachProductUrls([row({ ingredientId: "i" })], new Map([["i", ix]]))[0].dealItemName,
 	"Cowhead Pure Creamery Butter (250g)",
 );
+
+describe("the offer line, on a trip that cannot reach it");
+
+/**
+ * ⚠️⚠️ **The discount row shows in every mode** (user, 2026-10-06: "always show the
+ * discount row no matter. it is used to compare potential prices").
+ *
+ * The live case that prompted it: the Sensodyne row is $22.80 at NTUC and $8.65 at Sheng
+ * Siong, which is not a Work shop. Under Work the −62% simply disappeared, leaving a bare
+ * $22.80 — and a price with nothing to compare it against is just the price of toothpaste.
+ * The saving is exactly what the toggle is for reading.
+ */
+const toothpaste = renderListPage(
+	[
+		row({
+			name: "Toothpaste - Repair & Protect [Sensodyne]",
+			currentPrice: 22.8,
+			currentVendor: "NTUC",
+			buyPrice: 8.65,
+			perKg: "$86.50/kg",
+			dealVendor: "Sheng Siong",
+			dealItemName: "Repair & Protect Toothpaste - Whitening (100g)",
+			dealUrl: "https://ss.test/sensodyne",
+			atLocation: {
+				cheapest: { price: 22.8, size: 300, vendor: "NTUC", url: "https://ntuc.test/s", elsewhere: false },
+				// Home passes Sheng Siong, so the offer there is one you can actually take.
+				home: { price: 20.5, size: 300, vendor: "Sheng Siong", url: "https://ss.test/shelf", elsewhere: false },
+				// Work reaches NTUC but not Sheng Siong: the offer is real and out of reach.
+				work: { price: 22.8, size: 300, vendor: "NTUC", url: "https://ntuc.test/s", elsewhere: false },
+			},
+		}),
+	],
+	{ repo: "o/r", listEndpoint: "https://relay.example/list", listSecret: "s" },
+);
+
+const workBlock = toothpaste.slice(toothpaste.indexOf('class="mode m-work"'));
+check("the Work tab still shows the offer price", workBlock.includes("$8.65"));
+check("…its percentage", workBlock.includes('class="off">−62%'));
+check("…the shop running it", workBlock.includes("Sheng Siong"));
+check("…and what the offer is on", workBlock.includes("Repair &amp; Protect Toothpaste - Whitening (100g)"));
+
+// ⚠️ Shown, but not dressed up as a saving you are about to make. Dimmed and labelled.
+check("an unreachable offer is marked as such", workBlock.includes('class="pl cut away"'));
+check("…in words, not just in opacity", workBlock.includes("not on this trip"));
+
+// ⚠️ The reachable case is unchanged: Home passes Sheng Siong, so it is an ordinary offer.
+const homeBlock = toothpaste.slice(
+	toothpaste.indexOf('class="mode m-home"'),
+	toothpaste.indexOf('class="mode m-work"'),
+);
+check("a reachable offer carries no warning", !homeBlock.includes("not on this trip"));
+check("…and is not dimmed", !homeBlock.includes('class="pl cut away"'));
+
+/**
+ * ⚠️⚠️ **The total is the half that must stay honest.** It answers "what will this trip
+ * cost me", and $8.65 at a shop you are not going to is not money you will spend or save.
+ * So the Work row totals at the full $22.80 while still PRINTING the $8.65 beside it —
+ * that split is the whole design, and a future change that makes the totals follow the
+ * display would quietly promise a saving the trip cannot deliver.
+ */
+check("Work totals the price you will actually pay", toothpaste.includes('data-disc-work="22.8"'));
+check("…while Home totals the offer", toothpaste.includes('data-disc-home="8.65"'));
+
+// A row with no offer at all gains nothing from this: one line, no stray markers.
+const plainRow = renderListPage(
+	[
+		row({
+			name: "Red rice",
+			currentPrice: 5,
+			currentVendor: "NTUC",
+			buyPrice: 5,
+			atLocation: {
+				cheapest: { price: 5, size: 1000, vendor: "NTUC", url: null, elsewhere: false },
+				home: { price: 5, size: 1000, vendor: "NTUC", url: null, elsewhere: false },
+				work: { price: 5, size: 1000, vendor: "NTUC", url: null, elsewhere: false },
+			},
+		}),
+	],
+	{ repo: "o/r", listEndpoint: "https://relay.example/list", listSecret: "s" },
+);
+check("an undiscounted row has no offer line in any mode", !plainRow.includes('class="pl cut'));
+check("…and no 'not on this trip'", !plainRow.includes("not on this trip"));
+
+/**
+ * ⚠️ **An offer outlives the row having no price here at all.** `elsewhere` prints "not at
+ * a shop on this trip" where no reachable shop stocks it — and that is precisely the row
+ * where knowing an $8.65 offer exists somewhere is worth the most, not the least.
+ */
+const nowhere = renderListPage(
+	[
+		row({
+			name: "Toothpaste",
+			currentPrice: 22.8,
+			currentVendor: "Guardian",
+			buyPrice: 8.65,
+			dealVendor: "Sheng Siong",
+			dealUrl: "https://ss.test/sensodyne",
+			atLocation: {
+				cheapest: { price: 22.8, size: 300, vendor: "Guardian", url: null, elsewhere: false },
+				home: { price: null, size: null, vendor: null, url: null, elsewhere: true },
+				work: { price: null, size: null, vendor: null, url: null, elsewhere: true },
+			},
+		}),
+	],
+	{ repo: "o/r", listEndpoint: "https://relay.example/list", listSecret: "s" },
+);
+const unreachable = nowhere.slice(nowhere.indexOf('class="mode m-work"'));
+check("no price here still says so", unreachable.includes("not at a shop on this trip"));
+check("…and still shows the offer underneath", unreachable.includes("$8.65") && unreachable.includes("−62%"));
