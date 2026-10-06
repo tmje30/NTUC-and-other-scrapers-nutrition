@@ -1,40 +1,4 @@
 {
   "v": 1,
-  "pending": [
-    {
-      "pageId": "3ef69a18-4fe7-81d0-9fe7-fc54a1cccd2f",
-      "tickedAt": "2026-10-06T00:05:22.625Z",
-      "name": "Toothpaste - Repair & Protect [Sensodyne]"
-    },
-    {
-      "pageId": "3f169a18-4fe7-8108-8617-db31c01043c8",
-      "tickedAt": "2026-10-06T10:41:52.024Z",
-      "name": "egg  (Omega 3 Enriched) (550g) ≈ Pasar Fresh Eggs - Omega 3 (10 pcs)"
-    },
-    {
-      "pageId": "3f169a18-4fe7-8192-933d-f679b58c6cf2",
-      "tickedAt": "2026-10-06T10:41:54.106Z",
-      "name": "Banana (Fruit)"
-    },
-    {
-      "pageId": "3ec69a18-4fe7-81c2-893b-f725883c6dc9",
-      "tickedAt": "2026-10-06T10:42:38.580Z",
-      "name": "Carrots"
-    },
-    {
-      "pageId": "3ec69a18-4fe7-8177-bc05-d5f2e128bdf2",
-      "tickedAt": "2026-10-06T10:42:40.648Z",
-      "name": "Purple Cabbage"
-    },
-    {
-      "pageId": "3e169a18-4fe7-812c-96b7-d60546e5f050",
-      "tickedAt": "2026-10-06T10:42:42.315Z",
-      "name": "Peanut butter"
-    },
-    {
-      "pageId": "3f169a18-4fe7-81cf-89dd-f722e1b6b480",
-      "tickedAt": "2026-10-06T10:43:23.831Z",
-      "name": "Tau Kwa (Tofu) (400g) [Tasty Bites]"
-    }
-  ]
+  "pending": []
 }
