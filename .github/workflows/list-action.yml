@@ -51,9 +51,54 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
       - name: Apply the tap
         run: npm run list-action
         env:
           ACTION_PAYLOAD: ${{ github.event_name == 'workflow_dispatch' && inputs.payload || toJSON(github.event.client_payload) }}
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+
+      # ⚠️⚠️ **Without this the tap lands in Notion and vanishes.** `list.html` is a static
+      # file: only a publish puts new rows on it, and the only thing that publishes is
+      # `daily.yml`, which runs the whole ~4-minute shop scan first. This matters most for
+      # the page's own Add box, whose new row the browser cannot draw by itself; a tick or
+      # an amount is already reflected optimistically, but it keeps a reload honest.
+      #
+      # `data/list-live.json` is the fast path — the page fetches it from raw on load and
+      # swaps the rows in, so a tap shows up within the file's 5-minute cache rather than
+      # at tomorrow's scan. Same step tg-inbox.yml runs for a texted list.
+      #
+      # ⚠️ **`continue-on-error`, always.** The Notion write has already succeeded by here
+      # and the user has already been told so. A Notion hiccup while re-reading the list
+      # must not turn that into a red run; the page just stays as it was.
+      #
+      # ⚠️ **Regenerated on a rejected push, never merged.** The file is derived from
+      # Notion, so two taps racing have no conflict to resolve — Notion holds both rows
+      # already and a fresh read is truer than either side's copy. `merge-data` knows
+      # nothing about this file (see DATA_FILES), so the reset would otherwise leave the
+      # other run's older snapshot in place.
+      - name: Snapshot the list for the page
+        if: always()
+        continue-on-error: true
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for attempt in 1 2 3 4 5; do
+            # GITHUB_OUTPUT is cleared so a retry cannot append a second, contradictory
+            # `changed=` line to this step's output.
+            GITHUB_OUTPUT= npm run build-list-fragment || exit 0
+            git add data/list-live.json
+            if git diff --staged --quiet; then
+              echo "snapshot unchanged"
+              exit 0
+            fi
+            git commit -m "data: list snapshot"
+            if git push; then
+              exit 0
+            fi
+            echo "push rejected — regenerating onto the new remote (attempt $attempt)"
+            git fetch origin "${{ github.ref_name }}"
+            git reset --hard "origin/${{ github.ref_name }}"
+          done
+          echo "::warning::could not push the list snapshot — the page stays a scan behind"
