@@ -1,7 +1,23 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-22T04:37:03.752Z",
+  "updatedAt": "2026-10-06T10:11:57.040Z",
   "entries": [
+    {
+      "id": "tofu-sheng-siong-tau-kwa-202610061011",
+      "ingredientId": "34c69a18-4fe7-80f2-9d0c-eab7c0daa2bf",
+      "ingredientName": "Tau Kwa (Tofu)",
+      "key": "tofu",
+      "store": "Sheng Siong",
+      "product": "Tau Kwa",
+      "priceSgd": 1,
+      "packSizeG": 400,
+      "unitCount": null,
+      "volumetric": false,
+      "url": "https://shengsiong.com.sg/product/tasty-bites-tau-kwa-400-g-3097945",
+      "listTitle": "Tau Kwa (Tofu) (400g) [Tasty Bites]",
+      "addedAt": "2026-10-06T10:11:57.040Z",
+      "outcome": "open"
+    },
     {
       "id": "green-tea-sheng-siong-green-tea-202609220437",
       "ingredientId": "34b69a18-4fe7-80f1-8ecb-d764d2abe554",
