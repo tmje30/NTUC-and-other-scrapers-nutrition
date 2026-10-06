@@ -374,14 +374,23 @@ const normish = (s: string) => s.trim().replace(/\s+/g, " ").toLowerCase();
  * will this trip cost me" and an offer at a shop you are not going to is not a saving.
  */
 function modeTotals(r: ListRow, mode: LocationMode): [number | null, number | null] {
+	// ⚠️⚠️ **Gated on `discountPct`, not on "buyPrice exists" — a dearer "discount" is not
+	// one.** `Price , To Buy ` is frequently equal to the regular price and sometimes ABOVE
+	// it: a 30-pack of eggs added from the deals page is cheaper per egg and dearer per
+	// pack, so the row held $2.85 regular against a $6.95 "offer". The ROW already knew
+	// that and printed no second line, because `priceBlock` gates on `discountPct`. The
+	// totals did not, and the page's headline read **Total cost $31.66 / Total cost with %
+	// $36.16** — a discounted total ABOVE the full one, on the two figures the whole page
+	// exists to show. Seen live 2026-10-06. Both now ask the same question.
+	const discounted = discountPct(r) != null ? r.buyPrice : null;
 	if (mode === "cheapest") {
 		const base = r.currentPrice ?? r.buyPrice;
-		return [base, r.buyPrice ?? base];
+		return [base, discounted ?? base];
 	}
 	const pick = r.atLocation?.[mode];
 	if (!pick || pick.price == null) return [null, null];
 	const dealHere = r.dealVendor != null && normish(r.dealVendor) === normish(pick.vendor ?? "");
-	return [pick.price, dealHere && r.buyPrice != null ? r.buyPrice : pick.price];
+	return [pick.price, dealHere && discounted != null ? discounted : pick.price];
 }
 
 function rowHtml(r: ListRow, live: boolean, modes: LocationMode[]): string {

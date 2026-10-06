@@ -926,3 +926,66 @@ check(
 	"…and no stylesheet rule reaches the line through it",
 	!/(?:^|[s,}]).aways*{/m.test(toothpaste),
 );
+
+describe("a 'discount' that costs more");
+
+/**
+ * ⚠️⚠️ **The discounted total must never exceed the full one.** `Price , To Buy ` is
+ * frequently equal to the regular price and sometimes above it — a 30-pack of eggs bought
+ * from the deals page is cheaper per egg and dearer per pack, so the row held $2.85 regular
+ * against a $6.95 "offer". The ROW handled it correctly and printed no second line; the
+ * TOTALS did not, and the live page read **Total cost $31.66 / Total cost with % $36.16**
+ * on 2026-10-06 — the two figures the whole page exists to show, one of them nonsense.
+ */
+const dearerDeal = renderListPage(
+	[
+		row({
+			name: "Eggs, Whole, small (30 pcs) [Pasar]",
+			currentPrice: 2.85,
+			currentVendor: "NTUC",
+			buyPrice: 6.95,
+			atLocation: {
+				cheapest: { price: 2.85, size: 30, vendor: "NTUC", url: null, elsewhere: false },
+				home: { price: 2.85, size: 30, vendor: "NTUC", url: null, elsewhere: false },
+				work: { price: 2.85, size: 30, vendor: "NTUC", url: null, elsewhere: false },
+			},
+		}),
+	],
+	{ repo: "o/r", listEndpoint: "https://relay.example/list", listSecret: "s" },
+);
+check("the dearer price never reaches the totals", !dearerDeal.includes('data-disc-cheapest="6.95"'));
+check("…which total the regular price instead", dearerDeal.includes('data-disc-cheapest="2.85"'));
+check("…in every mode", dearerDeal.includes('data-disc-work="2.85"') && dearerDeal.includes('data-disc-home="2.85"'));
+// The row's own rendering was already right and must stay that way.
+check("…and still no second price line", !dearerDeal.includes('class="pl cut'));
+
+// ⚠️ A real discount is untouched — this must not quietly stop counting savings.
+const realDeal = renderListPage(
+	[
+		row({
+			name: "Butter",
+			currentPrice: 5.5,
+			currentVendor: "Sheng Siong",
+			buyPrice: 4.6,
+			dealVendor: "Sheng Siong",
+			atLocation: {
+				cheapest: { price: 5.5, size: 250, vendor: "Sheng Siong", url: null, elsewhere: false },
+				home: { price: 5.5, size: 250, vendor: "Sheng Siong", url: null, elsewhere: false },
+				work: { price: 5.7, size: 250, vendor: "NTUC", url: null, elsewhere: false },
+			},
+		}),
+	],
+	{ repo: "o/r", listEndpoint: "https://relay.example/list", listSecret: "s" },
+);
+check("a genuine offer still totals at the offer", realDeal.includes('data-disc-cheapest="4.6"'));
+check("…on a trip that reaches it", realDeal.includes('data-disc-home="4.6"'));
+// ⚠️ Work cannot reach Sheng Siong, so it pays NTUC's $5.70 — the rule from 2026-10-06
+// that shows the offer but does not count it.
+check("…and the full price on one that cannot", realDeal.includes('data-disc-work="5.7"'));
+
+// An equal "offer" is not one either — Fish Sauce ($2.29 / $2.29) is the live case.
+const equalPrice = renderListPage(
+	[row({ name: "Fish Sauce", currentPrice: 2.29, buyPrice: 2.29 })],
+	{ repo: "o/r", listEndpoint: "https://relay.example/list", listSecret: "s" },
+);
+check("an offer at the regular price totals as the regular price", equalPrice.includes('data-disc-cheapest="2.29"'));
