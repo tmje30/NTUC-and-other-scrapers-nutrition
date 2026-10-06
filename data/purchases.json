@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-06T10:13:55.205Z",
+  "updatedAt": "2026-10-06T10:14:01.119Z",
   "entries": [
     {
       "id": "frozen-vegetabl-sheng-siong-frozen-mixed-vegetab-202610061013",
@@ -284,6 +284,22 @@
       "url": "https://shengsiong.com.sg/product/tasty-bites-tau-kwa-400-g-3097945",
       "listTitle": "Tau Kwa (Tofu) (400g) [Tasty Bites]",
       "addedAt": "2026-10-06T10:13:55.205Z",
+      "outcome": "open"
+    },
+    {
+      "id": "egg-fairprice-pasar-fresh-eggs-202610061014",
+      "ingredientId": "34b69a18-4fe7-807d-8439-fea7f149877f",
+      "ingredientName": "Eggs, Whole, small (1650g), {cheap}",
+      "key": "egg",
+      "store": "NTUC",
+      "product": "Pasar Fresh Eggs",
+      "priceSgd": 6.95,
+      "packSizeG": 4950,
+      "unitCount": 30,
+      "volumetric": false,
+      "url": "https://www.fairprice.com.sg/product/pasar-fresh-eggs-30-per-pack-13294464",
+      "listTitle": "Eggs, Whole, small (1650g), {cheap} (30 pcs) [Pasar]",
+      "addedAt": "2026-10-06T10:14:01.119Z",
       "outcome": "open"
     }
   ]
