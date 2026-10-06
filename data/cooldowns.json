@@ -1,13 +1,13 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-06T10:13:54.652Z",
+  "updatedAt": "2026-10-06T10:13:55.205Z",
   "entries": [
     {
       "key": "tofu",
       "ingredientId": "34c69a18-4fe7-80f2-9d0c-eab7c0daa2bf",
       "ingredientName": "Tau Kwa (Tofu)",
-      "addedAt": "2026-10-06T10:11:57.040Z",
-      "until": "2026-10-11T10:11:57.040Z",
+      "addedAt": "2026-10-06T10:13:55.205Z",
+      "until": "2026-10-11T10:13:55.205Z",
       "days": 5,
       "basis": "weekly buy → flat 5 days (pack size ignored)",
       "store": "Sheng Siong",
