@@ -245,6 +245,9 @@ jobs:
           TG_CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           DRILL: ${{ github.event_name == 'workflow_dispatch' && inputs.drill }}
+          # The deploy's own outcome, so the message below can tell the two cases apart.
+          DEPLOYED: ${{ steps.deploy.outcome == 'success' }}
+          PAGE_URL: ${{ steps.deploy.outputs.page_url }}
         run: |
           # ⚠️ A drill says so IN THE MESSAGE. A test that arrives looking like a
           # real outage teaches the reader to distrust the alarm, which costs more
@@ -253,6 +256,20 @@ jobs:
             TEXT="🧪 <b>Drill — the failure notifier works.</b>
           Nothing is wrong. This run failed on purpose to prove this message can still reach you.
           <a href=\"${RUN_URL}\">The drill run →</a>"
+          # ⚠️⚠️ **A failure AFTER the deploy is not a failed scan**, and calling it one
+          # teaches the reader to disbelieve the alarm — which costs more than the outage.
+          # Seen 2026-10-06: the only broken step was the summary send (api.telegram.org
+          # timed out from the runner), while the same log read "Wrote public/list.html
+          # (7 to buy)" and "Deploy to GitHub Pages: Reported success!". This message still
+          # announced that no prices had been checked and there was no page update. Both
+          # halves were false, and the page the reader was told did not exist was live.
+          elif [ "${DEPLOYED}" = "true" ]; then
+            TEXT="⚠️ <b>The pages are up — the message after them failed.</b>
+          Prices were checked and the pages were published as normal. Only the summary
+          could not be sent, so there is no deals digest this morning.
+          <a href=\"${RUN_URL}\">What broke →</a>
+
+          <a href=\"${PAGE_URL}list.html\">Open the list →</a>"
           else
             TEXT="🛑 <b>The grocery scan failed — nothing is working.</b>
           No prices were checked today, so there is no deals list and no page update.
