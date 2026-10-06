@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-06T10:12:28.407Z",
+  "updatedAt": "2026-10-06T10:13:54.652Z",
   "entries": [
     {
       "key": "tofu",
@@ -115,8 +115,8 @@
       "key": "frozen vegetabl",
       "ingredientId": "34b69a18-4fe7-80d2-b17d-d4167b9113c4",
       "ingredientName": "Frozen Veg(Mixed)",
-      "addedAt": "2026-10-06T10:11:57.414Z",
-      "until": "2026-10-22T10:11:57.414Z",
+      "addedAt": "2026-10-06T10:13:54.652Z",
+      "until": "2026-10-22T10:13:54.652Z",
       "days": 16,
       "basis": "1kg ÷ 1.4kg/month = 0.71 months × 0.75 = 0.54 months",
       "store": "Sheng Siong",

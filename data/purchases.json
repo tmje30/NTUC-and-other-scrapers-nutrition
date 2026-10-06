@@ -1,7 +1,39 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-06T10:12:28.407Z",
+  "updatedAt": "2026-10-06T10:13:54.652Z",
   "entries": [
+    {
+      "id": "frozen-vegetabl-sheng-siong-frozen-mixed-vegetab-202610061013",
+      "ingredientId": "34b69a18-4fe7-80d2-b17d-d4167b9113c4",
+      "ingredientName": "Frozen Veg(Mixed)",
+      "key": "frozen vegetabl",
+      "store": "Sheng Siong",
+      "product": "Frozen Mixed Vegetables (SCB)",
+      "priceSgd": 3.2,
+      "packSizeG": 1000,
+      "unitCount": null,
+      "volumetric": false,
+      "url": "https://shengsiong.com.sg/product/tasty-bites-frozen-mixed-vegetables-scb-1-kg",
+      "listTitle": "Frozen Veg(Mixed) (1kg) [Tasty Bites]",
+      "addedAt": "2026-10-06T10:13:54.652Z",
+      "outcome": "open"
+    },
+    {
+      "id": "egg-fairprice-pasar-fresh-eggs-omega-3-202610061012",
+      "ingredientId": "37669a18-4fe7-8094-ad2b-d156a2f10a29",
+      "ingredientName": "egg  (Omega 3 Enriched) (550g) ≈ Pasar Fresh Eggs - Omega 3",
+      "key": "egg",
+      "store": "NTUC",
+      "product": "Pasar Fresh Eggs - Omega 3",
+      "priceSgd": 3.99,
+      "packSizeG": 550,
+      "unitCount": 10,
+      "volumetric": false,
+      "url": "https://www.fairprice.com.sg/product/pasar-fresh-eggs-omega-3-10-per-pack-13190645",
+      "listTitle": "egg  (Omega 3 Enriched) (550g) ≈ Pasar Fresh Eggs - Omega 3 (10 pcs)",
+      "addedAt": "2026-10-06T10:12:28.407Z",
+      "outcome": "open"
+    },
     {
       "id": "egg-fairprice-pasar-fresh-eggs-202610061012",
       "ingredientId": "34b69a18-4fe7-807d-8439-fea7f149877f",
@@ -236,22 +268,6 @@
       "url": "https://shengsiong.com.sg/product/castle-gourmet-rice-cooking-wine-16-alcohol-640-ml",
       "listTitle": "[Sheng Siong] Rice Wine(Cooking)",
       "addedAt": "2026-08-05T06:04:17.778Z",
-      "outcome": "open"
-    },
-    {
-      "id": "egg-fairprice-pasar-fresh-eggs-omega-3-202610061012",
-      "ingredientId": "37669a18-4fe7-8094-ad2b-d156a2f10a29",
-      "ingredientName": "egg  (Omega 3 Enriched) (550g) ≈ Pasar Fresh Eggs - Omega 3",
-      "key": "egg",
-      "store": "NTUC",
-      "product": "Pasar Fresh Eggs - Omega 3",
-      "priceSgd": 3.99,
-      "packSizeG": 550,
-      "unitCount": 10,
-      "volumetric": false,
-      "url": "https://www.fairprice.com.sg/product/pasar-fresh-eggs-omega-3-10-per-pack-13190645",
-      "listTitle": "egg  (Omega 3 Enriched) (550g) ≈ Pasar Fresh Eggs - Omega 3 (10 pcs)",
-      "addedAt": "2026-10-06T10:12:28.407Z",
       "outcome": "open"
     }
   ]
