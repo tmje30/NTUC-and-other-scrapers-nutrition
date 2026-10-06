@@ -1,142 +1,7 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-05T04:11:26.764Z",
+  "updatedAt": "2026-10-06T02:03:07.653Z",
   "pending": [
-    {
-      "token": "828065",
-      "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
-      "ingredientName": "Sensitivity & Gum Toothpaste - Original",
-      "key": "sensitiviti gum toothpast original",
-      "unitType": "By Gram",
-      "category": "Cosmetics/ Tooth paste etc",
-      "vendor": "Watsons",
-      "slotN": 3,
-      "priceSgd": 7.3,
-      "size": 120,
-      "url": "https://www.watsons.com.sg/darlie-expert-gum-care-sensitivity-relief-toothpaste-120g-expiry-apr-2027/p/BP_30925",
-      "itemName": "DARLIE Expert Gum Care Sensitivity Relief Toothpaste 120g (Expiry: Apr`2027)",
-      "statedSize": "120g",
-      "perLabel": "$60.83/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 2 of 3, offered as a suggestion. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 1,
-      "askedAt": "2026-10-05T02:02:06.097Z"
-    },
-    {
-      "token": "d1gvet",
-      "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
-      "ingredientName": "Sensitivity & Gum Toothpaste - Original",
-      "key": "sensitiviti gum toothpast original",
-      "unitType": "By Gram",
-      "category": "Cosmetics/ Tooth paste etc",
-      "vendor": "Watsons",
-      "slotN": 3,
-      "priceSgd": 9.1,
-      "size": 110,
-      "url": "https://www.watsons.com.sg/colgate-sensitive-pro-relief-original-toothpaste-110g/p/BP_41346",
-      "itemName": "COLGATE Sensitive Pro Relief Original Toothpaste 110g",
-      "statedSize": "110g",
-      "perLabel": "$82.73/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 2,
-      "askedAt": "2026-10-05T02:02:06.099Z"
-    },
-    {
-      "token": "0zsv0d",
-      "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
-      "ingredientName": "Sensitivity & Gum Toothpaste - Original",
-      "key": "sensitiviti gum toothpast original",
-      "unitType": "By Gram",
-      "category": "Cosmetics/ Tooth paste etc",
-      "vendor": "Watsons",
-      "slotN": 3,
-      "priceSgd": 7.5,
-      "size": 100,
-      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-gum-care-toothpaste-dental-sensitivity-relief-100g/p/BP_45477",
-      "itemName": "SENSODYNE Sensitive Teeth Gum Care Toothpaste (Dental Sensitivity Relief) 100g",
-      "statedSize": "100g",
-      "perLabel": "$75.00/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is the closest of 3 offered, best first. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-10-05T02:02:06.100Z"
-    },
-    {
-      "token": "0erdx5",
-      "ingredientId": "37369a18-4fe7-809b-b3bb-cc640507e5a9",
-      "ingredientName": "Creatine monohydrate [California gold]",
-      "key": "creatin monohydrat",
-      "unitType": "By Gram",
-      "category": "Suppliments",
-      "vendor": "Iherb",
-      "slotN": 1,
-      "brand": "california gold",
-      "priceSgd": 41.2,
-      "size": 997.9,
-      "url": "https://sg.iherb.com/pr/california-gold-nutrition-sport-pure-creatine-monohydrate-unflavored-2-2-lbs-1-kg/143718",
-      "itemName": "California Gold Nutrition, Sport, Pure Creatine Monohydrate, Unflavored, 2.2 lbs (1 kg)",
-      "statedSize": "998g",
-      "perLabel": "$41.29/kg",
-      "reasons": [
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 30.83,
-          "foundPer": 41.28670207435616,
-          "perWord": "kg",
-          "vendor": "Iherb",
-          "note": "DEARER than the Iherb price already recorded: $30.83 / 1000g = $30.83/kg → $41.20 / 997.9g = $41.29/kg. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-10-05T02:03:14.557Z"
-    },
-    {
-      "token": "34rk8a",
-      "ingredientId": "37369a18-4fe7-80d1-91ef-eb21cedf53ae",
-      "ingredientName": "Omega 3 800 [california gold] (1000-1100 mg)",
-      "key": "omega3 800",
-      "unitType": "By Unit",
-      "category": "Suppliments",
-      "vendor": "Iherb",
-      "slotN": 1,
-      "brand": "california gold",
-      "priceSgd": 54.32,
-      "size": 60,
-      "url": "https://sg.iherb.com/pr/doctor-s-best-vegan-omega-3-epa-dha-60-veggie-softgels-1-000-mg-per-softgel/143722",
-      "itemName": "Doctor's Best, Vegan Omega-3, EPA+DHA, 60 Veggie Softgels (1,000 mg per Softgel)",
-      "statedSize": "60 pcs",
-      "perLabel": "$9.05/10 pc",
-      "reasons": [
-        {
-          "kind": "brand-unconfirmed",
-          "brand": "california gold",
-          "note": "this row names california gold and the product does not say so — a supplement is only recorded without asking when the brand matches. Accept if it is the right thing."
-        },
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 37.66666666666667,
-          "foundPer": 90.53333333333333,
-          "perWord": "100 pcs",
-          "vendor": "Iherb",
-          "note": "DEARER than the Iherb price already recorded: $45.20 / 120 pcs = $37.67/100 pcs → $54.32 / 60 pcs = $90.53/100 pcs. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-10-05T02:03:36.842Z"
-    },
     {
       "token": "vo7ls3",
       "ingredientId": "39c69a18-4fe7-80eb-bac0-fa46c8d26c9d",
@@ -1069,6 +934,217 @@
       ],
       "rank": 0,
       "askedAt": "2026-10-05T04:11:26.764Z"
+    },
+    {
+      "token": "828065",
+      "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
+      "ingredientName": "Sensitivity & Gum Toothpaste - Original",
+      "key": "sensitiviti gum toothpast original",
+      "unitType": "By Gram",
+      "category": "Cosmetics/ Tooth paste etc",
+      "vendor": "Watsons",
+      "slotN": 3,
+      "priceSgd": 7.3,
+      "size": 120,
+      "url": "https://www.watsons.com.sg/darlie-expert-gum-care-sensitivity-relief-toothpaste-120g-expiry-apr-2027/p/BP_30925",
+      "itemName": "DARLIE Expert Gum Care Sensitivity Relief Toothpaste 120g (Expiry: Apr`2027)",
+      "statedSize": "120g",
+      "perLabel": "$60.83/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 2 of 3, offered as a suggestion. Accept only if it is the same thing."
+        }
+      ],
+      "rank": 1,
+      "askedAt": "2026-10-06T02:01:23.338Z"
+    },
+    {
+      "token": "d1gvet",
+      "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
+      "ingredientName": "Sensitivity & Gum Toothpaste - Original",
+      "key": "sensitiviti gum toothpast original",
+      "unitType": "By Gram",
+      "category": "Cosmetics/ Tooth paste etc",
+      "vendor": "Watsons",
+      "slotN": 3,
+      "priceSgd": 9.1,
+      "size": 110,
+      "url": "https://www.watsons.com.sg/colgate-sensitive-pro-relief-original-toothpaste-110g/p/BP_41346",
+      "itemName": "COLGATE Sensitive Pro Relief Original Toothpaste 110g",
+      "statedSize": "110g",
+      "perLabel": "$82.73/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
+        }
+      ],
+      "rank": 2,
+      "askedAt": "2026-10-06T02:01:23.353Z"
+    },
+    {
+      "token": "0zsv0d",
+      "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
+      "ingredientName": "Sensitivity & Gum Toothpaste - Original",
+      "key": "sensitiviti gum toothpast original",
+      "unitType": "By Gram",
+      "category": "Cosmetics/ Tooth paste etc",
+      "vendor": "Watsons",
+      "slotN": 3,
+      "priceSgd": 7.5,
+      "size": 100,
+      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-gum-care-toothpaste-dental-sensitivity-relief-100g/p/BP_45477",
+      "itemName": "SENSODYNE Sensitive Teeth Gum Care Toothpaste (Dental Sensitivity Relief) 100g",
+      "statedSize": "100g",
+      "perLabel": "$75.00/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is the closest of 3 offered, best first. Accept only if it is the same thing."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-10-06T02:01:23.356Z"
+    },
+    {
+      "token": "0erdx5",
+      "ingredientId": "37369a18-4fe7-809b-b3bb-cc640507e5a9",
+      "ingredientName": "Creatine monohydrate [California gold]",
+      "key": "creatin monohydrat",
+      "unitType": "By Gram",
+      "category": "Suppliments",
+      "vendor": "Iherb",
+      "slotN": 1,
+      "brand": "california gold",
+      "priceSgd": 41.2,
+      "size": 997.9,
+      "url": "https://sg.iherb.com/pr/california-gold-nutrition-sport-pure-creatine-monohydrate-unflavored-2-2-lbs-1-kg/143718",
+      "itemName": "California Gold Nutrition, Sport, Pure Creatine Monohydrate, Unflavored, 2.2 lbs (1 kg)",
+      "statedSize": "998g",
+      "perLabel": "$41.29/kg",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 30.83,
+          "foundPer": 41.28670207435616,
+          "perWord": "kg",
+          "vendor": "Iherb",
+          "note": "DEARER than the Iherb price already recorded: $30.83 / 1000g = $30.83/kg → $41.20 / 997.9g = $41.29/kg. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-10-06T02:02:26.444Z"
+    },
+    {
+      "token": "dd5rhj",
+      "ingredientId": "37369a18-4fe7-80d1-91ef-eb21cedf53ae",
+      "ingredientName": "Omega 3 800 [california gold] (1000-1100 mg)",
+      "key": "omega3 800",
+      "unitType": "By Unit",
+      "category": "Suppliments",
+      "vendor": "Iherb",
+      "slotN": 1,
+      "brand": "california gold",
+      "priceSgd": 37.86,
+      "size": 90,
+      "url": "https://sg.iherb.com/pr/california-gold-nutrition-omega-800-90-fish-gelatin-softgels-1-000-mg-per-softgel/85180",
+      "itemName": "California Gold Nutrition, Omega 800, 90 Fish Gelatin Softgels (1,000 mg per Softgel)",
+      "statedSize": "90 pcs",
+      "perLabel": "$4.21/10 pc",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 2 of 2, offered as a suggestion. Accept only if it is the same thing."
+        },
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 37.66666666666667,
+          "foundPer": 42.06666666666666,
+          "perWord": "100 pcs",
+          "vendor": "Iherb",
+          "note": "DEARER than the Iherb price already recorded: $45.20 / 120 pcs = $37.67/100 pcs → $37.86 / 90 pcs = $42.07/100 pcs. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 1,
+      "askedAt": "2026-10-06T02:02:46.713Z"
+    },
+    {
+      "token": "v1hdcu",
+      "ingredientId": "37369a18-4fe7-80d1-91ef-eb21cedf53ae",
+      "ingredientName": "Omega 3 800 [california gold] (1000-1100 mg)",
+      "key": "omega3 800",
+      "unitType": "By Unit",
+      "category": "Suppliments",
+      "vendor": "Iherb",
+      "slotN": 1,
+      "brand": "california gold",
+      "priceSgd": 14.62,
+      "size": 30,
+      "url": "https://sg.iherb.com/pr/california-gold-nutrition-omega-800-30-fish-gelatin-softgels-1-000-mg-per-softgel/82845",
+      "itemName": "California Gold Nutrition, Omega 800, 30 Fish Gelatin Softgels (1,000 mg per Softgel)",
+      "statedSize": "30 pcs",
+      "perLabel": "$4.87/10 pc",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is the closest of 2 offered, best first. Accept only if it is the same thing."
+        },
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 37.66666666666667,
+          "foundPer": 48.73333333333333,
+          "perWord": "100 pcs",
+          "vendor": "Iherb",
+          "note": "DEARER than the Iherb price already recorded: $45.20 / 120 pcs = $37.67/100 pcs → $14.62 / 30 pcs = $48.73/100 pcs. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-10-06T02:02:46.715Z"
+    },
+    {
+      "token": "rv0qvx",
+      "ingredientId": "37369a18-4fe7-80c0-bae0-f52639895b21",
+      "ingredientName": "whey (Essential) [MyProtein]",
+      "key": "whei",
+      "unitType": "By Gram",
+      "category": "Protein Powder",
+      "vendor": "Carousell",
+      "slotN": 2,
+      "brand": "myprotein",
+      "priceSgd": 125.1,
+      "size": 20,
+      "url": "https://www.carousell.sg/p/momentous-essential-grass-fed-whey-protein-powder-20g-whey-isolate-protein-nsf-certified-gluten-free-25-servings-for-essential-everyday-use-unflavored-unflavoured-25-servings-pack-of-1-1438086257/",
+      "itemName": "momentous essential grass fed whey protein powder 20g whey isolate protein nsf certified gluten free 25 servings for essential everyday use unflavored unflavoured 25 servings pack of 1",
+      "statedSize": "20g",
+      "perLabel": "$6255.00/kg",
+      "reasons": [
+        {
+          "kind": "brand-unconfirmed",
+          "brand": "myprotein",
+          "note": "this row names myprotein and the product does not say so — a supplement is only recorded without asking when the brand matches. Accept if it is the right thing."
+        },
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 32,
+          "foundPer": 6255,
+          "perWord": "kg",
+          "vendor": "Carousell",
+          "note": "DEARER than the Carousell price already recorded: $80.00 / 2500g = $32.00/kg → $125.10 / 20g = $6255.00/kg. Not written — accept only if the old price is gone."
+        },
+        {
+          "kind": "undercut",
+          "rejected": 1,
+          "note": "1 cheaper listing was rejected as implausible"
+        },
+        {
+          "kind": "outlier",
+          "factor": 164.60526315789474,
+          "note": "164.6× DEARER than this row's other shop"
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-10-06T02:03:07.653Z"
     }
   ],
   "rejected": [
@@ -1184,8 +1260,8 @@
     }
   ],
   "moves": {
-    "generatedAt": "2026-10-05T04:11:26.765Z",
-    "reconfirmed": 62,
+    "generatedAt": "2026-10-06T02:03:07.657Z",
+    "reconfirmed": 6,
     "moves": []
   }
 }
