@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-06T10:14:01.119Z",
+  "updatedAt": "2026-10-06T10:14:09.985Z",
   "entries": [
     {
       "id": "frozen-vegetabl-sheng-siong-frozen-mixed-vegetab-202610061013",
@@ -300,6 +300,22 @@
       "url": "https://www.fairprice.com.sg/product/pasar-fresh-eggs-30-per-pack-13294464",
       "listTitle": "Eggs, Whole, small (1650g), {cheap} (30 pcs) [Pasar]",
       "addedAt": "2026-10-06T10:14:01.119Z",
+      "outcome": "open"
+    },
+    {
+      "id": "egg-fairprice-pasar-fresh-eggs-omega-3-202610061014",
+      "ingredientId": "37669a18-4fe7-8094-ad2b-d156a2f10a29",
+      "ingredientName": "egg  (Omega 3 Enriched) (550g) ≈ Pasar Fresh Eggs - Omega 3",
+      "key": "egg",
+      "store": "NTUC",
+      "product": "Pasar Fresh Eggs - Omega 3",
+      "priceSgd": 3.99,
+      "packSizeG": 550,
+      "unitCount": 10,
+      "volumetric": false,
+      "url": "https://www.fairprice.com.sg/product/pasar-fresh-eggs-omega-3-10-per-pack-13190645",
+      "listTitle": "egg  (Omega 3 Enriched) (550g) ≈ Pasar Fresh Eggs - Omega 3 (10 pcs)",
+      "addedAt": "2026-10-06T10:14:09.985Z",
       "outcome": "open"
     }
   ]
