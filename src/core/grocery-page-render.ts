@@ -129,7 +129,12 @@ a.nm::after{content:" \\2197";font-size:.78em;color:var(--dim);text-decoration:n
 /* An offer at a shop this trip does not pass is still shown — it is what the price here is
    being compared against — but it is not money you are going to save today. */
 .pl.cut.away{opacity:.6}
-.away{font-size:.74rem;color:var(--dim);font-style:italic;white-space:nowrap}
+/* The note gets a class of its OWN, and must never be given the same one as the line it
+   annotates. Both were called away at first — and since the dimming sits on the price
+   line itself, a rule selecting that name alone repainted the WHOLE line in the note's
+   small italic grey, nowrap and all, which then ran off the edge of the card. Nothing
+   failed: the markup was right and only the painting was wrong. Caught by looking. */
+.elsewhere{font-size:.74rem;color:var(--dim);font-style:italic}
 .tags{margin-top:4px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .off{background:var(--accbg);color:var(--acc);border-radius:999px;padding:1px 8px;
   font-size:.74rem;font-weight:700;white-space:nowrap}
@@ -193,7 +198,7 @@ function priceLine(
 			(opts.url ? `<a href="${esc(opts.url)}" target="_blank" rel="noopener">${label} ↗</a>` : label) +
 			`</span>`;
 	}
-	if (opts.note) line += ` <span class="away">${esc(opts.note)}</span>`;
+	if (opts.note) line += ` <span class="elsewhere">${esc(opts.note)}</span>`;
 	return `<div class="pl ${opts.cls}">${line}</div>`;
 }
 

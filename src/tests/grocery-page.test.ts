@@ -910,3 +910,19 @@ const nowhere = renderListPage(
 const unreachable = nowhere.slice(nowhere.indexOf('class="mode m-work"'));
 check("no price here still says so", unreachable.includes("not at a shop on this trip"));
 check("…and still shows the offer underneath", unreachable.includes("$8.65") && unreachable.includes("−62%"));
+
+/**
+ * ⚠️⚠️ **The note must not share a class with the line it annotates.** First attempt named
+ * both `away` — and since the dimming lives on the line's own div (`class="pl cut away"`),
+ * a bare `.away{}` rule painted the WHOLE price line in the note's small italic grey, with
+ * the note's `nowrap`, which then ran off the edge of the card. Nothing failed: the markup
+ * was correct and only the painting was wrong, which is exactly the class of bug a renderer
+ * test cannot see. Found by looking at the live page.
+ */
+check("the note has its own class", workBlock.includes('<span class="elsewhere">not on this trip</span>'));
+// `.pl.cut.away{}` is the legitimate dimming rule; what must not exist is a rule that
+// selects `.away` ON ITS OWN, because that one also matches the price line.
+check(
+	"…and no stylesheet rule reaches the line through it",
+	!/(?:^|[s,}]).aways*{/m.test(toothpaste),
+);
