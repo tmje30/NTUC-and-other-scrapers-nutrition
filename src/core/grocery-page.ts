@@ -444,6 +444,16 @@ export interface ListTotals {
  * "bananas" files a row with no price (see `tg-sweep`), so an unpriced row is normal
  * rather than broken — but a total that quietly treated it as $0 would be a number you
  * could not shop against.
+ *
+ * ⚠️⚠️ **A dearer "discount" is charged at the REGULAR price, via `discountPct`.** A
+ * 30-pack of eggs bought off the deals page is cheaper per egg and dearer per pack, so the
+ * row held $2.85 regular against a $6.95 "offer" — and this summed the $6.95, printing
+ * **Total cost $31.66 / Total cost with % $36.16** on the live page, 2026-10-06.
+ *
+ * ⚠️ **`modeTotals` in the renderer is the OTHER half of this and had the same bug.** That
+ * one feeds the per-row `data-disc-*` attributes the browser re-sums on the Location
+ * toggle; this one renders the headline the page ships with. Fixing one leaves the figure
+ * changing the moment the script runs. If you change the rule here, change it there.
  */
 export function totals(rows: ListRow[]): ListTotals {
 	let full = 0;
@@ -456,7 +466,7 @@ export function totals(rows: ListRow[]): ListTotals {
 			continue;
 		}
 		full += base * r.amount;
-		discounted += (r.buyPrice ?? base) * r.amount;
+		discounted += (discountPct(r) != null ? (r.buyPrice ?? base) : base) * r.amount;
 	}
 	return { full, discounted, unpriced };
 }

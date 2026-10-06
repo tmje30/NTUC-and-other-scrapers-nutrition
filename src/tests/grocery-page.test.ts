@@ -989,3 +989,28 @@ const equalPrice = renderListPage(
 	{ repo: "o/r", listEndpoint: "https://relay.example/list", listSecret: "s" },
 );
 check("an offer at the regular price totals as the regular price", equalPrice.includes('data-disc-cheapest="2.29"'));
+
+/**
+ * ⚠️⚠️ **The headline and the per-row data must agree.** `totals()` renders the figure the
+ * page ships with; `modeTotals` feeds the `data-disc-*` attributes the browser re-sums when
+ * the Location toggle moves. Fixing one and not the other leaves a page whose headline
+ * changes the instant the script runs — which is worse than a number that is simply wrong,
+ * because it is wrong only until you look away.
+ */
+const dearer = [
+	row({ name: "Eggs (30 pcs)", currentPrice: 2.85, buyPrice: 6.95 }),
+	row({ name: "Butter", currentPrice: 5.5, buyPrice: 4.6 }),
+];
+eq("the full total is unaffected", totals(dearer).full, 8.35);
+// 2.85 (the dearer 'offer' refused) + 4.60 (a real one taken) = 7.45, never 11.55.
+eq("…and the discounted total never exceeds it", +totals(dearer).discounted.toFixed(2), 7.45);
+check("…so it is the smaller of the two", totals(dearer).discounted <= totals(dearer).full);
+
+// The server-rendered headline must equal what the row data re-sums to.
+const bothPaths = renderListPage(dearer, {
+	repo: "o/r",
+	listEndpoint: "https://relay.example/list",
+	listSecret: "s",
+});
+check("the page prints the corrected headline", bothPaths.includes("$7.45"));
+check("…and never the dearer sum", !bothPaths.includes("$11.55"));
