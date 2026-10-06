@@ -38,6 +38,7 @@ import "./sgt.test.js";
 import "./weight-gap.test.js";
 import "./grocery-page.test.js";
 import "./vendor-locations.test.js";
+import "./deal-discount.test.js";
 import "./discount.test.js";
 import { report } from "./harness.js";
 

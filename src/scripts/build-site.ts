@@ -416,3 +416,73 @@ try {
 } catch (e: any) {
 	console.error(`Warning: failed to write public/targets.json: ${e.message}`);
 }
+
+/**
+ * **The deals page's own items and prices, into the Ingredients discount columns**
+ * (user, 2026-10-06: "you can use those same items and prices for the discount columns").
+ *
+ * ⚠️⚠️ **LAST, and wrapped, because the pages are the deliverable and this is not.** Every
+ * file above is already on disk by the time this runs, so a Notion outage here costs the
+ * discount cells and nothing else. The reverse order would let a five-cell write take down
+ * the deals page, the shopping list and the review queue with it.
+ *
+ * ⚠️ **It does not CLEAR anything.** The sweep owns the clear — it knows it searched a shop
+ * and found no offer, which is the only evidence that a promo ended. A row simply absent
+ * from today's deals page means the scan found nothing cheaper than the recorded price,
+ * which is not the same statement at all, and emptying cells on it would wipe a live offer
+ * every time a price moved by a cent.
+ *
+ * ⚠️ `SKIP_DEAL_DISCOUNTS=1` turns it off. For a local run against the live database when
+ * only the HTML is being looked at. `DEAL_DISCOUNTS_DRY=1` prints every cell it would write
+ * and writes none of them — these are the user's own columns, and "look at the target
+ * before overwriting it" needs a way to actually look.
+ */
+if (process.env.SKIP_DEAL_DISCOUNTS === "1") {
+	console.error("Discount columns: skipped (SKIP_DEAL_DISCOUNTS=1).");
+} else {
+	try {
+		const { pickDealsToRecord } = await import("../core/deal-discount.js");
+		const { recordDiscount } = await import("../core/ingredient-write.js");
+		const { formatDiscount } = await import("../core/discount.js");
+		// Its own client: the one above lives inside the list.html block and is out of scope.
+		const notion = new Client({ auth: config.notionToken() });
+		const priced = recommendations.filter((r) => r.productPrice != null);
+		const picks = pickDealsToRecord([planDeals, otherDeals, priced]);
+		const dry = process.env.DEAL_DISCOUNTS_DRY === "1";
+		let wrote = 0;
+		let kept = 0;
+		let failed = 0;
+		for (const [ingredientId, capture] of picks) {
+			try {
+				if (dry) {
+					const t = formatDiscount(capture);
+					console.error(
+						`  would write ${capture.rowName}  |  ${t.price}  |  ${t.rate || "(no rate)"}  |  ` +
+							`${t.location}  |  ${t.itemName}`,
+					);
+					wrote++;
+					continue;
+				}
+				const res = await recordDiscount(notion, ingredientId, { kind: "offer", capture });
+				if (res.action === "wrote") {
+					wrote++;
+					console.error(`  🏷️ ${capture.rowName} — $${capture.promoSgd.toFixed(2)} at ${capture.vendor}`);
+				} else {
+					kept++;
+					// ⚠️ Named, not counted away. "kept" is almost always `discountBeats` refusing a
+					// dearer find — which is the system working — but it is also what a missing
+					// column looks like, and those two must not read the same in the log.
+					console.error(`  · ${capture.rowName} — not recorded: ${res.reason ?? res.skipped.join("; ")}`);
+				}
+			} catch (e: any) {
+				failed++;
+				console.error(`  ! ${capture.rowName} — ${e.message}`);
+			}
+		}
+		console.error(
+			`Discount columns: ${wrote} ${dry ? "would be written" : "written"}, ${kept} left alone, ${failed} failed, from ${picks.size} deal(s).`,
+		);
+	} catch (e: any) {
+		console.error(`Warning: discount columns not updated — ${e.message}. The pages are unaffected.`);
+	}
+}
