@@ -1,7 +1,39 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-01T10:57:13.554Z",
+  "updatedAt": "2026-10-06T09:43:05.812Z",
   "offset": 0,
-  "asks": [],
+  "asks": [
+    {
+      "token": "dkhqrm",
+      "item": {
+        "raw": "Vitamin",
+        "name": "Vitamin",
+        "count": 1,
+        "amountG": null,
+        "volumetric": false
+      },
+      "candidates": [
+        {
+          "rowId": "37369a18-4fe7-80f0-bb42-d48cbea2e83f",
+          "rowName": "Multi-vitamin [Life Extension]",
+          "score": 0.85
+        },
+        {
+          "rowId": "37769a18-4fe7-800d-86d3-ec98989251d4",
+          "rowName": "Vitamin -C",
+          "score": 0.85
+        },
+        {
+          "rowId": "37769a18-4fe7-809d-97e6-d9eb15d766e5",
+          "rowName": "Vitamin D",
+          "score": 0.85
+        }
+      ],
+      "messageId": 264,
+      "chatId": 7626546412,
+      "blocking": true,
+      "askedAt": "2026-10-06T09:43:05.811Z"
+    }
+  ],
   "queue": []
 }
