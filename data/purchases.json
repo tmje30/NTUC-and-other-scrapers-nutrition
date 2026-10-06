@@ -1,7 +1,39 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-06T10:11:57.414Z",
+  "updatedAt": "2026-10-06T10:12:20.775Z",
   "entries": [
+    {
+      "id": "egg-fairprice-pasar-fresh-eggs-202610061012",
+      "ingredientId": "34b69a18-4fe7-807d-8439-fea7f149877f",
+      "ingredientName": "Eggs, Whole, small (1650g), {cheap}",
+      "key": "egg",
+      "store": "NTUC",
+      "product": "Pasar Fresh Eggs",
+      "priceSgd": 6.95,
+      "packSizeG": 4950,
+      "unitCount": 30,
+      "volumetric": false,
+      "url": "https://www.fairprice.com.sg/product/pasar-fresh-eggs-30-per-pack-13294464",
+      "listTitle": "Eggs, Whole, small (1650g), {cheap} (30 pcs) [Pasar]",
+      "addedAt": "2026-10-06T10:12:20.775Z",
+      "outcome": "open"
+    },
+    {
+      "id": "frozen-vegetabl-sheng-siong-frozen-mixed-vegetab-202610061011",
+      "ingredientId": "34b69a18-4fe7-80d2-b17d-d4167b9113c4",
+      "ingredientName": "Frozen Veg(Mixed)",
+      "key": "frozen vegetabl",
+      "store": "Sheng Siong",
+      "product": "Frozen Mixed Vegetables (SCB)",
+      "priceSgd": 3.2,
+      "packSizeG": 1000,
+      "unitCount": null,
+      "volumetric": false,
+      "url": "https://shengsiong.com.sg/product/tasty-bites-frozen-mixed-vegetables-scb-1-kg",
+      "listTitle": "Frozen Veg(Mixed) (1kg) [Tasty Bites]",
+      "addedAt": "2026-10-06T10:11:57.414Z",
+      "outcome": "open"
+    },
     {
       "id": "tofu-sheng-siong-tau-kwa-202610061011",
       "ingredientId": "34c69a18-4fe7-80f2-9d0c-eab7c0daa2bf",
@@ -204,22 +236,6 @@
       "url": "https://shengsiong.com.sg/product/castle-gourmet-rice-cooking-wine-16-alcohol-640-ml",
       "listTitle": "[Sheng Siong] Rice Wine(Cooking)",
       "addedAt": "2026-08-05T06:04:17.778Z",
-      "outcome": "open"
-    },
-    {
-      "id": "frozen-vegetabl-sheng-siong-frozen-mixed-vegetab-202610061011",
-      "ingredientId": "34b69a18-4fe7-80d2-b17d-d4167b9113c4",
-      "ingredientName": "Frozen Veg(Mixed)",
-      "key": "frozen vegetabl",
-      "store": "Sheng Siong",
-      "product": "Frozen Mixed Vegetables (SCB)",
-      "priceSgd": 3.2,
-      "packSizeG": 1000,
-      "unitCount": null,
-      "volumetric": false,
-      "url": "https://shengsiong.com.sg/product/tasty-bites-frozen-mixed-vegetables-scb-1-kg",
-      "listTitle": "Frozen Veg(Mixed) (1kg) [Tasty Bites]",
-      "addedAt": "2026-10-06T10:11:57.414Z",
       "outcome": "open"
     }
   ]

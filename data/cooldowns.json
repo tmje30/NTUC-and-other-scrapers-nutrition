@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-06T10:11:57.414Z",
+  "updatedAt": "2026-10-06T10:12:20.775Z",
   "entries": [
     {
       "key": "tofu",
@@ -14,6 +14,19 @@
       "product": "Tau Kwa",
       "packSizeG": 400,
       "monthlyAmount": 2000
+    },
+    {
+      "key": "egg",
+      "ingredientId": "34b69a18-4fe7-807d-8439-fea7f149877f",
+      "ingredientName": "Eggs, Whole, small (1650g), {cheap}",
+      "addedAt": "2026-10-06T10:12:20.775Z",
+      "until": "2026-10-11T10:12:20.775Z",
+      "days": 5,
+      "basis": "weekly buy → flat 5 days (pack size ignored)",
+      "store": "FairPrice",
+      "product": "Pasar Fresh Eggs",
+      "packSizeG": 4950,
+      "monthlyAmount": 23100
     },
     {
       "key": "rice wine",
@@ -99,19 +112,6 @@
       "monthlyAmount": 0
     },
     {
-      "key": "garlic",
-      "ingredientId": "34b69a18-4fe7-8037-8c0c-c42156a2604c",
-      "ingredientName": "Garlic (Old) ≈ China Loose Garlic",
-      "addedAt": "2026-09-20T00:51:20.929Z",
-      "until": "2027-02-10T00:51:20.929Z",
-      "days": 143,
-      "basis": "500g ÷ 80g/month = 6.25 months × 0.75 = 4.69 months",
-      "store": "FairPrice",
-      "product": "China Loose Garlic",
-      "packSizeG": 500,
-      "monthlyAmount": 80
-    },
-    {
       "key": "frozen vegetabl",
       "ingredientId": "34b69a18-4fe7-80d2-b17d-d4167b9113c4",
       "ingredientName": "Frozen Veg(Mixed)",
@@ -123,6 +123,19 @@
       "product": "Frozen Mixed Vegetables (SCB)",
       "packSizeG": 1000,
       "monthlyAmount": 1400
+    },
+    {
+      "key": "garlic",
+      "ingredientId": "34b69a18-4fe7-8037-8c0c-c42156a2604c",
+      "ingredientName": "Garlic (Old) ≈ China Loose Garlic",
+      "addedAt": "2026-09-20T00:51:20.929Z",
+      "until": "2027-02-10T00:51:20.929Z",
+      "days": 143,
+      "basis": "500g ÷ 80g/month = 6.25 months × 0.75 = 4.69 months",
+      "store": "FairPrice",
+      "product": "China Loose Garlic",
+      "packSizeG": 500,
+      "monthlyAmount": 80
     }
   ]
 }
