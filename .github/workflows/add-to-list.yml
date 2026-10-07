@@ -36,6 +36,10 @@ jobs:
     permissions:
       contents: write # commit data/cooldowns.json
       issues: write # comment on and close the request
+    # Whether the shopping list actually moved. The rebuild below gates on it, so a Buy
+    # that changed nothing (same item, same amount) costs no scan.
+    outputs:
+      listChanged: ${{ steps.fragment.outputs.changed }}
 
     steps:
       - uses: actions/checkout@v7
@@ -128,6 +132,7 @@ jobs:
       # nothing about this file (see DATA_FILES), so the reset would otherwise leave the
       # other run's older snapshot in place.
       - name: Snapshot the list for the page
+        id: fragment
         if: always()
         continue-on-error: true
         env:
@@ -135,23 +140,33 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # ⚠️ **The output is written HERE, once, and never by `build-list-fragment`.**
+          # The loop below may run that script five times, and five `changed=` lines in
+          # GITHUB_OUTPUT is not a boolean — Actions keeps the last, so a retry that found
+          # nothing would silently overrule the attempt that found something. Clearing
+          # GITHUB_OUTPUT for the call is what keeps the script from writing its own.
+          say() { echo "changed=$1" >> "$GITHUB_OUTPUT"; }
           for attempt in 1 2 3 4 5; do
-            # GITHUB_OUTPUT is cleared so a retry cannot append a second, contradictory
-            # `changed=` line to this step's output.
-            GITHUB_OUTPUT= npm run build-list-fragment || exit 0
+            GITHUB_OUTPUT= npm run build-list-fragment || { say false; exit 0; }
             git add data/list-live.json
             if git diff --staged --quiet; then
               echo "snapshot unchanged"
+              say false
               exit 0
             fi
             git commit -m "data: list snapshot"
             if git push; then
+              say true
               exit 0
             fi
             echo "push rejected — regenerating onto the new remote (attempt $attempt)"
             git fetch origin "${{ github.ref_name }}"
             git reset --hard "origin/${{ github.ref_name }}"
           done
+          # ⚠️ Five rejected pushes and the snapshot never landed, so there is nothing for
+          # a rebuild to publish that this run put there. `false`, not `true`: a scan
+          # fired on a failed write would look like a fix and change nothing.
+          say false
           echo "::warning::could not push the list snapshot — the page stays a scan behind"
       - name: Close the request
         if: always() && github.event_name == 'issues'
@@ -167,3 +182,43 @@ jobs:
             gh issue comment "${{ github.event.issue.number }}" \
               --body "❌ Failed to add this — see the [run log]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)."
           fi
+
+  # ⚠️⚠️ **The slow half, and the one that makes the page itself correct.** The snapshot
+  # above puts the row on the page within the file's cache window; it does NOT rebuild
+  # list.html, so the page's own baked content — prices, totals, the "built at" line —
+  # stays from the last scan. tg-inbox.yml has had this job since the texted-list fix;
+  # a Buy from the deals page had no equivalent until now (user, 2026-10-07).
+  #
+  # ⚠️ **Gated on the output, not on "the job succeeded".** A Buy that changed nothing —
+  # the same item at the same amount — must not cost a four-shop scan. Same rule
+  # tg-inbox.yml and price-new-items.yml already apply.
+  #
+  # ⚠️⚠️ **Collapsed, because Buys arrive in bursts.** Four taps in two minutes is the
+  # measured shape of a shopping session (2026-10-06, 10:11–10:14), and daily.yml's own
+  # `concurrency: pages` would QUEUE four full scans rather than drop three — sixteen
+  # minutes of runner time, four deploys, and four shops asked the same questions for one
+  # trip. The last tap's scan sees everything the earlier ones wrote, so cancelling a
+  # superseded rebuild loses nothing. (If that last one fails, nothing publishes — but
+  # the rows are already on the page via the snapshot, which is the point of having both.)
+  #
+  # ⚠️ `quiet: true`: the page has already answered the tap. A Telegram digest here would
+  # be a second notification for one button press.
+  #
+  # ⚠️ The permissions must be granted HERE, not only in daily.yml — a called workflow's
+  # token is capped by the caller's, so inheriting `contents: write` alone would strip
+  # `pages: write` and the deploy would fail after the scan had already run.
+  rebuild:
+    needs: add
+    if: needs.add.outputs.listChanged == 'true'
+    concurrency:
+      group: buy-rebuild
+      cancel-in-progress: true
+    permissions:
+      contents: read
+      actions: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/daily.yml
+    with:
+      quiet: true
+    secrets: inherit
