@@ -1,142 +1,7 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-11T04:12:22.579Z",
+  "updatedAt": "2026-10-12T02:06:56.605Z",
   "pending": [
-    {
-      "token": "sbe8ih",
-      "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
-      "ingredientName": "Sensitivity & Gum Toothpaste - Original",
-      "key": "sensitiviti gum toothpast original",
-      "unitType": "By Gram",
-      "category": "Cosmetics/ Tooth paste etc",
-      "vendor": "Watsons",
-      "slotN": 3,
-      "priceSgd": 7.3,
-      "size": 120,
-      "url": "https://www.watsons.com.sg/darlie-expert-gum-care-sensitivity-relief-toothpaste-120g-expiry-apr-2027/p/BP_30925",
-      "itemName": "DARLIE Expert Gum Care Sensitivity Relief Toothpaste 120g (Expiry: Apr`2027)",
-      "statedSize": "120g",
-      "perLabel": "$60.83/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 2 of 3, offered as a suggestion. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 1,
-      "askedAt": "2026-10-11T03:51:32.599Z"
-    },
-    {
-      "token": "p0gf8x",
-      "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
-      "ingredientName": "Sensitivity & Gum Toothpaste - Original",
-      "key": "sensitiviti gum toothpast original",
-      "unitType": "By Gram",
-      "category": "Cosmetics/ Tooth paste etc",
-      "vendor": "Watsons",
-      "slotN": 3,
-      "priceSgd": 9.1,
-      "size": 110,
-      "url": "https://www.watsons.com.sg/colgate-sensitive-pro-relief-original-toothpaste-110g/p/BP_41346",
-      "itemName": "COLGATE Sensitive Pro Relief Original Toothpaste 110g",
-      "statedSize": "110g",
-      "perLabel": "$82.73/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 2,
-      "askedAt": "2026-10-11T03:51:32.601Z"
-    },
-    {
-      "token": "ol4l4s",
-      "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
-      "ingredientName": "Sensitivity & Gum Toothpaste - Original",
-      "key": "sensitiviti gum toothpast original",
-      "unitType": "By Gram",
-      "category": "Cosmetics/ Tooth paste etc",
-      "vendor": "Watsons",
-      "slotN": 3,
-      "priceSgd": 7.5,
-      "size": 100,
-      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-gum-care-toothpaste-dental-sensitivity-relief-100g/p/BP_45477",
-      "itemName": "SENSODYNE Sensitive Teeth Gum Care Toothpaste (Dental Sensitivity Relief) 100g",
-      "statedSize": "100g",
-      "perLabel": "$75.00/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is the closest of 3 offered, best first. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-10-11T03:51:32.602Z"
-    },
-    {
-      "token": "0erdx5",
-      "ingredientId": "37369a18-4fe7-809b-b3bb-cc640507e5a9",
-      "ingredientName": "Creatine monohydrate [California gold]",
-      "key": "creatin monohydrat",
-      "unitType": "By Gram",
-      "category": "Suppliments",
-      "vendor": "Iherb",
-      "slotN": 1,
-      "brand": "california gold",
-      "priceSgd": 41.21,
-      "size": 997.9,
-      "url": "https://sg.iherb.com/pr/california-gold-nutrition-sport-pure-creatine-monohydrate-unflavored-2-2-lbs-1-kg/143718",
-      "itemName": "California Gold Nutrition, Sport, Pure Creatine Monohydrate, Unflavored, 2.2 lbs (1 kg)",
-      "statedSize": "998g",
-      "perLabel": "$41.30/kg",
-      "reasons": [
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 30.83,
-          "foundPer": 41.296723118548954,
-          "perWord": "kg",
-          "vendor": "Iherb",
-          "note": "DEARER than the Iherb price already recorded: $30.83 / 1000g = $30.83/kg → $41.21 / 997.9g = $41.30/kg. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-10-11T03:52:22.358Z"
-    },
-    {
-      "token": "l0ibjp",
-      "ingredientId": "37369a18-4fe7-80d1-91ef-eb21cedf53ae",
-      "ingredientName": "Omega 3 800 [california gold] (1000-1100 mg)",
-      "key": "omega3 800",
-      "unitType": "By Unit",
-      "category": "Suppliments",
-      "vendor": "Iherb",
-      "slotN": 1,
-      "brand": "california gold",
-      "priceSgd": 55.9,
-      "size": 120,
-      "url": "https://sg.iherb.com/pr/oceanblue-professional-omega-3-2100-high-potency-orange-120-softgels-1-050-mg-per-softgel/132116",
-      "itemName": "OceanBlue, Professional, Omega-3 2100®, High Potency, Orange, 120 Softgels (1,050 mg per Softgel)",
-      "statedSize": "120 pcs",
-      "perLabel": "$4.66/10 pc",
-      "reasons": [
-        {
-          "kind": "brand-unconfirmed",
-          "brand": "california gold",
-          "note": "this row names california gold and the product does not say so — a supplement is only recorded without asking when the brand matches. Accept if it is the right thing."
-        },
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 37.66666666666667,
-          "foundPer": 46.58333333333333,
-          "perWord": "100 pcs",
-          "vendor": "Iherb",
-          "note": "DEARER than the Iherb price already recorded: $45.20 / 120 pcs = $37.67/100 pcs → $55.90 / 120 pcs = $46.58/100 pcs. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-10-11T03:52:45.439Z"
-    },
     {
       "token": "vo7ls3",
       "ingredientId": "39c69a18-4fe7-80eb-bac0-fa46c8d26c9d",
@@ -967,6 +832,69 @@
       ],
       "rank": 0,
       "askedAt": "2026-10-11T04:12:22.579Z"
+    },
+    {
+      "token": "0erdx5",
+      "ingredientId": "37369a18-4fe7-809b-b3bb-cc640507e5a9",
+      "ingredientName": "Creatine monohydrate [California gold]",
+      "key": "creatin monohydrat",
+      "unitType": "By Gram",
+      "category": "Suppliments",
+      "vendor": "Iherb",
+      "slotN": 1,
+      "brand": "california gold",
+      "priceSgd": 41.21,
+      "size": 997.9,
+      "url": "https://sg.iherb.com/pr/california-gold-nutrition-sport-pure-creatine-monohydrate-unflavored-2-2-lbs-1-kg/143718",
+      "itemName": "California Gold Nutrition, Sport, Pure Creatine Monohydrate, Unflavored, 2.2 lbs (1 kg)",
+      "statedSize": "998g",
+      "perLabel": "$41.30/kg",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 30.83,
+          "foundPer": 41.296723118548954,
+          "perWord": "kg",
+          "vendor": "Iherb",
+          "note": "DEARER than the Iherb price already recorded: $30.83 / 1000g = $30.83/kg → $41.21 / 997.9g = $41.30/kg. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-10-12T02:06:39.259Z"
+    },
+    {
+      "token": "l0ibjp",
+      "ingredientId": "37369a18-4fe7-80d1-91ef-eb21cedf53ae",
+      "ingredientName": "Omega 3 800 [california gold] (1000-1100 mg)",
+      "key": "omega3 800",
+      "unitType": "By Unit",
+      "category": "Suppliments",
+      "vendor": "Iherb",
+      "slotN": 1,
+      "brand": "california gold",
+      "priceSgd": 55.9,
+      "size": 120,
+      "url": "https://sg.iherb.com/pr/oceanblue-professional-omega-3-2100-high-potency-orange-120-softgels-1-050-mg-per-softgel/132116",
+      "itemName": "OceanBlue, Professional, Omega-3 2100®, High Potency, Orange, 120 Softgels (1,050 mg per Softgel)",
+      "statedSize": "120 pcs",
+      "perLabel": "$4.66/10 pc",
+      "reasons": [
+        {
+          "kind": "brand-unconfirmed",
+          "brand": "california gold",
+          "note": "this row names california gold and the product does not say so — a supplement is only recorded without asking when the brand matches. Accept if it is the right thing."
+        },
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 37.66666666666667,
+          "foundPer": 46.58333333333333,
+          "perWord": "100 pcs",
+          "vendor": "Iherb",
+          "note": "DEARER than the Iherb price already recorded: $45.20 / 120 pcs = $37.67/100 pcs → $55.90 / 120 pcs = $46.58/100 pcs. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-10-12T02:06:56.605Z"
     }
   ],
   "rejected": [
@@ -1082,8 +1010,8 @@
     }
   ],
   "moves": {
-    "generatedAt": "2026-10-11T04:12:22.580Z",
-    "reconfirmed": 61,
+    "generatedAt": "2026-10-12T02:07:08.432Z",
+    "reconfirmed": 2,
     "moves": []
   }
 }
