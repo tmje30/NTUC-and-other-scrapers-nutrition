@@ -642,6 +642,41 @@ export function sizeText(n: number, volumetric = false): string {
 	return n >= 1000 ? `${+(n / 1000).toFixed(2)}${big}` : `${Math.round(n)}${small}`;
 }
 
+/**
+ * **The product to show as "what you have now", for a card asking about `slotN`.**
+ *
+ * ⚠️ **Same shop first, the row's own pick second.** The direct comparison is the slot
+ * being reviewed — that is what "dearer than the current Sheng Siong price" refers to.
+ * But an empty slot is the common reason a row is in the queue at all, and the reader
+ * still has a product they buy today; showing nothing there throws away the only
+ * comparison available. The fallback is the cheapest priced slot with a link.
+ *
+ * ⚠️ **A slot with no URL is not a candidate**, however well priced. The whole point is
+ * something to open; a name with nothing behind it reads as a broken link.
+ */
+export function recordedPick(
+	slots: readonly { n: number; vendorName: string; priceValue: number | null; sizeValue: number | null; urlValue: string; itemNameValue: string }[],
+	slotN: number,
+): NonNullable<PendingReview["recorded"]> | undefined {
+	const usable = (s: (typeof slots)[number]) => Boolean(s.urlValue) && s.priceValue != null && s.priceValue > 0;
+	const take = (s: (typeof slots)[number]) => ({
+		url: s.urlValue,
+		itemName: s.itemNameValue,
+		priceSgd: s.priceValue,
+		size: s.sizeValue,
+		vendor: s.vendorName,
+	});
+	const mine = slots.find((s) => s.n === slotN);
+	if (mine && usable(mine)) return take(mine);
+	// ⚠️ Cheapest per pack, not per kg: this line exists to be opened and eyeballed, and
+	// the figure beside it is the pack price. Ranking by a figure the card does not show
+	// would make the choice unexplainable.
+	const others = slots.filter((s) => s.n !== slotN && usable(s));
+	if (!others.length) return undefined;
+	others.sort((a, b) => (a.priceValue ?? Infinity) - (b.priceValue ?? Infinity));
+	return take(others[0]);
+}
+
 /** One pick awaiting a tap. Held in the file so it survives a poller restart. */
 export interface PendingReview {
 	/** Short opaque token — Telegram caps `callback_data` at 64 bytes. */
@@ -689,6 +724,30 @@ export interface PendingReview {
 	 * Ingredients rows themselves carry a brand (`whey, essential [MyProtein]`).
 	 */
 	brandName?: string;
+	/**
+	 * **What this row already records, so the card can link what you HAVE beside what is
+	 * being offered** (user, 2026-10-12).
+	 *
+	 * ⚠️⚠️ **Not necessarily the same shop as `vendor`.** The slot being asked about is
+	 * frequently empty — that is often *why* it is being asked. Measured across the 39
+	 * cards queued on 2026-10-12: 30 had a product recorded at the same shop, **8 only at
+	 * a different one**, and 1 nowhere at all. Falling back to the row's own pick
+	 * elsewhere is what takes the link from 30 cards to 38; `vendor` here says which shop
+	 * it is, and the card must print it whenever it differs from the one being reviewed,
+	 * or the reader compares a Sheng Siong suggestion against an NTUC price believing both
+	 * are Sheng Siong.
+	 *
+	 * ⚠️ Optional, and every card queued before 2026-10-12 lacks it. Those render exactly
+	 * as they did — the link appears as the queue turns over, not retroactively.
+	 */
+	recorded?: {
+		url: string;
+		itemName: string;
+		priceSgd: number | null;
+		size: number | null;
+		/** The shop holding it. Compare against `vendor` before labelling. */
+		vendor: string;
+	};
 	/** The human-readable per-unit figure quoted in the message. */
 	perLabel: string;
 	reasons: ReviewReason[];

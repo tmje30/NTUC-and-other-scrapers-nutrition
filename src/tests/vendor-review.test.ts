@@ -34,6 +34,7 @@ import {
 	withoutPending,
 	withoutPendingForSlot,
 	type PendingReview,
+	recordedPick,
 	type VendorReviewFile,
 } from "../core/vendor-review.js";
 import type { StoreProduct } from "../core/stores/types.js";
@@ -1192,3 +1193,111 @@ check("its button lifts the tag", withIgnoredFoot.includes("review-unignore"));
 check("…and not record a price", !withIgnoredFoot.includes("review-ok"));
 // Nothing ignored is no section at all, not an empty red box.
 check("no section when nothing is ignored", !renderReviewPage([], { repo: "o/r" }).includes('<section class="ignored">'));
+describe("the product you buy today, linked beside the one being offered");
+
+/**
+ * User, 2026-10-12: "can i have the option of having a link to the original product. and
+ * also a link to the suggested product". The suggestion was already a link — the whole
+ * card face is one — so what was missing is the thing it would replace.
+ */
+const slot = (n: number, over: Record<string, unknown> = {}) => ({
+	n,
+	vendorName: "Sheng Siong",
+	priceValue: 4.2,
+	sizeValue: 500,
+	urlValue: "https://ss.test/recorded",
+	itemNameValue: "Recorded Honey",
+	...over,
+}) as any;
+
+// The direct comparison: the slot being asked about already holds something.
+const same = recordedPick([slot(1, { vendorName: "NTUC", urlValue: "https://ntuc.test/x" }), slot(2)], 2);
+eq("the same shop's own product wins", same?.url, "https://ss.test/recorded");
+eq("…and carries that shop's name", same?.vendor, "Sheng Siong");
+
+/**
+ * ⚠️⚠️ **An EMPTY slot is the common case, and is often why the row is in the queue.**
+ * Measured on the 39 cards queued 2026-10-12: 30 had a product at the same shop, 8 only
+ * at a different one, 1 nowhere. Without this fallback the link appears on 30 cards
+ * instead of 38 — and it would be missing from exactly the cards where the reader has
+ * least context, including the Honey card that prompted the request.
+ */
+const empty = [
+	slot(1, { vendorName: "NTUC", priceValue: 17.65, sizeValue: 1000, urlValue: "https://ntuc.test/origins", itemNameValue: "Origins Natural Raw Honey" }),
+	slot(2, { priceValue: null, sizeValue: null, urlValue: "", itemNameValue: "" }),
+];
+eq("an empty slot falls back to the row's own pick", recordedPick(empty, 2)?.url, "https://ntuc.test/origins");
+eq("…and reports the OTHER shop, so the card can say so", recordedPick(empty, 2)?.vendor, "NTUC");
+
+// ⚠️ A slot with no URL is not a candidate however well priced — the point is something
+// to open, and a name with nothing behind it reads as a broken link.
+const noUrl = [slot(1, { urlValue: "", priceValue: 0.5 }), slot(2, { priceValue: null, urlValue: "" })];
+eq("a priced slot with no link is not offered", recordedPick(noUrl, 2), undefined);
+// Nor is a linked slot with no price: the card prints a figure beside it.
+eq("…nor a linked slot with no price", recordedPick([slot(1, { priceValue: null }), slot(2, { urlValue: "" })], 2), undefined);
+eq("nothing recorded anywhere is undefined", recordedPick([], 2), undefined);
+
+// Cheapest per pack among the fallbacks — the figure the card actually shows.
+const twoOthers = [
+	slot(1, { vendorName: "NTUC", priceValue: 9.9, urlValue: "https://ntuc.test/dear" }),
+	slot(3, { vendorName: "Guardian", priceValue: 3.3, urlValue: "https://g.test/cheap" }),
+	slot(2, { priceValue: null, urlValue: "" }),
+];
+eq("the cheapest fallback wins", recordedPick(twoOthers, 2)?.url, "https://g.test/cheap");
+
+describe("…and how the card renders it");
+
+// ⚠️ Scoped to the line, not the page: every button's prose and aria-label already
+// says "at <shop>", so a whole-page includes() would pass whatever this rendered.
+const haveLine = (html: string) => {
+	const i = html.indexOf('<p class="have"');
+	return i < 0 ? "" : html.slice(i, html.indexOf("</p>", i));
+};
+
+const withRecorded = renderReviewPage(
+	[
+		pending({
+			recorded: {
+				url: "https://ntuc.test/origins",
+				itemName: "Origins Natural Raw Honey",
+				priceSgd: 17.65,
+				size: 1000,
+				vendor: "NTUC",
+			},
+		}),
+	],
+	{ repo: "o/r" },
+);
+check("the recorded product is linked", withRecorded.includes('href="https://ntuc.test/origins"'));
+check("…and named", withRecorded.includes("Origins Natural Raw Honey"));
+check("…with its price", haveLine(withRecorded).includes("$17.65"));
+// ⚠️ The slot under review is Sheng Siong and this is NTUC's. Unlabelled, the reader
+// compares a Sheng Siong suggestion against an NTUC price believing both are the same
+// shop — the one mistake this feature could actively cause.
+check("…and the other shop is named", haveLine(withRecorded).includes("at NTUC"));
+
+// The same shop needs no label — saying "at Sheng Siong" under a Sheng Siong card is noise.
+const sameShop = renderReviewPage(
+	[
+		pending({
+			recorded: { url: "https://ss.test/x", itemName: "Old Carrot", priceSgd: 2, size: 500, vendor: "Sheng Siong" },
+		}),
+	],
+	{ repo: "o/r" },
+);
+check("the same shop is not labelled", !haveLine(sameShop).includes("at Sheng Siong"));
+check("…but it is still linked", sameShop.includes('href="https://ss.test/x"'));
+
+/**
+ * ⚠️⚠️ **The nesting trap.** The card face is itself one big `<a>`. An `<a>` inside an
+ * `<a>` is invalid HTML and browsers silently un-nest it, breaking the card's own link in
+ * the process — so this line has to sit AFTER `</a>`, not beside the price it describes.
+ */
+const body = withRecorded.slice(withRecorded.indexOf('<a class="body"'));
+const faceEnd = body.indexOf("</a>");
+check("the recorded link is outside the card's own anchor", body.indexOf("ntuc.test/origins") > faceEnd);
+
+// ⚠️ Every card queued before this field existed must render exactly as it did.
+const old = renderReviewPage([pending()], { repo: "o/r" });
+check("a card with nothing recorded shows no line", !old.includes('class="have"'));
+check("…and still links the suggestion", old.includes("shengsiong.com.sg/product/australia-carrot-10-kg"));

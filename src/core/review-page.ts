@@ -242,6 +242,44 @@ function head(p: PendingReview): string {
  * buried under a price made that a deliberate act; this makes it the obvious one. The
  * buttons sit OUTSIDE the anchor so they stay separately tappable.
  */
+/**
+ * **What you buy today, as a link, beside what is being suggested** (user, 2026-10-12:
+ * "can i have the option of having a link to the original product. and also a link to
+ * the suggested product").
+ *
+ * The suggestion has always been a link — the whole card face is one. This is the
+ * other half: the thing it would replace, openable, so the two can be compared in two
+ * tabs rather than from memory.
+ *
+ * ⚠️⚠️ **Rendered OUTSIDE the `.body` anchor, and it has to be.** An `<a>` inside an
+ * `<a>` is invalid HTML; browsers silently un-nest it and the card's own link breaks
+ * in the process. That is why this sits between the face and the buttons rather than
+ * beside the price it describes.
+ *
+ * ⚠️ **The shop is named whenever it differs from the one being reviewed.** On 8 of
+ * the 39 cards queued the day this was written, the slot under review was empty and
+ * this falls back to the row's pick at another shop (see `recordedPick`). Unlabelled,
+ * a reader would compare a Sheng Siong suggestion against an NTUC price believing both
+ * were Sheng Siong — the one mistake this feature could actively cause.
+ */
+function recordedLine(p: PendingReview): string {
+	const r = p.recorded;
+	if (!r?.url) return "";
+	const price = typeof r.priceSgd === "number" ? "$" + r.priceSgd.toFixed(2) : "";
+	const pack = typeof r.size === "number" ? String(r.size) + unitWord(p.unitType) : "";
+	const figures = [price, pack].filter(Boolean).join(" / ");
+	const elsewhere = Boolean(r.vendor) && r.vendor !== p.vendor;
+	return (
+		'<p class="have"><span class="have-l">now</span> ' +
+		'<a href="' + esc(r.url) + '" target="_blank" rel="noopener">' +
+		esc(r.itemName || "the recorded product") +
+		'<span class="go">↗</span></a>' +
+		(figures ? ' <span class="have-f">' + esc(figures) + "</span>" : "") +
+		(elsewhere ? ' <span class="have-v">at ' + esc(r.vendor) + "</span>" : "") +
+		"</p>"
+	);
+}
+
 function face(
 	p: PendingReview,
 	o: ReviewPageOptions,
@@ -257,6 +295,7 @@ function face(
 		}${p.brandName ? ` <span class="maker">[${esc(p.brandName)}]</span>` : ""} <span class="go">↗</span></div>
     ${reasonList(p.reasons, opt.inDeck)}
   </a>
+  ${recordedLine(p)}
   <div class="acts">
     ${button(p, o, {
 			action: "review-ok",
@@ -491,6 +530,18 @@ h1 { font-size:1.25rem; margin:0 0 4px; }
 /* The shop's own words for the pack, and whose product it is. */
 .stated { color:var(--mut); }
 .maker { color:var(--mut); font-weight:600; }
+/* What you buy today, under the suggestion that would replace it. Quieter than the
+   card face on purpose: the suggestion is the question, this is the context for it.
+   Its own line rather than a column — a long product name beside a long product name
+   wraps into a mess on a phone. */
+.have { margin:0 0 10px; font-size:.82rem; color:var(--mut); word-break:break-word; }
+.have-l { text-transform:uppercase; letter-spacing:.04em; font-size:.72rem; opacity:.7;
+  margin-right:4px; }
+.have a { color:inherit; text-decoration:underline; text-decoration-color:var(--mut);
+  text-underline-offset:2px; }
+.have-f { white-space:nowrap; }
+/* Named only when it is NOT the shop being reviewed; see recordedLine. */
+.have-v { white-space:nowrap; font-weight:600; }
 .why { margin:8px 0 10px; padding-left:18px; font-size:.85rem; color:var(--mut); }
 .why li { margin:2px 0; }
 .why li.r-bulk, .why li.r-floor-rescue { color:var(--no); }

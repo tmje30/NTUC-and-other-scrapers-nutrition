@@ -48,6 +48,7 @@ import {
 	withoutPendingForSlot,
 	type PendingReview,
 	type ReviewReason,
+	recordedPick,
 } from "../core/vendor-review.js";
 import { cooldownKey } from "../core/cooldown.js";
 import { renderReviewPage } from "../core/review-page.js";
@@ -562,6 +563,8 @@ async function main(): Promise<void> {
 					itemName: alt.name,
 					statedSize: packText(row, alt, altSize.size),
 					brandName: (alt.brand ?? "").trim() || undefined,
+					// What the row records today, so the card can link it beside the suggestion.
+					recorded: recordedPick(row.slots, slot.n),
 					perLabel: perLabel(row, alt.priceSgd, altSize.size, alt.name),
 					reasons: [
 						{
@@ -823,6 +826,7 @@ async function main(): Promise<void> {
 					itemName: p.name,
 					statedSize: packText(row, p, size!),
 					brandName: (p.brand ?? "").trim() || undefined,
+					recorded: recordedPick(row.slots, slot.n),
 					perLabel: per,
 					reasons,
 					/** The closest match, whatever order the queue happens to hold it in. */
