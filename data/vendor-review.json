@@ -1,84 +1,7 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-12T04:11:18.735Z",
+  "updatedAt": "2026-10-13T02:06:30.859Z",
   "pending": [
-    {
-      "token": "0erdx5",
-      "ingredientId": "37369a18-4fe7-809b-b3bb-cc640507e5a9",
-      "ingredientName": "Creatine monohydrate [California gold]",
-      "key": "creatin monohydrat",
-      "unitType": "By Gram",
-      "category": "Suppliments",
-      "vendor": "Iherb",
-      "slotN": 1,
-      "brand": "california gold",
-      "priceSgd": 41.21,
-      "size": 997.9,
-      "url": "https://sg.iherb.com/pr/california-gold-nutrition-sport-pure-creatine-monohydrate-unflavored-2-2-lbs-1-kg/143718",
-      "itemName": "California Gold Nutrition, Sport, Pure Creatine Monohydrate, Unflavored, 2.2 lbs (1 kg)",
-      "statedSize": "998g",
-      "perLabel": "$41.30/kg",
-      "reasons": [
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 30.83,
-          "foundPer": 41.296723118548954,
-          "perWord": "kg",
-          "vendor": "Iherb",
-          "note": "DEARER than the Iherb price already recorded: $30.83 / 1000g = $30.83/kg → $41.21 / 997.9g = $41.30/kg. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-10-12T02:06:39.259Z",
-      "recorded": {
-        "url": "https://sg.iherb.com/pr/vitamatic-creatine-monohydrate-micronized-powder-unflavored-35-274-oz-1-kg/160683",
-        "itemName": "Vitamatic, Creatine Monohydrate, Micronized Powder, Unflavored, 35.274 oz (1 kg)",
-        "priceSgd": 30.83,
-        "size": 1000,
-        "vendor": "Iherb"
-      }
-    },
-    {
-      "token": "l0ibjp",
-      "ingredientId": "37369a18-4fe7-80d1-91ef-eb21cedf53ae",
-      "ingredientName": "Omega 3 800 [california gold] (1000-1100 mg)",
-      "key": "omega3 800",
-      "unitType": "By Unit",
-      "category": "Suppliments",
-      "vendor": "Iherb",
-      "slotN": 1,
-      "brand": "california gold",
-      "priceSgd": 55.9,
-      "size": 120,
-      "url": "https://sg.iherb.com/pr/oceanblue-professional-omega-3-2100-high-potency-orange-120-softgels-1-050-mg-per-softgel/132116",
-      "itemName": "OceanBlue, Professional, Omega-3 2100®, High Potency, Orange, 120 Softgels (1,050 mg per Softgel)",
-      "statedSize": "120 pcs",
-      "perLabel": "$4.66/10 pc",
-      "reasons": [
-        {
-          "kind": "brand-unconfirmed",
-          "brand": "california gold",
-          "note": "this row names california gold and the product does not say so — a supplement is only recorded without asking when the brand matches. Accept if it is the right thing."
-        },
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 37.66666666666667,
-          "foundPer": 46.58333333333333,
-          "perWord": "100 pcs",
-          "vendor": "Iherb",
-          "note": "DEARER than the Iherb price already recorded: $45.20 / 120 pcs = $37.67/100 pcs → $55.90 / 120 pcs = $46.58/100 pcs. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-10-12T02:06:56.605Z",
-      "recorded": {
-        "url": "https://sg.iherb.com/pr/revive-omega-3-120-softgels-1-000-mg-per-softgel/137232",
-        "itemName": "Revive, Omega 3, 120 Softgels (1,000 mg per Softgel)",
-        "priceSgd": 45.2,
-        "size": 120,
-        "vendor": "Iherb"
-      }
-    },
     {
       "token": "jffowa",
       "ingredientId": "3b269a18-4fe7-812a-9fc3-d81551f626c6",
@@ -1014,6 +937,83 @@
       ],
       "rank": 0,
       "askedAt": "2026-10-12T04:11:18.735Z"
+    },
+    {
+      "token": "0erdx5",
+      "ingredientId": "37369a18-4fe7-809b-b3bb-cc640507e5a9",
+      "ingredientName": "Creatine monohydrate [California gold]",
+      "key": "creatin monohydrat",
+      "unitType": "By Gram",
+      "category": "Suppliments",
+      "vendor": "Iherb",
+      "slotN": 1,
+      "brand": "california gold",
+      "priceSgd": 41.21,
+      "size": 997.9,
+      "url": "https://sg.iherb.com/pr/california-gold-nutrition-sport-pure-creatine-monohydrate-unflavored-2-2-lbs-1-kg/143718",
+      "itemName": "California Gold Nutrition, Sport, Pure Creatine Monohydrate, Unflavored, 2.2 lbs (1 kg)",
+      "statedSize": "998g",
+      "recorded": {
+        "url": "https://sg.iherb.com/pr/vitamatic-creatine-monohydrate-micronized-powder-unflavored-35-274-oz-1-kg/160683",
+        "itemName": "Vitamatic, Creatine Monohydrate, Micronized Powder, Unflavored, 35.274 oz (1 kg)",
+        "priceSgd": 30.83,
+        "size": 1000,
+        "vendor": "Iherb"
+      },
+      "perLabel": "$41.30/kg",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 30.83,
+          "foundPer": 41.296723118548954,
+          "perWord": "kg",
+          "vendor": "Iherb",
+          "note": "DEARER than the Iherb price already recorded: $30.83 / 1000g = $30.83/kg → $41.21 / 997.9g = $41.30/kg. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-10-13T02:06:19.562Z"
+    },
+    {
+      "token": "5rmg3x",
+      "ingredientId": "37369a18-4fe7-80d1-91ef-eb21cedf53ae",
+      "ingredientName": "Omega 3 800 [california gold] (1000-1100 mg)",
+      "key": "omega3 800",
+      "unitType": "By Unit",
+      "category": "Suppliments",
+      "vendor": "Iherb",
+      "slotN": 1,
+      "brand": "california gold",
+      "priceSgd": 54.34,
+      "size": 60,
+      "url": "https://sg.iherb.com/pr/doctor-s-best-vegan-omega-3-epa-dha-60-veggie-softgels-1-000-mg-per-softgel/143722",
+      "itemName": "Doctor's Best, Vegan Omega-3, EPA+DHA, 60 Veggie Softgels (1,000 mg per Softgel)",
+      "statedSize": "60 pcs",
+      "recorded": {
+        "url": "https://sg.iherb.com/pr/revive-omega-3-120-softgels-1-000-mg-per-softgel/137232",
+        "itemName": "Revive, Omega 3, 120 Softgels (1,000 mg per Softgel)",
+        "priceSgd": 45.2,
+        "size": 120,
+        "vendor": "Iherb"
+      },
+      "perLabel": "$9.06/10 pc",
+      "reasons": [
+        {
+          "kind": "brand-unconfirmed",
+          "brand": "california gold",
+          "note": "this row names california gold and the product does not say so — a supplement is only recorded without asking when the brand matches. Accept if it is the right thing."
+        },
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 37.66666666666667,
+          "foundPer": 90.56666666666668,
+          "perWord": "100 pcs",
+          "vendor": "Iherb",
+          "note": "DEARER than the Iherb price already recorded: $45.20 / 120 pcs = $37.67/100 pcs → $54.34 / 60 pcs = $90.57/100 pcs. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-10-13T02:06:30.859Z"
     }
   ],
   "rejected": [
@@ -1129,31 +1129,8 @@
     }
   ],
   "moves": {
-    "generatedAt": "2026-10-12T04:11:18.736Z",
-    "reconfirmed": 65,
-    "moves": [
-      {
-        "row": "Ginger (Bentong)",
-        "vendor": "NTUC",
-        "recordedText": "$16.50 / 160g",
-        "foundText": "$2.90 / 200g",
-        "recordedPer": 103.125,
-        "foundPer": 14.499999999999998,
-        "perWord": "kg",
-        "product": "Simply Finest Bentong Ginger",
-        "url": "https://www.fairprice.com.sg/product/simply-finest-bentong-ginger-200g-13094469"
-      },
-      {
-        "row": "Apple Cider vinegar (Unpasteurized)",
-        "vendor": "NTUC",
-        "recordedText": "$5.25 / 473ml",
-        "foundText": "$6.15 / 946ml",
-        "recordedPer": 11.099365750528541,
-        "foundPer": 6.501057082452431,
-        "perWord": "L",
-        "product": "Heinz Vinegar - Apple Cider",
-        "url": "https://www.fairprice.com.sg/product/heinz-vinegar-apple-cider-946ml-13292215"
-      }
-    ]
+    "generatedAt": "2026-10-13T02:06:31.432Z",
+    "reconfirmed": 1,
+    "moves": []
   }
 }
