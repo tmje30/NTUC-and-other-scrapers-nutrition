@@ -1,34 +1,7 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-15T06:05:29.328Z",
+  "updatedAt": "2026-10-15T07:16:17.408Z",
   "offset": 0,
-  "asks": [
-    {
-      "token": "7b18ph",
-      "item": {
-        "raw": "Eggs 30pc x 1",
-        "name": "Eggs 30pc",
-        "count": 1,
-        "amountG": null,
-        "volumetric": false
-      },
-      "candidates": [
-        {
-          "rowId": "37669a18-4fe7-8094-ad2b-d156a2f10a29",
-          "rowName": "egg  (Omega 3 Enriched) (550g)",
-          "score": 1
-        },
-        {
-          "rowId": "34b69a18-4fe7-807d-8439-fea7f149877f",
-          "rowName": "Eggs, Whole, small (1650g), {cheap}",
-          "score": 1
-        }
-      ],
-      "messageId": 308,
-      "chatId": 7626546412,
-      "blocking": true,
-      "askedAt": "2026-10-15T06:05:29.327Z"
-    }
-  ],
+  "asks": [],
   "queue": []
 }
