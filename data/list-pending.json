@@ -1,45 +1,4 @@
 {
   "v": 1,
-  "pending": [
-    {
-      "pageId": "3ee69a18-4fe7-81d1-b26f-c40b42e75664",
-      "tickedAt": "2026-10-15T10:49:13.052Z",
-      "name": "Butter"
-    },
-    {
-      "pageId": "3e369a18-4fe7-8168-afdf-ee3691a3a14f",
-      "tickedAt": "2026-10-15T10:49:15.990Z",
-      "name": "Green Tea (50 x 2g) (50 pcs) [Heritage Farm]"
-    },
-    {
-      "pageId": "3fa69a18-4fe7-8130-a8bd-fc395fc35708",
-      "tickedAt": "2026-10-15T11:05:25.405Z",
-      "name": "Eggs 30pc"
-    },
-    {
-      "pageId": "3fa69a18-4fe7-8108-8d9e-ef48474524c3",
-      "tickedAt": "2026-10-15T11:08:46.362Z",
-      "name": "Soy Sauce (light)"
-    },
-    {
-      "pageId": "3f169a18-4fe7-81ab-91e5-cd85cfbbaf21",
-      "tickedAt": "2026-10-15T11:08:58.372Z",
-      "name": "Eggs, Whole, small (1650g), {cheap} (30 pcs) [Pasar]"
-    },
-    {
-      "pageId": "3bb69a18-4fe7-8041-8898-faaddc8e3201",
-      "tickedAt": "2026-10-15T11:11:17.580Z",
-      "name": "Red rice"
-    },
-    {
-      "pageId": "3fa69a18-4fe7-8127-bf42-d418cb9924cd",
-      "tickedAt": "2026-10-15T11:14:08.426Z",
-      "name": "Tau Kwa (Tofu)"
-    },
-    {
-      "pageId": "3f169a18-4fe7-81c8-9110-c63691f7d12d",
-      "tickedAt": "2026-10-15T11:14:19.232Z",
-      "name": "Frozen Veg(Mixed) (1kg) [Tasty Bites]"
-    }
-  ]
+  "pending": []
 }
