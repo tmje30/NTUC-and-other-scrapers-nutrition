@@ -1,23 +1,7 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-18T02:15:50.219Z",
+  "updatedAt": "2026-10-18T02:25:55.466Z",
   "offset": 0,
-  "asks": [
-    {
-      "token": "v9pt8b",
-      "item": {
-        "raw": "Deal x 1",
-        "name": "Deal",
-        "count": 1,
-        "amountG": null,
-        "volumetric": false
-      },
-      "candidates": [],
-      "messageId": 320,
-      "chatId": 7626546412,
-      "blocking": false,
-      "askedAt": "2026-10-18T02:10:48.231Z"
-    }
-  ],
+  "asks": [],
   "queue": []
 }
