@@ -745,7 +745,7 @@ function script(endpoint: string, secret: string, live: { url: string; builtAt: 
   });
 
   // ---- The day of grace ------------------------------------------------
-  // A ticked row is cleared at midnight, not now — so all day it has to be
+  // A ticked row is cleared on the 1st of the month, not now — so until then it has to be
   // possible to take the tick back. Without this the grace period would be a delay
   // with nothing to do in it.
   function addToTray(li) {
@@ -879,7 +879,7 @@ export function renderListPage(rows: ListRow[], o: ListPageOptions): string {
   </div>
 
   <div class="tray" id="tray" hidden>
-    <h2>Ticked off — clearing from Notion at midnight</h2>
+    <h2>Ticked off — clearing from Notion on the 1st of the month</h2>
     <ul id="traylist"></ul>
   </div>`;
 
@@ -903,7 +903,7 @@ ${
 		: ""
 }
 ${body}
-<footer>Ticking a box clears the row from your Notion list at midnight.
+<footer>Ticking a box clears the row from your Notion list on the 1st of next month.
   Amounts save as you change them.</footer>
 ${
 	live

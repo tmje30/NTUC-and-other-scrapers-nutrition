@@ -9,7 +9,7 @@
  * here, and a test that only looked at the status code would pass on a relay that
  * dispatched nothing.
  */
-import { handle, scheduled } from "./worker.mjs";
+import { handle, isFirstOfMonthSgt, scheduled } from "./worker.mjs";
 
 let passed = 0;
 const failures = [];
@@ -386,10 +386,21 @@ const TICK = { op: "tick", pageId: "3d469a18-4fe7-802f-8620-000b6053908d" };
 	// ⚠️⚠️ Both cron patterns match at 16:00 UTC and Cloudflare invokes the handler once
 	// per pattern. The midnight one must send listsweep and NOT also send tgsweep, or a
 	// grocery clear-out would double as a Telegram sweep.
+	// 16:00 UTC on 31 Oct is 00:00 SGT on 1 Nov — the monthly clear-out.
 	const f = recorder();
-	await scheduled({ cron: "0 16 * * *" }, ENV, { fetch: f });
-	eq("midnight sends exactly one dispatch", f.calls.length, 1);
+	await scheduled({ cron: "0 16 * * *", scheduledTime: Date.parse("2026-10-31T16:00:00Z") }, ENV, { fetch: f });
+	eq("the midnight starting a month sends exactly one dispatch", f.calls.length, 1);
 	eq("…and it is listsweep", f.calls[0].body.event_type, "listsweep");
+}
+
+{
+	// Every other midnight sends nothing: the list is cleared once a month (2026-10-18).
+	const f = recorder();
+	await scheduled({ cron: "0 16 * * *", scheduledTime: Date.parse("2026-10-17T16:00:00Z") }, ENV, { fetch: f });
+	eq("a mid-month midnight dispatches nothing", f.calls.length, 0);
+	check("16:00 UTC on 31 Oct is the 1st in SGT", isFirstOfMonthSgt(Date.parse("2026-10-31T16:00:00Z")));
+	check("16:00 UTC on 1 Nov is the 2nd in SGT", !isFirstOfMonthSgt(Date.parse("2026-11-01T16:00:00Z")));
+	check("28 Feb 16:00 UTC → 1 Mar SGT", isFirstOfMonthSgt(Date.parse("2027-02-28T16:00:00Z")));
 }
 
 {

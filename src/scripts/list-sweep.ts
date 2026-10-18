@@ -44,7 +44,7 @@ if (DRY_RUN) {
 }
 
 if (!result.deleted.length && !result.skipped.length) {
-	console.error(`Nothing due yet — ${result.remaining} ticked today, clearing at midnight.`);
+	console.error(`Nothing due yet — ${result.remaining} ticked since the last sweep, clearing on the 1st.`);
 	process.exit(0);
 }
 
@@ -61,7 +61,7 @@ const settled = new Set([...result.deleted, ...result.skipped.map((s) => s.entry
 
 await commitAndPushData({
 	file: PENDING_PATH,
-	message: `list: cleared ${result.deleted.length} ticked item(s) at midnight`,
+	message: `list: cleared ${result.deleted.length} ticked item(s) (monthly clear-out)`,
 	/**
 	 * ⚠️ **Keep THEIRS and remove only what this run settled.** A tick landing while the
 	 * sweep ran would be erased by writing our whole copy over the remote — the row would

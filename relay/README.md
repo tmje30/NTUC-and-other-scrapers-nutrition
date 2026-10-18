@@ -221,7 +221,7 @@ It now keeps three clocks, told apart by `event.cron` in `scheduled()`:
 | pattern | SGT | dispatches | what stops if you delete it |
 | --- | --- | --- | --- |
 | `*/15 * * * *` | every 15 min | `tgsweep` | unanswered questions are never filed |
-| `0 16 * * *` | midnight | `listsweep` | ticked grocery rows are never cleared |
+| `0 16 * * *` | midnight (dispatches only on the 1st of the month) | `listsweep` | ticked grocery rows are never cleared |
 | `0 4 * * *` | noon | `vendorsweep` | the price book and the discount columns go stale |
 
 ⚠️ **The noon one was missing for 19 days and nothing said so.** `vendor-sweep.yml` has

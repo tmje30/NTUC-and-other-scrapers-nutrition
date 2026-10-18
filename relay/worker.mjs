@@ -96,6 +96,11 @@ const VENDOR_SWEEP_EVENT = "vendorsweep";
 /** Midnight in Singapore, in UTC. SGT is UTC+8 with no DST, so this never drifts. */
 const MIDNIGHT_SGT_CRON = "0 16 * * *";
 
+/** True when `ms` falls on the 1st of the month in Singapore (UTC+8, no DST). */
+export function isFirstOfMonthSgt(ms) {
+	return new Date(ms + 8 * 3600_000).getUTCDate() === 1;
+}
+
 /**
  * **Noon in Singapore — the vendor sweep's slot, and every hour of it is load-bearing.**
  *
@@ -388,7 +393,13 @@ export async function scheduled(_event, env, deps = {}) {
 	 * goes on to do the Telegram half below, exactly as it does every other quarter hour.
 	 */
 	if (_event?.cron === MIDNIGHT_SGT_CRON) {
-		await dispatch(doFetch, env, LIST_SWEEP_EVENT, {});
+		// ⚠️ **Only the midnight that starts a new month clears the list** (the user's rule,
+		// 2026-10-18 — "deletes at the end of the month"). The cron still fires every night;
+		// the other nights return here having sent nothing. The sweep itself takes every tick
+		// older than the last SGT midnight, so on the 1st it clears the whole month's ticks.
+		if (isFirstOfMonthSgt(_event.scheduledTime ?? Date.now())) {
+			await dispatch(doFetch, env, LIST_SWEEP_EVENT, {});
+		}
 		return;
 	}
 
