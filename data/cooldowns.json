@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-20T11:27:54.794Z",
+  "updatedAt": "2026-10-20T11:30:33.439Z",
   "entries": [
     {
       "key": "frozen vegetabl",
@@ -44,19 +44,6 @@
       "monthlyAmount": 0
     },
     {
-      "key": "garlic",
-      "ingredientId": "34b69a18-4fe7-8037-8c0c-c42156a2604c",
-      "ingredientName": "Garlic (Old) ≈ China Loose Garlic",
-      "addedAt": "2026-09-20T00:51:20.929Z",
-      "until": "2027-02-10T00:51:20.929Z",
-      "days": 143,
-      "basis": "500g ÷ 80g/month = 6.25 months × 0.75 = 4.69 months",
-      "store": "FairPrice",
-      "product": "China Loose Garlic",
-      "packSizeG": 500,
-      "monthlyAmount": 80
-    },
-    {
       "key": "brown muscovado sugar",
       "ingredientId": "34b69a18-4fe7-8079-955e-ef44e9443bac",
       "ingredientName": "Muscovado Sugar (Brown)",
@@ -83,6 +70,33 @@
       "product": "Green Tea",
       "packSizeG": null,
       "monthlyAmount": 0
+    },
+    {
+      "key": "chicken thigh",
+      "ingredientId": "39869a18-4fe7-80c6-abc1-d1713f27ac47",
+      "ingredientName": "Chicken thigh, Boneless  [Seara]",
+      "reason": "ignored",
+      "addedAt": "2026-10-20T11:30:33.439Z",
+      "until": "2026-11-15T16:00:00.000Z",
+      "days": 26,
+      "basis": "ignored from the deals page for 4 weeks — until the start of that week (Mon, SGT)",
+      "store": "Sheng Siong",
+      "product": "Frozen Chicken Thighs",
+      "packSizeG": null,
+      "monthlyAmount": 0
+    },
+    {
+      "key": "garlic",
+      "ingredientId": "34b69a18-4fe7-8037-8c0c-c42156a2604c",
+      "ingredientName": "Garlic (Old) ≈ China Loose Garlic",
+      "addedAt": "2026-09-20T00:51:20.929Z",
+      "until": "2027-02-10T00:51:20.929Z",
+      "days": 143,
+      "basis": "500g ÷ 80g/month = 6.25 months × 0.75 = 4.69 months",
+      "store": "FairPrice",
+      "product": "China Loose Garlic",
+      "packSizeG": 500,
+      "monthlyAmount": 80
     }
   ]
 }
