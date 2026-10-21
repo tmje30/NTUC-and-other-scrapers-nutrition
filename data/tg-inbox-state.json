@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-21T12:17:11.739Z",
+  "updatedAt": "2026-10-21T12:39:29.697Z",
   "offset": 0,
   "asks": [
     {
@@ -28,32 +28,6 @@
       "chatId": 7626546412,
       "blocking": true,
       "askedAt": "2026-10-21T12:17:11.414Z"
-    },
-    {
-      "token": "swsntd",
-      "item": {
-        "raw": "Bread x 1",
-        "name": "Bread",
-        "count": 1,
-        "amountG": null,
-        "volumetric": false
-      },
-      "candidates": [
-        {
-          "rowId": "34b69a18-4fe7-8062-b087-ed07794b3ddc",
-          "rowName": "Bread, Whole grain (Low GI), [Gardinier] (350g)",
-          "score": 1
-        },
-        {
-          "rowId": "39869a18-4fe7-8033-b52c-c02424bf56df",
-          "rowName": "Bread, Wholemeal, [FairPrice] (600g)",
-          "score": 1
-        }
-      ],
-      "messageId": 343,
-      "chatId": 7626546412,
-      "blocking": true,
-      "askedAt": "2026-10-21T12:17:11.738Z"
     }
   ],
   "queue": []
