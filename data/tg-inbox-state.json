@@ -1,7 +1,60 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-18T02:26:27.484Z",
+  "updatedAt": "2026-10-21T12:17:11.739Z",
   "offset": 0,
-  "asks": [],
+  "asks": [
+    {
+      "token": "3henxf",
+      "item": {
+        "raw": "Eggs 30 x 1",
+        "name": "Eggs 1",
+        "count": 30,
+        "amountG": null,
+        "volumetric": false
+      },
+      "candidates": [
+        {
+          "rowId": "37669a18-4fe7-8094-ad2b-d156a2f10a29",
+          "rowName": "egg  (Omega 3 Enriched) (550g)",
+          "score": 1
+        },
+        {
+          "rowId": "34b69a18-4fe7-807d-8439-fea7f149877f",
+          "rowName": "Eggs, Whole, small (1650g), {cheap}",
+          "score": 1
+        }
+      ],
+      "messageId": 342,
+      "chatId": 7626546412,
+      "blocking": true,
+      "askedAt": "2026-10-21T12:17:11.414Z"
+    },
+    {
+      "token": "swsntd",
+      "item": {
+        "raw": "Bread x 1",
+        "name": "Bread",
+        "count": 1,
+        "amountG": null,
+        "volumetric": false
+      },
+      "candidates": [
+        {
+          "rowId": "34b69a18-4fe7-8062-b087-ed07794b3ddc",
+          "rowName": "Bread, Whole grain (Low GI), [Gardinier] (350g)",
+          "score": 1
+        },
+        {
+          "rowId": "39869a18-4fe7-8033-b52c-c02424bf56df",
+          "rowName": "Bread, Wholemeal, [FairPrice] (600g)",
+          "score": 1
+        }
+      ],
+      "messageId": 343,
+      "chatId": 7626546412,
+      "blocking": true,
+      "askedAt": "2026-10-21T12:17:11.738Z"
+    }
+  ],
   "queue": []
 }
