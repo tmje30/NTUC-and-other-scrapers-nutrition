@@ -1,256 +1,7 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-22T04:10:21.334Z",
+  "updatedAt": "2026-10-23T02:07:37.853Z",
   "pending": [
-    {
-      "token": "ihgmq3",
-      "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
-      "ingredientName": "Sensitivity & Gum Toothpaste - Original",
-      "key": "sensitiviti gum toothpast original",
-      "unitType": "By Gram",
-      "category": "Cosmetics/ Tooth paste etc",
-      "vendor": "Watsons",
-      "slotN": 3,
-      "priceSgd": 7.3,
-      "size": 120,
-      "url": "https://www.watsons.com.sg/darlie-expert-gum-care-sensitivity-relief-toothpaste-120g-expiry-apr-2027/p/BP_30925",
-      "itemName": "DARLIE Expert Gum Care Sensitivity Relief Toothpaste 120g (Expiry: Apr`2027)",
-      "statedSize": "120g",
-      "recorded": {
-        "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-oral-care-toothpaste-sensitivity-and-gum-extra-fresh-dental-sensitivity-relief-100g/p/BP_51696",
-        "itemName": "SENSODYNE Sensitive Teeth Oral Care Toothpaste Sensitivity and Gum Extra Fresh (Dental Sensitivity Relief) 100g",
-        "priceSgd": 10.2,
-        "size": 100,
-        "vendor": "Watsons"
-      },
-      "perLabel": "$60.83/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 2 of 3, offered as a suggestion. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 1,
-      "askedAt": "2026-10-22T02:01:59.693Z"
-    },
-    {
-      "token": "nc2tee",
-      "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
-      "ingredientName": "Sensitivity & Gum Toothpaste - Original",
-      "key": "sensitiviti gum toothpast original",
-      "unitType": "By Gram",
-      "category": "Cosmetics/ Tooth paste etc",
-      "vendor": "Watsons",
-      "slotN": 3,
-      "priceSgd": 9.1,
-      "size": 110,
-      "url": "https://www.watsons.com.sg/colgate-sensitive-pro-relief-original-toothpaste-110g/p/BP_41346",
-      "itemName": "COLGATE Sensitive Pro Relief Original Toothpaste 110g",
-      "statedSize": "110g",
-      "recorded": {
-        "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-oral-care-toothpaste-sensitivity-and-gum-extra-fresh-dental-sensitivity-relief-100g/p/BP_51696",
-        "itemName": "SENSODYNE Sensitive Teeth Oral Care Toothpaste Sensitivity and Gum Extra Fresh (Dental Sensitivity Relief) 100g",
-        "priceSgd": 10.2,
-        "size": 100,
-        "vendor": "Watsons"
-      },
-      "perLabel": "$82.73/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 2,
-      "askedAt": "2026-10-22T02:01:59.694Z"
-    },
-    {
-      "token": "d0k7r6",
-      "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
-      "ingredientName": "Sensitivity & Gum Toothpaste - Original",
-      "key": "sensitiviti gum toothpast original",
-      "unitType": "By Gram",
-      "category": "Cosmetics/ Tooth paste etc",
-      "vendor": "Watsons",
-      "slotN": 3,
-      "priceSgd": 7.5,
-      "size": 100,
-      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-gum-care-toothpaste-dental-sensitivity-relief-100g/p/BP_45477",
-      "itemName": "SENSODYNE Sensitive Teeth Gum Care Toothpaste (Dental Sensitivity Relief) 100g",
-      "statedSize": "100g",
-      "recorded": {
-        "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-oral-care-toothpaste-sensitivity-and-gum-extra-fresh-dental-sensitivity-relief-100g/p/BP_51696",
-        "itemName": "SENSODYNE Sensitive Teeth Oral Care Toothpaste Sensitivity and Gum Extra Fresh (Dental Sensitivity Relief) 100g",
-        "priceSgd": 10.2,
-        "size": 100,
-        "vendor": "Watsons"
-      },
-      "perLabel": "$75.00/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is the closest of 3 offered, best first. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-10-22T02:01:59.695Z"
-    },
-    {
-      "token": "id75hz",
-      "ingredientId": "37369a18-4fe7-8082-b382-e651a025c832",
-      "ingredientName": "whey [Atlas]",
-      "key": "whei",
-      "unitType": "By Gram",
-      "category": "Protein Powder",
-      "vendor": "Carousell",
-      "slotN": 2,
-      "brand": "atlas",
-      "priceSgd": 100,
-      "size": 2100,
-      "url": "https://www.carousell.sg/p/valiant-advance-atlas-whey-protein-powder-2-1kg-1469438234/",
-      "itemName": "valiant advance atlas whey protein powder 2.1kg",
-      "statedSize": "2.1kg",
-      "recorded": {
-        "url": "https://www.carousell.sg/p/valiant-advance-atlas-whey-protein-2-1kg-rich-chocolate-1456638432/",
-        "itemName": "valiant advance atlas whey protein 2.1kg rich chocolate",
-        "priceSgd": 50,
-        "size": 2100,
-        "vendor": "Carousell"
-      },
-      "perLabel": "$47.62/kg",
-      "reasons": [
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 23.809523809523807,
-          "foundPer": 47.61904761904761,
-          "perWord": "kg",
-          "vendor": "Carousell",
-          "note": "DEARER than the Carousell price already recorded: $50.00 / 2100g = $23.81/kg → $100.00 / 2100g = $47.62/kg. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-10-22T02:02:45.404Z"
-    },
-    {
-      "token": "0erdx5",
-      "ingredientId": "37369a18-4fe7-809b-b3bb-cc640507e5a9",
-      "ingredientName": "Creatine monohydrate [California gold]",
-      "key": "creatin monohydrat",
-      "unitType": "By Gram",
-      "category": "Suppliments",
-      "vendor": "Iherb",
-      "slotN": 1,
-      "brand": "california gold",
-      "priceSgd": 41.31,
-      "size": 997.9,
-      "url": "https://sg.iherb.com/pr/california-gold-nutrition-sport-pure-creatine-monohydrate-unflavored-2-2-lbs-1-kg/143718",
-      "itemName": "California Gold Nutrition, Sport, Pure Creatine Monohydrate, Unflavored, 2.2 lbs (1 kg)",
-      "statedSize": "998g",
-      "recorded": {
-        "url": "https://sg.iherb.com/pr/vitamatic-creatine-monohydrate-micronized-powder-unflavored-35-274-oz-1-kg/160683",
-        "itemName": "Vitamatic, Creatine Monohydrate, Micronized Powder, Unflavored, 35.274 oz (1 kg)",
-        "priceSgd": 30.83,
-        "size": 1000,
-        "vendor": "Iherb"
-      },
-      "perLabel": "$41.40/kg",
-      "reasons": [
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 30.83,
-          "foundPer": 41.396933560477,
-          "perWord": "kg",
-          "vendor": "Iherb",
-          "note": "DEARER than the Iherb price already recorded: $30.83 / 1000g = $30.83/kg → $41.31 / 997.9g = $41.40/kg. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-10-22T02:02:48.553Z"
-    },
-    {
-      "token": "ptibif",
-      "ingredientId": "37369a18-4fe7-80d1-91ef-eb21cedf53ae",
-      "ingredientName": "Omega 3 800 [california gold] (1000-1100 mg)",
-      "key": "omega3 800",
-      "unitType": "By Unit",
-      "category": "Suppliments",
-      "vendor": "Iherb",
-      "slotN": 1,
-      "brand": "california gold",
-      "priceSgd": 56.98,
-      "size": 240,
-      "url": "https://sg.iherb.com/pr/olympian-labs-omega-3-240-softgels-1-000-mg-per-softgel/10128",
-      "itemName": "Olympian Labs, Omega-3, 240 Softgels (1,000 mg per Softgel)",
-      "statedSize": "240 pcs",
-      "recorded": {
-        "url": "https://sg.iherb.com/pr/revive-omega-3-120-softgels-1-000-mg-per-softgel/137232",
-        "itemName": "Revive, Omega 3, 120 Softgels (1,000 mg per Softgel)",
-        "priceSgd": 45.2,
-        "size": 120,
-        "vendor": "Iherb"
-      },
-      "perLabel": "$2.37/10 pc",
-      "reasons": [
-        {
-          "kind": "brand-unconfirmed",
-          "brand": "california gold",
-          "note": "this row names california gold and the product does not say so — a supplement is only recorded without asking when the brand matches. Accept if it is the right thing."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-10-22T02:03:11.034Z"
-    },
-    {
-      "token": "wrd91c",
-      "ingredientId": "37369a18-4fe7-80c0-bae0-f52639895b21",
-      "ingredientName": "whey (Essential) [MyProtein]",
-      "key": "whei",
-      "unitType": "By Gram",
-      "category": "Protein Powder",
-      "vendor": "Carousell",
-      "slotN": 2,
-      "brand": "myprotein",
-      "priceSgd": 125.1,
-      "size": 20,
-      "url": "https://www.carousell.sg/p/momentous-essential-grass-fed-whey-protein-powder-20g-whey-isolate-protein-nsf-certified-gluten-free-25-servings-for-essential-everyday-use-unflavored-unflavoured-25-servings-pack-of-1-1438086257/",
-      "itemName": "momentous essential grass fed whey protein powder 20g whey isolate protein nsf certified gluten free 25 servings for essential everyday use unflavored unflavoured 25 servings pack of 1",
-      "statedSize": "20g",
-      "recorded": {
-        "url": "https://www.carousell.sg/p/myprotein-meal-replacement-whey-2-5kg-salted-caramel-1456566667/",
-        "itemName": "myprotein meal replacement whey 2.5kg salted caramel",
-        "priceSgd": 80,
-        "size": 2500,
-        "vendor": "Carousell"
-      },
-      "perLabel": "$6255.00/kg",
-      "reasons": [
-        {
-          "kind": "brand-unconfirmed",
-          "brand": "myprotein",
-          "note": "this row names myprotein and the product does not say so — a supplement is only recorded without asking when the brand matches. Accept if it is the right thing."
-        },
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 32,
-          "foundPer": 6255,
-          "perWord": "kg",
-          "vendor": "Carousell",
-          "note": "DEARER than the Carousell price already recorded: $80.00 / 2500g = $32.00/kg → $125.10 / 20g = $6255.00/kg. Not written — accept only if the old price is gone."
-        },
-        {
-          "kind": "undercut",
-          "rejected": 1,
-          "note": "1 cheaper listing was rejected as implausible"
-        },
-        {
-          "kind": "outlier",
-          "factor": 164.60526315789474,
-          "note": "164.6× DEARER than this row's other shop"
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-10-22T02:03:28.583Z"
-    },
     {
       "token": "mygv3x",
       "ingredientId": "3b269a18-4fe7-812a-9fc3-d81551f626c6",
@@ -1266,6 +1017,162 @@
       ],
       "rank": 0,
       "askedAt": "2026-10-22T04:10:21.334Z"
+    },
+    {
+      "token": "id75hz",
+      "ingredientId": "37369a18-4fe7-8082-b382-e651a025c832",
+      "ingredientName": "whey [Atlas]",
+      "key": "whei",
+      "unitType": "By Gram",
+      "category": "Protein Powder",
+      "vendor": "Carousell",
+      "slotN": 2,
+      "brand": "atlas",
+      "priceSgd": 100,
+      "size": 2100,
+      "url": "https://www.carousell.sg/p/valiant-advance-atlas-whey-protein-powder-2-1kg-1469438234/",
+      "itemName": "valiant advance atlas whey protein powder 2.1kg",
+      "statedSize": "2.1kg",
+      "recorded": {
+        "url": "https://www.carousell.sg/p/valiant-advance-atlas-whey-protein-2-1kg-rich-chocolate-1456638432/",
+        "itemName": "valiant advance atlas whey protein 2.1kg rich chocolate",
+        "priceSgd": 50,
+        "size": 2100,
+        "vendor": "Carousell"
+      },
+      "perLabel": "$47.62/kg",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 23.809523809523807,
+          "foundPer": 47.61904761904761,
+          "perWord": "kg",
+          "vendor": "Carousell",
+          "note": "DEARER than the Carousell price already recorded: $50.00 / 2100g = $23.81/kg → $100.00 / 2100g = $47.62/kg. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-10-23T02:06:57.472Z"
+    },
+    {
+      "token": "0erdx5",
+      "ingredientId": "37369a18-4fe7-809b-b3bb-cc640507e5a9",
+      "ingredientName": "Creatine monohydrate [California gold]",
+      "key": "creatin monohydrat",
+      "unitType": "By Gram",
+      "category": "Suppliments",
+      "vendor": "Iherb",
+      "slotN": 1,
+      "brand": "california gold",
+      "priceSgd": 41.31,
+      "size": 997.9,
+      "url": "https://sg.iherb.com/pr/california-gold-nutrition-sport-pure-creatine-monohydrate-unflavored-2-2-lbs-1-kg/143718",
+      "itemName": "California Gold Nutrition, Sport, Pure Creatine Monohydrate, Unflavored, 2.2 lbs (1 kg)",
+      "statedSize": "998g",
+      "recorded": {
+        "url": "https://sg.iherb.com/pr/vitamatic-creatine-monohydrate-micronized-powder-unflavored-35-274-oz-1-kg/160683",
+        "itemName": "Vitamatic, Creatine Monohydrate, Micronized Powder, Unflavored, 35.274 oz (1 kg)",
+        "priceSgd": 30.83,
+        "size": 1000,
+        "vendor": "Iherb"
+      },
+      "perLabel": "$41.40/kg",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 30.83,
+          "foundPer": 41.396933560477,
+          "perWord": "kg",
+          "vendor": "Iherb",
+          "note": "DEARER than the Iherb price already recorded: $30.83 / 1000g = $30.83/kg → $41.31 / 997.9g = $41.40/kg. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-10-23T02:07:01.745Z"
+    },
+    {
+      "token": "ptibif",
+      "ingredientId": "37369a18-4fe7-80d1-91ef-eb21cedf53ae",
+      "ingredientName": "Omega 3 800 [california gold] (1000-1100 mg)",
+      "key": "omega3 800",
+      "unitType": "By Unit",
+      "category": "Suppliments",
+      "vendor": "Iherb",
+      "slotN": 1,
+      "brand": "california gold",
+      "priceSgd": 56.98,
+      "size": 240,
+      "url": "https://sg.iherb.com/pr/olympian-labs-omega-3-240-softgels-1-000-mg-per-softgel/10128",
+      "itemName": "Olympian Labs, Omega-3, 240 Softgels (1,000 mg per Softgel)",
+      "statedSize": "240 pcs",
+      "recorded": {
+        "url": "https://sg.iherb.com/pr/revive-omega-3-120-softgels-1-000-mg-per-softgel/137232",
+        "itemName": "Revive, Omega 3, 120 Softgels (1,000 mg per Softgel)",
+        "priceSgd": 45.2,
+        "size": 120,
+        "vendor": "Iherb"
+      },
+      "perLabel": "$2.37/10 pc",
+      "reasons": [
+        {
+          "kind": "brand-unconfirmed",
+          "brand": "california gold",
+          "note": "this row names california gold and the product does not say so — a supplement is only recorded without asking when the brand matches. Accept if it is the right thing."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-10-23T02:07:18.809Z"
+    },
+    {
+      "token": "wrd91c",
+      "ingredientId": "37369a18-4fe7-80c0-bae0-f52639895b21",
+      "ingredientName": "whey (Essential) [MyProtein]",
+      "key": "whei",
+      "unitType": "By Gram",
+      "category": "Protein Powder",
+      "vendor": "Carousell",
+      "slotN": 2,
+      "brand": "myprotein",
+      "priceSgd": 125.1,
+      "size": 20,
+      "url": "https://www.carousell.sg/p/momentous-essential-grass-fed-whey-protein-powder-20g-whey-isolate-protein-nsf-certified-gluten-free-25-servings-for-essential-everyday-use-unflavored-unflavoured-25-servings-pack-of-1-1438086257/",
+      "itemName": "momentous essential grass fed whey protein powder 20g whey isolate protein nsf certified gluten free 25 servings for essential everyday use unflavored unflavoured 25 servings pack of 1",
+      "statedSize": "20g",
+      "recorded": {
+        "url": "https://www.carousell.sg/p/myprotein-meal-replacement-whey-2-5kg-salted-caramel-1456566667/",
+        "itemName": "myprotein meal replacement whey 2.5kg salted caramel",
+        "priceSgd": 80,
+        "size": 2500,
+        "vendor": "Carousell"
+      },
+      "perLabel": "$6255.00/kg",
+      "reasons": [
+        {
+          "kind": "brand-unconfirmed",
+          "brand": "myprotein",
+          "note": "this row names myprotein and the product does not say so — a supplement is only recorded without asking when the brand matches. Accept if it is the right thing."
+        },
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 32,
+          "foundPer": 6255,
+          "perWord": "kg",
+          "vendor": "Carousell",
+          "note": "DEARER than the Carousell price already recorded: $80.00 / 2500g = $32.00/kg → $125.10 / 20g = $6255.00/kg. Not written — accept only if the old price is gone."
+        },
+        {
+          "kind": "undercut",
+          "rejected": 1,
+          "note": "1 cheaper listing was rejected as implausible"
+        },
+        {
+          "kind": "outlier",
+          "factor": 164.60526315789474,
+          "note": "164.6× DEARER than this row's other shop"
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-10-23T02:07:37.852Z"
     }
   ],
   "rejected": [
@@ -1381,8 +1288,8 @@
     }
   ],
   "moves": {
-    "generatedAt": "2026-10-22T04:10:21.334Z",
-    "reconfirmed": 68,
+    "generatedAt": "2026-10-23T02:07:37.857Z",
+    "reconfirmed": 2,
     "moves": []
   }
 }
