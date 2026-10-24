@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-23T05:35:34.583Z",
+  "updatedAt": "2026-10-24T04:10:35.201Z",
   "pending": [
     {
       "token": "id75hz",
@@ -197,7 +197,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-10-23T05:26:26.301Z"
+      "askedAt": "2026-10-24T04:01:14.364Z"
     },
     {
       "token": "p5ugfw",
@@ -238,7 +238,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-23T05:26:26.302Z"
+      "askedAt": "2026-10-24T04:01:14.365Z"
     },
     {
       "token": "vo7ls3",
@@ -267,7 +267,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-23T05:27:32.616Z"
+      "askedAt": "2026-10-24T04:02:21.726Z"
     },
     {
       "token": "x9yj45",
@@ -304,7 +304,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-23T05:27:47.914Z"
+      "askedAt": "2026-10-24T04:02:42.410Z"
     },
     {
       "token": "6lqot7",
@@ -344,7 +344,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-23T05:28:18.223Z"
+      "askedAt": "2026-10-24T04:03:13.712Z"
     },
     {
       "token": "jfm8ph",
@@ -376,7 +376,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-10-23T05:30:35.498Z"
+      "askedAt": "2026-10-24T04:05:25.708Z"
     },
     {
       "token": "w3qydt",
@@ -408,7 +408,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-10-23T05:30:35.499Z"
+      "askedAt": "2026-10-24T04:05:25.709Z"
     },
     {
       "token": "vzu5zg",
@@ -440,7 +440,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-23T05:30:35.499Z"
+      "askedAt": "2026-10-24T04:05:25.709Z"
     },
     {
       "token": "g19own",
@@ -480,7 +480,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-10-23T05:30:57.398Z"
+      "askedAt": "2026-10-24T04:05:41.927Z"
     },
     {
       "token": "5nfzxq",
@@ -520,7 +520,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-10-23T05:30:57.398Z"
+      "askedAt": "2026-10-24T04:05:41.927Z"
     },
     {
       "token": "3n90th",
@@ -560,7 +560,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-23T05:30:57.398Z"
+      "askedAt": "2026-10-24T04:05:41.927Z"
     },
     {
       "token": "gbzr41",
@@ -596,7 +596,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-23T05:31:19.835Z"
+      "askedAt": "2026-10-24T04:06:00.724Z"
     },
     {
       "token": "u4vtu5",
@@ -632,7 +632,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-23T05:31:44.767Z"
+      "askedAt": "2026-10-24T04:06:24.739Z"
     },
     {
       "token": "6my6e5",
@@ -668,7 +668,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-23T05:31:58.726Z"
+      "askedAt": "2026-10-24T04:06:39.374Z"
     },
     {
       "token": "f213w2",
@@ -704,7 +704,127 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-23T05:32:23.787Z"
+      "askedAt": "2026-10-24T04:07:02.664Z"
+    },
+    {
+      "token": "gunull",
+      "ingredientId": "34b69a18-4fe7-80c7-9de6-fa3234a2a9d8",
+      "ingredientName": "Banana (Fruit)",
+      "key": "banana",
+      "unitType": "By Gram",
+      "category": "[3] Fruits/Vegetables",
+      "vendor": "NTUC",
+      "slotN": 1,
+      "priceSgd": 4.3,
+      "size": 500,
+      "url": "https://www.fairprice.com.sg/product/good-nature-organic-banana-500-g-90089344",
+      "itemName": "ZENXIN Organic Banana",
+      "statedSize": "500g",
+      "brandName": "Zenxin",
+      "recorded": {
+        "url": "https://www.fairprice.com.sg/product/sumifru-cavendish-banana-700g-13102605",
+        "itemName": "Sumifru Philippines Banana",
+        "priceSgd": 2.55,
+        "size": 700,
+        "vendor": "NTUC"
+      },
+      "perLabel": "$8.60/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 2 of 3, offered as a suggestion. Accept only if it is the same thing."
+        },
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 3.6428571428571423,
+          "foundPer": 8.6,
+          "perWord": "kg",
+          "vendor": "NTUC",
+          "note": "DEARER than the NTUC price already recorded: $2.55 / 700g = $3.64/kg → $4.30 / 500g = $8.60/kg. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 1,
+      "askedAt": "2026-10-24T04:07:53.506Z"
+    },
+    {
+      "token": "melqjw",
+      "ingredientId": "34b69a18-4fe7-80c7-9de6-fa3234a2a9d8",
+      "ingredientName": "Banana (Fruit)",
+      "key": "banana",
+      "unitType": "By Gram",
+      "category": "[3] Fruits/Vegetables",
+      "vendor": "NTUC",
+      "slotN": 1,
+      "priceSgd": 5.98,
+      "size": 600,
+      "url": "https://www.fairprice.com.sg/product/orgo-fresh-pisang-mas-banana",
+      "itemName": "Agro Fresh Pisang Mas Banana",
+      "statedSize": "600g",
+      "brandName": "Agro Fresh",
+      "recorded": {
+        "url": "https://www.fairprice.com.sg/product/sumifru-cavendish-banana-700g-13102605",
+        "itemName": "Sumifru Philippines Banana",
+        "priceSgd": 2.55,
+        "size": 700,
+        "vendor": "NTUC"
+      },
+      "perLabel": "$9.97/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
+        },
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 3.6428571428571423,
+          "foundPer": 9.966666666666667,
+          "perWord": "kg",
+          "vendor": "NTUC",
+          "note": "DEARER than the NTUC price already recorded: $2.55 / 700g = $3.64/kg → $5.98 / 600g = $9.97/kg. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 2,
+      "askedAt": "2026-10-24T04:07:53.506Z"
+    },
+    {
+      "token": "56quxj",
+      "ingredientId": "34b69a18-4fe7-80c7-9de6-fa3234a2a9d8",
+      "ingredientName": "Banana (Fruit)",
+      "key": "banana",
+      "unitType": "By Gram",
+      "category": "[3] Fruits/Vegetables",
+      "vendor": "NTUC",
+      "slotN": 1,
+      "priceSgd": 1.95,
+      "size": 300,
+      "url": "https://www.fairprice.com.sg/product/sumifru-kamsookwang-banana-300g-13129810",
+      "itemName": "Sumifru Kamsookwang Banana",
+      "statedSize": "300g",
+      "brandName": "Sumifru",
+      "recorded": {
+        "url": "https://www.fairprice.com.sg/product/sumifru-cavendish-banana-700g-13102605",
+        "itemName": "Sumifru Philippines Banana",
+        "priceSgd": 2.55,
+        "size": 700,
+        "vendor": "NTUC"
+      },
+      "perLabel": "$6.50/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is the closest of 3 offered, best first. Accept only if it is the same thing."
+        },
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 3.6428571428571423,
+          "foundPer": 6.5,
+          "perWord": "kg",
+          "vendor": "NTUC",
+          "note": "DEARER than the NTUC price already recorded: $2.55 / 700g = $3.64/kg → $1.95 / 300g = $6.50/kg. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-10-24T04:07:53.507Z"
     },
     {
       "token": "ejxfjs",
@@ -740,7 +860,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-23T05:33:26.820Z"
+      "askedAt": "2026-10-24T04:08:23.886Z"
     },
     {
       "token": "1wi52z",
@@ -773,7 +893,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-10-23T05:33:46.559Z"
+      "askedAt": "2026-10-24T04:08:42.297Z"
     },
     {
       "token": "b6wiqu",
@@ -806,7 +926,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-10-23T05:33:46.559Z"
+      "askedAt": "2026-10-24T04:08:42.298Z"
     },
     {
       "token": "hay2mf",
@@ -839,7 +959,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-23T05:33:46.559Z"
+      "askedAt": "2026-10-24T04:08:42.298Z"
     },
     {
       "token": "qui19q",
@@ -875,7 +995,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-23T05:33:53.080Z"
+      "askedAt": "2026-10-24T04:08:48.021Z"
     },
     {
       "token": "ojbztw",
@@ -911,7 +1031,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-23T05:34:16.117Z"
+      "askedAt": "2026-10-24T04:09:11.239Z"
     },
     {
       "token": "r7ihg5",
@@ -947,7 +1067,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-23T05:34:19.229Z"
+      "askedAt": "2026-10-24T04:09:15.422Z"
     },
     {
       "token": "kcpl0j",
@@ -983,7 +1103,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-23T05:34:21.602Z"
+      "askedAt": "2026-10-24T04:09:17.083Z"
     },
     {
       "token": "8neh9y",
@@ -1024,7 +1144,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-23T05:34:24.597Z"
+      "askedAt": "2026-10-24T04:09:24.248Z"
     },
     {
       "token": "la0k34",
@@ -1060,7 +1180,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-23T05:34:34.110Z"
+      "askedAt": "2026-10-24T04:09:35.794Z"
     },
     {
       "token": "fcxho4",
@@ -1096,7 +1216,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-23T05:34:44.345Z"
+      "askedAt": "2026-10-24T04:09:42.138Z"
     },
     {
       "token": "fzs75i",
@@ -1132,7 +1252,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-23T05:34:58.402Z"
+      "askedAt": "2026-10-24T04:09:57.643Z"
     },
     {
       "token": "bobg8c",
@@ -1172,7 +1292,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-23T05:35:12.829Z"
+      "askedAt": "2026-10-24T04:10:15.462Z"
     },
     {
       "token": "hpia10",
@@ -1208,7 +1328,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-23T05:35:34.583Z"
+      "askedAt": "2026-10-24T04:10:35.201Z"
     }
   ],
   "rejected": [
@@ -1324,8 +1444,8 @@
     }
   ],
   "moves": {
-    "generatedAt": "2026-10-23T05:35:34.583Z",
-    "reconfirmed": 67,
+    "generatedAt": "2026-10-24T04:10:35.202Z",
+    "reconfirmed": 66,
     "moves": []
   }
 }
