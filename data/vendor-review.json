@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-24T04:10:35.201Z",
+  "updatedAt": "2026-10-25T04:10:26.281Z",
   "pending": [
     {
       "token": "id75hz",
@@ -159,47 +159,6 @@
       "askedAt": "2026-10-23T02:07:37.852Z"
     },
     {
-      "token": "mygv3x",
-      "ingredientId": "3b269a18-4fe7-812a-9fc3-d81551f626c6",
-      "ingredientName": "Razor Cartridge Refill - Hydro 5 [Schick]",
-      "key": "razor cartridg refill hydro 5",
-      "unitType": "By Unit",
-      "category": "Household Supplies",
-      "vendor": "NTUC",
-      "slotN": 1,
-      "brand": "schick",
-      "priceSgd": 18.12,
-      "size": 3,
-      "url": "https://www.fairprice.com.sg/product/schick-razor-cartridge-refill-intuition-pure-nourishment-3-per-pack-13055825",
-      "itemName": "Schick Razor Cartridge Refill-Intuition (Pure Nourishment)",
-      "statedSize": "3 pcs",
-      "brandName": "Schick",
-      "recorded": {
-        "url": "https://www.fairprice.com.sg/product/schick-men-razor-cartridge-refill-hydro-5-4-per-pack-13084424",
-        "itemName": "Schick Razor Cartridge Refill - Hydro 5",
-        "priceSgd": 17.1,
-        "size": 4,
-        "vendor": "NTUC"
-      },
-      "perLabel": "$60.40/10 pc",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 2 of 2, offered as a suggestion. Accept only if it is the same thing."
-        },
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 427.5,
-          "foundPer": 604,
-          "perWord": "100 pcs",
-          "vendor": "NTUC",
-          "note": "DEARER than the NTUC price already recorded: $17.10 / 4 pcs = $427.50/100 pcs → $18.12 / 3 pcs = $604.00/100 pcs. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 1,
-      "askedAt": "2026-10-24T04:01:14.364Z"
-    },
-    {
       "token": "p5ugfw",
       "ingredientId": "3b269a18-4fe7-812a-9fc3-d81551f626c6",
       "ingredientName": "Razor Cartridge Refill - Hydro 5 [Schick]",
@@ -226,6 +185,47 @@
       "reasons": [
         {
           "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 2 of 2, offered as a suggestion. Accept only if it is the same thing."
+        },
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 427.5,
+          "foundPer": 604,
+          "perWord": "100 pcs",
+          "vendor": "NTUC",
+          "note": "DEARER than the NTUC price already recorded: $17.10 / 4 pcs = $427.50/100 pcs → $18.12 / 3 pcs = $604.00/100 pcs. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 1,
+      "askedAt": "2026-10-25T04:01:17.114Z"
+    },
+    {
+      "token": "mygv3x",
+      "ingredientId": "3b269a18-4fe7-812a-9fc3-d81551f626c6",
+      "ingredientName": "Razor Cartridge Refill - Hydro 5 [Schick]",
+      "key": "razor cartridg refill hydro 5",
+      "unitType": "By Unit",
+      "category": "Household Supplies",
+      "vendor": "NTUC",
+      "slotN": 1,
+      "brand": "schick",
+      "priceSgd": 18.12,
+      "size": 3,
+      "url": "https://www.fairprice.com.sg/product/schick-razor-cartridge-refill-intuition-pure-nourishment-3-per-pack-13055825",
+      "itemName": "Schick Razor Cartridge Refill-Intuition (Pure Nourishment)",
+      "statedSize": "3 pcs",
+      "brandName": "Schick",
+      "recorded": {
+        "url": "https://www.fairprice.com.sg/product/schick-men-razor-cartridge-refill-hydro-5-4-per-pack-13084424",
+        "itemName": "Schick Razor Cartridge Refill - Hydro 5",
+        "priceSgd": 17.1,
+        "size": 4,
+        "vendor": "NTUC"
+      },
+      "perLabel": "$60.40/10 pc",
+      "reasons": [
+        {
+          "kind": "near-miss",
           "note": "no product here MATCHED this row — this is the closest of 2 offered, best first. Accept only if it is the same thing."
         },
         {
@@ -238,7 +238,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-24T04:01:14.365Z"
+      "askedAt": "2026-10-25T04:01:17.114Z"
     },
     {
       "token": "vo7ls3",
@@ -267,7 +267,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-24T04:02:21.726Z"
+      "askedAt": "2026-10-25T04:02:19.884Z"
     },
     {
       "token": "x9yj45",
@@ -304,7 +304,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-24T04:02:42.410Z"
+      "askedAt": "2026-10-25T04:02:35.366Z"
     },
     {
       "token": "6lqot7",
@@ -344,7 +344,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-24T04:03:13.712Z"
+      "askedAt": "2026-10-25T04:03:01.632Z"
     },
     {
       "token": "jfm8ph",
@@ -376,7 +376,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-10-24T04:05:25.708Z"
+      "askedAt": "2026-10-25T04:05:19.589Z"
     },
     {
       "token": "w3qydt",
@@ -408,7 +408,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-10-24T04:05:25.709Z"
+      "askedAt": "2026-10-25T04:05:19.590Z"
     },
     {
       "token": "vzu5zg",
@@ -440,7 +440,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-24T04:05:25.709Z"
+      "askedAt": "2026-10-25T04:05:19.590Z"
     },
     {
       "token": "g19own",
@@ -480,7 +480,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-10-24T04:05:41.927Z"
+      "askedAt": "2026-10-25T04:05:36.911Z"
     },
     {
       "token": "5nfzxq",
@@ -520,7 +520,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-10-24T04:05:41.927Z"
+      "askedAt": "2026-10-25T04:05:36.911Z"
     },
     {
       "token": "3n90th",
@@ -560,7 +560,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-24T04:05:41.927Z"
+      "askedAt": "2026-10-25T04:05:36.911Z"
     },
     {
       "token": "gbzr41",
@@ -596,7 +596,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-24T04:06:00.724Z"
+      "askedAt": "2026-10-25T04:06:02.182Z"
     },
     {
       "token": "u4vtu5",
@@ -632,7 +632,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-24T04:06:24.739Z"
+      "askedAt": "2026-10-25T04:06:28.550Z"
     },
     {
       "token": "6my6e5",
@@ -668,7 +668,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-24T04:06:39.374Z"
+      "askedAt": "2026-10-25T04:06:39.077Z"
     },
     {
       "token": "f213w2",
@@ -704,127 +704,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-24T04:07:02.664Z"
-    },
-    {
-      "token": "gunull",
-      "ingredientId": "34b69a18-4fe7-80c7-9de6-fa3234a2a9d8",
-      "ingredientName": "Banana (Fruit)",
-      "key": "banana",
-      "unitType": "By Gram",
-      "category": "[3] Fruits/Vegetables",
-      "vendor": "NTUC",
-      "slotN": 1,
-      "priceSgd": 4.3,
-      "size": 500,
-      "url": "https://www.fairprice.com.sg/product/good-nature-organic-banana-500-g-90089344",
-      "itemName": "ZENXIN Organic Banana",
-      "statedSize": "500g",
-      "brandName": "Zenxin",
-      "recorded": {
-        "url": "https://www.fairprice.com.sg/product/sumifru-cavendish-banana-700g-13102605",
-        "itemName": "Sumifru Philippines Banana",
-        "priceSgd": 2.55,
-        "size": 700,
-        "vendor": "NTUC"
-      },
-      "perLabel": "$8.60/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 2 of 3, offered as a suggestion. Accept only if it is the same thing."
-        },
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 3.6428571428571423,
-          "foundPer": 8.6,
-          "perWord": "kg",
-          "vendor": "NTUC",
-          "note": "DEARER than the NTUC price already recorded: $2.55 / 700g = $3.64/kg → $4.30 / 500g = $8.60/kg. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 1,
-      "askedAt": "2026-10-24T04:07:53.506Z"
-    },
-    {
-      "token": "melqjw",
-      "ingredientId": "34b69a18-4fe7-80c7-9de6-fa3234a2a9d8",
-      "ingredientName": "Banana (Fruit)",
-      "key": "banana",
-      "unitType": "By Gram",
-      "category": "[3] Fruits/Vegetables",
-      "vendor": "NTUC",
-      "slotN": 1,
-      "priceSgd": 5.98,
-      "size": 600,
-      "url": "https://www.fairprice.com.sg/product/orgo-fresh-pisang-mas-banana",
-      "itemName": "Agro Fresh Pisang Mas Banana",
-      "statedSize": "600g",
-      "brandName": "Agro Fresh",
-      "recorded": {
-        "url": "https://www.fairprice.com.sg/product/sumifru-cavendish-banana-700g-13102605",
-        "itemName": "Sumifru Philippines Banana",
-        "priceSgd": 2.55,
-        "size": 700,
-        "vendor": "NTUC"
-      },
-      "perLabel": "$9.97/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
-        },
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 3.6428571428571423,
-          "foundPer": 9.966666666666667,
-          "perWord": "kg",
-          "vendor": "NTUC",
-          "note": "DEARER than the NTUC price already recorded: $2.55 / 700g = $3.64/kg → $5.98 / 600g = $9.97/kg. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 2,
-      "askedAt": "2026-10-24T04:07:53.506Z"
-    },
-    {
-      "token": "56quxj",
-      "ingredientId": "34b69a18-4fe7-80c7-9de6-fa3234a2a9d8",
-      "ingredientName": "Banana (Fruit)",
-      "key": "banana",
-      "unitType": "By Gram",
-      "category": "[3] Fruits/Vegetables",
-      "vendor": "NTUC",
-      "slotN": 1,
-      "priceSgd": 1.95,
-      "size": 300,
-      "url": "https://www.fairprice.com.sg/product/sumifru-kamsookwang-banana-300g-13129810",
-      "itemName": "Sumifru Kamsookwang Banana",
-      "statedSize": "300g",
-      "brandName": "Sumifru",
-      "recorded": {
-        "url": "https://www.fairprice.com.sg/product/sumifru-cavendish-banana-700g-13102605",
-        "itemName": "Sumifru Philippines Banana",
-        "priceSgd": 2.55,
-        "size": 700,
-        "vendor": "NTUC"
-      },
-      "perLabel": "$6.50/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is the closest of 3 offered, best first. Accept only if it is the same thing."
-        },
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 3.6428571428571423,
-          "foundPer": 6.5,
-          "perWord": "kg",
-          "vendor": "NTUC",
-          "note": "DEARER than the NTUC price already recorded: $2.55 / 700g = $3.64/kg → $1.95 / 300g = $6.50/kg. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-10-24T04:07:53.507Z"
+      "askedAt": "2026-10-25T04:07:02.815Z"
     },
     {
       "token": "ejxfjs",
@@ -860,7 +740,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-24T04:08:23.886Z"
+      "askedAt": "2026-10-25T04:08:06.620Z"
     },
     {
       "token": "1wi52z",
@@ -893,7 +773,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-10-24T04:08:42.297Z"
+      "askedAt": "2026-10-25T04:08:29.177Z"
     },
     {
       "token": "b6wiqu",
@@ -926,7 +806,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-10-24T04:08:42.298Z"
+      "askedAt": "2026-10-25T04:08:29.177Z"
     },
     {
       "token": "hay2mf",
@@ -959,7 +839,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-24T04:08:42.298Z"
+      "askedAt": "2026-10-25T04:08:29.177Z"
     },
     {
       "token": "qui19q",
@@ -995,7 +875,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-24T04:08:48.021Z"
+      "askedAt": "2026-10-25T04:08:47.009Z"
     },
     {
       "token": "ojbztw",
@@ -1031,7 +911,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-24T04:09:11.239Z"
+      "askedAt": "2026-10-25T04:09:03.513Z"
     },
     {
       "token": "r7ihg5",
@@ -1067,7 +947,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-24T04:09:15.422Z"
+      "askedAt": "2026-10-25T04:09:06.704Z"
     },
     {
       "token": "kcpl0j",
@@ -1103,7 +983,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-24T04:09:17.083Z"
+      "askedAt": "2026-10-25T04:09:08.621Z"
     },
     {
       "token": "8neh9y",
@@ -1144,7 +1024,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-24T04:09:24.248Z"
+      "askedAt": "2026-10-25T04:09:11.590Z"
     },
     {
       "token": "la0k34",
@@ -1180,7 +1060,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-24T04:09:35.794Z"
+      "askedAt": "2026-10-25T04:09:22.678Z"
     },
     {
       "token": "fcxho4",
@@ -1216,7 +1096,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-24T04:09:42.138Z"
+      "askedAt": "2026-10-25T04:09:39.652Z"
     },
     {
       "token": "fzs75i",
@@ -1252,7 +1132,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-24T04:09:57.643Z"
+      "askedAt": "2026-10-25T04:09:54.577Z"
     },
     {
       "token": "bobg8c",
@@ -1292,10 +1172,10 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-24T04:10:15.462Z"
+      "askedAt": "2026-10-25T04:10:07.544Z"
     },
     {
-      "token": "hpia10",
+      "token": "s09c17",
       "ingredientId": "34b69a18-4fe7-807d-8439-fea7f149877f",
       "ingredientName": "Eggs, Whole, small (1650g), {cheap}",
       "key": "egg",
@@ -1303,12 +1183,12 @@
       "category": "[1] Meats/Dairy/Proteins",
       "vendor": "Sheng Siong",
       "slotN": 2,
-      "priceSgd": 6.45,
-      "size": 9,
-      "url": "https://shengsiong.com.sg/product/happy-egg-egg-cited-30s-1500-g",
-      "itemName": "Egg-Cited 30s",
-      "statedSize": "9 pcs",
-      "brandName": "Happy egg",
+      "priceSgd": 6.95,
+      "size": 10,
+      "url": "https://shengsiong.com.sg/product/egg-for-you-fresh-egg-30s-1650-g",
+      "itemName": "Fresh Egg 30s",
+      "statedSize": "10 pcs",
+      "brandName": "Egg For You",
       "recorded": {
         "url": "https://shengsiong.com.sg/product/egg-for-you-fresh-eggs-30s-1650-g",
         "itemName": "Fresh Eggs (30s)",
@@ -1316,19 +1196,19 @@
         "size": 15,
         "vendor": "Sheng Siong"
       },
-      "perLabel": "$3.91/kg",
+      "perLabel": "$4.21/kg",
       "reasons": [
         {
           "kind": "dearer-than-recorded",
           "recordedPer": 44.333333333333336,
-          "foundPer": 71.66666666666666,
+          "foundPer": 69.50000000000001,
           "perWord": "100 pcs",
           "vendor": "Sheng Siong",
-          "note": "DEARER than the Sheng Siong price already recorded: $6.65 / 15 pcs = $44.33/100 pcs → $6.45 / 9 pcs = $71.67/100 pcs. Not written — accept only if the old price is gone."
+          "note": "DEARER than the Sheng Siong price already recorded: $6.65 / 15 pcs = $44.33/100 pcs → $6.95 / 10 pcs = $69.50/100 pcs. Not written — accept only if the old price is gone."
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-24T04:10:35.201Z"
+      "askedAt": "2026-10-25T04:10:26.281Z"
     }
   ],
   "rejected": [
@@ -1444,8 +1324,8 @@
     }
   ],
   "moves": {
-    "generatedAt": "2026-10-24T04:10:35.202Z",
-    "reconfirmed": 66,
+    "generatedAt": "2026-10-25T04:10:26.281Z",
+    "reconfirmed": 67,
     "moves": []
   }
 }
