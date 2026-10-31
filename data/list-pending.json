@@ -1,30 +1,4 @@
 {
   "v": 1,
-  "pending": [
-    {
-      "pageId": "3fa69a18-4fe7-8103-9925-e73105352a2d",
-      "tickedAt": "2026-10-20T11:24:49.465Z",
-      "name": "Banana (Fruit)"
-    },
-    {
-      "pageId": "3fd69a18-4fe7-81d4-98c0-d0bb906cbd0f",
-      "tickedAt": "2026-10-20T11:25:36.654Z",
-      "name": "Onion (not red)"
-    },
-    {
-      "pageId": "40069a18-4fe7-81d8-ab98-f458a0bb4676",
-      "tickedAt": "2026-10-24T04:59:28.520Z",
-      "name": "Bread, Wholemeal, [FairPrice] (600g)"
-    },
-    {
-      "pageId": "40069a18-4fe7-81d0-86cf-cff3dd62927f",
-      "tickedAt": "2026-10-24T04:59:30.879Z",
-      "name": "Eggs, Whole, small (1650g), {cheap}"
-    },
-    {
-      "pageId": "3fa69a18-4fe7-81a0-89f4-fa45e0a6027e",
-      "tickedAt": "2026-10-24T04:59:37.836Z",
-      "name": "egg  (Omega 3 Enriched) (550g)"
-    }
-  ]
+  "pending": []
 }
