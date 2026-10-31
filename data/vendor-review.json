@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-30T04:10:04.580Z",
+  "updatedAt": "2026-10-31T04:09:44.074Z",
   "pending": [
     {
       "token": "h7yre4",
@@ -326,7 +326,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-10-30T04:01:12.295Z"
+      "askedAt": "2026-10-31T04:01:11.813Z"
     },
     {
       "token": "mygv3x",
@@ -367,7 +367,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-30T04:01:12.295Z"
+      "askedAt": "2026-10-31T04:01:11.814Z"
     },
     {
       "token": "vo7ls3",
@@ -396,7 +396,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-30T04:02:17.137Z"
+      "askedAt": "2026-10-31T04:02:16.456Z"
     },
     {
       "token": "x9yj45",
@@ -415,9 +415,9 @@
       "statedSize": "17 pcs",
       "brandName": "Fairprice",
       "recorded": {
-        "url": "https://shengsiong.com.sg/product/bake-for-you-jumbo-600-enriched-wholemeal-white-bread-600-g",
-        "itemName": "Jumbo 600 Enriched Wholemeal White Bread",
-        "priceSgd": 2.95,
+        "url": "https://shengsiong.com.sg/product/super-value-enriched-wholemeal-bread-600-g",
+        "itemName": "Enriched Wholemeal Bread",
+        "priceSgd": 2.3,
         "size": 20,
         "vendor": "Sheng Siong"
       },
@@ -433,7 +433,43 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-30T04:02:35.228Z"
+      "askedAt": "2026-10-31T04:02:33.776Z"
+    },
+    {
+      "token": "sohjn4",
+      "ingredientId": "39869a18-4fe7-8029-9609-ea147e99672e",
+      "ingredientName": "Carrots",
+      "key": "carrot",
+      "unitType": "By Gram",
+      "category": "[3] Fruits/Vegetables",
+      "vendor": "NTUC",
+      "slotN": 1,
+      "priceSgd": 1.1,
+      "size": 500,
+      "url": "https://www.fairprice.com.sg/product/pasar-prepacked-carrots-500g-13000321",
+      "itemName": "Pasar Prepacked Carrots ",
+      "statedSize": "500g",
+      "brandName": "Pasar",
+      "recorded": {
+        "url": "https://www.fairprice.com.sg/product/sumich-fresh-carrots-500g-10733611",
+        "itemName": "Sumich Fresh Carrots",
+        "priceSgd": 0.95,
+        "size": 500,
+        "vendor": "NTUC"
+      },
+      "perLabel": "$2.20/kg",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 1.9,
+          "foundPer": 2.2,
+          "perWord": "kg",
+          "vendor": "NTUC",
+          "note": "DEARER than the NTUC price already recorded: $0.95 / 500g = $1.90/kg → $1.10 / 500g = $2.20/kg. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-10-31T04:02:53.537Z"
     },
     {
       "token": "6lqot7",
@@ -473,7 +509,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-30T04:03:13.821Z"
+      "askedAt": "2026-10-31T04:02:59.319Z"
     },
     {
       "token": "jfm8ph",
@@ -505,7 +541,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-10-30T04:05:25.983Z"
+      "askedAt": "2026-10-31T04:05:14.648Z"
     },
     {
       "token": "w3qydt",
@@ -537,7 +573,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-10-30T04:05:25.984Z"
+      "askedAt": "2026-10-31T04:05:14.648Z"
     },
     {
       "token": "vzu5zg",
@@ -569,7 +605,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-30T04:05:25.984Z"
+      "askedAt": "2026-10-31T04:05:14.648Z"
     },
     {
       "token": "g19own",
@@ -609,7 +645,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-10-30T04:05:44.344Z"
+      "askedAt": "2026-10-31T04:05:34.629Z"
     },
     {
       "token": "5nfzxq",
@@ -649,7 +685,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-10-30T04:05:44.344Z"
+      "askedAt": "2026-10-31T04:05:34.630Z"
     },
     {
       "token": "3n90th",
@@ -689,7 +725,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-30T04:05:44.344Z"
+      "askedAt": "2026-10-31T04:05:34.630Z"
     },
     {
       "token": "gbzr41",
@@ -725,7 +761,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-30T04:06:05.012Z"
+      "askedAt": "2026-10-31T04:05:56.720Z"
     },
     {
       "token": "u4vtu5",
@@ -761,7 +797,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-30T04:06:34.535Z"
+      "askedAt": "2026-10-31T04:06:17.382Z"
     },
     {
       "token": "6my6e5",
@@ -797,7 +833,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-30T04:06:48.646Z"
+      "askedAt": "2026-10-31T04:06:27.889Z"
     },
     {
       "token": "f213w2",
@@ -833,7 +869,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-30T04:07:09.532Z"
+      "askedAt": "2026-10-31T04:06:49.938Z"
     },
     {
       "token": "9pv83c",
@@ -869,7 +905,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-30T04:07:18.529Z"
+      "askedAt": "2026-10-31T04:06:59.540Z"
     },
     {
       "token": "obhrp5",
@@ -909,10 +945,10 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-10-30T04:07:50.084Z"
+      "askedAt": "2026-10-31T04:07:29.114Z"
     },
     {
-      "token": "jsmu90",
+      "token": "tg8g5g",
       "ingredientId": "34b69a18-4fe7-80c7-9de6-fa3234a2a9d8",
       "ingredientName": "Banana (Fruit)",
       "key": "banana",
@@ -920,51 +956,11 @@
       "category": "[3] Fruits/Vegetables",
       "vendor": "NTUC",
       "slotN": 1,
-      "priceSgd": 5.98,
-      "size": 600,
-      "url": "https://www.fairprice.com.sg/product/orgo-fresh-pisang-mas-banana",
-      "itemName": "Agro Fresh Pisang Mas Banana",
-      "statedSize": "600g",
-      "brandName": "Agro Fresh",
-      "recorded": {
-        "url": "https://www.fairprice.com.sg/product/sumifru-cavendish-banana-700g-13102605",
-        "itemName": "Sumifru Philippines Banana",
-        "priceSgd": 2.55,
-        "size": 700,
-        "vendor": "NTUC"
-      },
-      "perLabel": "$9.97/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
-        },
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 3.6428571428571423,
-          "foundPer": 9.966666666666667,
-          "perWord": "kg",
-          "vendor": "NTUC",
-          "note": "DEARER than the NTUC price already recorded: $2.55 / 700g = $3.64/kg → $5.98 / 600g = $9.97/kg. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 2,
-      "askedAt": "2026-10-30T04:07:50.084Z"
-    },
-    {
-      "token": "4yn33f",
-      "ingredientId": "34b69a18-4fe7-80c7-9de6-fa3234a2a9d8",
-      "ingredientName": "Banana (Fruit)",
-      "key": "banana",
-      "unitType": "By Gram",
-      "category": "[3] Fruits/Vegetables",
-      "vendor": "NTUC",
-      "slotN": 1,
-      "priceSgd": 1.95,
-      "size": 300,
-      "url": "https://www.fairprice.com.sg/product/sumifru-kamsookwang-banana-300g-13129810",
-      "itemName": "Sumifru Kamsookwang Banana",
-      "statedSize": "300g",
+      "priceSgd": 5.35,
+      "size": 820,
+      "url": "https://www.fairprice.com.sg/product/sumifru-poongmi-wang-banana-820g-13137901",
+      "itemName": "Sumifru Poongmi Wang Banana",
+      "statedSize": "820g",
       "brandName": "Sumifru",
       "recorded": {
         "url": "https://www.fairprice.com.sg/product/sumifru-cavendish-banana-700g-13102605",
@@ -973,7 +969,47 @@
         "size": 700,
         "vendor": "NTUC"
       },
-      "perLabel": "$6.50/kg",
+      "perLabel": "$6.52/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
+        },
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 3.6428571428571423,
+          "foundPer": 6.524390243902439,
+          "perWord": "kg",
+          "vendor": "NTUC",
+          "note": "DEARER than the NTUC price already recorded: $2.55 / 700g = $3.64/kg → $5.35 / 820g = $6.52/kg. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 2,
+      "askedAt": "2026-10-31T04:07:29.114Z"
+    },
+    {
+      "token": "ycz4cb",
+      "ingredientId": "34b69a18-4fe7-80c7-9de6-fa3234a2a9d8",
+      "ingredientName": "Banana (Fruit)",
+      "key": "banana",
+      "unitType": "By Gram",
+      "category": "[3] Fruits/Vegetables",
+      "vendor": "NTUC",
+      "slotN": 1,
+      "priceSgd": 5.3,
+      "size": 820,
+      "url": "https://www.fairprice.com.sg/product/sumifru-kamsookwang-banana-820g-13137900",
+      "itemName": "Sumifru Kamsookwang Banana",
+      "statedSize": "820g",
+      "brandName": "Sumifru",
+      "recorded": {
+        "url": "https://www.fairprice.com.sg/product/sumifru-cavendish-banana-700g-13102605",
+        "itemName": "Sumifru Philippines Banana",
+        "priceSgd": 2.55,
+        "size": 700,
+        "vendor": "NTUC"
+      },
+      "perLabel": "$6.46/kg",
       "reasons": [
         {
           "kind": "near-miss",
@@ -982,14 +1018,14 @@
         {
           "kind": "dearer-than-recorded",
           "recordedPer": 3.6428571428571423,
-          "foundPer": 6.5,
+          "foundPer": 6.463414634146341,
           "perWord": "kg",
           "vendor": "NTUC",
-          "note": "DEARER than the NTUC price already recorded: $2.55 / 700g = $3.64/kg → $1.95 / 300g = $6.50/kg. Not written — accept only if the old price is gone."
+          "note": "DEARER than the NTUC price already recorded: $2.55 / 700g = $3.64/kg → $5.30 / 820g = $6.46/kg. Not written — accept only if the old price is gone."
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-30T04:07:50.084Z"
+      "askedAt": "2026-10-31T04:07:29.114Z"
     },
     {
       "token": "ejxfjs",
@@ -1025,7 +1061,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-30T04:08:13.366Z"
+      "askedAt": "2026-10-31T04:07:47.540Z"
     },
     {
       "token": "1wi52z",
@@ -1058,7 +1094,7 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-10-30T04:08:31.504Z"
+      "askedAt": "2026-10-31T04:08:07.967Z"
     },
     {
       "token": "b6wiqu",
@@ -1091,7 +1127,7 @@
         }
       ],
       "rank": 2,
-      "askedAt": "2026-10-30T04:08:31.504Z"
+      "askedAt": "2026-10-31T04:08:07.967Z"
     },
     {
       "token": "hay2mf",
@@ -1124,7 +1160,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-30T04:08:31.504Z"
+      "askedAt": "2026-10-31T04:08:07.967Z"
     },
     {
       "token": "qui19q",
@@ -1160,7 +1196,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-30T04:08:36.862Z"
+      "askedAt": "2026-10-31T04:08:14.907Z"
     },
     {
       "token": "ojbztw",
@@ -1196,7 +1232,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-30T04:08:49.374Z"
+      "askedAt": "2026-10-31T04:08:28.694Z"
     },
     {
       "token": "e4cm62",
@@ -1232,7 +1268,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-30T04:08:52.647Z"
+      "askedAt": "2026-10-31T04:08:33.198Z"
     },
     {
       "token": "8neh9y",
@@ -1273,7 +1309,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-30T04:08:58.906Z"
+      "askedAt": "2026-10-31T04:08:38.758Z"
     },
     {
       "token": "654mvo",
@@ -1314,7 +1350,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-30T04:09:01.888Z"
+      "askedAt": "2026-10-31T04:08:41.789Z"
     },
     {
       "token": "la0k34",
@@ -1350,7 +1386,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-30T04:09:05.182Z"
+      "askedAt": "2026-10-31T04:08:45.147Z"
     },
     {
       "token": "fcxho4",
@@ -1386,7 +1422,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-30T04:09:10.937Z"
+      "askedAt": "2026-10-31T04:08:50.273Z"
     },
     {
       "token": "fzs75i",
@@ -1422,7 +1458,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-30T04:09:25.817Z"
+      "askedAt": "2026-10-31T04:09:07.546Z"
     },
     {
       "token": "bobg8c",
@@ -1462,7 +1498,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-30T04:09:38.888Z"
+      "askedAt": "2026-10-31T04:09:23.990Z"
     },
     {
       "token": "fnlkt1",
@@ -1498,7 +1534,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-10-30T04:10:04.580Z"
+      "askedAt": "2026-10-31T04:09:44.074Z"
     }
   ],
   "rejected": [
@@ -1614,20 +1650,8 @@
     }
   ],
   "moves": {
-    "generatedAt": "2026-10-30T04:10:04.580Z",
-    "reconfirmed": 64,
-    "moves": [
-      {
-        "row": "Bread, Wholemeal, [FairPrice] (600g)",
-        "vendor": "Sheng Siong",
-        "recordedText": "$2.95 / 20 pcs",
-        "foundText": "$2.30 / 20 pcs",
-        "recordedPer": 14.750000000000004,
-        "foundPer": 11.499999999999998,
-        "perWord": "100 pcs",
-        "product": "Enriched Wholemeal Bread",
-        "url": "https://shengsiong.com.sg/product/super-value-enriched-wholemeal-bread-600-g"
-      }
-    ]
+    "generatedAt": "2026-10-31T04:09:44.074Z",
+    "reconfirmed": 63,
+    "moves": []
   }
 }
