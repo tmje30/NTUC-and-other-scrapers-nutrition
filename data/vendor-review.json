@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-01T00:57:11.338Z",
+  "updatedAt": "2026-11-01T02:04:28.199Z",
   "pending": [
     {
       "token": "p5ugfw",
@@ -1280,10 +1280,10 @@
         }
       ],
       "rank": 1,
-      "askedAt": "2026-11-01T00:55:19.844Z"
+      "askedAt": "2026-11-01T02:02:35.336Z"
     },
     {
-      "token": "k51026",
+      "token": "g7c6h6",
       "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
       "ingredientName": "Sensitivity & Gum Toothpaste - Original",
       "key": "sensitiviti gum toothpast original",
@@ -1291,11 +1291,11 @@
       "category": "Cosmetics/ Tooth paste etc",
       "vendor": "Watsons",
       "slotN": 3,
-      "priceSgd": 9.1,
-      "size": 110,
-      "url": "https://www.watsons.com.sg/colgate-sensitive-pro-relief-original-toothpaste-110g/p/BP_41346",
-      "itemName": "COLGATE Sensitive Pro Relief Original Toothpaste 110g",
-      "statedSize": "110g",
+      "priceSgd": 10.45,
+      "size": 100,
+      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-oral-care-toothpaste-sensitivity-and-gum-dental-sensitivity-relief-100g/p/BP_45094",
+      "itemName": "SENSODYNE Sensitive Teeth Oral Care Toothpaste Sensitivity and Gum (Dental Sensitivity Relief) 100g",
+      "statedSize": "100g",
       "recorded": {
         "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-oral-care-toothpaste-sensitivity-and-gum-extra-fresh-dental-sensitivity-relief-100g/p/BP_51696",
         "itemName": "SENSODYNE Sensitive Teeth Oral Care Toothpaste Sensitivity and Gum Extra Fresh (Dental Sensitivity Relief) 100g",
@@ -1303,15 +1303,23 @@
         "size": 100,
         "vendor": "Watsons"
       },
-      "perLabel": "$82.73/kg",
+      "perLabel": "$104.50/kg",
       "reasons": [
         {
           "kind": "near-miss",
           "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
+        },
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 102,
+          "foundPer": 104.5,
+          "perWord": "kg",
+          "vendor": "Watsons",
+          "note": "DEARER than the Watsons price already recorded: $10.20 / 100g = $102.00/kg → $10.45 / 100g = $104.50/kg. Not written — accept only if the old price is gone."
         }
       ],
       "rank": 2,
-      "askedAt": "2026-11-01T00:55:19.858Z"
+      "askedAt": "2026-11-01T02:02:35.342Z"
     },
     {
       "token": "9jjxqs",
@@ -1342,7 +1350,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-11-01T00:55:19.870Z"
+      "askedAt": "2026-11-01T02:02:35.344Z"
     },
     {
       "token": "fp2f96",
@@ -1378,7 +1386,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-11-01T00:56:34.415Z"
+      "askedAt": "2026-11-01T02:03:46.822Z"
     },
     {
       "token": "id75hz",
@@ -1414,7 +1422,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-11-01T00:56:37.001Z"
+      "askedAt": "2026-11-01T02:03:49.191Z"
     },
     {
       "token": "1hihdl",
@@ -1455,7 +1463,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-11-01T00:56:54.994Z"
+      "askedAt": "2026-11-01T02:04:09.249Z"
     },
     {
       "token": "wrd91c",
@@ -1506,7 +1514,7 @@
         }
       ],
       "rank": 0,
-      "askedAt": "2026-11-01T00:57:11.338Z"
+      "askedAt": "2026-11-01T02:04:28.199Z"
     }
   ],
   "rejected": [
@@ -1622,31 +1630,8 @@
     }
   ],
   "moves": {
-    "generatedAt": "2026-11-01T00:57:11.341Z",
-    "reconfirmed": 4,
-    "moves": [
-      {
-        "row": "Creatine monohydrate [California gold]",
-        "vendor": "Iherb",
-        "recordedText": "$30.83 / 1000g",
-        "foundText": "$29.97 / 1000g",
-        "recordedPer": 30.83,
-        "foundPer": 29.97,
-        "perWord": "kg",
-        "product": "Vitamatic, Creatine Monohydrate, Micronized Powder, Unflavored, 35.274 oz (1 kg)",
-        "url": "https://sg.iherb.com/pr/vitamatic-creatine-monohydrate-micronized-powder-unflavored-35-274-oz-1-kg/160683"
-      },
-      {
-        "row": "Multi-vitamin [Life Extension]",
-        "vendor": "Iherb",
-        "recordedText": "$26.81 / 120 pcs",
-        "foundText": "$26.53 / 120 pcs",
-        "recordedPer": 22.341666666666665,
-        "foundPer": 22.108333333333334,
-        "perWord": "100 pcs",
-        "product": "Life Extension, Two-Per-Day Multivitamin, 120 Tablets",
-        "url": "https://sg.iherb.com/pr/life-extension-two-per-day-multivitamin-120-tablets/86454"
-      }
-    ]
+    "generatedAt": "2026-11-01T02:04:28.201Z",
+    "reconfirmed": 6,
+    "moves": []
   }
 }
