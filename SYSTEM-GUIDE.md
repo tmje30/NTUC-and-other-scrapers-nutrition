@@ -1,6 +1,6 @@
 # Grocery Deal Scraper — System Guide
 
-*Last updated: 2026-10-01 · Covers changes through commit 9c401e4*
+*Last updated: 2026-11-01 · Covers changes through commit c31f0c9*
 
 ## What this is
 
@@ -119,8 +119,8 @@ nobody did.
   An item with no genuine reduction gets **one** line. At the foot: **Total cost**
   and **Total cost with %** — the same trolley at your normal prices and at today's.
 - **"What does ticking a box do?"** It takes the row off the page, recomputes both
-  totals immediately, and clears it from your Notion list **at midnight**. All day it
-  sits under "Ticked off" at the bottom with an **undo**.
+  totals immediately, and clears it from your Notion list **at midnight on the 1st of the month**. Until
+  then it sits under "Ticked off" at the bottom with an **undo**.
   ⚠️ **"Clears" means Notion's TRASH — recoverable for about 30 days.** Notion's
   API has no permanent-delete endpoint, so nothing in this project can destroy a row
   outright. Emptying the trash in Notion is a manual step, and the only one.
@@ -152,10 +152,20 @@ nobody did.
   ⚠️ **A row you add does not appear on the page until the next build.** It is written
   to Notion straight away; the page is only rewritten daily, and drawing a line for a
   row that does not exist yet would give you a checkbox that ticks nothing.
-- **"Why midnight rather than an hour after I tick it?"** Because an hour after each
+- **"Why the 1st of the month rather than right after I tick it?"** Because an hour after each
   tick meant rows vanishing while you were still in the shop, each on its own clock.
-  One boundary keeps the list stable for the whole trip and clears it once, overnight,
-  so the page you open in the morning is the shopping you have left.
+  Since 2026-10-18 the clear-out happens once a month (00:00 SGT on the 1st) instead of
+  every midnight, so a month's ticks stay visible under "Ticked off" until then.
+- **"I texted or tapped Buy — when does it show on the page?"** Within seconds to a few
+  minutes. A small snapshot file (`data/list-live.json`) is refreshed straight from
+  Notion and the page swaps its rows in on load; a full rebuild (about 4 minutes, with
+  the shop scan) then follows so the page's prices and totals are correct too.
+- **"What is the Location toggle?"** Three tabs on the shopping page — *Cheapest*
+  (default), *Home*, *Work* — that narrow each row to the shops tagged for that place in
+  the Website Used database before picking the cheapest. *Work* means the `Office Toby`
+  tag only. A row's offer line stays on every tab.
+- **"How do I open the product?"** Each card links the product online from its name, and
+  the offer's own product is named under its price as a link.
 - **"Do I have to set anything up on a new phone?"** No. The page works on any device
   with nothing to enable — the credential lives in the Cloudflare relay, and the page
   carries only a list-scoped key. ⚠️ **That key is public, and deliberately so:** a
@@ -417,8 +427,9 @@ apart are two runs writing that file, resolved by the three-way merge in
 
 ⚠️ **Since September the relay is the clock for three more things**, all for the
 same reason (GitHub's own schedule runs hours late on a free public repo): the
-shopping list's **midnight clear-out** (`0 16 * * *` UTC = 00:00 SGT, dispatches
-`listsweep`) and the **noon price-book sweep** (`0 4 * * *` UTC = 12:00 SGT,
+shopping list's **monthly clear-out** (`0 16 * * *` UTC = 00:00 SGT; the cron
+fires nightly but the relay dispatches `listsweep` only on the 1st of the month, via
+`isFirstOfMonthSgt`) and the **noon price-book sweep** (`0 4 * * *` UTC = 12:00 SGT,
 dispatches `vendorsweep`). It also has a second door, **`POST /list`**, which takes
 ticks, amounts and Add from the shopping page. Remove a cron line and that job simply
 stops — nothing fails, nothing goes red. That is exactly what happened to the price
@@ -1257,8 +1268,34 @@ list.html ──POST /list (X-List-Secret)──▶ relay Worker ──dispatch:
   markup. Rotate with `wrangler secret put LIST_SECRET` plus the same value as the
   repo's Actions secret.
 
+**Added October 2026:**
+
+- **Fast path for new rows.** `src/scripts/build-list-fragment.ts` writes
+  `data/list-live.json` (`LIST_LIVE_URL`, default the raw GitHub URL on `main`). The page
+  fetches it on load and swaps rows in. `tg-inbox.yml`, `list-action.yml` and the new
+  `add-to-list.yml` snapshot after a write, then a `rebuild` job calls `daily.yml`
+  (`quiet: true`) only if the list really changed. Buy bursts collapse
+  (`concurrency: buy-rebuild`, cancel-in-progress). The snapshot is regenerated, never
+  merged, on a rejected push.
+- **Location toggle** — `src/core/vendor-locations.ts` (`LocationMode` =
+  `cheapest|home|work`, tags `Home` / `Office Toby` read from the Website Used DB via
+  `normTag`; nothing is created in Notion).
+- **Offers and links** — the card links the product, names the offer's product under
+  its price, reads `Vendor %` when it is a formula, and adds an ingredient at its offer
+  price when one is recorded. A "discount" that costs more than the regular price is not
+  counted in the totals (headline included).
+- **Monthly clear-out** — ticked rows are trashed on the 1st of the month, not nightly.
+- **Deals page feeds the discount columns** — `src/core/deal-discount.ts` writes the
+  deals scan's own items (every item, not only shop-tagged sales) into the discount
+  columns, plus `URL item (Discount)`; `recordDiscount`'s `discountBeats` still decides
+  whether a write wins. `vendor-scan.ts` now records a **same-product price rise**
+  without asking (counted and reported), and the review card links the product you
+  already have beside the suggestion.
+- **Daily failure message** — a failure after the deploy is reported as "pages are up,
+  the message after them failed", not as a dead scan.
+
 Tests: `src/tests/grocery-page.test.ts` (including the `/list` command and header
-words).
+words), `deal-discount.test.ts`, `vendor-locations.test.ts`, `vendor-review.test.ts`.
 
 ### The Telegram inbox — texting a list in
 
@@ -1919,8 +1956,12 @@ typechecks the Cloudflare Worker on its own.*
 - **`npm run list-action -- --payload '<json>'`** — apply one shopping-page tap
   (`tick` / `untick` / `amount` / `add`). What `list-action.yml` runs; `--no-push`
   skips the commit.
-- **`npm run list-sweep`** — move yesterday's page-ticked rows to Notion's trash.
-  `--dry-run` says what would go. What `list-sweep.yml` runs at midnight SGT.
+- **`npm run list-sweep`** — move page-ticked rows (older than the last SGT midnight) to Notion's trash.
+  `--dry-run` says what would go. What `list-sweep.yml` runs at 00:00 SGT on the 1st of each month.
+- **`npm run build-list-fragment`** (added 2026-10) — writes `data/list-live.json`, the
+  Notion-only snapshot of the list rows that `list.html` fetches on load. Rewrites only
+  when the rows changed and reports `changed=true|false` to `$GITHUB_OUTPUT`, which
+  gates the rebuild job. Run by `tg-inbox.yml`, `list-action.yml` and `add-to-list.yml`.
 - **`npm run notify`** — reads `public/summary.json` and sends the Telegram
   message. Run by the cloud *after* the page is deployed, so the link is live.
 - **`npm run push-ss`** — the residential runner. Fetches search terms from the
@@ -2166,7 +2207,7 @@ Eleven GitHub Actions workflows:
   list-action`, which commits `data/list-pending.json` itself. **No `concurrency`
   group** — every tap is a different row, and a cancelled tap is a checkbox that
   ticked on screen and did nothing. Races are handled by `reapply`.
-- **`.github/workflows/list-sweep.yml`** (added 2026-09-11) — the midnight clear-out,
+- **`.github/workflows/list-sweep.yml`** (added 2026-09-11) — the monthly clear-out (the relay only dispatches it on the 1st),
   `repository_dispatch: listsweep` from the relay's `0 16 * * *` cron. **Has** a
   `concurrency` group (two sweeps would trash the same row). `workflow_dispatch`
   offers a `dry-run` box. ⚠️ **The only workflow that deletes a Notion row.** Its own
@@ -2487,6 +2528,20 @@ Other requirements:
   token saved in the browser, instead of the default two-tap GitHub-issue flow.
 
 ## What changed in this update
+
+- **2026-11-01 — the shopping page gets faster, location-aware and monthly.**
+  - **Instant rows**: texting a list or tapping Buy now shows on the page in seconds
+    (`data/list-live.json`, new `build-list-fragment` command), followed by a full
+    rebuild only when the list changed. New workflow `add-to-list.yml` for Buy taps.
+  - **Location toggle** (Cheapest / Home / Work) and product links with the offer named
+    under its price on every card.
+  - **Monthly clear-out**: ticked rows are now trashed on the 1st (00:00 SGT), not
+    every midnight.
+  - **Discounts**: the deals page's own items now fill the discount columns; a dearer
+    "discount" no longer counts in totals; same product at a higher price is recorded
+    without a question; review cards show the product you already have.
+  - **Daily run**: a Telegram failure after a successful publish no longer reads as a
+    dead scan.
 
 - **2026-10-01 — the shopping page, the noon price check, and a sharper matcher.**
   - **Shopping page (`list.html`)**: tick, edit amounts and add items from any phone,
