@@ -1,272 +1,7 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-01T04:10:35.221Z",
+  "updatedAt": "2026-11-02T02:03:29.668Z",
   "pending": [
-    {
-      "token": "h7yre4",
-      "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
-      "ingredientName": "Sensitivity & Gum Toothpaste - Original",
-      "key": "sensitiviti gum toothpast original",
-      "unitType": "By Gram",
-      "category": "Cosmetics/ Tooth paste etc",
-      "vendor": "Watsons",
-      "slotN": 3,
-      "priceSgd": 7.3,
-      "size": 120,
-      "url": "https://www.watsons.com.sg/darlie-expert-gum-care-sensitivity-relief-toothpaste-120g-expiry-apr-2027/p/BP_30925",
-      "itemName": "DARLIE Expert Gum Care Sensitivity Relief Toothpaste 120g (Expiry: Apr`2027)",
-      "statedSize": "120g",
-      "recorded": {
-        "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-oral-care-toothpaste-sensitivity-and-gum-extra-fresh-dental-sensitivity-relief-100g/p/BP_51696",
-        "itemName": "SENSODYNE Sensitive Teeth Oral Care Toothpaste Sensitivity and Gum Extra Fresh (Dental Sensitivity Relief) 100g",
-        "priceSgd": 10.2,
-        "size": 100,
-        "vendor": "Watsons"
-      },
-      "perLabel": "$60.83/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 2 of 3, offered as a suggestion. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 1,
-      "askedAt": "2026-11-01T02:02:35.336Z"
-    },
-    {
-      "token": "g7c6h6",
-      "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
-      "ingredientName": "Sensitivity & Gum Toothpaste - Original",
-      "key": "sensitiviti gum toothpast original",
-      "unitType": "By Gram",
-      "category": "Cosmetics/ Tooth paste etc",
-      "vendor": "Watsons",
-      "slotN": 3,
-      "priceSgd": 10.45,
-      "size": 100,
-      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-oral-care-toothpaste-sensitivity-and-gum-dental-sensitivity-relief-100g/p/BP_45094",
-      "itemName": "SENSODYNE Sensitive Teeth Oral Care Toothpaste Sensitivity and Gum (Dental Sensitivity Relief) 100g",
-      "statedSize": "100g",
-      "recorded": {
-        "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-oral-care-toothpaste-sensitivity-and-gum-extra-fresh-dental-sensitivity-relief-100g/p/BP_51696",
-        "itemName": "SENSODYNE Sensitive Teeth Oral Care Toothpaste Sensitivity and Gum Extra Fresh (Dental Sensitivity Relief) 100g",
-        "priceSgd": 10.2,
-        "size": 100,
-        "vendor": "Watsons"
-      },
-      "perLabel": "$104.50/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
-        },
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 102,
-          "foundPer": 104.5,
-          "perWord": "kg",
-          "vendor": "Watsons",
-          "note": "DEARER than the Watsons price already recorded: $10.20 / 100g = $102.00/kg → $10.45 / 100g = $104.50/kg. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 2,
-      "askedAt": "2026-11-01T02:02:35.342Z"
-    },
-    {
-      "token": "9jjxqs",
-      "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
-      "ingredientName": "Sensitivity & Gum Toothpaste - Original",
-      "key": "sensitiviti gum toothpast original",
-      "unitType": "By Gram",
-      "category": "Cosmetics/ Tooth paste etc",
-      "vendor": "Watsons",
-      "slotN": 3,
-      "priceSgd": 7.5,
-      "size": 100,
-      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-gum-care-toothpaste-dental-sensitivity-relief-100g/p/BP_45477",
-      "itemName": "SENSODYNE Sensitive Teeth Gum Care Toothpaste (Dental Sensitivity Relief) 100g",
-      "statedSize": "100g",
-      "recorded": {
-        "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-oral-care-toothpaste-sensitivity-and-gum-extra-fresh-dental-sensitivity-relief-100g/p/BP_51696",
-        "itemName": "SENSODYNE Sensitive Teeth Oral Care Toothpaste Sensitivity and Gum Extra Fresh (Dental Sensitivity Relief) 100g",
-        "priceSgd": 10.2,
-        "size": 100,
-        "vendor": "Watsons"
-      },
-      "perLabel": "$75.00/kg",
-      "reasons": [
-        {
-          "kind": "near-miss",
-          "note": "no product here MATCHED this row — this is the closest of 3 offered, best first. Accept only if it is the same thing."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-11-01T02:02:35.344Z"
-    },
-    {
-      "token": "fp2f96",
-      "ingredientId": "37369a18-4fe7-8053-a67d-f6b383447d7b",
-      "ingredientName": "Whey [Titan]",
-      "key": "whei",
-      "unitType": "By Gram",
-      "category": "Protein Powder",
-      "vendor": "Carousell",
-      "slotN": 2,
-      "brand": "titan",
-      "priceSgd": 60,
-      "size": 2100,
-      "url": "https://www.carousell.sg/p/titan-whey-protein-2-1kg-70-serving-1208280679/",
-      "itemName": "titan whey protein 2.1kg 70 serving",
-      "statedSize": "2.1kg",
-      "recorded": {
-        "url": "https://www.carousell.sg/p/titan-whey-2kg-whey-protein-powder-1468055612/",
-        "itemName": "titan whey 2kg whey protein powder",
-        "priceSgd": 35,
-        "size": 2000,
-        "vendor": "Carousell"
-      },
-      "perLabel": "$28.57/kg",
-      "reasons": [
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 17.5,
-          "foundPer": 28.57142857142857,
-          "perWord": "kg",
-          "vendor": "Carousell",
-          "note": "DEARER than the Carousell price already recorded: $35.00 / 2000g = $17.50/kg → $60.00 / 2100g = $28.57/kg. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-11-01T02:03:46.822Z"
-    },
-    {
-      "token": "id75hz",
-      "ingredientId": "37369a18-4fe7-8082-b382-e651a025c832",
-      "ingredientName": "whey [Atlas]",
-      "key": "whei",
-      "unitType": "By Gram",
-      "category": "Protein Powder",
-      "vendor": "Carousell",
-      "slotN": 2,
-      "brand": "atlas",
-      "priceSgd": 100,
-      "size": 2100,
-      "url": "https://www.carousell.sg/p/valiant-advance-atlas-whey-protein-powder-2-1kg-1469438234/",
-      "itemName": "valiant advance atlas whey protein powder 2.1kg",
-      "statedSize": "2.1kg",
-      "recorded": {
-        "url": "https://www.carousell.sg/p/valiant-advance-atlas-whey-protein-2-1kg-rich-chocolate-1456638432/",
-        "itemName": "valiant advance atlas whey protein 2.1kg rich chocolate",
-        "priceSgd": 50,
-        "size": 2100,
-        "vendor": "Carousell"
-      },
-      "perLabel": "$47.62/kg",
-      "reasons": [
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 23.809523809523807,
-          "foundPer": 47.61904761904761,
-          "perWord": "kg",
-          "vendor": "Carousell",
-          "note": "DEARER than the Carousell price already recorded: $50.00 / 2100g = $23.81/kg → $100.00 / 2100g = $47.62/kg. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-11-01T02:03:49.191Z"
-    },
-    {
-      "token": "1hihdl",
-      "ingredientId": "37369a18-4fe7-80d1-91ef-eb21cedf53ae",
-      "ingredientName": "Omega 3 800 [california gold] (1000-1100 mg)",
-      "key": "omega3 800",
-      "unitType": "By Unit",
-      "category": "Suppliments",
-      "vendor": "Iherb",
-      "slotN": 1,
-      "brand": "california gold",
-      "priceSgd": 55.45,
-      "size": 120,
-      "url": "https://sg.iherb.com/pr/oceanblue-professional-omega-3-2100-high-potency-orange-120-softgels-1-050-mg-per-softgel/132116",
-      "itemName": "OceanBlue, Professional, Omega-3 2100®, High Potency, Orange, 120 Softgels (1,050 mg per Softgel)",
-      "statedSize": "120 pcs",
-      "recorded": {
-        "url": "https://sg.iherb.com/pr/revive-omega-3-120-softgels-1-000-mg-per-softgel/137232",
-        "itemName": "Revive, Omega 3, 120 Softgels (1,000 mg per Softgel)",
-        "priceSgd": 45.2,
-        "size": 120,
-        "vendor": "Iherb"
-      },
-      "perLabel": "$4.62/10 pc",
-      "reasons": [
-        {
-          "kind": "brand-unconfirmed",
-          "brand": "california gold",
-          "note": "this row names california gold and the product does not say so — a supplement is only recorded without asking when the brand matches. Accept if it is the right thing."
-        },
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 37.66666666666667,
-          "foundPer": 46.208333333333336,
-          "perWord": "100 pcs",
-          "vendor": "Iherb",
-          "note": "DEARER than the Iherb price already recorded: $45.20 / 120 pcs = $37.67/100 pcs → $55.45 / 120 pcs = $46.21/100 pcs. Not written — accept only if the old price is gone."
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-11-01T02:04:09.249Z"
-    },
-    {
-      "token": "wrd91c",
-      "ingredientId": "37369a18-4fe7-80c0-bae0-f52639895b21",
-      "ingredientName": "whey (Essential) [MyProtein]",
-      "key": "whei",
-      "unitType": "By Gram",
-      "category": "Protein Powder",
-      "vendor": "Carousell",
-      "slotN": 2,
-      "brand": "myprotein",
-      "priceSgd": 125.1,
-      "size": 20,
-      "url": "https://www.carousell.sg/p/momentous-essential-grass-fed-whey-protein-powder-20g-whey-isolate-protein-nsf-certified-gluten-free-25-servings-for-essential-everyday-use-unflavored-unflavoured-25-servings-pack-of-1-1438086257/",
-      "itemName": "momentous essential grass fed whey protein powder 20g whey isolate protein nsf certified gluten free 25 servings for essential everyday use unflavored unflavoured 25 servings pack of 1",
-      "statedSize": "20g",
-      "recorded": {
-        "url": "https://www.carousell.sg/p/myprotein-meal-replacement-whey-2-5kg-salted-caramel-1456566667/",
-        "itemName": "myprotein meal replacement whey 2.5kg salted caramel",
-        "priceSgd": 80,
-        "size": 2500,
-        "vendor": "Carousell"
-      },
-      "perLabel": "$6255.00/kg",
-      "reasons": [
-        {
-          "kind": "brand-unconfirmed",
-          "brand": "myprotein",
-          "note": "this row names myprotein and the product does not say so — a supplement is only recorded without asking when the brand matches. Accept if it is the right thing."
-        },
-        {
-          "kind": "dearer-than-recorded",
-          "recordedPer": 32,
-          "foundPer": 6255,
-          "perWord": "kg",
-          "vendor": "Carousell",
-          "note": "DEARER than the Carousell price already recorded: $80.00 / 2500g = $32.00/kg → $125.10 / 20g = $6255.00/kg. Not written — accept only if the old price is gone."
-        },
-        {
-          "kind": "undercut",
-          "rejected": 1,
-          "note": "1 cheaper listing was rejected as implausible"
-        },
-        {
-          "kind": "outlier",
-          "factor": 164.60526315789474,
-          "note": "164.6× DEARER than this row's other shop"
-        }
-      ],
-      "rank": 0,
-      "askedAt": "2026-11-01T02:04:28.199Z"
-    },
     {
       "token": "p5ugfw",
       "ingredientId": "3b269a18-4fe7-812a-9fc3-d81551f626c6",
@@ -1395,6 +1130,263 @@
       ],
       "rank": 0,
       "askedAt": "2026-11-01T04:10:35.221Z"
+    },
+    {
+      "token": "h7yre4",
+      "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
+      "ingredientName": "Sensitivity & Gum Toothpaste - Original",
+      "key": "sensitiviti gum toothpast original",
+      "unitType": "By Gram",
+      "category": "Cosmetics/ Tooth paste etc",
+      "vendor": "Watsons",
+      "slotN": 3,
+      "priceSgd": 7.3,
+      "size": 120,
+      "url": "https://www.watsons.com.sg/darlie-expert-gum-care-sensitivity-relief-toothpaste-120g-expiry-apr-2027/p/BP_30925",
+      "itemName": "DARLIE Expert Gum Care Sensitivity Relief Toothpaste 120g (Expiry: Apr`2027)",
+      "statedSize": "120g",
+      "recorded": {
+        "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-oral-care-toothpaste-sensitivity-and-gum-extra-fresh-dental-sensitivity-relief-100g/p/BP_51696",
+        "itemName": "SENSODYNE Sensitive Teeth Oral Care Toothpaste Sensitivity and Gum Extra Fresh (Dental Sensitivity Relief) 100g",
+        "priceSgd": 10.2,
+        "size": 100,
+        "vendor": "Watsons"
+      },
+      "perLabel": "$60.83/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 2 of 3, offered as a suggestion. Accept only if it is the same thing."
+        }
+      ],
+      "rank": 1,
+      "askedAt": "2026-11-02T02:01:53.531Z"
+    },
+    {
+      "token": "8674y7",
+      "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
+      "ingredientName": "Sensitivity & Gum Toothpaste - Original",
+      "key": "sensitiviti gum toothpast original",
+      "unitType": "By Gram",
+      "category": "Cosmetics/ Tooth paste etc",
+      "vendor": "Watsons",
+      "slotN": 3,
+      "priceSgd": 9.1,
+      "size": 110,
+      "url": "https://www.watsons.com.sg/colgate-sensitive-pro-relief-original-toothpaste-110g/p/BP_41346",
+      "itemName": "COLGATE Sensitive Pro Relief Original Toothpaste 110g",
+      "statedSize": "110g",
+      "recorded": {
+        "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-oral-care-toothpaste-sensitivity-and-gum-extra-fresh-dental-sensitivity-relief-100g/p/BP_51696",
+        "itemName": "SENSODYNE Sensitive Teeth Oral Care Toothpaste Sensitivity and Gum Extra Fresh (Dental Sensitivity Relief) 100g",
+        "priceSgd": 10.2,
+        "size": 100,
+        "vendor": "Watsons"
+      },
+      "perLabel": "$82.73/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is alternative 3 of 3, offered as a suggestion. Accept only if it is the same thing."
+        }
+      ],
+      "rank": 2,
+      "askedAt": "2026-11-02T02:01:53.575Z"
+    },
+    {
+      "token": "9jjxqs",
+      "ingredientId": "3b269a18-4fe7-8166-8841-d7586dd45427",
+      "ingredientName": "Sensitivity & Gum Toothpaste - Original",
+      "key": "sensitiviti gum toothpast original",
+      "unitType": "By Gram",
+      "category": "Cosmetics/ Tooth paste etc",
+      "vendor": "Watsons",
+      "slotN": 3,
+      "priceSgd": 7.5,
+      "size": 100,
+      "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-gum-care-toothpaste-dental-sensitivity-relief-100g/p/BP_45477",
+      "itemName": "SENSODYNE Sensitive Teeth Gum Care Toothpaste (Dental Sensitivity Relief) 100g",
+      "statedSize": "100g",
+      "recorded": {
+        "url": "https://www.watsons.com.sg/sensodyne-sensitive-teeth-oral-care-toothpaste-sensitivity-and-gum-extra-fresh-dental-sensitivity-relief-100g/p/BP_51696",
+        "itemName": "SENSODYNE Sensitive Teeth Oral Care Toothpaste Sensitivity and Gum Extra Fresh (Dental Sensitivity Relief) 100g",
+        "priceSgd": 10.2,
+        "size": 100,
+        "vendor": "Watsons"
+      },
+      "perLabel": "$75.00/kg",
+      "reasons": [
+        {
+          "kind": "near-miss",
+          "note": "no product here MATCHED this row — this is the closest of 3 offered, best first. Accept only if it is the same thing."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-11-02T02:01:53.578Z"
+    },
+    {
+      "token": "fp2f96",
+      "ingredientId": "37369a18-4fe7-8053-a67d-f6b383447d7b",
+      "ingredientName": "Whey [Titan]",
+      "key": "whei",
+      "unitType": "By Gram",
+      "category": "Protein Powder",
+      "vendor": "Carousell",
+      "slotN": 2,
+      "brand": "titan",
+      "priceSgd": 60,
+      "size": 2100,
+      "url": "https://www.carousell.sg/p/titan-whey-protein-2-1kg-70-serving-1208280679/",
+      "itemName": "titan whey protein 2.1kg 70 serving",
+      "statedSize": "2.1kg",
+      "recorded": {
+        "url": "https://www.carousell.sg/p/titan-whey-2kg-whey-protein-powder-1468055612/",
+        "itemName": "titan whey 2kg whey protein powder",
+        "priceSgd": 35,
+        "size": 2000,
+        "vendor": "Carousell"
+      },
+      "perLabel": "$28.57/kg",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 17.5,
+          "foundPer": 28.57142857142857,
+          "perWord": "kg",
+          "vendor": "Carousell",
+          "note": "DEARER than the Carousell price already recorded: $35.00 / 2000g = $17.50/kg → $60.00 / 2100g = $28.57/kg. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-11-02T02:02:46.355Z"
+    },
+    {
+      "token": "id75hz",
+      "ingredientId": "37369a18-4fe7-8082-b382-e651a025c832",
+      "ingredientName": "whey [Atlas]",
+      "key": "whei",
+      "unitType": "By Gram",
+      "category": "Protein Powder",
+      "vendor": "Carousell",
+      "slotN": 2,
+      "brand": "atlas",
+      "priceSgd": 100,
+      "size": 2100,
+      "url": "https://www.carousell.sg/p/valiant-advance-atlas-whey-protein-powder-2-1kg-1469438234/",
+      "itemName": "valiant advance atlas whey protein powder 2.1kg",
+      "statedSize": "2.1kg",
+      "recorded": {
+        "url": "https://www.carousell.sg/p/valiant-advance-atlas-whey-protein-2-1kg-rich-chocolate-1456638432/",
+        "itemName": "valiant advance atlas whey protein 2.1kg rich chocolate",
+        "priceSgd": 50,
+        "size": 2100,
+        "vendor": "Carousell"
+      },
+      "perLabel": "$47.62/kg",
+      "reasons": [
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 23.809523809523807,
+          "foundPer": 47.61904761904761,
+          "perWord": "kg",
+          "vendor": "Carousell",
+          "note": "DEARER than the Carousell price already recorded: $50.00 / 2100g = $23.81/kg → $100.00 / 2100g = $47.62/kg. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-11-02T02:02:49.081Z"
+    },
+    {
+      "token": "1hihdl",
+      "ingredientId": "37369a18-4fe7-80d1-91ef-eb21cedf53ae",
+      "ingredientName": "Omega 3 800 [california gold] (1000-1100 mg)",
+      "key": "omega3 800",
+      "unitType": "By Unit",
+      "category": "Suppliments",
+      "vendor": "Iherb",
+      "slotN": 1,
+      "brand": "california gold",
+      "priceSgd": 55.45,
+      "size": 120,
+      "url": "https://sg.iherb.com/pr/oceanblue-professional-omega-3-2100-high-potency-orange-120-softgels-1-050-mg-per-softgel/132116",
+      "itemName": "OceanBlue, Professional, Omega-3 2100®, High Potency, Orange, 120 Softgels (1,050 mg per Softgel)",
+      "statedSize": "120 pcs",
+      "recorded": {
+        "url": "https://sg.iherb.com/pr/revive-omega-3-120-softgels-1-000-mg-per-softgel/137232",
+        "itemName": "Revive, Omega 3, 120 Softgels (1,000 mg per Softgel)",
+        "priceSgd": 45.2,
+        "size": 120,
+        "vendor": "Iherb"
+      },
+      "perLabel": "$4.62/10 pc",
+      "reasons": [
+        {
+          "kind": "brand-unconfirmed",
+          "brand": "california gold",
+          "note": "this row names california gold and the product does not say so — a supplement is only recorded without asking when the brand matches. Accept if it is the right thing."
+        },
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 37.66666666666667,
+          "foundPer": 46.208333333333336,
+          "perWord": "100 pcs",
+          "vendor": "Iherb",
+          "note": "DEARER than the Iherb price already recorded: $45.20 / 120 pcs = $37.67/100 pcs → $55.45 / 120 pcs = $46.21/100 pcs. Not written — accept only if the old price is gone."
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-11-02T02:03:05.965Z"
+    },
+    {
+      "token": "wrd91c",
+      "ingredientId": "37369a18-4fe7-80c0-bae0-f52639895b21",
+      "ingredientName": "whey (Essential) [MyProtein]",
+      "key": "whei",
+      "unitType": "By Gram",
+      "category": "Protein Powder",
+      "vendor": "Carousell",
+      "slotN": 2,
+      "brand": "myprotein",
+      "priceSgd": 125.1,
+      "size": 20,
+      "url": "https://www.carousell.sg/p/momentous-essential-grass-fed-whey-protein-powder-20g-whey-isolate-protein-nsf-certified-gluten-free-25-servings-for-essential-everyday-use-unflavored-unflavoured-25-servings-pack-of-1-1438086257/",
+      "itemName": "momentous essential grass fed whey protein powder 20g whey isolate protein nsf certified gluten free 25 servings for essential everyday use unflavored unflavoured 25 servings pack of 1",
+      "statedSize": "20g",
+      "recorded": {
+        "url": "https://www.carousell.sg/p/myprotein-meal-replacement-whey-2-5kg-salted-caramel-1456566667/",
+        "itemName": "myprotein meal replacement whey 2.5kg salted caramel",
+        "priceSgd": 80,
+        "size": 2500,
+        "vendor": "Carousell"
+      },
+      "perLabel": "$6255.00/kg",
+      "reasons": [
+        {
+          "kind": "brand-unconfirmed",
+          "brand": "myprotein",
+          "note": "this row names myprotein and the product does not say so — a supplement is only recorded without asking when the brand matches. Accept if it is the right thing."
+        },
+        {
+          "kind": "dearer-than-recorded",
+          "recordedPer": 32,
+          "foundPer": 6255,
+          "perWord": "kg",
+          "vendor": "Carousell",
+          "note": "DEARER than the Carousell price already recorded: $80.00 / 2500g = $32.00/kg → $125.10 / 20g = $6255.00/kg. Not written — accept only if the old price is gone."
+        },
+        {
+          "kind": "undercut",
+          "rejected": 1,
+          "note": "1 cheaper listing was rejected as implausible"
+        },
+        {
+          "kind": "outlier",
+          "factor": 164.60526315789474,
+          "note": "164.6× DEARER than this row's other shop"
+        }
+      ],
+      "rank": 0,
+      "askedAt": "2026-11-02T02:03:29.668Z"
     }
   ],
   "rejected": [
@@ -1510,8 +1502,8 @@
     }
   ],
   "moves": {
-    "generatedAt": "2026-11-01T04:10:35.221Z",
-    "reconfirmed": 65,
+    "generatedAt": "2026-11-02T02:03:29.687Z",
+    "reconfirmed": 6,
     "moves": []
   }
 }
