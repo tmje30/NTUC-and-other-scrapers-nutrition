@@ -1,34 +1,7 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-07T03:15:10.378Z",
+  "updatedAt": "2026-11-07T03:15:12.397Z",
   "offset": 0,
-  "asks": [
-    {
-      "token": "k396h4",
-      "item": {
-        "raw": "salted duck eggs x 1",
-        "name": "salted duck eggs",
-        "count": 1,
-        "amountG": null,
-        "volumetric": false
-      },
-      "candidates": [
-        {
-          "rowId": "37669a18-4fe7-8094-ad2b-d156a2f10a29",
-          "rowName": "egg  (Omega 3 Enriched) (550g)",
-          "score": 0.5333333333333333
-        },
-        {
-          "rowId": "34b69a18-4fe7-807d-8439-fea7f149877f",
-          "rowName": "Eggs, Whole, small (1650g), {cheap}",
-          "score": 0.5333333333333333
-        }
-      ],
-      "messageId": 407,
-      "chatId": 7626546412,
-      "blocking": true,
-      "askedAt": "2026-11-07T03:14:40.449Z"
-    }
-  ],
+  "asks": [],
   "queue": []
 }
