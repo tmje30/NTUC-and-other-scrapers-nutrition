@@ -127,7 +127,17 @@ eq("a key with a dot is refused", shengSiongPackShots("abc.0", 3), []);
 // network at all. (The probing itself needs the live bucket and is checked by hand
 // — verified 2026-08-04: totalImg 3 → indices [0,1,2], totalImg 2 → [0,1], and an
 // unknown key → [0] alone, each in under two seconds.)
-check("a refused key costs no request", (await resolveShengSiongPackShots("ab/../c")).length === 0);
+// ⚠️ **The await is hoisted and the suite re-declared, and both halves matter.** This
+// file is imported statically and this is its one top-level `await`, so everything after
+// it runs once the whole rest of `run.ts` has loaded — and `describe()` sets a module
+// global, so these cases file themselves under whichever suite named itself last. They sat
+// under "discount" for months and then under "one-tap". Awaiting INSIDE the check's
+// argument list is what made it unfixable in place: the describe ran before the await and
+// the check ran after it. Resolve first, name the suite, then assert.
+const refusedKey = await resolveShengSiongPackShots("ab/../c");
+describe("pack shots — Sheng Siong's numbered scheme");
+
+check("a refused key costs no request", refusedKey.length === 0);
 
 // Both schemes must coexist: a mixed list is ranked without either one poisoning
 // the other, which is what will happen the day a third store arrives.

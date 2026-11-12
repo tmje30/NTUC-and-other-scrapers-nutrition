@@ -146,6 +146,7 @@ await writeFile(
 	renderDealsPage(planDeals, otherDeals, new Date(), recommendations, {
 		repo: config.repo(),
 		addEndpoint: config.addEndpoint(),
+		addSecret: config.addSecret(),
 		snoozed,
 		warning,
 		weightGaps: weightGapNotes,
@@ -200,6 +201,7 @@ try {
 		renderHistoryPage({
 			repo: config.repo(),
 			addEndpoint: config.addEndpoint(),
+			addSecret: config.addSecret(),
 			parked,
 			purchases,
 			exclusions,
@@ -262,7 +264,12 @@ try {
 	const review = prunePending(await readVendorReview());
 	await writeFile(
 		"public/review.html",
-		renderReviewPage(review.pending, { repo: config.repo(), ignored: review.ignored ?? [] }),
+		renderReviewPage(review.pending, {
+			repo: config.repo(),
+			addEndpoint: config.addEndpoint(),
+			addSecret: config.addSecret(),
+			ignored: review.ignored ?? [],
+		}),
 		"utf8",
 	);
 	console.error(

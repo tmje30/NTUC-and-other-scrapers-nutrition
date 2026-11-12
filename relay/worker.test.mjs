@@ -35,6 +35,10 @@ const ENV = {
 	// What `list.html` sends as `X-List-Secret`. Public in the page by design — see
 	// `handleList` in the Worker for why, and for what it does not buy an attacker.
 	LIST_SECRET: "list-s3cret",
+	// What the deals, review and history pages send as `X-Add-Secret`. Public in the page
+	// by the same deliberate trade as LIST_SECRET, and separate from it so either can be
+	// rotated alone — see `handleAdd` in the Worker.
+	ADD_SECRET: "add-s3cret",
 };
 
 /** A recording fetch. `fail` names a URL substring that should answer non-2xx. */
@@ -377,6 +381,178 @@ const TICK = { op: "tick", pageId: "3d469a18-4fe7-802f-8620-000b6053908d" };
 	const f = recorder();
 	const res = await handle(listReq({ op: "add", name: "Carrots" }, { secret: "wrong" }), ENV, { fetch: f });
 	eq("add still needs the secret", res.status, 401);
+	eq("…and dispatches nothing", f.calls.length, 0);
+}
+
+// ── POST /add — the deals, review and history pages ──────────────────────────
+//
+// ⚠️ This endpoint replaced a per-browser GitHub PAT that expired silently, so the
+// tests that matter are the same ones that matter on `/list`: the refusals, and the
+// fact that the event type cannot be chosen by whoever opens the page.
+
+const addReq = (body, { secret = "add-s3cret", method = "POST" } = {}) =>
+	new Request("https://relay.example/add", {
+		method,
+		headers: secret == null ? {} : { "X-Add-Secret": secret, "Content-Type": "application/json" },
+		body: method === "POST" ? JSON.stringify(body) : undefined,
+	});
+
+const BUY = {
+	event: "add-to-list",
+	payload: {
+		v: 1,
+		name: "Peanut butter",
+		store: "Sheng Siong",
+		product: "Peanut Butter - Creamy",
+		priceSgd: 5.05,
+	},
+};
+
+{
+	const f = recorder();
+	const res = await handle(addReq(BUY), ENV, { fetch: f });
+	eq("a Buy tap is accepted", res.status, 200);
+	eq("…and dispatched once", f.calls.length, 1);
+	eq("…at the repo's dispatches endpoint", f.calls[0].url.endsWith("/dispatches"), true);
+	eq("…as add-to-list", f.calls[0].body.event_type, "add-to-list");
+	// ⚠️ Nested, because `AddPayload` has 12 properties and GitHub allows 10 top-level.
+	eq("…with the payload nested under one key", Object.keys(f.calls[0].body.client_payload), ["payload"]);
+	eq("…and the payload intact", f.calls[0].body.client_payload.payload.priceSgd, 5.05);
+}
+
+{
+	// The other two buttons the pages have. Both must work, or switching off the PAT
+	// silently downgrades Ignore and "scan now" to two taps.
+	const f = recorder();
+	await handle(addReq({ event: "item-action", payload: { v: 1, action: "ignore-week", weeks: 2 } }), ENV, {
+		fetch: f,
+	});
+	eq("an item action is forwarded as item-action", f.calls[0].body.event_type, "item-action");
+	const g = recorder();
+	await handle(addReq({ event: "sscan", payload: { v: 1, terms: ["milk"] } }), ENV, { fetch: g });
+	eq("a scan request is forwarded as sscan", g.calls[0].body.event_type, "sscan");
+}
+
+{
+	// ⚠️⚠️ THE important test. The event type comes from a public page, so without the
+	// allow-list this endpoint would run any dispatch-triggered workflow in the repo.
+	const f = recorder();
+	const res = await handle(addReq({ event: "tgupdate", payload: { message: {} } }), ENV, { fetch: f });
+	eq("an event outside the allow-list is refused", res.status, 400);
+	eq("…and dispatches nothing", f.calls.length, 0);
+}
+
+{
+	// Same door, tried with the relay's own clock events — which must not be reachable
+	// from a browser either.
+	const f = recorder();
+	await handle(addReq({ event: "tgsweep", payload: { v: 1 } }), ENV, { fetch: f });
+	await handle(addReq({ event: "list-action", payload: { op: "tick" } }), ENV, { fetch: f });
+	await handle(addReq({ event: "vendorsweep", payload: { v: 1 } }), ENV, { fetch: f });
+	eq("the relay's own events are not reachable from a page", f.calls.length, 0);
+}
+
+{
+	const f = recorder();
+	const res = await handle(addReq(BUY, { secret: "wrong" }), ENV, { fetch: f });
+	eq("a wrong add secret is refused", res.status, 401);
+	eq("…and dispatches nothing", f.calls.length, 0);
+}
+
+{
+	const f = recorder();
+	const res = await handle(addReq(BUY, { secret: null }), ENV, { fetch: f });
+	eq("no add secret at all is refused", res.status, 401);
+	eq("…and dispatches nothing", f.calls.length, 0);
+}
+
+{
+	// ⚠️⚠️ An unset ADD_SECRET refuses everything rather than accepting everything. A relay
+	// deployed before `wrangler secret put ADD_SECRET` must be a closed door, not an open
+	// one — and that IS the state between deploying the Worker and setting the secret.
+	const f = recorder();
+	const res = await handle(addReq(BUY), { ...ENV, ADD_SECRET: undefined }, { fetch: f });
+	eq("an unset ADD_SECRET refuses everything", res.status, 401);
+	eq("…and dispatches nothing", f.calls.length, 0);
+}
+
+{
+	// ⚠️ The two page secrets are NOT interchangeable: that is the point of having two.
+	const f = recorder();
+	const res = await handle(addReq(BUY, { secret: "list-s3cret" }), ENV, { fetch: f });
+	eq("the list secret does not open /add", res.status, 401);
+	const g = recorder();
+	const res2 = await handle(listReq(TICK, { secret: "add-s3cret" }), ENV, { fetch: g });
+	eq("…and the add secret does not open /list", res2.status, 401);
+	eq("…neither dispatching anything", f.calls.length + g.calls.length, 0);
+}
+
+{
+	const f = recorder();
+	const res = await handle(addReq({ event: "add-to-list" }), ENV, { fetch: f });
+	eq("a missing payload is refused", res.status, 400);
+	const res2 = await handle(addReq({ event: "add-to-list", payload: "milk" }), ENV, { fetch: f });
+	eq("a non-object payload is refused", res2.status, 400);
+	const res3 = await handle(addReq({ event: "add-to-list", payload: [1, 2] }), ENV, { fetch: f });
+	eq("an array payload is refused", res3.status, 400);
+	eq("…none of them dispatching", f.calls.length, 0);
+}
+
+{
+	const f = recorder();
+	const res = await handle(addReq({ event: "add-to-list", payload: { v: 1, name: "x".repeat(30000) } }), ENV, {
+		fetch: f,
+	});
+	eq("an absurd payload is refused at the edge", res.status, 400);
+	eq("…and dispatches nothing", f.calls.length, 0);
+}
+
+{
+	// Custom header ⇒ the browser preflights every single tap.
+	const f = recorder();
+	const res = await handle(addReq(null, { method: "OPTIONS" }), ENV, { fetch: f });
+	eq("the add preflight is answered", res.status, 204);
+	eq("…allowing the add header", res.headers.get("Access-Control-Allow-Headers").includes("X-Add-Secret"), true);
+	eq("…and dispatching nothing", f.calls.length, 0);
+}
+
+{
+	// ⚠️ A real status. The button says "✓ sent" off the back of this, and the PAT path it
+	// replaces could read GitHub's status directly — losing that would be a downgrade.
+	const f = recorder({ fail: "dispatches" });
+	const res = await handle(addReq(BUY), ENV, { fetch: f });
+	eq("a refused dispatch is reported, not swallowed", res.status, 502);
+	const body = await res.json();
+	eq("…with ok:false", body.ok, false);
+}
+
+{
+	const f = recorder();
+	const res = await handle(addReq(BUY), ENV, { fetch: f });
+	eq("the answer is readable cross-origin", res.headers.get("Access-Control-Allow-Origin"), "*");
+}
+
+{
+	const f = recorder();
+	const res = await handle(addReq(BUY, { method: "GET" }), ENV, { fetch: f });
+	eq("GET /add is refused", res.status, 405);
+	eq("…and dispatches nothing", f.calls.length, 0);
+}
+
+{
+	// ⚠️ A near-miss path must NOT reach /add. It falls through to the Telegram handler,
+	// which refuses it for want of the webhook secret.
+	const f = recorder();
+	const res = await handle(
+		new Request("https://relay.example/addx", {
+			method: "POST",
+			headers: { "X-Add-Secret": "add-s3cret", "Content-Type": "application/json" },
+			body: JSON.stringify(BUY),
+		}),
+		ENV,
+		{ fetch: f },
+	);
+	eq("a near-miss path is not /add", res.status, 401);
 	eq("…and dispatches nothing", f.calls.length, 0);
 }
 

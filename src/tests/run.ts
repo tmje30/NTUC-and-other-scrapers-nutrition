@@ -40,6 +40,7 @@ import "./grocery-page.test.js";
 import "./vendor-locations.test.js";
 import "./deal-discount.test.js";
 import "./discount.test.js";
+import "./one-tap.test.js";
 import { report } from "./harness.js";
 
 // Imported dynamically, and last, because these suites `await` — one writes real

@@ -8,7 +8,7 @@ import {
 } from "./vendor-review.js";
 import { cooldownKey } from "./cooldown.js";
 import { parseName } from "./parse.js";
-import { githubOneTapScript } from "./page-chrome.js";
+import { oneTapScript, relayOneTap, type ChromeOptions } from "./page-chrome.js";
 
 /**
  * **`review.html` — the fourth page.** Every price the scan is unsure about, on one page.
@@ -46,7 +46,7 @@ import { githubOneTapScript } from "./page-chrome.js";
 const esc = (s: unknown): string =>
 	String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
-export interface ReviewPageOptions {
+export interface ReviewPageOptions extends ChromeOptions {
 	/** `owner/repo`, for the issue links. */
 	repo: string;
 	/**
@@ -610,8 +610,8 @@ the product still appears on your deals page. To drop it from there too, use the
 <b>Ignore</b> here is a different thing: it says this shop’s site does not sell the item at all.</p>
 ${body}
 ${ignoredHtml}
-<p class="foot"><a href="#" id="onetap">⚡ enable one-tap</a></p>
-${githubOneTapScript({ repo: o.repo })}
+${relayOneTap(o) ? "" : `<p class="foot"><a href="#" id="onetap">⚡ enable one-tap</a></p>`}
+${oneTapScript(o)}
 <script>
 (function () {
   // The shared one-tap script removes an accepted deck but knows nothing about this

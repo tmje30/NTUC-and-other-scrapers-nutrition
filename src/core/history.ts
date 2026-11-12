@@ -2,7 +2,7 @@ import type { BlockedProduct, ExclusionFile } from "./exclusions.js";
 import { ALL_ITEMS } from "./exclusions.js";
 import type { ActionPayload } from "./item-actions.js";
 import type { ParkedIngredient } from "./notion.js";
-import { PAGE_CSS, addScript, type ChromeOptions } from "./page-chrome.js";
+import { PAGE_CSS, oneTapScript, relayOneTap, type ChromeOptions } from "./page-chrome.js";
 import type { PurchaseEntry, PurchaseFile } from "./purchases.js";
 import { filedPurchases, openPurchases } from "./purchases.js";
 
@@ -346,9 +346,9 @@ export function renderHistoryPage(
     ${filedSection}
     ${neverSection}
     ${
-			o.addEndpoint ? "" : `<p class="foot"><a href="#" id="onetap">⚡ enable one-tap</a></p>`
+			relayOneTap(o) ? "" : `<p class="foot"><a href="#" id="onetap">⚡ enable one-tap</a></p>`
 		}
   </div>
-${addScript(o)}</body>
+${oneTapScript(o)}</body>
 </html>`;
 }

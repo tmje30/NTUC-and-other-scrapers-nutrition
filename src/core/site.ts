@@ -11,7 +11,7 @@ import { REVIEW_GROUPS, groupOf } from "./vendor-review.js";
 import type { StoreProduct } from "./stores/types.js";
 import { atShelfPrice } from "./stores/shelf-price.js";
 import { parseUnitCount, parseWeight } from "./stores/weight.js";
-import { PAGE_CSS, addScript, menuScript, type ChromeOptions } from "./page-chrome.js";
+import { PAGE_CSS, menuScript, oneTapScript, relayOneTap, type ChromeOptions } from "./page-chrome.js";
 
 /**
  * Renders the daily deals as a self-contained HTML page (deployed to GitHub
@@ -195,9 +195,14 @@ function addPayload(t: PlanTarget, p: StoreProduct, ingredient = t.name): AddPay
  * `add-to-list` workflow writes the Notion row and the cooldown.
  *
  * `data-payload` carries the same payload as the issue body, which is what lets
- * the one-tap script (see `addScript`) intercept the click and skip the GitHub
+ * the one-tap script (see `oneTapScript`) intercept the click and skip the GitHub
  * screen entirely. The link is the floor; one-tap is an upgrade layered on top,
- * so a missing or revoked token degrades to two taps rather than to nothing.
+ * so a missing or revoked credential degrades to two taps rather than to nothing.
+ *
+ * ⚠️ **It is an `<a href>` on every build, including relay builds.** Until 2026-11-12 a
+ * configured endpoint rendered a bare `<button>` instead — no href, so nothing to fall
+ * back to. That branch had never run (nothing ever set `ADD_ENDPOINT`), and shipping it
+ * would have traded the floor away on the very change meant to make one-tap reliable.
  */
 function addButton(p: AddPayload, o: PageOptions): string {
 	const label = groceryRowTitle(p);
@@ -206,11 +211,6 @@ function addButton(p: AddPayload, o: PageOptions): string {
 	// Same reason `actionButton` fixes "Item: ": a label is a display string and must
 	// never be load-bearing.
 	const aria = `Buy ${esc(label)} — put it on the grocery list`;
-
-	if (o.addEndpoint) {
-		return `<button class="add" type="button" data-payload="${payload}"
-        aria-label="${aria}">Buy</button>`;
-	}
 
 	const body =
 		`Adding **${label}** to the grocery list from today's deals page.\n\n` +
@@ -1167,11 +1167,11 @@ export function renderDealsPage(
         >📋 Not in use · bought items · never buy again →</a>
     </p>
     ${
-			o.addEndpoint
+			relayOneTap(o)
 				? ""
 				: `<p class="foot"><a href="#" id="onetap">⚡ enable one-tap</a></p>`
 		}
   </div>
-${menuScript()}${addScript(o)}</body>
+${menuScript()}${oneTapScript(o)}</body>
 </html>`;
 }

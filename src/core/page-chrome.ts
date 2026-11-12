@@ -302,8 +302,35 @@ export const PAGE_CSS = `
 export interface ChromeOptions {
 	/** "owner/repo" — where a button files its request. */
 	repo: string;
-	/** One-tap POST endpoint. Empty ⇒ the GitHub issue link is the only path. */
+	/**
+	 * The relay's `/add` endpoint. With `addSecret`, every button one-taps through it and
+	 * nothing has to be enabled per browser; without, the GitHub issue link is the floor.
+	 */
 	addEndpoint?: string;
+	/**
+	 * The secret the page sends as `X-Add-Secret`, matching the relay's `ADD_SECRET`.
+	 *
+	 * ⚠️⚠️ **Baked into a PUBLIC page**, exactly like `listSecret` on the shopping page and
+	 * for the same reason the user chose there (2026-09-11): a static page cannot both hold
+	 * a credential and hide it, and the alternative — a fine-grained PAT per browser — is
+	 * what expired silently on 2026-10-26 and took one-tap with it. What this one buys is
+	 * bounded by the relay's `ADD_EVENTS` allow-list: a grocery row, an ignore, a scan
+	 * request. Not the repo write the PAT it replaces carried.
+	 */
+	addSecret?: string;
+}
+
+/**
+ * Can this page one-tap through the relay?
+ *
+ * ⚠️ **Both halves or neither.** An endpoint with no secret would send
+ * `X-Add-Secret: undefined` at the relay and be refused on every tap, which is strictly
+ * worse than the two-tap issue link — so a build missing either falls back instead. Local
+ * builds and forks are missing the secret all the time; see `renderListPage`, which gates
+ * the shopping page the same way.
+ */
+export function relayOneTap(o: ChromeOptions): boolean {
+	return Boolean(o.addEndpoint) && Boolean(o.addSecret);
 }
 /**
  * The only behaviour the correction menu needs beyond what `<details>` already
@@ -401,32 +428,51 @@ function macroToggleScript(): string {
 }
 
 /**
- * One tap, with no server anywhere.
+ * One tap, by whichever of the two routes the build was given.
  *
- * `api.github.com` answers cross-origin requests — a preflighted, authenticated
- * POST from `tmje30.github.io` comes back with a readable status, verified
- * 2026-07-29. So the page can fire `repository_dispatch` at the `add-to-list`
- * workflow itself, using a fine-grained PAT the user pastes in once. The token
- * lives only in that browser's localStorage: never in the repo, the page source,
- * or a build artifact.
+ * ```
+ *   relay  (preferred)  page ──X-Add-Secret──▶ relay POST /add ──▶ repository_dispatch
+ *   PAT    (fallback)   page ──Bearer PAT────────────────────────▶ repository_dispatch
+ * ```
  *
- * Why this rather than a relay service: it's free, there's nothing to deploy,
- * and — unlike a POST to a Notion webhook, which returns no CORS headers and so
- * an opaque response — the button can read the real status and tell the truth
- * about whether GitHub accepted the job.
+ * ⚠️⚠️ **The relay exists because the PAT route expired and said nothing.** The PAT
+ * route works and still does: `api.github.com` answers a preflighted authenticated POST
+ * from `tmje30.github.io` with a readable status (verified 2026-07-29), so a browser
+ * holding a fine-grained token can fire `repository_dispatch` with no server anywhere.
+ * What it cannot do is last. The user's token was a 90-day one created 07-28; it expired
+ * on 10-26, the first tap afterwards got a 401, the handler below deleted the dead token
+ * exactly as designed, and every tap from then on fell through to the GitHub issue form
+ * with nothing announcing why. Last one-tap dispatch 10-07, reported 11-12. A credential
+ * in a browser is a credential nobody renews, so the privileged half moved to the relay
+ * where one token renews in one place (user, 2026-11-12: "so it never expires").
  *
- * It is strictly an upgrade over the link underneath it. No token, a cancelled
- * prompt, a revoked token, JavaScript disabled: every one of those falls back to
- * the two-tap issue flow instead of failing.
+ * ⚠️ **Three routes, not two, and the third is the floor.** Every button is a real
+ * `<a href>` to a pre-filled GitHub issue; this script only intercepts the click. So a
+ * missing secret, a rotated secret, a dead PAT, or JavaScript off all degrade to two
+ * taps rather than to a button that does nothing. That property is the reason the
+ * one-tap paths are allowed to be as simple as they are, and nothing here may break it.
+ *
+ * ⚠️ Both routes read a REAL status, which is why neither says "sent" for a refusal.
+ * An earlier design POSTed a Notion Worker webhook with `mode: "no-cors"` and could only
+ * ever claim success; it was never configured in any build and is gone.
  */
-export function githubOneTapScript(o: ChromeOptions): string {
+export function oneTapScript(o: ChromeOptions): string {
+	const relay = relayOneTap(o) ? { url: o.addEndpoint!, secret: o.addSecret! } : null;
 	return `<script>
 (function () {
   var REPO = ${JSON.stringify(o.repo)};
+  var RELAY = ${JSON.stringify(relay)};
   var KEY = "grocery-add-pat";
   var toggle;
+  // Set when the relay refuses the baked secret — see dispatch below. One refusal is
+  // enough: the secret cannot fix itself, so every later tap takes the issue link instead.
+  var refused = false;
 
   var token = function () { return localStorage.getItem(KEY) || ""; };
+
+  // Is there a credential to one-tap WITH? The relay path carries its own, so the answer
+  // is yes until it says otherwise; the PAT path has to ask the browser.
+  function ready() { return RELAY ? !refused : Boolean(token()); }
 
   function paint() {
     if (!toggle) return;
@@ -520,11 +566,23 @@ export function githubOneTapScript(o: ChromeOptions): string {
     });
   }
 
-  function dispatch(btn) {
-    var label = btn.textContent;
-    btn.dataset.state = "busy";
-    btn.textContent = "…";
-    fetch("https://api.github.com/repos/" + REPO + "/dispatches", {
+  // The one thing the two routes do differently. Everything after it — the tick, the
+  // menu, the card leaving — is shared, which is the point of having one script.
+  //
+  // ⚠️ The event type is sent as data in both. The relay checks it against its own
+  // allow-list, ADD_EVENTS, because on that route the page is not the thing holding
+  // the credential and so is not the thing deciding what may run.
+  function send(btn) {
+    var event = btn.dataset.event || "add-to-list";
+    var payload = JSON.parse(btn.dataset.payload);
+    if (RELAY) {
+      return fetch(RELAY.url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Add-Secret": RELAY.secret },
+        body: JSON.stringify({ event: event, payload: payload })
+      });
+    }
+    return fetch("https://api.github.com/repos/" + REPO + "/dispatches", {
       method: "POST",
       headers: {
         "Authorization": "Bearer " + token(),
@@ -532,17 +590,23 @@ export function githubOneTapScript(o: ChromeOptions): string {
         "X-GitHub-Api-Version": "2022-11-28",
         "Content-Type": "application/json"
       },
-      // Nested: GitHub rejects a client_payload with over 10 top-level keys.
-      body: JSON.stringify({
-        event_type: btn.dataset.event || "add-to-list",
-        client_payload: { payload: JSON.parse(btn.dataset.payload) }
-      })
-    })
+      // Nested: GitHub rejects a client_payload with over 10 top-level keys. The relay
+      // nests it the same way, so add-to-list.ts unwraps one shape whichever sent it.
+      body: JSON.stringify({ event_type: event, client_payload: { payload: payload } })
+    });
+  }
+
+  function dispatch(btn) {
+    var label = btn.textContent;
+    btn.dataset.state = "busy";
+    btn.textContent = "…";
+    send(btn)
       .then(function (r) {
         if (r.status === 401 || r.status === 403) {
-          // Bad or revoked token: forget it, so the next tap opens the issue.
-          localStorage.removeItem(KEY);
-          paint();
+          // A credential that is no longer accepted must not go on swallowing taps.
+          // Both routes forget it; the next tap opens the pre-filled issue instead.
+          if (RELAY) refused = true;
+          else { localStorage.removeItem(KEY); paint(); }
           throw new Error("auth");
         }
         if (!r.ok) throw new Error(r.status);
@@ -570,7 +634,8 @@ export function githubOneTapScript(o: ChromeOptions): string {
       })
       .catch(function (e) {
         btn.dataset.state = "failed";
-        btn.textContent = e.message === "auth" ? "token?" : "retry";
+        // "token?" points at the footer toggle, which a relay build has not got.
+        btn.textContent = e.message === "auth" ? (RELAY ? "refused" : "token?") : "retry";
         setTimeout(function () { btn.dataset.state = ""; btn.textContent = label; }, 4000);
       });
   }
@@ -583,8 +648,8 @@ export function githubOneTapScript(o: ChromeOptions): string {
     // Reset/park buttons on a snoozed item. data-event picks the workflow.
     var btn = ev.target.closest("[data-payload]");
     if (!btn || btn.dataset.state === "busy" || btn.dataset.state === "done") return;
-    // No token? Do nothing and let the link open the pre-filled issue.
-    if (!token()) return;
+    // No credential? Do nothing and let the link open the pre-filled issue.
+    if (!ready()) return;
     // Only the destructive buttons set data-confirm. Cancelling must not fall
     // through to the link, or "no" would open the issue form instead.
     if (btn.dataset.confirm && !confirm(btn.dataset.confirm)) {
@@ -631,77 +696,4 @@ export function githubOneTapScript(o: ChromeOptions): string {
 `;
 }
 
-/**
- * Client-side half of the relay one-tap path (a Notion Worker webhook). Only
- * emitted when an endpoint is configured; otherwise the page uses the
- * GitHub-direct script above, which needs no service at all.
- *
- * Two constraints shape this, both from the Notion Worker webhook on the other
- * end (see `docs/one-tap-add.md`):
- *
- *  • It returns no CORS headers, so the request must be a "simple" one — POST,
- *    `text/plain`, no custom headers — to avoid a preflight the browser would
- *    reject. `mode: "no-cors"` sends it; the response comes back opaque.
- *  • Opaque means we cannot read the status. The tick therefore means "sent",
- *    not "confirmed" — the row itself shows up in Notion a few seconds later.
- *    That honesty is why this path is opt-in and the issue button is default.
- *
- * The endpoint lives in a public page, so it's gated by a token the user is
- * asked for once and the browser then remembers.
- */
-export function addScript(o: ChromeOptions): string {
-	if (!o.addEndpoint) return githubOneTapScript(o);
-	return `<script>
-(function () {
-  var endpoint = ${JSON.stringify(o.addEndpoint)};
-  var KEY = "grocery-add-token";
-
-  function token() {
-    var t = localStorage.getItem(KEY);
-    if (!t) {
-      t = (prompt("One-time setup: paste your Add token") || "").trim();
-      if (t) localStorage.setItem(KEY, t);
-    }
-    return t;
-  }
-
-  document.addEventListener("click", function (ev) {
-    // Relay path: adds only. The item-action buttons keep their issue links.
-    var btn = ev.target.closest ? ev.target.closest(".add[data-payload]") : null;
-    if (!btn || btn.dataset.state === "busy" || btn.dataset.state === "done") return;
-    ev.preventDefault();
-
-    var t = token();
-    if (!t) return;
-
-    var label = btn.textContent;
-    var body = JSON.parse(btn.dataset.payload);
-    body.token = t;
-
-    btn.dataset.state = "busy";
-    btn.textContent = "…";
-    fetch(endpoint, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "text/plain" },
-      body: JSON.stringify(body),
-    })
-      .then(function () {
-        // Opaque response: delivered, not verified. Say "sent", not "added".
-        btn.dataset.state = "done";
-        btn.textContent = "sent";
-      })
-      .catch(function () {
-        btn.dataset.state = "failed";
-        btn.textContent = "retry";
-        setTimeout(function () {
-          btn.dataset.state = "";
-          btn.textContent = label;
-        }, 4000);
-      });
-  });
-})();
-</script>
-`;
-}
 

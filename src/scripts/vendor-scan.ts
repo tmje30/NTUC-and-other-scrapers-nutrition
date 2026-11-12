@@ -1194,7 +1194,12 @@ async function askAboutUncertain(
 	// reason to mute the bot; and a muted bot loses the daily digest with it. The rest of
 	// this project has always been "one Telegram message → one page", and so is this.
 	await mkdir("public", { recursive: true });
-	const page = renderReviewPage(review.pending, { repo: config.repo(), ignored: review.ignored ?? [] });
+	const page = renderReviewPage(review.pending, {
+		repo: config.repo(),
+		addEndpoint: config.addEndpoint(),
+		addSecret: config.addSecret(),
+		ignored: review.ignored ?? [],
+	});
 	await writeFile(REVIEW_PAGE_PATH, page, "utf8");
 	console.log(`\nWrote ${REVIEW_PAGE_PATH} (${review.pending.length} waiting).`);
 

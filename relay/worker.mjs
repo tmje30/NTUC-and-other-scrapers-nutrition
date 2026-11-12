@@ -65,6 +65,22 @@ const SWEEP_EVENT = "tgsweep";
 const LIST_EVENT = "list-action";
 
 /**
+ * The events `POST /add` is willing to forward, and nothing outside this set.
+ *
+ * ⚠️⚠️ **The event type arrives from a PUBLIC page, so it is a parameter an attacker
+ * controls.** Forwarding it unchecked would turn this endpoint into "run any
+ * `repository_dispatch` workflow in the repo" — including any added later by someone who
+ * never knew this door existed. An allow-list is the whole difference between that and
+ * the three buttons the pages actually have, so a new button means a line HERE as well as
+ * in the page: see `addEventsMatchPages` in the tests, which fails if the two drift.
+ *
+ *   add-to-list → add-to-list.yml   (Buy: a row on the grocery list)
+ *   item-action → item-actions.yml  (ignore, un-ignore, park, mismatch, file a purchase)
+ *   sscan       → scan-request.yml  (ask for a Sheng Siong scan now)
+ */
+const ADD_EVENTS = new Set(["add-to-list", "item-action", "sscan"]);
+
+/**
  * The event `list-sweep.yml` listens for — the midnight clear-out.
  *
  * ⚠️ **This Worker is the CLOCK, exactly as it is for `tgsweep`.** GitHub's own
@@ -131,7 +147,7 @@ const ok = () => new Response("ok", { status: 200 });
 const CORS = {
 	"Access-Control-Allow-Origin": "*",
 	"Access-Control-Allow-Methods": "POST, OPTIONS",
-	"Access-Control-Allow-Headers": "Content-Type, X-List-Secret",
+	"Access-Control-Allow-Headers": "Content-Type, X-List-Secret, X-Add-Secret",
 	"Access-Control-Max-Age": "86400",
 };
 
@@ -153,6 +169,15 @@ const NOTION_ID = /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]
 
 /** Mirrors `MAX_ADD_NAME` in `src/core/list-action-parse.ts`. Kept in step by a test. */
 const MAX_ADD_NAME = 200;
+
+/**
+ * The biggest `payload` `POST /add` will forward, in serialised characters.
+ *
+ * Generous on purpose — the largest real one is an `AddPayload` with a long product name
+ * and a store URL, well under 2 KB. This is a ceiling against a stranger with a script,
+ * not a validator.
+ */
+const MAX_ADD_PAYLOAD = 20000;
 
 export function validListAction(p) {
 	if (!p || typeof p !== "object") return "payload is not an object";
@@ -218,6 +243,71 @@ async function handleList(request, env, doFetch) {
 	// this — a person is watching a checkbox — so the page must be able to tell a saved
 	// tick from a lost one and put the tick back if GitHub refused it.
 	const dispatched = await dispatch(doFetch, env, LIST_EVENT, { payload });
+	return dispatched ? json({ ok: true }) : json({ ok: false, error: "dispatch failed" }, 502);
+}
+
+/**
+ * `POST /add` — one tap on the deals, review or history page.
+ *
+ * ⚠️⚠️ **This exists so no credential expires in a browser again.** Those three pages
+ * used to one-tap by holding a fine-grained PAT in `localStorage` and POSTing
+ * `api.github.com` directly. It worked, and then it silently stopped: the PAT expired on
+ * 2026-10-26 (90-day default, created 07-28), the first tap after that got a 401, the
+ * page's own handler deleted the dead token, and every tap from then on fell through to
+ * the GitHub issue form with nothing announcing why. Measured: the last one-tap dispatch
+ * was 2026-10-07; the user noticed on 11-12. The privileged half now lives here, where
+ * one token renews in one place and `wrangler tail` can show it failing.
+ *
+ * ⚠️ **`ADD_SECRET` is its own secret, NOT `LIST_SECRET`.** Both are baked into public
+ * pages and both are therefore public; keeping them separate means each can be rotated
+ * without breaking the other page, and a leak of the shopping list's secret does not also
+ * hand over "ban this product forever". What this one buys is bounded the same way: the
+ * three events in `ADD_EVENTS` and nothing else. Not the repo write the PAT it replaces
+ * carried — a stranger who finds the deals page can add a grocery row, not push code.
+ *
+ * ⚠️ **Shape is NOT checked here, unlike `/list`.** Three events with three unrelated
+ * payloads would mean three validators at the edge duplicating the ones in
+ * `add-to-list.ts`, `item-actions.ts` and `scan-request.ts` — and a validator that drifts
+ * from the real one rejects valid taps, which is worse than spending an Actions run. What
+ * is checked is what cannot be checked downstream without spending that run: the event is
+ * in the allow-list, the payload is an object, and it is not absurdly large.
+ */
+async function handleAdd(request, env, doFetch) {
+	if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
+	if (request.method !== "POST") return json({ ok: false, error: "method not allowed" }, 405);
+
+	// An unset secret refuses everything rather than accepting everything — the same
+	// direction `WEBHOOK_SECRET` and `LIST_SECRET` fail in, and for the same reason.
+	if (!env.ADD_SECRET || request.headers.get("x-add-secret") !== env.ADD_SECRET) {
+		return json({ ok: false, error: "unauthorized" }, 401);
+	}
+
+	let body;
+	try {
+		body = await request.json();
+	} catch {
+		return json({ ok: false, error: "unparseable body" }, 400);
+	}
+
+	if (typeof body?.event !== "string" || !ADD_EVENTS.has(body.event)) {
+		return json({ ok: false, error: "unknown event" }, 400);
+	}
+	const payload = body.payload;
+	if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+		return json({ ok: false, error: "payload is not an object" }, 400);
+	}
+	// GitHub's own cap is on the serialised dispatch; refusing a 100 KB payload here costs
+	// nothing, while forwarding it spends a request to be told the same thing.
+	if (JSON.stringify(payload).length > MAX_ADD_PAYLOAD) {
+		return json({ ok: false, error: "payload is too large" }, 400);
+	}
+
+	// ⚠️ **Nested under one `payload` key**, exactly as `/list` does it: GitHub rejects a
+	// `client_payload` with more than 10 TOP-LEVEL properties, and `AddPayload` has 12.
+	// Nesting is unlimited, and `add-to-list.ts` unwraps it.
+	const dispatched = await dispatch(doFetch, env, body.event, { payload });
+	// ⚠️ A real status, as on `/list`: a person is watching a button, nothing retries this,
+	// and a tick that means "sent" when it was refused is the fault this replaced.
 	return dispatched ? json({ ok: true }) : json({ ok: false, error: "dispatch failed" }, 502);
 }
 
@@ -289,7 +379,11 @@ export async function handle(request, env, deps = {}) {
 	// ⚠️ Routed BEFORE the Telegram checks below, which are the wrong ones for it: the
 	// shopping page has no `x-telegram-bot-api-secret-token` and no chat to allow-list,
 	// and it needs a real status code rather than the unconditional 200 a webhook wants.
-	if (new URL(request.url).pathname === "/list") return handleList(request, env, doFetch);
+	const path = new URL(request.url).pathname;
+	if (path === "/list") return handleList(request, env, doFetch);
+	// Same reasoning as `/list` above, and the same shape: a browser, a baked secret, a
+	// real status code. Neither Telegram check below applies to it.
+	if (path === "/add") return handleAdd(request, env, doFetch);
 
 	if (request.method !== "POST") return new Response("method not allowed", { status: 405 });
 

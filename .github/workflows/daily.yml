@@ -202,6 +202,16 @@ jobs:
           # and nothing else. Unset simply renders the page read-only; it never ships an
           # `X-List-Secret: undefined`.
           LIST_SECRET: ${{ secrets.LIST_SECRET }}
+          # ⚠️ **Baked into index.html, review.html and history.html, all PUBLIC** — the
+          # second secret here to be so, and the same trade as LIST_SECRET above. It is
+          # what makes Buy, Ignore and "scan now" one tap on any device with nothing to
+          # enable. It replaced a fine-grained PAT held in each browser, which expired on
+          # 2026-10-26 and silently demoted every button to the two-tap issue form for a
+          # fortnight. Unset is harmless: the pages render with the issue link as the only
+          # path, exactly as they did before the relay. It must match the relay's own
+          # ADD_SECRET (`wrangler secret put ADD_SECRET` in relay/), and it grants only the
+          # three events in that Worker's ADD_EVENTS allow-list — not a repo write.
+          ADD_SECRET: ${{ secrets.ADD_SECRET }}
 
       - uses: actions/configure-pages@v6
 

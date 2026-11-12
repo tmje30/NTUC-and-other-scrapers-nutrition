@@ -73,10 +73,35 @@ export const config = {
 	 */
 	repo: () => optional("GITHUB_REPOSITORY", "tmje30/NTUC-and-other-scrapers-nutrition"),
 	/**
-	 * Optional one-tap Add endpoint (the Cloudflare Worker in `cloudflare/`).
-	 * Unset — the normal case — makes Add open a pre-filled GitHub issue instead.
+	 * The relay's `/add` endpoint — where every one-tap button on the deals, review and
+	 * history pages sends its dispatch.
+	 *
+	 * Derived from the relay's own host like `listEndpoint`, rather than configured twice,
+	 * so the pages and the Worker cannot drift apart. Overridable for a fork or a local
+	 * `wrangler dev`.
+	 *
+	 * ⚠️ **Set on its own this does nothing**, by design: one-tap needs `addSecret` too, or
+	 * the page would send `X-Add-Secret: undefined` at the relay and have every tap
+	 * refused. See `relayOneTap`.
 	 */
-	addEndpoint: () => optional("ADD_ENDPOINT"),
+	addEndpoint: () =>
+		optional("ADD_ENDPOINT", "https://grocery-telegram-relay.tmje30.workers.dev/add"),
+	/**
+	 * The secret those pages send as `X-Add-Secret`, matching the relay's `ADD_SECRET`.
+	 *
+	 * ⚠️⚠️ **Baked into PUBLIC pages**, the second secret in this file to be so after
+	 * `listSecret`, and the same deliberate trade: one-tap that needs nothing enabled per
+	 * device cannot keep a credential private on a static page. It replaced a fine-grained
+	 * PAT held in each browser's localStorage, which expired on 2026-10-26 and silently
+	 * demoted every button to two taps for a fortnight. What it grants is narrow — the
+	 * three events in the relay's `ADD_EVENTS` — and notably NOT the repo write that PAT
+	 * carried.
+	 *
+	 * ⚠️ **`optional`, and unset must stay harmless**: a build without it renders pages
+	 * whose buttons still work by the GitHub-issue link, exactly as they did before the
+	 * relay existed. Local previews are built this way all the time.
+	 */
+	addSecret: () => optional("ADD_SECRET"),
 	/**
 	 * The relay's `/list` endpoint — where `list.html` sends a tick or an amount.
 	 *

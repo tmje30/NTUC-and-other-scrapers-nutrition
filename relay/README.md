@@ -51,16 +51,16 @@ below is likewise its own line. `wrangler login` opens a browser — it cannot b
 
 Note the URL it prints — `https://grocery-telegram-relay.<subdomain>.workers.dev`.
 
-## 2. Give it its five secrets
+## 2. Give it its six secrets
 
 ```bash
 npx wrangler secret put WEBHOOK_SECRET
 ```
 
 Then the same for `TELEGRAM_BOT_TOKEN` (the value from `.env`), `GITHUB_TOKEN` (the
-PAT from above), `ALLOWED_CHAT_ID` (`7626546412`) and `LIST_SECRET` (see below). Each
-prompts for the value, so none of them lands in shell history. `REPO` is already in
-`wrangler.toml`.
+PAT from above), `ALLOWED_CHAT_ID` (`7626546412`), `LIST_SECRET` and `ADD_SECRET` (both
+below). Each prompts for the value, so none of them lands in shell history. `REPO` is
+already in `wrangler.toml`.
 
 ### `LIST_SECRET` — the shopping page's key
 
@@ -92,6 +92,48 @@ What bounds the damage:
 ⚠️ **Unset refuses everything rather than accepting everything** — the same direction
 `WEBHOOK_SECRET` fails in. A relay deployed before the secret is set is not an open door;
 it simply answers 401, and the page renders read-only.
+
+### `ADD_SECRET` — the deals, review and history pages' key
+
+Same idea as `LIST_SECRET`, for `POST /add`: the three pages with buttons on them send it
+as `X-Add-Secret`, and the Worker turns the tap into a `repository_dispatch`.
+
+```bash
+node -e "console.log('ADD_SECRET='+require('crypto').randomBytes(24).toString('hex'))" >> .env
+```
+
+Then `npx wrangler secret put ADD_SECRET` with that value, and add it to the repo's
+**Actions secrets** too — `build-site` bakes it into the pages it publishes.
+
+⚠️⚠️ **This replaced a credential that expired without a word, which is the whole reason
+it exists.** Those pages used to one-tap by holding a fine-grained GitHub PAT in each
+browser's `localStorage` and POSTing `api.github.com` directly. That worked for three
+months. Then the token expired (2026-10-26, a 90-day one created 07-28), the first tap
+afterwards got a 401, the page's own handler deleted the dead token exactly as designed,
+and every tap from then on fell through to the GitHub issue form with nothing announcing
+why. Last one-tap dispatch 10-07; the user noticed on 11-12 ("the discount page keeps
+opening github when i click on buy"). A credential in a browser is a credential nobody
+renews — so the privileged half moved here, where one token renews in one place.
+
+What bounds the damage, since this is public in the page too:
+
+- It grants the **three events in `ADD_EVENTS`** and nothing else: `add-to-list`,
+  `item-action`, `sscan`. The event type is a parameter the page sends, so without that
+  allow-list this endpoint would be "run any dispatch-triggered workflow in the repo" —
+  including ones added later by someone who never knew this door existed.
+- So a stranger who finds the deals page can add a grocery row, snooze an item or ask for
+  a scan. **Not** a repo write, and so not a path to editing `src/` and having the next
+  scheduled run execute it with `NOTION_TOKEN`.
+- It is **separate from `LIST_SECRET` on purpose.** Either can be rotated without
+  breaking the other page, and a leak of the shopping list's key does not also hand over
+  "never buy this again".
+- Rotating it is `wrangler secret put ADD_SECRET` plus the Actions secret, and the next
+  page build.
+
+⚠️ **Unset refuses everything**, as above — and that IS the state between deploying this
+Worker and running `wrangler secret put`. The pages keep working throughout: every button
+is a real link to a pre-filled GitHub issue and one tap is only an interception, so the
+fallback is two taps rather than nothing.
 
 ## 3. Stop the poller — **before** registering the webhook
 
