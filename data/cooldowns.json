@@ -1,20 +1,7 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-20T11:30:33.439Z",
+  "updatedAt": "2026-11-14T03:44:53.627Z",
   "entries": [
-    {
-      "key": "frozen vegetabl",
-      "ingredientId": "34b69a18-4fe7-80d2-b17d-d4167b9113c4",
-      "ingredientName": "Frozen Veg(Mixed)",
-      "addedAt": "2026-10-06T10:13:54.652Z",
-      "until": "2026-10-22T10:13:54.652Z",
-      "days": 16,
-      "basis": "1kg ÷ 1.4kg/month = 0.71 months × 0.75 = 0.54 months",
-      "store": "Sheng Siong",
-      "product": "Frozen Mixed Vegetables (SCB)",
-      "packSizeG": 1000,
-      "monthlyAmount": 1400
-    },
     {
       "key": "rice cooking wine 16 alcohol",
       "ingredientId": "34c69a18-4fe7-8012-9dcf-cce78ff534fc",
@@ -83,6 +70,19 @@
       "store": "Sheng Siong",
       "product": "Frozen Chicken Thighs",
       "packSizeG": null,
+      "monthlyAmount": 0
+    },
+    {
+      "key": "pure creameri butter",
+      "ingredientId": "40169a18-4fe7-8117-b88c-d0007c22edeb",
+      "ingredientName": "Pure Creamery Butter",
+      "addedAt": "2026-11-14T03:44:53.627Z",
+      "until": "2026-11-28T03:44:53.627Z",
+      "days": 14,
+      "basis": "no monthly usage → flat 14 days",
+      "store": "Sheng Siong",
+      "product": "Pure Creamery Butter",
+      "packSizeG": 250,
       "monthlyAmount": 0
     },
     {

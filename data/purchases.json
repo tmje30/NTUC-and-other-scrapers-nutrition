@@ -1,7 +1,23 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-07T00:12:39.431Z",
+  "updatedAt": "2026-11-14T03:44:53.627Z",
   "entries": [
+    {
+      "id": "pure-creameri-butter-sheng-siong-pure-creamery-b-202611140344",
+      "ingredientId": "40169a18-4fe7-8117-b88c-d0007c22edeb",
+      "ingredientName": "Pure Creamery Butter",
+      "key": "pure creameri butter",
+      "store": "Sheng Siong",
+      "product": "Pure Creamery Butter",
+      "priceSgd": 4.6,
+      "packSizeG": 250,
+      "unitCount": null,
+      "volumetric": false,
+      "url": "https://shengsiong.com.sg/product/cowhead-pure-creamery-butter-250-g",
+      "listTitle": "Pure Creamery Butter (250g) [Cowhead]",
+      "addedAt": "2026-11-14T03:44:53.627Z",
+      "outcome": "open"
+    },
     {
       "id": "egg-fairprice-pasar-fresh-eggs-omega-3-202610061014",
       "ingredientId": "37669a18-4fe7-8094-ad2b-d156a2f10a29",
