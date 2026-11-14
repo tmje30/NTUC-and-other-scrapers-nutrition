@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-14T03:44:53.627Z",
+  "updatedAt": "2026-11-14T03:44:59.579Z",
   "entries": [
     {
       "id": "pure-creameri-butter-sheng-siong-pure-creamery-b-202611140344",
@@ -332,6 +332,22 @@
       "url": "https://shengsiong.com.sg/product/castle-gourmet-rice-cooking-wine-16-alcohol-640-ml",
       "listTitle": "[Sheng Siong] Rice Wine(Cooking)",
       "addedAt": "2026-08-05T06:04:17.778Z",
+      "outcome": "open"
+    },
+    {
+      "id": "tofu-sheng-siong-tau-kwa-202611140344",
+      "ingredientId": "34c69a18-4fe7-80f2-9d0c-eab7c0daa2bf",
+      "ingredientName": "Tau Kwa (Tofu)",
+      "key": "tofu",
+      "store": "Sheng Siong",
+      "product": "Tau Kwa",
+      "priceSgd": 1,
+      "packSizeG": 400,
+      "unitCount": null,
+      "volumetric": false,
+      "url": "https://shengsiong.com.sg/product/tasty-bites-tau-kwa-400-g-3097945",
+      "listTitle": "Tau Kwa (Tofu) (400g) [Tasty Bites]",
+      "addedAt": "2026-11-14T03:44:59.579Z",
       "outcome": "open"
     }
   ]

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-14T03:44:53.627Z",
+  "updatedAt": "2026-11-14T03:44:59.579Z",
   "entries": [
     {
       "key": "rice cooking wine 16 alcohol",
@@ -97,6 +97,19 @@
       "product": "China Loose Garlic",
       "packSizeG": 500,
       "monthlyAmount": 80
+    },
+    {
+      "key": "tofu",
+      "ingredientId": "34c69a18-4fe7-80f2-9d0c-eab7c0daa2bf",
+      "ingredientName": "Tau Kwa (Tofu)",
+      "addedAt": "2026-11-14T03:44:59.579Z",
+      "until": "2026-11-19T03:44:59.579Z",
+      "days": 5,
+      "basis": "weekly buy → flat 5 days (pack size ignored)",
+      "store": "Sheng Siong",
+      "product": "Tau Kwa",
+      "packSizeG": 400,
+      "monthlyAmount": 2000
     }
   ]
 }
